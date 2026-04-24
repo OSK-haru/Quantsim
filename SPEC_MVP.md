@@ -1,35 +1,95 @@
-# MVP Spec
+# SPEC_MVP.md
 
-## Objective
+## Project
+Quantum-sim MVP
 
-Build a lightweight interactive simulator that shows how small quantum circuits degrade under environmental constraints.
+## Purpose
+Build a beginner-friendly interactive simulator that shows how environmental conditions affect the effective behavior of a very small quantum circuit.
 
-## Core User Experience
+This MVP is not a general-purpose quantum SDK and not a production research simulator.
+It exists to validate whether:
+1. the internal model is understandable,
+2. environmental parameters visibly affect the result,
+3. the UI can communicate effective circuit lifetime intuitively.
 
-The MVP should let a user:
-1. choose or define a small circuit,
-2. adjust simple environment parameters,
-3. run the simulation,
-4. compare outcomes over time,
-5. and understand what changed and why.
+## MVP scope
+- 1 qubit only
+- initial state: |0>
+- single H gate
+- inputs:
+  - temperature
+  - magnetic field
+  - noise level
+- outputs:
+  - fidelity(t)
+  - purity(t)
+  - effective time
+- simple Streamlit UI
+- beginner-friendly wording
 
-## MVP Modules
+## Non-goals
+- 2 qubits
+- CNOT
+- persistence / save-load
+- production UI polish
+- full expert mode
+- broad QuTiP-like general solver scope
+- pulse-level simulation
+- database introduction
+- Godot implementation in MVP
 
-- `core/circuit.py`: small circuit representation
-- `core/environment.py`: environmental parameter model
-- `core/evolution.py`: time evolution under simple noise/decoherence assumptions
-- `core/metrics.py`: interpretable outputs such as fidelity and effective lifetime
-- `app/app.py`: interactive entry point for running the simulator
+## Internal model
+### State
+Use a density matrix for a 1-qubit system.
 
-## Non-Goals
+### Gate model
+Use an effective Hamiltonian for the H gate.
 
-- large-system simulation
-- production research accuracy
-- pulse-level modeling
-- broad SDK-style abstractions
+### Noise model
+Use Lindblad-style evolution with:
+- relaxation-like effect
+- dephasing-like effect
 
-## Success Criteria
+### Environment mapping
+Map:
+- temperature
+- magnetic field
+- noise level
 
-- beginner can change a parameter and see a visible outcome difference
-- outputs explain degradation clearly
-- architecture stays small, readable, and easy to iterate on
+to:
+- T1
+- T2
+- derived gamma values
+
+### Metrics
+Compute:
+- fidelity against ideal evolution
+- purity
+- effective time defined by:
+  - first time fidelity drops below threshold
+
+## Default threshold
+- fidelity threshold = 0.90
+
+## UI requirements
+The MVP UI should allow the user to:
+1. change temperature
+2. change magnetic field
+3. change noise level
+4. run simulation
+5. view fidelity and purity plots
+6. view effective time
+7. read a short beginner explanation
+
+## Beginner wording
+Map internal quantities to simple labels:
+- fidelity -> effectiveness
+- purity -> stability
+- effective time -> usable time
+
+## Success criteria
+The MVP is complete when:
+1. a user can change temperature, magnetic field, and noise level,
+2. run a 1-qubit H-gate simulation,
+3. view fidelity, purity, and effective time,
+4. and observe visible differences when inputs change.
