@@ -1,7 +1,14 @@
 {
-  "name": "baseline_mvp_profile",
-  "temperature_kelvin": 0.02,
-  "magnetic_field_tesla": 0.0,
-  "noise_level": 0.01,
-  "notes": "Reference environment for early MVP comparisons."
+  "T1_ref_us": 120.0,
+  "T2_ref_us": 90.0,
+  "omega_MHz": 10.0,
+  "fidelity_threshold": 0.90,
+  "sensitivity": {
+    "a_T": 0.8,
+    "a_B": 0.4,
+    "a_n": 1.0,
+    "b_T": 1.0,
+    "b_B": 0.6,
+    "b_n": 1.2
+  }
 }

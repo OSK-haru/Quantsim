@@ -1,10 +1,4 @@
-"""Application entry point for the Quantum-Sim MVP."""
+import streamlit as st
 
-
-def main() -> None:
-    """Start the lightweight MVP application."""
-    print("Quantum-Sim MVP scaffold is ready.")
-
-
-if __name__ == "__main__":
-    main()
+st.title("Quantum MVP")
+st.write("Environment check OK")

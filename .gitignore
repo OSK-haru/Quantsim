@@ -1,5 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
 .env
 .env.*
 *.pem
 *.key
 secrets/
+.DS_Store
+.streamlit/
