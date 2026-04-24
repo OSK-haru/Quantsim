@@ -1,0 +1,7 @@
+{
+  "name": "baseline_mvp_profile",
+  "temperature_kelvin": 0.02,
+  "magnetic_field_tesla": 0.0,
+  "noise_level": 0.01,
+  "notes": "Reference environment for early MVP comparisons."
+}
