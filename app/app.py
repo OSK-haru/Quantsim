@@ -30,10 +30,7 @@ def main() -> None:
     )
 
     st.title("Quantum-Sim MVP")
-    st.write(
-        "Change the environment around a single-qubit H gate and watch how the "
-        "state becomes less ideal over time."
-    )
+    _app_intro()
 
     temperature_kelvin, magnetic_field_tesla, noise_level = _environment_controls()
 
@@ -55,6 +52,20 @@ def main() -> None:
     )
 
     _beginner_explanations()
+    _try_this()
+
+
+def _app_intro() -> None:
+    st.write(
+        "This app shows how environment conditions affect a small quantum circuit."
+    )
+    st.write(
+        "Change temperature, magnetic field, and noise level to see how quickly "
+        "the circuit loses effectiveness."
+    )
+    st.info(
+        "The plots compare the noisy result against an ideal one-qubit H-gate result."
+    )
 
 
 def _environment_controls() -> tuple[float, float, float]:
@@ -68,7 +79,9 @@ def _environment_controls() -> tuple[float, float, float]:
         step=0.01,
         help="Higher means the state becomes easier to disturb.",
     )
-    st.sidebar.caption("Temperature: higher means the state becomes easier to disturb.")
+    st.sidebar.caption(
+        "Temperature: higher values make the state easier to disturb."
+    )
 
     magnetic_field_tesla = st.sidebar.slider(
         "Magnetic field (magnetic_field_tesla)",
@@ -76,10 +89,10 @@ def _environment_controls() -> tuple[float, float, float]:
         max_value=1.0,
         value=0.1,
         step=0.01,
-        help="Changes the environment condition affecting the state.",
+        help="Changes the surrounding condition that affects state behavior.",
     )
     st.sidebar.caption(
-        "Magnetic field: changes the environment condition affecting the state."
+        "Magnetic field: changes the surrounding condition that affects state behavior."
     )
 
     noise_level = st.sidebar.slider(
@@ -88,9 +101,11 @@ def _environment_controls() -> tuple[float, float, float]:
         max_value=1.0,
         value=0.1,
         step=0.01,
-        help="Stronger random disturbance.",
+        help="Stronger random disturbance makes the result degrade faster.",
     )
-    st.sidebar.caption("Noise level: stronger random disturbance.")
+    st.sidebar.caption(
+        "Noise level: stronger random disturbance makes the result degrade faster."
+    )
 
     return temperature_kelvin, magnetic_field_tesla, noise_level
 
@@ -153,9 +168,22 @@ def _build_plot(
 
 def _beginner_explanations() -> None:
     st.subheader("How to read this")
-    st.write("Fidelity: how close the result is to the ideal state.")
+    st.write("Fidelity: how close the noisy result is to the ideal result.")
     st.write("Purity: how clean or mixed the quantum state is.")
-    st.write("Effective time: when fidelity drops below the threshold.")
+    st.write("Effective time: the time until fidelity drops below the threshold.")
+
+
+def _try_this() -> None:
+    st.subheader("Try this")
+    st.write(
+        "First try low noise: temperature = 0.1, magnetic_field = 0.1, "
+        "noise_level = 0.1."
+    )
+    st.write(
+        "Then try high noise: temperature = 0.8, magnetic_field = 0.1, "
+        "noise_level = 0.8."
+    )
+    st.write("The high-noise case should produce a shorter effective time.")
 
 
 if __name__ == "__main__":

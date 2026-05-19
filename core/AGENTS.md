@@ -1,12 +1,15 @@
 # core/AGENTS.md
 
-## Purpose
+This folder contains the simulation core.
 
-This directory contains the simulation logic for the MVP.
-
-## Guidance
-
-- Prioritize interpretable behavior over mathematical completeness.
-- Keep models lightweight and small-scale.
-- Add complexity only when it improves visible understanding in the UI.
-- Separate circuit structure, environment configuration, evolution, and metrics cleanly.
+Rules:
+- No Streamlit or UI code here.
+- Keep logic modular and testable.
+- Prefer small pure functions where possible.
+- Stay within the MVP model:
+  - 1 qubit
+  - H gate
+  - environment -> T1/T2 mapping
+  - Lindblad-style evolution
+  - fidelity / purity / effective time
+- Do not expand into a generic solver framework.

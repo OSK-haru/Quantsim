@@ -1,11 +1,9 @@
 # data/AGENTS.md
 
-## Purpose
+This folder stores configuration and reference data.
 
-This directory stores lightweight reference data and presets for the MVP.
-
-## Guidance
-
-- Keep data human-readable and easy to edit.
-- Prefer small example profiles over large datasets.
-- Store presets that help users compare environmental conditions quickly.
+Rules:
+- Prefer JSON for configurable values.
+- Keep reference simulation parameters here.
+- Avoid scattering magic constants across the codebase.
+- Changes to thresholds or reference values should be explicit and documented.
