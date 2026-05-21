@@ -1,8 +1,11 @@
-# Quantum-Sim
+# QuantaScope
 
-Quantum-Sim is a beginner-friendly MVP for exploring how environmental conditions affect a very small quantum circuit.
+QuantaScope is an interactive simulator for observing how environmental conditions degrade small quantum circuits.
 
-The app simulates a 1-qubit H gate and shows how quickly the result loses effectiveness as temperature, magnetic field, and noise level change.
+## Current Status
+
+MVP implemented.
+
 
 ## MVP Scope
 
