@@ -4,12 +4,18 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
+from core.capabilities import DEFAULT_SIMULATION_MODEL, normalize_gate_type
 from core.circuit import Matrix2, h_gate_hamiltonian, initial_zero_density_matrix
 from core.environment import map_environment_to_t1_t2, t1_t2_to_gammas
 from core.evolution import _clean_density_matrix, _collapse_operators, _rk4_step, _time_grid
 from core.errors import ValidationIssue
 from core.metrics import effective_time, fidelity_series, purity_series
 from core.results import SimulationConfig, SimulationResult
+from core.simulation_backends import (
+    get_simulation_backend,
+    register_simulation_backend,
+    registered_simulation_models,
+)
 from core.validation import (
     diagnose_simulation_result,
     has_blocking_issues,
@@ -17,11 +23,8 @@ from core.validation import (
 )
 
 
-SUPPORTED_MODEL = "weak_coupling_lindblad"
-
-
 def run_simulation(config: SimulationConfig) -> SimulationResult:
-    """Run the MVP simulation through the normalized Phase 1 API."""
+    """Run a simulation through the stable Config -> Result core contract."""
 
     if isinstance(config, Mapping):
         config = SimulationConfig.from_dict(config)
@@ -38,6 +41,28 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
     if has_blocking_issues(blocking_issues):
         return _empty_result(config, blocking_issues)
 
+    runner = get_simulation_backend(config.model)
+    if runner is None:
+        return _empty_result(config, [
+            _runtime_error(
+                "BACKEND_NOT_REGISTERED",
+                "No simulation backend is registered for this model.",
+                f"Received model={config.model!r}",
+                (
+                    "Register a backend runner or use one of "
+                    f"{registered_simulation_models()}."
+                ),
+            )
+        ])
+
+    result = runner(config)
+    diagnostic_issues = diagnose_simulation_result(result)
+    result.issues = diagnostic_issues
+    result.warnings = _issue_warnings(diagnostic_issues)
+    return result
+
+
+def _run_weak_coupling_lindblad(config: SimulationConfig) -> SimulationResult:
     environment = config.environment
     t1_us, t2_us = map_environment_to_t1_t2(
         temperature_kelvin=environment.temperature_kelvin,
@@ -85,9 +110,6 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
         warnings=[],
         issues=[],
     )
-    diagnostic_issues = diagnose_simulation_result(result)
-    result.issues = diagnostic_issues
-    result.warnings = _issue_warnings(diagnostic_issues)
     return result
 
 
@@ -111,7 +133,7 @@ def _empty_result(
 
 def _mvp_runtime_issues(config: SimulationConfig) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
-    if config.model != SUPPORTED_MODEL:
+    if config.model != DEFAULT_SIMULATION_MODEL:
         return issues
     if config.environment.mode != "normalized":
         issues.append(_runtime_error(
@@ -150,7 +172,7 @@ def _mvp_runtime_issues(config: SimulationConfig) -> list[ValidationIssue]:
         return issues
 
     gate = gates[0]
-    if gate.type.upper() != "H":
+    if normalize_gate_type(gate.type) != "H":
         issues.append(_runtime_error(
             "UNSUPPORTED_GATE_FOR_MVP",
             "MVP simulator currently supports only an H gate.",
@@ -277,3 +299,9 @@ def _as_probability(value: float) -> float:
     if value > 1.0 and value < 1.0 + 1e-9:
         return 1.0
     return value
+
+
+register_simulation_backend(
+    DEFAULT_SIMULATION_MODEL,
+    _run_weak_coupling_lindblad,
+)

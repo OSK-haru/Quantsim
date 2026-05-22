@@ -257,3 +257,55 @@ U-22提出や第三者レビューのため、環境構築・起動・デモ再�
 - デモプリセットを選ぶだけで主要機能を確認できる
 - 3分以内のデモ動画を構成できる
 - U-22向け技術説明に使う出力ログ・図を生成できる
+
+---
+
+# N09 移植性・バックエンド拡張性
+
+## 概要
+
+QuantaScope は、初期実装では Python / Streamlit を中心に開発するが、将来的に Godot UI、FastAPI 連携、Rust backend、QuTiP optional backend などへ拡張できる構造を維持する。
+
+本要件は、現在の本開発必達範囲に Godot や Rust backend を含めるものではない。
+ただし、将来拡張時に既存の core / UI / データ形式を大きく破壊しないよう、設計上の制約を定義する。
+
+---
+
+## 基本方針
+
+- `core` は UI 技術に依存しない
+- UI は `run_simulation(config)` を通じて core を呼び出す
+- 回路・環境条件・実行設定は JSON 化可能な構造で扱う
+- 実行結果は、将来的に他言語・他プロセスへ渡せる形式を意識する
+- Python 実装、QuTiP backend、Rust backend は、同じ `SimulationConfig` を入力とし、同じ `SimulationResult` 互換の出力を返すことを目標とする
+- Godot UI は数値計算を再実装せず、Python または Rust backend を呼び出すフロントエンド候補として扱う
+- Rust backend は高速化・安定化・将来拡張のための候補であり、本開発初期の必達範囲には含めない
+
+---
+
+## 設計制約
+
+### core と UI の分離
+
+以下を禁止する。
+
+- `core/` 配下から Streamlit を import する
+- `core/` 配下から Godot 固有処理を参照する
+- `core/` 配下から UI の状態管理に依存する
+- UI から `evolution.py` や `environment.py` の内部関数を直接多用する
+
+UI は原則として以下の流れで実行する。
+
+```text
+UI
+  ↓
+CircuitState / Environment入力
+  ↓
+SimulationConfig
+  ↓
+run_simulation(config)
+  ↓
+SimulationResult
+  ↓
+UI表示
+```

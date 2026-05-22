@@ -6,12 +6,18 @@ import math
 from collections.abc import Iterable, Sequence
 from typing import Any
 
+from core.capabilities import (
+    DEFAULT_SIMULATION_MODEL,
+    MAX_LOGICAL_QUBITS,
+    SUPPORTED_GATES,
+    SUPPORTED_SIMULATION_MODELS,
+    normalize_gate_type,
+)
 from core.errors import ValidationIssue
 from core.results import SimulationConfig, SimulationResult
+from core.simulation_backends import registered_simulation_models
 
 
-SUPPORTED_GATES = {"I", "H", "X", "Z", "CNOT", "MEASURE"}
-SUPPORTED_MODEL = "weak_coupling_lindblad"
 BLOCKING_LEVELS = {"error", "fatal"}
 FIDELITY_RANGE_TOL = 1e-10
 PURITY_RANGE_TOL = 1e-10
@@ -43,12 +49,15 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                 f"Received logical_qubits={qubit_count}",
                 "Set logical_qubits to a value in the range [1, 6].",
             ))
-        if qubit_count > 6:
+        if qubit_count > MAX_LOGICAL_QUBITS:
             issues.append(_error(
                 "TOO_MANY_LOGICAL_QUBITS",
-                "logical_qubits must be 6 or less.",
+                f"logical_qubits must be {MAX_LOGICAL_QUBITS} or less.",
                 f"Received logical_qubits={qubit_count}",
-                "Use at most 6 logical qubits for the lightweight simulator.",
+                (
+                    f"Use at most {MAX_LOGICAL_QUBITS} logical qubits for "
+                    "the lightweight simulator."
+                ),
             ))
 
     if len(circuit.initial_states) != circuit.logical_qubits:
@@ -64,7 +73,7 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
 
     for column in circuit.columns:
         for gate in column.gates:
-            gate_type = gate.type.upper()
+            gate_type = normalize_gate_type(gate.type)
             if gate_type not in SUPPORTED_GATES:
                 issues.append(_error(
                     "UNSUPPORTED_GATE",
@@ -180,12 +189,12 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
             "Set fidelity_threshold to a value in the range [0.0, 1.0].",
         ))
 
-    if config.model != SUPPORTED_MODEL:
+    if config.model not in _supported_simulation_models():
         issues.append(_error(
             "UNSUPPORTED_MODEL",
             "Simulation model is not supported.",
             f"Received model={config.model!r}",
-            f"Set model to {SUPPORTED_MODEL!r}.",
+            f"Set model to {DEFAULT_SIMULATION_MODEL!r}.",
         ))
 
     return issues
@@ -318,6 +327,10 @@ def _range_issue(
         f"Received {field_name}={value!r}",
         f"Set {field_name} to a value in the range [{minimum}, {maximum}].",
     )]
+
+
+def _supported_simulation_models() -> set[str]:
+    return set(SUPPORTED_SIMULATION_MODELS).union(registered_simulation_models())
 
 
 def _finite_series_issues(

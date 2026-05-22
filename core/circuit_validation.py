@@ -5,11 +5,9 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from typing import Any
 
+from core.capabilities import SUPPORTED_GATES, normalize_gate_type
 from core.circuit_model import CircuitConfig, GateColumn, GateOperation
 from core.errors import ValidationIssue
-
-
-SUPPORTED_GATES = {"I", "H", "X", "Z", "CNOT", "MEASURE"}
 
 
 def validate_circuit_config(config: CircuitConfig) -> list[ValidationIssue]:
@@ -37,7 +35,7 @@ def validate_gate_for_circuit(
     """Validate one gate without considering other gates in the same column."""
 
     issues: list[ValidationIssue] = []
-    gate_type = gate.type.upper()
+    gate_type = normalize_gate_type(gate.type)
 
     if gate_type not in SUPPORTED_GATES:
         issues.append(_error(

@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.capabilities import DEFAULT_SIMULATION_MODEL
 from core.circuit_model import CircuitConfig
 from core.errors import ValidationIssue
 
@@ -109,7 +110,7 @@ class SimulationConfig:
     duration_us: float = 20.0
     time_steps: int = 101
     fidelity_threshold: float = 0.9
-    model: str = "weak_coupling_lindblad"
+    model: str = DEFAULT_SIMULATION_MODEL
 
     def __post_init__(self) -> None:
         if not isinstance(self.circuit, CircuitConfig):
@@ -146,7 +147,7 @@ class SimulationConfig:
             duration_us=data.get("duration_us", 20.0),
             time_steps=data.get("time_steps", 101),
             fidelity_threshold=data.get("fidelity_threshold", 0.9),
-            model=data.get("model", "weak_coupling_lindblad"),
+            model=data.get("model", DEFAULT_SIMULATION_MODEL),
         )
 
 

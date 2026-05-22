@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import streamlit as st
 
 
@@ -11,179 +10,35 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from core.evolution import simulate_once
-from core.metrics import (
-    effective_time,
-    fidelity_series,
-    ideal_state_series,
-    purity_series,
-)
-
-
-FIDELITY_THRESHOLD = 0.9
+from ui.beginner_mode import render_beginner_mode
+from ui.start_screen import render_start_screen
 
 
 def main() -> None:
     st.set_page_config(
-        page_title="Quantum-Sim MVP",
+        page_title="QuantaScope",
         layout="wide",
     )
 
-    st.title("Quantum-Sim MVP")
-    _app_intro()
+    _initialize_navigation()
 
-    temperature_kelvin, magnetic_field_tesla, noise_level = _environment_controls()
-
-    times, states = simulate_once(
-        temperature_kelvin,
-        magnetic_field_tesla,
-        noise_level,
-    )
-    ideal_states = ideal_state_series(times)
-    fidelities = fidelity_series(states, ideal_states)
-    purities = purity_series(states)
-    usable_time = effective_time(times, fidelities, FIDELITY_THRESHOLD)
-
-    _summary_metrics(usable_time, fidelities[-1], purities[-1])
-
-    st.pyplot(
-        _build_plot(times, fidelities, purities, usable_time),
-        clear_figure=True,
-    )
-
-    _beginner_explanations()
-    _try_this()
+    if st.session_state.app_screen == "beginner":
+        render_beginner_mode()
+    else:
+        action = render_start_screen()
+        if action == "beginner":
+            st.session_state.app_screen = "beginner"
+            st.rerun()
+        if action == "demo":
+            st.session_state.app_screen = "beginner"
+            st.session_state.load_demo_circuit = True
+            st.session_state.run_demo_simulation = True
+            st.rerun()
 
 
-def _app_intro() -> None:
-    st.write(
-        "This app shows how environment conditions affect a small quantum circuit."
-    )
-    st.write(
-        "Change temperature, magnetic field, and noise level to see how quickly "
-        "the circuit loses effectiveness."
-    )
-    st.info(
-        "The plots compare the noisy result against an ideal one-qubit H-gate result."
-    )
-
-
-def _environment_controls() -> tuple[float, float, float]:
-    st.sidebar.header("Environment")
-
-    temperature_kelvin = st.sidebar.slider(
-        "Temperature (temperature_kelvin)",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.1,
-        step=0.01,
-        help="Higher means the state becomes easier to disturb.",
-    )
-    st.sidebar.caption(
-        "Temperature: higher values make the state easier to disturb."
-    )
-
-    magnetic_field_tesla = st.sidebar.slider(
-        "Magnetic field (magnetic_field_tesla)",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.1,
-        step=0.01,
-        help="Changes the surrounding condition that affects state behavior.",
-    )
-    st.sidebar.caption(
-        "Magnetic field: changes the surrounding condition that affects state behavior."
-    )
-
-    noise_level = st.sidebar.slider(
-        "Noise level (noise_level)",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.1,
-        step=0.01,
-        help="Stronger random disturbance makes the result degrade faster.",
-    )
-    st.sidebar.caption(
-        "Noise level: stronger random disturbance makes the result degrade faster."
-    )
-
-    return temperature_kelvin, magnetic_field_tesla, noise_level
-
-
-def _summary_metrics(
-    usable_time: float,
-    final_fidelity: float,
-    final_purity: float,
-) -> None:
-    first, second, third = st.columns(3)
-    first.metric("Effective time", f"{usable_time:.3f} us")
-    second.metric("Final fidelity", f"{final_fidelity:.3f}")
-    third.metric("Final purity", f"{final_purity:.3f}")
-
-
-def _build_plot(
-    times: list[float],
-    fidelities: list[float],
-    purities: list[float],
-    usable_time: float,
-):
-    figure, axes = plt.subplots(2, 1, sharex=True, figsize=(8, 6))
-
-    axes[0].plot(times, fidelities, color="tab:blue", label="Fidelity")
-    axes[0].axhline(
-        FIDELITY_THRESHOLD,
-        color="gray",
-        linestyle="--",
-        linewidth=1.0,
-        label="Threshold",
-    )
-    axes[0].axvline(
-        usable_time,
-        color="tab:red",
-        linestyle=":",
-        linewidth=1.2,
-        label="Effective time",
-    )
-    axes[0].set_ylabel("Fidelity")
-
-    axes[1].plot(times, purities, color="tab:green", label="Purity")
-    axes[1].axvline(
-        usable_time,
-        color="tab:red",
-        linestyle=":",
-        linewidth=1.2,
-        label="Effective time",
-    )
-    axes[1].set_ylabel("Purity")
-    axes[1].set_xlabel("Time (us)")
-
-    for axis in axes:
-        axis.set_ylim(0.0, 1.05)
-        axis.grid(True, alpha=0.3)
-        axis.legend()
-
-    figure.tight_layout()
-    return figure
-
-
-def _beginner_explanations() -> None:
-    st.subheader("How to read this")
-    st.write("Fidelity: how close the noisy result is to the ideal result.")
-    st.write("Purity: how clean or mixed the quantum state is.")
-    st.write("Effective time: the time until fidelity drops below the threshold.")
-
-
-def _try_this() -> None:
-    st.subheader("Try this")
-    st.write(
-        "First try low noise: temperature = 0.1, magnetic_field = 0.1, "
-        "noise_level = 0.1."
-    )
-    st.write(
-        "Then try high noise: temperature = 0.8, magnetic_field = 0.1, "
-        "noise_level = 0.8."
-    )
-    st.write("The high-noise case should produce a shorter effective time.")
+def _initialize_navigation() -> None:
+    if "app_screen" not in st.session_state:
+        st.session_state.app_screen = "start"
 
 
 if __name__ == "__main__":
