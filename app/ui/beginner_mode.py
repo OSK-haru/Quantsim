@@ -6,10 +6,13 @@ import streamlit as st
 
 from core.circuit_history import CircuitHistory
 from core.circuit_model import GateOperation
+from core.comparison import ComparisonConfig, ComparisonResult, run_comparison
 from core.circuit_state import CircuitState
 from core.results import EnvironmentConfig, SimulationConfig, SimulationResult
 from core.simulator import run_simulation
 from ui.circuit_editor import render_circuit_editor
+from ui.comparison_drawers import render_comparison_drawers
+from ui.comparison_summary import render_comparison_summary
 from ui.environment_panel import render_environment_panel
 from ui.error_display import render_error_display
 from ui.gate_palette import render_gate_palette
@@ -36,15 +39,23 @@ def render_beginner_mode() -> None:
 
     with main:
         history = st.session_state.circuit_history
-        render_circuit_editor(history, selected_gate)
         signature = _simulation_signature(history, environment_values)
 
-        if st.button("Run Simulation", type="primary"):
-            _run_and_store_simulation(
-                history,
-                environment_values,
-                signature,
-            )
+        st.subheader("Workflow")
+        st.caption("Run the current circuit once, or compare it under two presets.")
+        single_column, compare_column = st.columns(2)
+        with single_column:
+            if st.button("Run Simulation", type="primary", use_container_width=True):
+                _run_and_store_simulation(
+                    history,
+                    environment_values,
+                    signature,
+                )
+        with compare_column:
+            if st.button("Compare Low vs High Noise", use_container_width=True):
+                st.session_state.last_comparison = _run_low_high_comparison(history)
+
+        render_circuit_editor(history, selected_gate)
 
         if st.session_state.get("run_demo_simulation"):
             _run_and_store_simulation(
@@ -68,6 +79,12 @@ def render_beginner_mode() -> None:
         )
         render_result_summary(result)
         render_result_drawers(result)
+
+        comparison = st.session_state.get("last_comparison")
+        if isinstance(comparison, ComparisonResult):
+            render_error_display(warnings=comparison.warnings)
+            render_comparison_summary(comparison)
+            render_comparison_drawers(comparison)
 
 
 def _initialize_beginner_state() -> None:
@@ -126,6 +143,30 @@ def _run_simulation(
         fidelity_threshold=0.9,
     )
     return run_simulation(config)
+
+
+def _run_low_high_comparison(history: CircuitHistory) -> ComparisonResult:
+    config = ComparisonConfig(
+        circuit=history.current.to_config(),
+        environment_a=EnvironmentConfig(
+            mode="normalized",
+            temperature=0.1,
+            magnetic_field=0.1,
+            noise_level=0.1,
+        ),
+        environment_b=EnvironmentConfig(
+            mode="normalized",
+            temperature=0.8,
+            magnetic_field=0.1,
+            noise_level=0.8,
+        ),
+        duration_us=20.0,
+        time_steps=101,
+        fidelity_threshold=0.9,
+        label_a="Low noise",
+        label_b="High noise",
+    )
+    return run_comparison(config)
 
 
 def _run_and_store_simulation(
