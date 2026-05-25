@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from ui.beginner_mode import render_beginner_mode
+from ui.expert_mode import render_expert_mode
 from ui.start_screen import render_start_screen
 
 
@@ -24,10 +25,15 @@ def main() -> None:
 
     if st.session_state.app_screen == "beginner":
         render_beginner_mode()
+    elif st.session_state.app_screen == "expert":
+        render_expert_mode()
     else:
         action = render_start_screen()
         if action == "beginner":
             st.session_state.app_screen = "beginner"
+            st.rerun()
+        if action == "expert":
+            st.session_state.app_screen = "expert"
             st.rerun()
         if action == "demo":
             st.session_state.app_screen = "beginner"

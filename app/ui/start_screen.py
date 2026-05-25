@@ -16,8 +16,6 @@ def render_start_screen() -> str | None:
         horizontal=True,
         key="display_level",
     )
-    if st.session_state.display_level == "Expert":
-        st.info("Expert mode is coming soon. Beginner mode is ready to try.")
 
     first, second, third = st.columns(3)
     with first:
@@ -31,8 +29,12 @@ def render_start_screen() -> str | None:
         if st.button("Open Config", use_container_width=True):
             st.info("Config loading will be added in a later phase.")
 
-    if st.button("Enter Beginner Mode", type="primary"):
-        return "beginner"
+    if st.session_state.display_level == "Expert":
+        if st.button("Enter Expert Mode", type="primary"):
+            return "expert"
+    else:
+        if st.button("Enter Beginner Mode", type="primary"):
+            return "beginner"
 
     if st.session_state.get("show_tutorial_hint"):
         st.info("Tutorial starts with one H gate on q0 and the Low noise preset.")
