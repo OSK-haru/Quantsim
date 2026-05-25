@@ -108,6 +108,20 @@ class ValidationTest(unittest.TestCase):
         self.assertIssueCode(issues, "UNSUPPORTED_GATE")
         self.assertTrue(has_blocking_issues(issues))
 
+    def test_three_logical_qubits_is_rejected_for_current_backend(self) -> None:
+        issues = validate_simulation_config(
+            SimulationConfig(
+                circuit=CircuitConfig(
+                    logical_qubits=3,
+                    initial_states=["0", "0", "0"],
+                    columns=[],
+                )
+            )
+        )
+
+        self.assertIssueCode(issues, "TOO_MANY_LOGICAL_QUBITS")
+        self.assertTrue(has_blocking_issues(issues))
+
     def test_run_simulation_does_not_execute_physics_for_blocking_config(self) -> None:
         config = SimulationConfig(
             environment=EnvironmentConfig(noise_level=1.42),

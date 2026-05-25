@@ -11,7 +11,7 @@ from __future__ import annotations
 DEFAULT_SIMULATION_MODEL = "weak_coupling_lindblad"
 SUPPORTED_SIMULATION_MODELS = frozenset({DEFAULT_SIMULATION_MODEL})
 SUPPORTED_GATES = frozenset({"I", "H", "X", "Z", "CNOT", "MEASURE"})
-MAX_LOGICAL_QUBITS = 6
+MAX_LOGICAL_QUBITS = 2
 
 
 def normalize_gate_type(gate_type: str) -> str:

@@ -52,6 +52,13 @@ def validate_gate_for_circuit(
             f"Received targets={gate.targets!r}.",
             "Choose a target qubit for the gate.",
         ))
+    elif gate_type in {"I", "H", "X", "Z", "MEASURE"} and len(gate.targets) != 1:
+        issues.append(_error(
+            "GATE_REQUIRES_SINGLE_TARGET",
+            f"{gate.type} requires exactly one target qubit.",
+            f"Received targets={gate.targets!r}.",
+            "Choose exactly one target qubit for this gate.",
+        ))
 
     for target in gate.targets:
         if not _is_qubit_in_range(target, logical_qubits):

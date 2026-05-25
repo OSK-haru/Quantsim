@@ -1,6 +1,6 @@
 import unittest
 
-from core.circuit_model import CircuitConfig
+from core.circuit_model import CircuitConfig, GateColumn, GateOperation
 from core.comparison import ComparisonConfig, ComparisonResult, run_comparison
 from core.results import EnvironmentConfig, SimulationResult
 
@@ -36,6 +36,51 @@ class ComparisonTest(unittest.TestCase):
 
         self.assertGreaterEqual(len(result.warnings), 2)
         self.assertTrue(any("INVALID_NOISE_LEVEL" in warning for warning in result.warnings))
+
+    def test_two_qubit_bell_circuit_can_compare(self) -> None:
+        result = run_comparison(
+            ComparisonConfig(
+                circuit=CircuitConfig(
+                    logical_qubits=2,
+                    initial_states=["0", "0"],
+                    columns=[
+                        GateColumn(
+                            step=0,
+                            gates=[
+                                GateOperation(
+                                    type="H",
+                                    targets=[0],
+                                    controls=[],
+                                    params={},
+                                )
+                            ],
+                        ),
+                        GateColumn(
+                            step=1,
+                            gates=[
+                                GateOperation(
+                                    type="CNOT",
+                                    targets=[1],
+                                    controls=[0],
+                                    params={},
+                                )
+                            ],
+                        ),
+                    ],
+                ),
+                environment_a=EnvironmentConfig(noise_level=0.0),
+                environment_b=EnvironmentConfig(noise_level=0.8),
+                duration_us=0.001,
+                time_steps=3,
+                fidelity_threshold=0.9,
+                label_a="Low",
+                label_b="High",
+            )
+        )
+
+        self.assertTrue(result.result_a.times)
+        self.assertTrue(result.result_b.times)
+        self.assertIsNotNone(result.delta_final_fidelity)
 
 
 def _comparison_config() -> ComparisonConfig:

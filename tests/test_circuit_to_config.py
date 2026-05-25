@@ -39,6 +39,48 @@ class CircuitToConfigTest(unittest.TestCase):
         self.assertEqual(result.issues, [])
         self.assertNotIn("streamlit", sys.modules)
 
+    def test_two_qubit_bell_circuit_runs_through_simulation_api(self) -> None:
+        state = CircuitState(logical_qubits=2, initial_states=["0", "0"], columns=[])
+        state.add_gate(
+            0,
+            GateOperation(
+                type="H",
+                targets=[0],
+                controls=[],
+                params={},
+            ),
+        )
+        state.add_gate(
+            1,
+            GateOperation(
+                type="CNOT",
+                targets=[1],
+                controls=[0],
+                params={},
+            ),
+        )
+
+        config = SimulationConfig(
+            circuit=state.to_config(),
+            environment=EnvironmentConfig(
+                mode="normalized",
+                temperature=0.02,
+                magnetic_field=0.0,
+                noise_level=0.01,
+            ),
+            duration_us=20.0,
+            time_steps=101,
+            fidelity_threshold=0.9,
+        )
+        result = run_simulation(config)
+
+        self.assertIsInstance(result, SimulationResult)
+        self.assertEqual(result.issues, [])
+        self.assertEqual(
+            set(result.output_probabilities),
+            {"00", "01", "10", "11"},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

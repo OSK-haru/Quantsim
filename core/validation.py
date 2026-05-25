@@ -38,7 +38,7 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
             "INVALID_LOGICAL_QUBITS",
             "logical_qubits must be an integer.",
             f"Received logical_qubits={circuit.logical_qubits!r}",
-            "Set logical_qubits to an integer from 1 to 6.",
+            f"Set logical_qubits to an integer from 1 to {MAX_LOGICAL_QUBITS}.",
         ))
     else:
         qubit_count = int(logical_qubits)
@@ -47,7 +47,7 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                 "INVALID_LOGICAL_QUBITS",
                 "logical_qubits must be at least 1.",
                 f"Received logical_qubits={qubit_count}",
-                "Set logical_qubits to a value in the range [1, 6].",
+                f"Set logical_qubits to a value in the range [1, {MAX_LOGICAL_QUBITS}].",
             ))
         if qubit_count > MAX_LOGICAL_QUBITS:
             issues.append(_error(
@@ -81,6 +81,16 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                     f"Received gate type={gate.type!r} at step {column.step}.",
                     "Use one of I, H, X, Z, CNOT, or Measure.",
                 ))
+            elif gate_type in {"I", "H", "X", "Z", "MEASURE"} and len(gate.targets) != 1:
+                issues.append(_error(
+                    "GATE_REQUIRES_SINGLE_TARGET",
+                    f"{gate.type} requires exactly one target qubit.",
+                    (
+                        f"Gate {gate.type} at step {column.step} has "
+                        f"targets={gate.targets!r}."
+                    ),
+                    "Set exactly one target qubit for this gate.",
+                ))
 
             for target in gate.targets:
                 if not _is_qubit_index_in_range(target, circuit.logical_qubits):
@@ -107,6 +117,26 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                     ))
 
             if gate_type == "CNOT":
+                if len(gate.controls or []) != 1:
+                    issues.append(_error(
+                        "CNOT_REQUIRES_CONTROL",
+                        "CNOT requires exactly one control qubit.",
+                        (
+                            f"Gate CNOT at step {column.step} has controls "
+                            f"{gate.controls!r}."
+                        ),
+                        "Set exactly one control qubit for CNOT.",
+                    ))
+                if len(gate.targets) != 1:
+                    issues.append(_error(
+                        "CNOT_REQUIRES_TARGET",
+                        "CNOT requires exactly one target qubit.",
+                        (
+                            f"Gate CNOT at step {column.step} has targets "
+                            f"{gate.targets!r}."
+                        ),
+                        "Set exactly one target qubit for CNOT.",
+                    ))
                 for control in gate.controls or []:
                     if control in gate.targets:
                         issues.append(_error(
@@ -118,6 +148,15 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                             ),
                             "Choose different qubit indices for CNOT control and target.",
                         ))
+
+    for index, initial_state in enumerate(circuit.initial_states):
+        if initial_state not in {"0", "1", "+", "-"}:
+            issues.append(_error(
+                "UNSUPPORTED_INITIAL_STATE",
+                "Initial state is not supported.",
+                f"Received initial_states[{index}]={initial_state!r}.",
+                "Use one of '0', '1', '+', or '-'.",
+            ))
 
     issues.extend(_range_issue(
         environment.temperature,

@@ -133,6 +133,43 @@ class CircuitStateTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             state.add_gate(0, _gate("X", 0))
 
+    def test_two_qubit_cnot_can_convert_to_config(self) -> None:
+        state = CircuitState(logical_qubits=2, initial_states=["0", "0"], columns=[])
+
+        state.add_gate(0, _gate("H", 0))
+        state.add_gate(
+            1,
+            GateOperation(
+                type="CNOT",
+                targets=[1],
+                controls=[0],
+                params={},
+            ),
+        )
+
+        config = state.to_config()
+
+        self.assertEqual(config.logical_qubits, 2)
+        self.assertEqual(config.initial_states, ["0", "0"])
+        self.assertEqual(config.columns[0].gates[0].type, "H")
+        self.assertEqual(config.columns[1].gates[0].type, "CNOT")
+        self.assertEqual(config.columns[1].gates[0].controls, [0])
+        self.assertEqual(config.columns[1].gates[0].targets, [1])
+
+    def test_cnot_control_and_target_must_be_distinct(self) -> None:
+        state = CircuitState(logical_qubits=2, initial_states=["0", "0"], columns=[])
+
+        with self.assertRaises(ValueError):
+            state.add_gate(
+                0,
+                GateOperation(
+                    type="CNOT",
+                    targets=[0],
+                    controls=[0],
+                    params={},
+                ),
+            )
+
     def assertIssueCode(self, issues, code: str) -> None:
         self.assertIn(code, {issue.code for issue in issues})
 

@@ -2,8 +2,6 @@ import sys
 import unittest
 
 from core.circuit_model import CircuitConfig
-from core.evolution import simulate_once
-from core.metrics import effective_time, fidelity_series, ideal_state_series, purity_series
 from core.results import EnvironmentConfig, SimulationConfig, SimulationResult
 from core.simulator import run_simulation
 
@@ -40,7 +38,7 @@ class RunSimulationApiTest(unittest.TestCase):
         self.assertIsInstance(result.warnings, list)
         self.assertNotIn("streamlit", sys.modules)
 
-    def test_run_simulation_matches_existing_mvp_metric_path(self) -> None:
+    def test_run_simulation_uses_circuit_gate_sequence(self) -> None:
         environment = EnvironmentConfig(
             mode="normalized",
             temperature=0.02,
@@ -56,22 +54,12 @@ class RunSimulationApiTest(unittest.TestCase):
         )
 
         result = run_simulation(config)
-        times, states = simulate_once(
-            temperature_kelvin=environment.temperature,
-            magnetic_field_tesla=environment.magnetic_field,
-            noise_level=environment.noise_level,
-        )
-        ideal_states = ideal_state_series(times)
-        expected_fidelity = fidelity_series(states, ideal_states)
-        expected_purity = purity_series(states)
 
-        self.assertEqual(result.times, times)
-        self.assertEqual(result.fidelity, expected_fidelity)
-        self.assertEqual(result.purity, expected_purity)
-        self.assertEqual(
-            result.effective_operation_time_us,
-            effective_time(times, expected_fidelity, 0.9),
-        )
+        self.assertEqual(result.times[0], 0.0)
+        self.assertEqual(len(result.times), config.time_steps)
+        self.assertAlmostEqual(result.output_probabilities["0"], 0.5, delta=0.1)
+        self.assertAlmostEqual(result.output_probabilities["1"], 0.5, delta=0.1)
+        self.assertGreaterEqual(result.effective_operation_time_us, 0.0)
 
 
 if __name__ == "__main__":

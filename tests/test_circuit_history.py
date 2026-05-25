@@ -75,12 +75,47 @@ class CircuitHistoryTest(unittest.TestCase):
 
         self.assertEqual(len(history.undo_stack), 3)
 
+    def test_two_qubit_supported_gates_can_undo_and_redo(self) -> None:
+        history = CircuitHistory(
+            current=CircuitState(logical_qubits=2, initial_states=["0", "0"], columns=[])
+        )
+
+        history.add_gate(0, _gate("I", 0))
+        history.replace_gate(0, _gate("H", 0))
+        history.add_gate(1, _gate("X", 1))
+        history.add_gate(2, _gate("Z", 0))
+        history.add_gate(3, _gate("Measure", 1))
+        history.add_gate(4, _cnot(control=0, target=1))
+
+        self.assertEqual(history.current.columns[-1].gates[0].type, "CNOT")
+
+        history.undo()
+        self.assertNotEqual(history.current.columns[-1].gates[0].type, "CNOT")
+
+        history.redo()
+        self.assertEqual(history.current.columns[-1].gates[0].type, "CNOT")
+
+        history.clear_circuit()
+        self.assertEqual(history.current.columns, [])
+
+        history.undo()
+        self.assertEqual(history.current.columns[-1].gates[0].type, "CNOT")
+
 
 def _gate(gate_type: str, target: int) -> GateOperation:
     return GateOperation(
         type=gate_type,
         targets=[target],
         controls=[],
+        params={},
+    )
+
+
+def _cnot(control: int, target: int) -> GateOperation:
+    return GateOperation(
+        type="CNOT",
+        targets=[target],
+        controls=[control],
         params={},
     )
 

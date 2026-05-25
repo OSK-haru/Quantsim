@@ -31,14 +31,15 @@ def render_beginner_mode() -> None:
         st.session_state.app_screen = "start"
         st.rerun()
 
+    history = st.session_state.circuit_history
+
     left, main = st.columns([1, 2])
 
     with left:
-        selected_gate = render_gate_palette()
+        selected_gate = render_gate_palette(history.current.logical_qubits)
         environment_values = render_environment_panel()
 
     with main:
-        history = st.session_state.circuit_history
         signature = _simulation_signature(history, environment_values)
 
         st.subheader("Workflow")

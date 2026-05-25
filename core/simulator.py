@@ -1,15 +1,26 @@
-"""Stable core simulation entry point for Phase 1."""
+"""Stable core simulation entry point."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from core.capabilities import DEFAULT_SIMULATION_MODEL, normalize_gate_type
-from core.circuit import Matrix2, h_gate_hamiltonian, initial_zero_density_matrix
+from core.capabilities import DEFAULT_SIMULATION_MODEL
 from core.environment import map_environment_to_t1_t2, t1_t2_to_gammas
-from core.evolution import _clean_density_matrix, _collapse_operators, _rk4_step, _time_grid
+from core.evolution import _time_grid
 from core.errors import ValidationIssue
-from core.metrics import effective_time, fidelity_series, purity_series
+from core.gates import (
+    Matrix,
+    apply_gate_operation,
+    clean_density_matrix,
+    initial_density_matrix,
+    matmul,
+    multi_qubit_collapse_operators,
+    output_probabilities,
+    rk4_step,
+    trace,
+    zero_hamiltonian,
+)
+from core.metrics import effective_time
 from core.results import SimulationConfig, SimulationResult
 from core.simulation_backends import (
     get_simulation_backend,
@@ -33,7 +44,7 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
 
     config_issues = validate_simulation_config(config)
     runtime_issues = (
-        _mvp_runtime_issues(config)
+        _runtime_issues(config)
         if not has_blocking_issues(config_issues)
         else []
     )
@@ -71,15 +82,15 @@ def _run_weak_coupling_lindblad(config: SimulationConfig) -> SimulationResult:
     )
     gamma1, gammaphi = t1_t2_to_gammas(t1_us, t2_us)
 
-    times, states = _simulate_h_gate(
+    times, states, ideal_states = _simulate_circuit(
+        config=config,
         duration_us=config.duration_us,
         time_steps=config.time_steps,
         gamma1=gamma1,
         gammaphi=gammaphi,
     )
-    ideal_states = _ideal_h_gate_series(times, config.duration_us)
-    fidelities = fidelity_series(states, ideal_states)
-    purities = purity_series(states)
+    fidelities = _fidelity_series(states, ideal_states)
+    purities = _purity_series(states)
     effective_operation_time_us = effective_time(
         times,
         fidelities,
@@ -92,7 +103,10 @@ def _run_weak_coupling_lindblad(config: SimulationConfig) -> SimulationResult:
         fidelity=fidelities,
         purity=purities,
         effective_operation_time_us=effective_operation_time_us,
-        output_probabilities=_output_probabilities(states[-1]),
+        output_probabilities=output_probabilities(
+            states[-1],
+            config.circuit.logical_qubits,
+        ),
         derived_parameters={
             "t1_us": t1_us,
             "t2_us": t2_us,
@@ -131,74 +145,23 @@ def _empty_result(
     )
 
 
-def _mvp_runtime_issues(config: SimulationConfig) -> list[ValidationIssue]:
+def _runtime_issues(config: SimulationConfig) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     if config.model != DEFAULT_SIMULATION_MODEL:
         return issues
     if config.environment.mode != "normalized":
         issues.append(_runtime_error(
-            "UNSUPPORTED_ENVIRONMENT_MODE_FOR_MVP",
-            "MVP simulator currently supports only normalized environment mode.",
+            "UNSUPPORTED_ENVIRONMENT_MODE",
+            "The current simulator supports only normalized environment mode.",
             f"Received mode={config.environment.mode!r}",
             "Use mode='normalized' for this simulation backend.",
         ))
-    if config.circuit.logical_qubits != 1:
+    if config.circuit.logical_qubits > 2:
         issues.append(_runtime_error(
-            "UNSUPPORTED_QUBIT_COUNT_FOR_MVP",
-            "MVP simulator currently supports exactly 1 logical qubit.",
+            "UNSUPPORTED_QUBIT_COUNT",
+            "The current simulator supports 1 or 2 logical qubits.",
             f"Received logical_qubits={config.circuit.logical_qubits}",
-            "Use a 1-qubit circuit for the current Lindblad MVP backend.",
-        ))
-    if config.circuit.initial_states != ["0"]:
-        issues.append(_runtime_error(
-            "UNSUPPORTED_INITIAL_STATE_FOR_MVP",
-            "MVP simulator currently supports only initial state |0>.",
-            f"Received initial_states={config.circuit.initial_states!r}",
-            "Use initial_states=['0'] for the current backend.",
-        ))
-
-    gates = [
-        gate
-        for column in sorted(config.circuit.columns, key=lambda column: column.step)
-        for gate in column.gates
-    ]
-    if len(gates) != 1:
-        issues.append(_runtime_error(
-            "UNSUPPORTED_GATE_COUNT_FOR_MVP",
-            "MVP simulator currently supports exactly one gate.",
-            f"Received gate_count={len(gates)}",
-            "Use a single H gate for the current backend.",
-        ))
-        return issues
-
-    gate = gates[0]
-    if normalize_gate_type(gate.type) != "H":
-        issues.append(_runtime_error(
-            "UNSUPPORTED_GATE_FOR_MVP",
-            "MVP simulator currently supports only an H gate.",
-            f"Received gate type={gate.type!r}",
-            "Use a single H gate for the current backend.",
-        ))
-    if gate.targets != [0]:
-        issues.append(_runtime_error(
-            "UNSUPPORTED_GATE_TARGET_FOR_MVP",
-            "MVP H gate must target qubit 0.",
-            f"Received targets={gate.targets!r}",
-            "Set the H gate target to [0].",
-        ))
-    if gate.controls:
-        issues.append(_runtime_error(
-            "UNSUPPORTED_GATE_CONTROL_FOR_MVP",
-            "MVP H gate must not have controls.",
-            f"Received controls={gate.controls!r}",
-            "Remove controls from the H gate.",
-        ))
-    if gate.params:
-        issues.append(_runtime_error(
-            "UNSUPPORTED_GATE_PARAMS_FOR_MVP",
-            "MVP H gate must not have params.",
-            f"Received params={gate.params!r}",
-            "Remove params from the H gate.",
+            "Use a circuit with 1 or 2 logical qubits.",
         ))
     return issues
 
@@ -226,53 +189,65 @@ def _issue_warnings(issues: list[ValidationIssue]) -> list[str]:
     ]
 
 
-def _simulate_h_gate(
+def _simulate_circuit(
+    config: SimulationConfig,
     duration_us: float,
     time_steps: int,
     gamma1: float,
     gammaphi: float,
-) -> tuple[list[float], list[Matrix2]]:
+) -> tuple[list[float], list[Matrix], list[Matrix]]:
     times = _time_grid(duration_us, time_steps)
-    hamiltonian = h_gate_hamiltonian(duration_us)
-    collapse_ops = _collapse_operators(gamma1, gammaphi)
+    n_qubits = config.circuit.logical_qubits
+    dimension = 2 ** n_qubits
+    hamiltonian = zero_hamiltonian(dimension)
+    collapse_ops = multi_qubit_collapse_operators(n_qubits, gamma1, gammaphi)
 
-    states = [initial_zero_density_matrix()]
+    initial_state = initial_density_matrix(config.circuit.initial_states)
+    noisy_state = _apply_circuit_operations(initial_state, config, n_qubits)
+    ideal_state = _apply_circuit_operations(initial_state, config, n_qubits)
+
+    states = [noisy_state]
+    ideal_states = [ideal_state]
     for start_time, end_time in zip(times, times[1:]):
         dt = end_time - start_time
-        next_state = _rk4_step(states[-1], hamiltonian, collapse_ops, dt)
-        states.append(_clean_density_matrix(next_state))
+        next_state = rk4_step(states[-1], hamiltonian, collapse_ops, dt)
+        states.append(clean_density_matrix(next_state))
+        ideal_states.append(ideal_states[-1])
 
-    return times, states
-
-
-def _ideal_h_gate_series(times: Sequence[float], duration_us: float) -> list[Matrix2]:
-    if not times:
-        return []
-
-    hamiltonian = h_gate_hamiltonian(duration_us)
-    states = [initial_zero_density_matrix()]
-
-    for start_time, end_time in zip(times, times[1:]):
-        if end_time <= start_time:
-            raise ValueError("times must be strictly increasing")
-
-        dt = end_time - start_time
-        next_state = _rk4_step(states[-1], hamiltonian, [], dt)
-        states.append(_clean_density_matrix(next_state))
-
-    return states
+    return times, states, ideal_states
 
 
-def _output_probabilities(state: Matrix2) -> dict[str, float]:
-    return {
-        "0": _as_probability(state[0][0].real),
-        "1": _as_probability(state[1][1].real),
-    }
+def _apply_circuit_operations(
+    state: Matrix,
+    config: SimulationConfig,
+    n_qubits: int,
+) -> Matrix:
+    for column in sorted(config.circuit.columns, key=lambda column: column.step):
+        for gate in column.gates:
+            state = apply_gate_operation(state, gate, n_qubits)
+            state = clean_density_matrix(state)
+    return state
+
+
+def _fidelity_series(states: Sequence[Matrix], ideal_states: Sequence[Matrix]) -> list[float]:
+    if len(states) != len(ideal_states):
+        raise ValueError("states and ideal_states must have the same length")
+    return [
+        _as_probability(trace(matmul(state, ideal_state)).real)
+        for state, ideal_state in zip(states, ideal_states)
+    ]
+
+
+def _purity_series(states: Sequence[Matrix]) -> list[float]:
+    return [
+        _as_probability(trace(matmul(state, state)).real)
+        for state in states
+    ]
 
 
 def _diagnostics(
     times: Sequence[float],
-    states: Sequence[Matrix2],
+    states: Sequence[Matrix],
     fidelities: Sequence[float],
     purities: Sequence[float],
     fidelity_threshold: float,
@@ -288,9 +263,8 @@ def _diagnostics(
     }
 
 
-def _trace_error(state: Matrix2) -> float:
-    trace = state[0][0] + state[1][1]
-    return abs(trace - 1.0)
+def _trace_error(state: Matrix) -> float:
+    return abs(trace(state) - 1.0)
 
 
 def _as_probability(value: float) -> float:
