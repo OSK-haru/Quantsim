@@ -3,8 +3,8 @@ from __future__ import annotations
 import streamlit as st
 
 from core.circuit_history import CircuitHistory
-from core.circuit_model import GateColumn, GateOperation
-from core.circuit_state import CircuitState
+from core.circuit_model import GateOperation
+from ui.session_sync import clear_stale_results, resize_logical_qubits, sync_from_history
 
 
 def render_circuit_editor(history: CircuitHistory, selected_gate: str) -> None:
@@ -16,13 +16,14 @@ def render_circuit_editor(history: CircuitHistory, selected_gate: str) -> None:
         options=[1, 2],
         index=0 if history.current.logical_qubits == 1 else 1,
         horizontal=True,
-        key="editor_logical_qubits",
+        key="logical_qubits",
     )
     if logical_qubits != history.current.logical_qubits:
-        _resize_circuit(history, logical_qubits)
-        st.session_state.last_result = None
-        st.session_state.last_comparison = None
+        resize_logical_qubits(logical_qubits)
         st.rerun()
+
+    for warning in st.session_state.pop("resize_warnings", []):
+        st.warning(warning)
 
     max_step = max([column.step for column in history.current.columns] + [0, 3])
 
@@ -71,8 +72,10 @@ def render_circuit_editor(history: CircuitHistory, selected_gate: str) -> None:
         _run_edit(lambda: history.remove_gate(step, target))
     if fourth.button("Undo", disabled=not history.can_undo(), use_container_width=True):
         history.undo()
+        _after_history_edit(history)
     if fifth.button("Redo", disabled=not history.can_redo(), use_container_width=True):
         history.redo()
+        _after_history_edit(history)
     if sixth.button("Clear", use_container_width=True):
         _run_edit(history.clear_circuit)
 
@@ -197,30 +200,6 @@ def _circuit_css() -> str:
     """
 
 
-def _resize_circuit(history: CircuitHistory, logical_qubits: int) -> None:
-    logical_qubits = int(logical_qubits)
-    columns = [
-        GateColumn.from_dict(column.to_dict())
-        for column in history.current.columns
-        if _column_fits(column, logical_qubits)
-    ]
-    history.current = CircuitState(
-        logical_qubits=logical_qubits,
-        initial_states=["0"] * logical_qubits,
-        columns=columns,
-    )
-    history.undo_stack = []
-    history.redo_stack = []
-
-
-def _column_fits(column: GateColumn, logical_qubits: int) -> bool:
-    for gate in column.gates:
-        used_qubits = set(gate.targets).union(gate.controls or [])
-        if any(qubit >= logical_qubits for qubit in used_qubits):
-            return False
-    return True
-
-
 def _load_bell_preset(history: CircuitHistory) -> None:
     def mutate() -> None:
         history.current.clear()
@@ -248,10 +227,14 @@ def _run_edit(edit) -> None:
     try:
         edit()
         st.session_state.edit_error = ""
-        st.session_state.last_result = None
-        st.session_state.last_comparison = None
+        _after_history_edit(st.session_state.circuit_history)
     except ValueError as exc:
         st.session_state.edit_error = str(exc)
 
     if st.session_state.get("edit_error"):
         st.warning(st.session_state.edit_error)
+
+
+def _after_history_edit(history: CircuitHistory) -> None:
+    sync_from_history(history, update_widget_keys=False)
+    clear_stale_results()

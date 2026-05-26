@@ -122,6 +122,47 @@ class CircuitState:
     def clear(self) -> None:
         self.columns = []
 
+    def resize_qubits(self, new_count: int) -> list[str]:
+        """Resize the circuit and drop gates that no longer fit."""
+
+        new_count = int(new_count)
+        if new_count < 1:
+            raise ValueError("new_count must be at least 1")
+
+        warnings: list[str] = []
+        previous_count = self.logical_qubits
+        self.logical_qubits = new_count
+
+        if len(self.initial_states) < new_count:
+            self.initial_states = [
+                *self.initial_states,
+                *(["0"] * (new_count - len(self.initial_states))),
+            ]
+        else:
+            self.initial_states = self.initial_states[:new_count]
+
+        resized_columns: list[GateColumn] = []
+        for column in self.columns:
+            kept_gates: list[GateOperation] = []
+            for gate in column.gates:
+                if _gate_fits(gate, new_count):
+                    kept_gates.append(_copy_gate(gate))
+                else:
+                    warnings.append(
+                        (
+                            f"Removed {gate.type} at step {column.step} because it "
+                            f"uses a qubit outside 0..{new_count - 1}."
+                        )
+                    )
+            if kept_gates:
+                resized_columns.append(GateColumn(step=column.step, gates=kept_gates))
+
+        self.columns = resized_columns
+        self._sort_and_prune_columns()
+        if previous_count != new_count:
+            warnings.append(f"Resized circuit from {previous_count} to {new_count} qubit(s).")
+        return warnings
+
     def to_config(self) -> CircuitConfig:
         return CircuitConfig(
             logical_qubits=self.logical_qubits,
@@ -208,3 +249,15 @@ def _find_gate_index_for_targets(
 
 def _prune_columns(columns: list[GateColumn]) -> None:
     columns[:] = [column for column in columns if column.gates]
+
+
+def _gate_fits(gate: GateOperation, logical_qubits: int) -> bool:
+    used_qubits = set(gate.targets).union(gate.controls or [])
+    if any(qubit < 0 or qubit >= logical_qubits for qubit in used_qubits):
+        return False
+    if gate.type.upper() == "CNOT":
+        if len(gate.targets) != 1 or len(gate.controls or []) != 1:
+            return False
+        if gate.targets[0] == gate.controls[0]:
+            return False
+    return True

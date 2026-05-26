@@ -19,6 +19,7 @@ from ui.environment_panel import render_environment_panel
 from ui.error_display import render_error_display
 from ui.expert_inspector import render_expert_inspector
 from ui.gate_palette import render_gate_palette
+from ui.persistence_panel import render_persistence_panel
 from ui.result_drawers import render_result_drawers
 from ui.result_summary import render_result_summary
 
@@ -43,40 +44,35 @@ def render_expert_mode() -> None:
     with controls:
         selected_gate = render_gate_palette(history.current.logical_qubits)
         environment_values = render_environment_panel()
+        render_persistence_panel(
+            history,
+            environment_values,
+            st.session_state.get("last_result"),
+            st.session_state.get("last_comparison"),
+        )
 
     with workspace:
-        signature = _simulation_signature(history, environment_values)
+        signature = _simulation_signature()
 
         st.subheader("Workflow")
         st.caption("Run the current circuit once, or compare it under two presets.")
         single_column, compare_column = st.columns(2)
         with single_column:
             if st.button("Run Simulation", type="primary", use_container_width=True):
-                _run_and_store_simulation(
-                    history,
-                    environment_values,
-                    signature,
-                )
+                _run_and_store_simulation(signature)
         with compare_column:
             if st.button("Compare Low vs High Noise", use_container_width=True):
-                st.session_state.last_comparison = _run_low_high_comparison(history)
+                st.session_state.last_comparison = _run_low_high_comparison()
+                st.session_state.last_comparison_result = st.session_state.last_comparison
 
         render_circuit_editor(history, selected_gate)
 
         if st.session_state.get("run_demo_simulation"):
-            _run_and_store_simulation(
-                history,
-                environment_values,
-                signature,
-            )
+            _run_and_store_simulation(signature)
             st.session_state.run_demo_simulation = False
 
         if _should_refresh_result(signature):
-            _run_and_store_simulation(
-                history,
-                environment_values,
-                signature,
-            )
+            _run_and_store_simulation(signature)
 
         result = st.session_state.get("last_result")
         render_error_display(

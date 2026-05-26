@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "kind": "quanta_scope.config",
+  "metadata": {
+    "name": "One-qubit H",
+    "description": "Single Hadamard gate on q0."
+  },
+  "circuit": {
+    "logical_qubits": 1,
+    "initial_states": ["0"],
+    "columns": [
+      {
+        "step": 0,
+        "gates": [
+          {
+            "type": "H",
+            "targets": [0],
+            "controls": [],
+            "params": {}
+          }
+        ]
+      }
+    ]
+  },
+  "environment": {
+    "mode": "normalized",
+    "temperature": 0.1,
+    "magnetic_field": 0.1,
+    "noise_level": 0.1,
+    "observation_strength": null,
+    "observation_frequency": null
+  },
+  "simulation": {
+    "duration_us": 20.0,
+    "time_steps": 101,
+    "fidelity_threshold": 0.9,
+    "model": "weak_coupling_lindblad"
+  },
+  "ui": {
+    "mode": "beginner"
+  }
+}
