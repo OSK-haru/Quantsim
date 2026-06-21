@@ -43,7 +43,7 @@ def render_expert_mode() -> None:
 
     with controls:
         selected_gate = render_gate_palette(history.current.logical_qubits)
-        environment_values = render_environment_panel()
+        environment_values = render_environment_panel(expert=True)
         render_persistence_panel(
             history,
             environment_values,

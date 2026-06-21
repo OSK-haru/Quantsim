@@ -48,10 +48,12 @@ class ConfigIoTest(unittest.TestCase):
     def test_config_to_dict_uses_qscope_envelope(self) -> None:
         encoded = config_to_dict(SimulationConfig())
 
-        self.assertEqual(encoded["schema_version"], "1.0")
+        self.assertEqual(encoded["schema_version"], "1.1")
         self.assertEqual(encoded["kind"], "quanta_scope.config")
         self.assertIn("circuit", encoded)
         self.assertIn("environment", encoded)
+        self.assertIn("normalized", encoded["environment"])
+        self.assertIn("physical", encoded["environment"])
         self.assertIn("simulation", encoded)
         json.dumps(encoded)
 

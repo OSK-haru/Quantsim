@@ -8,6 +8,7 @@ from typing import Any
 from core.gates import (
     Matrix,
     SIGMA_MINUS,
+    SIGMA_PLUS,
     Z,
     apply_gate_operation,
     clean_density_matrix,
@@ -15,13 +16,18 @@ from core.gates import (
     initial_density_matrix,
     matmul,
     multi_qubit_collapse_operators,
+    multi_qubit_physical_collapse_operators,
     output_probabilities,
     rk4_step,
     scale,
     trace,
     zero_hamiltonian,
 )
+from core.physical_environment import UNIFIED_ENVIRONMENT_MODEL
 from core.results import SimulationResult
+
+
+MAX_RK4_RATE_STEP_PRODUCT = 1.0
 
 
 def build_expert_inspector_data(result: SimulationResult | None) -> dict[str, Any]:
@@ -49,6 +55,9 @@ def build_expert_inspector_data(result: SimulationResult | None) -> dict[str, An
     return {
         "overview": {
             "Model": config.model,
+            "Simulation mode": result.derived_parameters.get("simulation_mode"),
+            "Gate-aware noise": result.derived_parameters.get("gate_aware_noise"),
+            "Hamiltonian mode": result.derived_parameters.get("hamiltonian_mode"),
             "Logical qubits": n_qubits,
             "Hilbert space dimension": dimension,
             "Density matrix size": f"{dimension} x {dimension}",
@@ -81,6 +90,12 @@ def build_expert_inspector_data(result: SimulationResult | None) -> dict[str, An
             ),
         },
     }
+
+
+def reconstruct_final_density_matrix(result: SimulationResult) -> Matrix | None:
+    """Return the reconstructed final density matrix for expert/debug use."""
+
+    return _reconstruct_final_density_matrix(result)
 
 
 def build_comparison_expert_summary(result: Any | None) -> dict[str, Any]:
@@ -122,9 +137,11 @@ def _noise_data(result: SimulationResult) -> dict[str, Any]:
     derived = result.derived_parameters
     gamma1 = derived.get("gamma1_per_us")
     gammaphi = derived.get("gamma_phi_per_us", derived.get("gammaphi_per_us"))
-    return {
+    data = {
+        "Environment model": environment.model,
+        "Input mode": environment.input_mode,
         "Temperature parameter": environment.temperature,
-        "Magnetic field parameter": environment.magnetic_field,
+        "Flux noise parameter": environment.magnetic_field,
         "Noise level": environment.noise_level,
         "T1 relaxation time": derived.get("t1_us"),
         "T2 dephasing time": derived.get("t2_us"),
@@ -133,11 +150,41 @@ def _noise_data(result: SimulationResult) -> dict[str, Any]:
         "gamma ratio": _gamma_ratio(gamma1, gammaphi),
         "Dominant decoherence source": _dominant_source(gamma1, gammaphi),
     }
+    data.update({
+        "Device Quality": derived.get("device_quality", environment.device_quality),
+        "Temperature [mK]": derived.get("temperature_mk", environment.temperature_mk),
+        "Flux Noise Amplitude [Phi0]": derived.get(
+            "flux_noise_phi0",
+            environment.flux_noise_phi0,
+        ),
+        "Qubit Frequency [GHz]": derived.get(
+            "qubit_frequency_ghz",
+            environment.qubit_frequency_ghz,
+        ),
+        "T1 max [us]": derived.get("t1_max_us", environment.t1_max_us),
+        "Tphi max [us]": derived.get("tphi_max_us", environment.tphi_max_us),
+        "Ideal reference": derived.get(
+            "ideal_reference",
+            environment.ideal_reference,
+        ),
+        "n_th": derived.get("n_th"),
+        "T1_base": derived.get("t1_base_us"),
+        "Tphi_base": derived.get("tphi_base_us"),
+        "gamma_down": derived.get("gamma_down_per_us"),
+        "gamma_up": derived.get("gamma_up_per_us"),
+        "gamma_phi_base": derived.get("gamma_phi_base_per_us"),
+        "gamma_phi_flux": derived.get("gamma_phi_flux_per_us"),
+        "gamma_phi": derived.get("gamma_phi_per_us"),
+        "T1_effective": derived.get("t1_effective_us"),
+        "T2_effective": derived.get("t2_effective_us"),
+    })
+    return data
 
 
 def _operator_data(result: SimulationResult) -> dict[str, Any]:
     n_qubits = result.config.circuit.logical_qubits
     derived = result.derived_parameters
+    environment = result.config.environment
     gamma1 = derived.get("gamma1_per_us", 0.0)
     gammaphi = derived.get("gamma_phi_per_us", derived.get("gammaphi_per_us", 0.0))
 
@@ -149,6 +196,62 @@ def _operator_data(result: SimulationResult) -> dict[str, Any]:
         }
 
     operators = []
+    if "gamma_down_per_us" in derived:
+        gamma_down = derived.get("gamma_down_per_us", 0.0)
+        gamma_up = derived.get("gamma_up_per_us", 0.0)
+        gamma_phi = derived.get("gamma_phi_per_us", 0.0)
+        for qubit in range(n_qubits):
+            operators.append({
+                "Name": "Relaxation operator",
+                "Target qubit": qubit,
+                "Enabled": gamma_down > 0.0,
+                "Matrix": _matrix_components(
+                    scale(
+                        math.sqrt(gamma_down),
+                        expand_single_qubit_gate(SIGMA_MINUS, qubit, n_qubits),
+                    )
+                    if gamma_down > 0.0
+                    else None
+                ),
+            })
+            operators.append({
+                "Name": "Thermal excitation operator",
+                "Target qubit": qubit,
+                "Enabled": gamma_up > 0.0,
+                "Matrix": _matrix_components(
+                    scale(
+                        math.sqrt(gamma_up),
+                        expand_single_qubit_gate(SIGMA_PLUS, qubit, n_qubits),
+                    )
+                    if gamma_up > 0.0
+                    else None
+                ),
+            })
+            operators.append({
+                "Name": "Pure dephasing operator",
+                "Target qubit": qubit,
+                "Enabled": gamma_phi > 0.0,
+                "Matrix": _matrix_components(
+                    scale(
+                        math.sqrt(gamma_phi / 2.0),
+                        expand_single_qubit_gate(Z, qubit, n_qubits),
+                    )
+                    if gamma_phi > 0.0
+                    else None
+                ),
+            })
+        return {
+            "Lindblad operators": "available via reconstructed physical collapse operators",
+            "Collapse operator count": len(multi_qubit_physical_collapse_operators(
+                n_qubits,
+                gamma_down,
+                gamma_up,
+                gamma_phi,
+            )),
+            "Collapse operators": operators,
+            "H_eff": "not enabled",
+        }
+
     for qubit in range(n_qubits):
         operators.append({
             "Name": "Relaxation operator",
@@ -200,12 +303,50 @@ def _reconstruct_final_density_matrix(result: SimulationResult) -> Matrix | None
             state = clean_density_matrix(apply_gate_operation(state, gate, n_qubits))
 
     hamiltonian = zero_hamiltonian(dimension)
-    collapse_ops = multi_qubit_collapse_operators(n_qubits, gamma1, gammaphi)
+    if "gamma_down_per_us" in result.derived_parameters:
+        max_rate = (
+            abs(float(result.derived_parameters.get("gamma_down_per_us", 0.0)))
+            + abs(float(result.derived_parameters.get("gamma_up_per_us", 0.0)))
+            + abs(float(result.derived_parameters.get("gamma_phi_per_us", 0.0)))
+        )
+        collapse_ops = multi_qubit_physical_collapse_operators(
+            n_qubits,
+            result.derived_parameters.get("gamma_down_per_us", 0.0),
+            result.derived_parameters.get("gamma_up_per_us", 0.0),
+            result.derived_parameters.get("gamma_phi_per_us", 0.0),
+        )
+    else:
+        max_rate = abs(float(gamma1)) + abs(float(gammaphi))
+        collapse_ops = multi_qubit_collapse_operators(n_qubits, gamma1, gammaphi)
     for start_time, end_time in zip(result.times, result.times[1:]):
-        state = clean_density_matrix(
-            rk4_step(state, hamiltonian, collapse_ops, end_time - start_time)
+        state = _evolve_stable(
+            state,
+            hamiltonian,
+            collapse_ops,
+            end_time - start_time,
+            max_rate,
         )
     return state
+
+
+def _evolve_stable(
+    state: Matrix,
+    hamiltonian: Matrix,
+    collapse_ops: list[Matrix],
+    dt: float,
+    max_rate: float,
+) -> Matrix:
+    substeps = max(
+        1,
+        math.ceil(abs(dt) * max(0.0, max_rate) / MAX_RK4_RATE_STEP_PRODUCT),
+    )
+    sub_dt = dt / substeps
+    evolved = state
+    for _ in range(substeps):
+        evolved = clean_density_matrix(
+            rk4_step(evolved, hamiltonian, collapse_ops, sub_dt)
+        )
+    return evolved
 
 
 def _matrix_components(matrix: Matrix | None) -> dict[str, Any] | None:
@@ -292,8 +433,15 @@ def _assumptions() -> list[str]:
         "Lindblad-type master equation",
         "phenomenological T1/T2 noise",
         "normalized environment parameters",
+        f"standard environment model: {UNIFIED_ENVIRONMENT_MODEL}",
+        "normalized controls are simple inputs mapped to physical rates",
+        "generic transmon-inspired educational physical-unit model",
+        "gate-aware mode uses effective Hamiltonians that reproduce ideal gates over assigned durations",
+        "noise acts during gate/column execution via a Lindblad master equation",
         "no strict hardware calibration",
+        "real device parameters fluctuate over time and across chips",
         "no strong-coupling memory effects",
         "no pulse-level control",
+        "no leakage, crosstalk, drive calibration error, or non-Markovian memory is modeled",
         "not a research-grade full simulator",
     ]

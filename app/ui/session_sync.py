@@ -28,6 +28,14 @@ def apply_loaded_config_to_session(
     target["noise_level"] = config.environment.noise_level
     target["observation_strength"] = config.environment.observation_strength
     target["observation_frequency"] = config.environment.observation_frequency
+    target["environment_input_mode"] = config.environment.input_mode
+    target["device_quality"] = config.environment.device_quality
+    target["temperature_mk"] = config.environment.temperature_mk
+    target["flux_noise_phi0"] = config.environment.flux_noise_phi0
+    target["qubit_frequency_ghz"] = config.environment.qubit_frequency_ghz
+    target["t1_max_us"] = config.environment.t1_max_us
+    target["tphi_max_us"] = config.environment.tphi_max_us
+    target["ideal_reference"] = config.environment.ideal_reference
     target["duration_us"] = config.duration_us
     target["time_steps"] = config.time_steps
     target["fidelity_threshold"] = config.fidelity_threshold
@@ -73,6 +81,14 @@ def initialize_default_session_state(
     target.setdefault("noise_level", _legacy_value(target, "env_noise_level", 0.1))
     target.setdefault("observation_strength", None)
     target.setdefault("observation_frequency", None)
+    target.setdefault("environment_input_mode", "normalized")
+    target.setdefault("device_quality", 0.5)
+    target.setdefault("temperature_mk", 15.0)
+    target.setdefault("flux_noise_phi0", 1e-6)
+    target.setdefault("qubit_frequency_ghz", 5.0)
+    target.setdefault("t1_max_us", 100.0)
+    target.setdefault("tphi_max_us", 100.0)
+    target.setdefault("ideal_reference", False)
     target.setdefault("duration_us", 20.0)
     target.setdefault("time_steps", 101)
     target.setdefault("fidelity_threshold", 0.9)
@@ -124,11 +140,19 @@ def current_simulation_config(
         circuit=circuit_state.to_config(),
         environment=EnvironmentConfig(
             mode="normalized",
+            input_mode=target.get("environment_input_mode", "normalized"),
             temperature=target["temperature"],
             magnetic_field=target["magnetic_field"],
             noise_level=target["noise_level"],
             observation_strength=target.get("observation_strength"),
             observation_frequency=target.get("observation_frequency"),
+            device_quality=target.get("device_quality", 0.5),
+            temperature_mk=target.get("temperature_mk", 15.0),
+            flux_noise_phi0=target.get("flux_noise_phi0", 1e-6),
+            qubit_frequency_ghz=target.get("qubit_frequency_ghz", 5.0),
+            t1_max_us=target.get("t1_max_us", 100.0),
+            tphi_max_us=target.get("tphi_max_us", 100.0),
+            ideal_reference=target.get("ideal_reference", False),
         ),
         duration_us=target["duration_us"],
         time_steps=target["time_steps"],
@@ -167,6 +191,14 @@ def _update_simulation_config(target: MutableMapping[str, Any]) -> None:
         "temperature",
         "magnetic_field",
         "noise_level",
+        "environment_input_mode",
+        "device_quality",
+        "temperature_mk",
+        "flux_noise_phi0",
+        "qubit_frequency_ghz",
+        "t1_max_us",
+        "tphi_max_us",
+        "ideal_reference",
         "duration_us",
         "time_steps",
         "fidelity_threshold",

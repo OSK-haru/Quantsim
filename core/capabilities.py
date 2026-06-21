@@ -9,7 +9,15 @@ from __future__ import annotations
 
 
 DEFAULT_SIMULATION_MODEL = "weak_coupling_lindblad"
-SUPPORTED_SIMULATION_MODELS = frozenset({DEFAULT_SIMULATION_MODEL})
+POST_CIRCUIT_DEGRADATION_MODEL = "post_circuit_degradation_v1"
+GATE_AWARE_SPLIT_STEP_MODEL = "gate_aware_split_step_v1"
+GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL = "gate_aware_hamiltonian_lindblad_v1"
+SUPPORTED_SIMULATION_MODELS = frozenset({
+    DEFAULT_SIMULATION_MODEL,
+    POST_CIRCUIT_DEGRADATION_MODEL,
+    GATE_AWARE_SPLIT_STEP_MODEL,
+    GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
+})
 SUPPORTED_GATES = frozenset({"I", "H", "X", "Z", "CNOT", "MEASURE"})
 MAX_LOGICAL_QUBITS = 2
 
@@ -25,6 +33,7 @@ def core_capabilities() -> dict[str, object]:
 
     return {
         "default_simulation_model": DEFAULT_SIMULATION_MODEL,
+        "default_simulation_mode": GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
         "supported_simulation_models": sorted(SUPPORTED_SIMULATION_MODELS),
         "supported_gates": sorted(SUPPORTED_GATES),
         "max_logical_qubits": MAX_LOGICAL_QUBITS,

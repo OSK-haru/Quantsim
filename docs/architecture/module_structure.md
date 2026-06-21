@@ -1,41 +1,63 @@
 # Module Structure
 
-## 方針
+## Direction
 
-本開発では、core と UI を分離する。
+Core code stays independent from Streamlit, React, FastAPI, and other UI or
+service layers. UI code calls the stable core API instead of lower-level physics
+helpers.
 
-- core は Streamlit / Godot / FastAPI に依存しない
-- UI は core の public API を呼ぶ
-- シミュレーションの入口は `run_simulation(config)` に統一する
-- 回路・環境条件・実行設定はJSON化可能な構造にする
+The public simulation entry point is:
 
-## 目標構成
+- `core.simulator.run_simulation(config)`
+
+The public data contract is:
+
+- `CircuitConfig`
+- `EnvironmentConfig`
+- `SimulationConfig`
+- `SimulationResult`
+- `ComparisonConfig`
+- `ComparisonResult`
+
+## Core
 
 ```text
 core/
-  simulator.py
-  circuit_model.py
-  environment.py
-  evolution.py
-  metrics.py
-  validation.py
-  errors.py
-  results.py
+  simulator.py              unified simulation entry point
+  comparison.py             A/B workflow built on run_simulation
+  circuit_model.py          JSON-friendly circuit config models
+  circuit_state.py          editable circuit state
+  circuit_history.py        undo/redo state history
+  circuit_validation.py     circuit editing validation
+  gates.py                  gate expansion, density matrix operations
+  physical_environment.py   unified environment rates
+  metrics.py                small result metrics
+  validation.py             config/result validation
+  results.py                simulation config/result models
+  expert_data.py            expert inspector data aggregation
+  io/                       config, result, CSV, report export
+```
 
-visualization/
-  plots.py
-  tables.py
+Legacy MVP modules for one-qubit-only evolution were removed from active code.
+Old environment model IDs are retained only as migration aliases for loading
+older `.qscope.json` files.
 
+## UI
+
+```text
 app/
   app.py
-  pages/
+  ui/
+    beginner_mode.py
+    expert_mode.py
+    environment_panel.py
+    circuit_editor.py
+    result_summary.py
+    result_drawers.py
+    comparison_*.py
+    persistence_panel.py
+```
 
-data/
-  presets/
-
-docs/
-  requirements/
-  architecture/
-  development/
-
-tests/
+Beginner mode uses normalized input controls. Expert mode can switch between
+normalized controls and physical-unit inputs. Both input modes flow into the
+same unified environment-rate pipeline.

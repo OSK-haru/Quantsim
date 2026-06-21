@@ -1,36 +1,42 @@
-from numpy import rint
+import unittest
 
-from core.circuit import H_GATE_DURATION_US
-from core.evolution import simulate_once
-from core.metrics import purity_series, fidelity_series, effective_time
-
-times, states = simulate_once(0.1, 0.1, 0.1)
-times2, states2 = simulate_once(0.8, 0.1, 0.8)
+from core.circuit_model import CircuitConfig, GateColumn, GateOperation
+from core.results import EnvironmentConfig, SimulationConfig, SimulationResult
+from core.simulator import run_simulation
 
 
-p1 = purity_series(states)
-p2 = purity_series(states2)
+class PublicSimulationSmokeTest(unittest.TestCase):
+    def test_one_qubit_h_runs_through_public_api(self) -> None:
+        config = SimulationConfig(
+            circuit=CircuitConfig(
+                logical_qubits=1,
+                initial_states=["0"],
+                columns=[
+                    GateColumn(
+                        step=0,
+                        gates=[GateOperation(type="H", targets=[0])],
+                    )
+                ],
+            ),
+            environment=EnvironmentConfig(
+                input_mode="physical",
+                ideal_reference=True,
+                device_quality=1.0,
+                temperature_mk=0.0,
+                flux_noise_phi0=0.0,
+            ),
+            duration_us=1.0,
+            time_steps=21,
+            fidelity_threshold=0.9,
+        )
 
-print("purity:")
-print(p1[:5], p1[-5:])
-print(p2[:5], p2[-5:])
+        result = run_simulation(config)
 
-# ideal（ノイズなし）
-times_ideal, states_ideal = simulate_once(0.1, 0.1, 0.0)
+        self.assertIsInstance(result, SimulationResult)
+        self.assertAlmostEqual(result.output_probabilities["0"], 0.5, delta=1e-10)
+        self.assertAlmostEqual(result.output_probabilities["1"], 0.5, delta=1e-10)
+        self.assertAlmostEqual(result.fidelity[-1], 1.0, delta=1e-10)
 
-f = fidelity_series(states, states_ideal)
-f_bad = fidelity_series(states2, states_ideal)
 
-print("fidelaity:")
-
-print(f[-5:])
-print(f_bad[-5:])
-
-t_eff = effective_time(times, f, threshold=0.9)
-t_eff_bad = effective_time(times2, f_bad, threshold=0.9)
-
-print("effective time:")
-print(t_eff, t_eff_bad)
-
-print("others:")
-print(H_GATE_DURATION_US)
+if __name__ == "__main__":
+    unittest.main()

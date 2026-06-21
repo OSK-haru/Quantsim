@@ -4,6 +4,7 @@ import streamlit as st
 
 from core.circuit_history import CircuitHistory
 from core.circuit_model import GateOperation
+from core.gates import DEFAULT_GATE_DURATIONS_US
 from ui.session_sync import clear_stale_results, resize_logical_qubits, sync_from_history
 
 
@@ -63,11 +64,50 @@ def render_circuit_editor(history: CircuitHistory, selected_gate: str) -> None:
             disabled=selected_gate != "CNOT",
         )
 
+    default_duration = _default_duration_us(selected_gate)
+    duration_columns = st.columns([1, 2])
+    with duration_columns[0]:
+        use_custom_duration = st.checkbox(
+            "Custom duration",
+            value=bool(st.session_state.get("editor_use_custom_duration", False)),
+            key="editor_use_custom_duration",
+        )
+    with duration_columns[1]:
+        duration_us = st.number_input(
+            "Gate duration [us]",
+            min_value=0.0,
+            value=float(st.session_state.get("editor_gate_duration_us", default_duration)),
+            step=0.01,
+            format="%.6f",
+            key="editor_gate_duration_us",
+            disabled=not use_custom_duration,
+        )
+    st.caption(
+        f"Default {selected_gate} duration: {default_duration:g} us. "
+        "Custom duration is saved in gate.params['duration_us']."
+    )
+
     first, second, third, fourth, fifth, sixth = st.columns(6)
     if first.button("Add", use_container_width=True):
-        _run_edit(lambda: history.add_gate(step, _gate(selected_gate, target, control)))
+        _run_edit(lambda: history.add_gate(
+            step,
+            _gate(
+                selected_gate,
+                target,
+                control,
+                duration_us=duration_us if use_custom_duration else None,
+            ),
+        ))
     if second.button("Replace", use_container_width=True):
-        _run_edit(lambda: history.replace_gate(step, _gate(selected_gate, target, control)))
+        _run_edit(lambda: history.replace_gate(
+            step,
+            _gate(
+                selected_gate,
+                target,
+                control,
+                duration_us=duration_us if use_custom_duration else None,
+            ),
+        ))
     if third.button("Remove", use_container_width=True):
         _run_edit(lambda: history.remove_gate(step, target))
     if fourth.button("Undo", disabled=not history.can_undo(), use_container_width=True):
@@ -126,13 +166,16 @@ def _gate_card_at(history: CircuitHistory, step: int, qubit: int) -> str:
 
 
 def _gate_label(gate: GateOperation, qubit: int) -> str:
+    duration_label = _duration_label(gate)
     if gate.type == "Measure":
-        return "M"
+        return f"M{duration_label}"
     if gate.type == "CNOT":
         control = gate.controls[0] if gate.controls else "?"
         target = gate.targets[0] if gate.targets else qubit
-        return f"X<br><small>CNOT({control}->{target})</small>"
-    return gate.type
+        duration_text = _duration_text(gate)
+        duration_line = f"<br>{duration_text}" if duration_text else ""
+        return f"X<br><small>CNOT({control}->{target}){duration_line}</small>"
+    return f"{gate.type}{duration_label}"
 
 
 def _circuit_css() -> str:
@@ -211,16 +254,42 @@ def _load_bell_preset(history: CircuitHistory) -> None:
     history._apply(mutate)
 
 
-def _gate(gate_type: str, target: int, control: int | None = None) -> GateOperation:
+def _gate(
+    gate_type: str,
+    target: int,
+    control: int | None = None,
+    duration_us: float | None = None,
+) -> GateOperation:
     controls: list[int] = []
     if gate_type == "CNOT":
         controls = [int(control if control is not None else 0)]
+    params = {}
+    if duration_us is not None:
+        params["duration_us"] = float(duration_us)
     return GateOperation(
         type=gate_type,
         targets=[target],
         controls=controls,
-        params={},
+        params=params,
     )
+
+
+def _default_duration_us(gate_type: str) -> float:
+    return float(DEFAULT_GATE_DURATIONS_US.get(str(gate_type).upper(), 0.0))
+
+
+def _duration_label(gate: GateOperation) -> str:
+    duration_text = _duration_text(gate)
+    if not duration_text:
+        return ""
+    return f"<br><small>{duration_text}</small>"
+
+
+def _duration_text(gate: GateOperation) -> str:
+    params = gate.params or {}
+    if "duration_us" not in params:
+        return ""
+    return f"{params['duration_us']:g} us"
 
 
 def _run_edit(edit) -> None:

@@ -11,7 +11,7 @@ from core.results import EnvironmentConfig, SimulationConfig
 from core.validation import has_blocking_issues, validate_simulation_config
 
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 CONFIG_KIND = "quanta_scope.config"
 
 

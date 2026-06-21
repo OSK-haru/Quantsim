@@ -127,7 +127,7 @@ class ValidationTest(unittest.TestCase):
             environment=EnvironmentConfig(noise_level=1.42),
         )
 
-        with patch("core.simulator.map_environment_to_t1_t2") as mapper:
+        with patch("core.simulator.compute_environment_rates") as mapper:
             result = run_simulation(config)
 
         mapper.assert_not_called()

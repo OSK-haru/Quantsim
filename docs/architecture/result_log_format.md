@@ -19,8 +19,30 @@ The result envelope contains:
 - `warnings`
 
 `summary` includes final fidelity, final purity, effective operation time, and
-sample counts. `derived_parameters` includes T1/T2 and gamma values when
-available.
+sample counts.
+
+`derived_parameters` includes the unified environment metadata and rates:
+
+- `environment_model`
+- `input_mode`
+- `n_th`
+- `gamma_down_per_us`
+- `gamma_up_per_us`
+- `gamma_phi_per_us`
+- `gamma_phi_base_per_us`
+- `gamma_phi_flux_per_us`
+- `t1_base_us`
+- `tphi_base_us`
+- `t1_effective_us`
+- `t2_effective_us`
+
+Compatibility aliases remain available for older consumers:
+
+- `gamma1_per_us`
+- `gammaphi_per_us`
+- `gamma_phi_total_per_us`
+- `t1_us`
+- `t2_us`
 
 ## CSV
 
