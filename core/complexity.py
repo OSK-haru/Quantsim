@@ -169,6 +169,7 @@ def complexity_diagnostics(
         ),
         "complexity_gate_segment_count": estimates["gate_segment_count"],
         "complexity_idle_segment_count": estimates["idle_segment_count"],
+        "complexity_total_segments": estimates["total_segment_count"],
         "complexity_total_segment_count": estimates["total_segment_count"],
         "complexity_total_rk4_substeps": estimates["total_rk4_substeps"],
         "complexity_total_rhs_evaluations": estimates["total_rhs_evaluations"],

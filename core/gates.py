@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from dataclasses import dataclass
 from math import pi, sqrt
 
 from core.capabilities import normalize_gate_type
@@ -10,6 +12,15 @@ from core.circuit_model import GateOperation
 
 Matrix = tuple[tuple[complex, ...], ...]
 Ket = tuple[complex, ...]
+
+
+@dataclass(frozen=True)
+class CachedCollapseOperator:
+    """Collapse operator with reusable adjoint products for Lindblad RHS."""
+
+    operator: Matrix
+    operator_adjoint: Matrix
+    operator_adjoint_operator: Matrix
 
 
 I: Matrix = (
@@ -251,6 +262,22 @@ def multi_qubit_environment_collapse_operators(
     )
 
 
+def prepare_collapse_operators(
+    collapse_ops: Sequence[Matrix],
+) -> tuple[CachedCollapseOperator, ...]:
+    """Precompute adjoint products for repeated Lindblad RHS evaluations."""
+
+    cached = []
+    for collapse_op in collapse_ops:
+        operator_adjoint = adjoint(collapse_op)
+        cached.append(CachedCollapseOperator(
+            operator=collapse_op,
+            operator_adjoint=operator_adjoint,
+            operator_adjoint_operator=matmul(operator_adjoint, collapse_op),
+        ))
+    return tuple(cached)
+
+
 def clean_density_matrix(rho: Matrix) -> Matrix:
     rho = scale(0.5, add(rho, adjoint(rho)))
     trace_value = trace(rho)
@@ -260,19 +287,29 @@ def clean_density_matrix(rho: Matrix) -> Matrix:
 
 
 def lindblad_rhs(rho: Matrix, hamiltonian: Matrix, collapse_ops: list[Matrix]) -> Matrix:
+    return lindblad_rhs_cached(
+        rho,
+        hamiltonian,
+        prepare_collapse_operators(collapse_ops),
+    )
+
+
+def lindblad_rhs_cached(
+    rho: Matrix,
+    hamiltonian: Matrix,
+    collapse_ops: Sequence[CachedCollapseOperator],
+) -> Matrix:
     commutator = subtract(matmul(hamiltonian, rho), matmul(rho, hamiltonian))
     derivative = scale(-1j, commutator)
 
     for collapse_op in collapse_ops:
-        adjoint_op = adjoint(collapse_op)
-        rate_op = matmul(adjoint_op, collapse_op)
         dissipator = subtract(
-            matmul(matmul(collapse_op, rho), adjoint_op),
+            matmul(matmul(collapse_op.operator, rho), collapse_op.operator_adjoint),
             scale(
                 0.5,
                 add(
-                    matmul(rate_op, rho),
-                    matmul(rho, rate_op),
+                    matmul(collapse_op.operator_adjoint_operator, rho),
+                    matmul(rho, collapse_op.operator_adjoint_operator),
                 ),
             ),
         )
@@ -286,10 +323,24 @@ def rk4_step(
     collapse_ops: list[Matrix],
     dt: float,
 ) -> Matrix:
-    k1 = lindblad_rhs(rho, hamiltonian, collapse_ops)
-    k2 = lindblad_rhs(add(rho, scale(0.5 * dt, k1)), hamiltonian, collapse_ops)
-    k3 = lindblad_rhs(add(rho, scale(0.5 * dt, k2)), hamiltonian, collapse_ops)
-    k4 = lindblad_rhs(add(rho, scale(dt, k3)), hamiltonian, collapse_ops)
+    return rk4_step_cached(
+        rho,
+        hamiltonian,
+        prepare_collapse_operators(collapse_ops),
+        dt,
+    )
+
+
+def rk4_step_cached(
+    rho: Matrix,
+    hamiltonian: Matrix,
+    collapse_ops: Sequence[CachedCollapseOperator],
+    dt: float,
+) -> Matrix:
+    k1 = lindblad_rhs_cached(rho, hamiltonian, collapse_ops)
+    k2 = lindblad_rhs_cached(add(rho, scale(0.5 * dt, k1)), hamiltonian, collapse_ops)
+    k3 = lindblad_rhs_cached(add(rho, scale(0.5 * dt, k2)), hamiltonian, collapse_ops)
+    k4 = lindblad_rhs_cached(add(rho, scale(dt, k3)), hamiltonian, collapse_ops)
     return add(
         rho,
         scale(

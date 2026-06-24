@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 
 from core.capabilities import (
     DEFAULT_SIMULATION_MODEL,
@@ -14,18 +15,20 @@ from core.capabilities import (
 from core.complexity import complexity_diagnostics
 from core.errors import ValidationIssue
 from core.gates import (
+    CachedCollapseOperator,
     Matrix,
-    apply_gate_operation,
     apply_unitary_to_density,
     clean_density_matrix,
     column_duration_us,
-    column_unitary,
     effective_hamiltonian_from_involution,
+    gate_unitary,
+    identity_matrix,
     initial_density_matrix,
     matmul,
     multi_qubit_environment_collapse_operators,
     output_probabilities,
-    rk4_step,
+    prepare_collapse_operators,
+    rk4_step_cached,
     trace,
     zero_hamiltonian,
 )
@@ -51,6 +54,28 @@ from core.validation import (
 
 MAX_RK4_RATE_STEP_PRODUCT = 1.0
 MAX_GENERATOR_STEP_PRODUCT = 1.0
+PYTHON_DENSE_BACKEND_NAME = "python_dense_streaming_v1"
+
+
+@dataclass
+class _SimulationSeries:
+    times: list[float]
+    fidelity: list[float]
+    purity: list[float]
+    final_noisy_state: Matrix
+    final_ideal_state: Matrix
+    metadata: dict[str, object]
+
+
+@dataclass
+class _SimulationCaches:
+    gate_unitaries: dict[tuple[object, ...], Matrix]
+    column_unitaries: dict[tuple[object, ...], Matrix]
+    hamiltonians: dict[tuple[object, ...], Matrix]
+
+    @classmethod
+    def empty(cls) -> "_SimulationCaches":
+        return cls(gate_unitaries={}, column_unitaries={}, hamiltonians={})
 
 
 def run_simulation(config: SimulationConfig) -> SimulationResult:
@@ -104,17 +129,18 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
         config.circuit.logical_qubits,
         rates,
     )
+    cached_collapse_ops = prepare_collapse_operators(collapse_ops)
+    caches = _SimulationCaches.empty()
     derived_parameters = environment_rates_to_derived_parameters(rates)
 
     try:
-        times, states, ideal_states, simulation_metadata = (
-            _simulate_circuit_gate_aware_hamiltonian(
-                config=config,
-                duration_us=config.duration_us,
-                time_steps=config.time_steps,
-                collapse_ops=collapse_ops,
-                max_environment_rate_per_us=_max_environment_rate_per_us(rates),
-            )
+        simulation = _simulate_circuit_gate_aware_hamiltonian(
+            config=config,
+            duration_us=config.duration_us,
+            time_steps=config.time_steps,
+            collapse_ops=cached_collapse_ops,
+            max_environment_rate_per_us=_max_environment_rate_per_us(rates),
+            caches=caches,
         )
     except ValueError as exc:
         return _empty_result(config, [
@@ -128,9 +154,11 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
                 ),
             )
         ])
+    times = simulation.times
+    fidelities = simulation.fidelity
+    purities = simulation.purity
+    simulation_metadata = simulation.metadata
     derived_parameters.update(simulation_metadata)
-    fidelities = _fidelity_series(states, ideal_states)
-    purities = _purity_series(states)
     effective_operation_time_us = effective_time(
         times,
         fidelities,
@@ -139,12 +167,13 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
 
     diagnostics = _diagnostics(
         times=times,
-        states=states,
         fidelities=fidelities,
         purities=purities,
         fidelity_threshold=config.fidelity_threshold,
         integration_substeps=simulation_metadata["integration_substeps"],
+        max_trace_error=simulation_metadata["max_trace_error"],
         extra={
+            "backend_name": PYTHON_DENSE_BACKEND_NAME,
             "simulation_mode": simulation_metadata["simulation_mode"],
             "hamiltonian_mode": simulation_metadata["hamiltonian_mode"],
             "completion_time_us": simulation_metadata["completion_time_us"],
@@ -158,6 +187,8 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
             "gate_aware_noise": 1.0,
             "post_circuit_degradation": 0.0,
             "recorded_state_count": float(len(times)),
+            "state_history_retained": 0.0,
+            "state_history_storage_mode": "streaming_metrics_only",
         },
     )
     diagnostics.update(complexity_diagnostics(
@@ -173,7 +204,7 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
         purity=purities,
         effective_operation_time_us=effective_operation_time_us,
         output_probabilities=output_probabilities(
-            states[-1],
+            simulation.final_noisy_state,
             config.circuit.logical_qubits,
         ),
         derived_parameters=derived_parameters,
@@ -190,8 +221,11 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         config.circuit.logical_qubits,
         rates,
     )
+    cached_collapse_ops = prepare_collapse_operators(collapse_ops)
+    caches = _SimulationCaches.empty()
     derived_parameters = environment_rates_to_derived_parameters(rates)
     derived_parameters.update({
+        "backend_name": PYTHON_DENSE_BACKEND_NAME,
         "simulation_mode": POST_CIRCUIT_DEGRADATION_MODEL,
         "gate_aware_noise": False,
         "hamiltonian_mode": "none",
@@ -202,15 +236,17 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         "post_circuit_degradation": True,
     })
 
-    times, states, ideal_states = _simulate_circuit_post_circuit(
+    simulation = _simulate_circuit_post_circuit(
         config=config,
         duration_us=config.duration_us,
         time_steps=config.time_steps,
-        collapse_ops=collapse_ops,
+        collapse_ops=cached_collapse_ops,
         max_environment_rate_per_us=_max_environment_rate_per_us(rates),
+        caches=caches,
     )
-    fidelities = _fidelity_series(states, ideal_states)
-    purities = _purity_series(states)
+    times = simulation.times
+    fidelities = simulation.fidelity
+    purities = simulation.purity
     effective_operation_time_us = effective_time(
         times,
         fidelities,
@@ -219,7 +255,6 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
 
     diagnostics = _diagnostics(
         times=times,
-        states=states,
         fidelities=fidelities,
         purities=purities,
         fidelity_threshold=config.fidelity_threshold,
@@ -228,7 +263,9 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
             config.time_steps,
             _max_environment_rate_per_us(rates),
         ),
+        max_trace_error=simulation.metadata["max_trace_error"],
         extra={
+            "backend_name": PYTHON_DENSE_BACKEND_NAME,
             "simulation_mode": derived_parameters["simulation_mode"],
             "hamiltonian_mode": derived_parameters["hamiltonian_mode"],
             "completion_time_us": 0.0,
@@ -242,6 +279,8 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
             "gate_aware_noise": 0.0,
             "post_circuit_degradation": 1.0,
             "recorded_state_count": float(len(times)),
+            "state_history_retained": 0.0,
+            "state_history_storage_mode": "streaming_metrics_only",
         },
     )
     diagnostics.update(complexity_diagnostics(
@@ -257,7 +296,7 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         purity=purities,
         effective_operation_time_us=effective_operation_time_us,
         output_probabilities=output_probabilities(
-            states[-1],
+            simulation.final_noisy_state,
             config.circuit.logical_qubits,
         ),
         derived_parameters=derived_parameters,
@@ -341,43 +380,61 @@ def _simulate_circuit_post_circuit(
     config: SimulationConfig,
     duration_us: float,
     time_steps: int,
-    collapse_ops: list[Matrix],
+    collapse_ops: Sequence[CachedCollapseOperator],
     max_environment_rate_per_us: float = 0.0,
-) -> tuple[list[float], list[Matrix], list[Matrix]]:
+    caches: _SimulationCaches | None = None,
+) -> _SimulationSeries:
+    caches = caches or _SimulationCaches.empty()
     times = _time_grid(duration_us, time_steps)
     n_qubits = config.circuit.logical_qubits
     dimension = 2 ** n_qubits
     hamiltonian = zero_hamiltonian(dimension)
 
     initial_state = initial_density_matrix(config.circuit.initial_states)
-    noisy_state = _apply_circuit_operations(initial_state, config, n_qubits)
-    ideal_state = _apply_circuit_operations(initial_state, config, n_qubits)
+    noisy_state = _apply_circuit_operations(initial_state, config, n_qubits, caches)
+    ideal_state = _apply_circuit_operations(initial_state, config, n_qubits, caches)
 
-    states = [noisy_state]
-    ideal_states = [ideal_state]
+    fidelities = [_state_fidelity(noisy_state, ideal_state)]
+    purities = [_state_purity(noisy_state)]
+    max_trace_error = _trace_error(noisy_state)
     for start_time, end_time in zip(times, times[1:]):
         dt = end_time - start_time
-        states.append(_evolve_stable(
-            states[-1],
+        noisy_state = _evolve_stable(
+            noisy_state,
             hamiltonian,
             collapse_ops,
             dt,
             max_environment_rate_per_us,
-        ))
-        ideal_states.append(ideal_states[-1])
+        )
+        fidelities.append(_state_fidelity(noisy_state, ideal_state))
+        purities.append(_state_purity(noisy_state))
+        max_trace_error = max(max_trace_error, _trace_error(noisy_state))
 
-    return times, states, ideal_states
+    return _SimulationSeries(
+        times=times,
+        fidelity=fidelities,
+        purity=purities,
+        final_noisy_state=noisy_state,
+        final_ideal_state=ideal_state,
+        metadata={
+            "max_trace_error": max_trace_error,
+            "state_history_retained": False,
+            "state_history_storage_mode": "streaming_metrics_only",
+        },
+    )
 
 
 def _simulate_circuit_gate_aware_hamiltonian(
     config: SimulationConfig,
     duration_us: float,
     time_steps: int,
-    collapse_ops: list[Matrix],
+    collapse_ops: Sequence[CachedCollapseOperator],
     max_environment_rate_per_us: float = 0.0,
-) -> tuple[list[float], list[Matrix], list[Matrix], dict[str, float | str | bool]]:
+    caches: _SimulationCaches | None = None,
+) -> _SimulationSeries:
+    caches = caches or _SimulationCaches.empty()
     n_qubits = config.circuit.logical_qubits
-    segments = _gate_aware_segments(config, n_qubits)
+    segments = _gate_aware_segments(config, n_qubits, caches)
     total_gate_duration = sum(segment["duration_us"] for segment in segments)
     actual_duration = max(duration_us, total_gate_duration)
     idle_duration = max(0.0, actual_duration - total_gate_duration)
@@ -385,8 +442,9 @@ def _simulate_circuit_gate_aware_hamiltonian(
 
     noisy_state = initial_density_matrix(config.circuit.initial_states)
     ideal_state = initial_density_matrix(config.circuit.initial_states)
-    states = [noisy_state]
-    ideal_states = [ideal_state]
+    fidelities = [_state_fidelity(noisy_state, ideal_state)]
+    purities = [_state_purity(noisy_state)]
+    max_trace_error = _trace_error(noisy_state)
 
     current_time = 0.0
     segment_index = 0
@@ -512,8 +570,9 @@ def _simulate_circuit_gate_aware_hamiltonian(
                 completion_noisy_state = noisy_state
                 completion_ideal_state = ideal_state
 
-        states.append(noisy_state)
-        ideal_states.append(ideal_state)
+        fidelities.append(_state_fidelity(noisy_state, ideal_state))
+        purities.append(_state_purity(noisy_state))
+        max_trace_error = max(max_trace_error, _trace_error(noisy_state))
 
     if completion_time is None:
         completion_time = current_time
@@ -526,6 +585,7 @@ def _simulate_circuit_gate_aware_hamiltonian(
         max_environment_rate_per_us,
     )
     metadata = {
+        "backend_name": PYTHON_DENSE_BACKEND_NAME,
         "simulation_mode": GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
         "gate_aware_noise": True,
         "hamiltonian_mode": "effective_involution_generator",
@@ -541,24 +601,35 @@ def _simulate_circuit_gate_aware_hamiltonian(
         "gate_duration_model": "default_gate_duration_us_with_params_override",
         "post_circuit_degradation": False,
         "integration_substeps": float(max_substeps),
+        "max_trace_error": max_trace_error,
+        "state_history_retained": False,
+        "state_history_storage_mode": "streaming_metrics_only",
         **segment_complexity,
     }
-    return times, states, ideal_states, metadata
+    return _SimulationSeries(
+        times=times,
+        fidelity=fidelities,
+        purity=purities,
+        final_noisy_state=noisy_state,
+        final_ideal_state=ideal_state,
+        metadata=metadata,
+    )
 
 
 def _gate_aware_segments(
     config: SimulationConfig,
     n_qubits: int,
+    caches: _SimulationCaches | None = None,
 ) -> list[dict[str, object]]:
+    caches = caches or _SimulationCaches.empty()
     segments: list[dict[str, object]] = []
     for column in sorted(config.circuit.columns, key=lambda column: column.step):
-        unitary = column_unitary(column, n_qubits)
+        unitary = _column_unitary_cached(column, n_qubits, caches)
         duration = column_duration_us(column)
         if duration == 0.0:
             hamiltonian = zero_hamiltonian(2 ** n_qubits)
-            hamiltonian_rate = 0.0
         else:
-            hamiltonian = effective_hamiltonian_from_involution(unitary, duration)
+            hamiltonian = _effective_hamiltonian_cached(unitary, duration, caches)
             hamiltonian_scale = 2.0 * math.pi / duration
         segments.append({
             "segment_type": "gate",
@@ -632,12 +703,72 @@ def _apply_circuit_operations(
     state: Matrix,
     config: SimulationConfig,
     n_qubits: int,
+    caches: _SimulationCaches | None = None,
 ) -> Matrix:
+    caches = caches or _SimulationCaches.empty()
     for column in sorted(config.circuit.columns, key=lambda column: column.step):
         for gate in column.gates:
-            state = apply_gate_operation(state, gate, n_qubits)
+            state = apply_unitary_to_density(
+                state,
+                _gate_unitary_cached(gate, n_qubits, caches),
+            )
             state = clean_density_matrix(state)
     return state
+
+
+def _gate_unitary_cached(
+    gate,
+    n_qubits: int,
+    caches: _SimulationCaches,
+) -> Matrix:
+    key = _gate_unitary_cache_key(gate, n_qubits)
+    if key not in caches.gate_unitaries:
+        caches.gate_unitaries[key] = gate_unitary(gate, n_qubits)
+    return caches.gate_unitaries[key]
+
+
+def _column_unitary_cached(
+    column,
+    n_qubits: int,
+    caches: _SimulationCaches,
+) -> Matrix:
+    key = _column_unitary_cache_key(column, n_qubits)
+    if key not in caches.column_unitaries:
+        unitary = identity_matrix(2 ** n_qubits)
+        for gate in column.gates:
+            unitary = matmul(_gate_unitary_cached(gate, n_qubits, caches), unitary)
+        caches.column_unitaries[key] = unitary
+    return caches.column_unitaries[key]
+
+
+def _effective_hamiltonian_cached(
+    unitary: Matrix,
+    duration_us: float,
+    caches: _SimulationCaches,
+) -> Matrix:
+    key = (float(duration_us), unitary)
+    if key not in caches.hamiltonians:
+        caches.hamiltonians[key] = effective_hamiltonian_from_involution(
+            unitary,
+            duration_us,
+        )
+    return caches.hamiltonians[key]
+
+
+def _gate_unitary_cache_key(gate, n_qubits: int) -> tuple[object, ...]:
+    return (
+        int(n_qubits),
+        str(gate.type).upper(),
+        tuple(int(target) for target in gate.targets),
+        tuple(int(control) for control in (gate.controls or [])),
+    )
+
+
+def _column_unitary_cache_key(column, n_qubits: int) -> tuple[object, ...]:
+    return (
+        int(n_qubits),
+        tuple(_gate_unitary_cache_key(gate, n_qubits) for gate in column.gates),
+    )
 
 
 def _fidelity_series(states: Sequence[Matrix], ideal_states: Sequence[Matrix]) -> list[float]:
@@ -666,11 +797,11 @@ def _state_purity(state: Matrix) -> float:
 
 def _diagnostics(
     times: Sequence[float],
-    states: Sequence[Matrix],
     fidelities: Sequence[float],
     purities: Sequence[float],
     fidelity_threshold: float,
     integration_substeps: int = 1,
+    max_trace_error: float = 0.0,
     extra: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     diagnostics = {
@@ -681,7 +812,7 @@ def _diagnostics(
         "min_purity": min(purities),
         "time_step_us": times[1] - times[0] if len(times) > 1 else 0.0,
         "threshold_crossed": 1.0 if min(fidelities) < fidelity_threshold else 0.0,
-        "max_trace_error": max(_trace_error(state) for state in states),
+        "max_trace_error": float(max_trace_error),
         "integration_substeps": float(integration_substeps),
     }
     diagnostics.update(dict(extra or {}))
@@ -691,7 +822,7 @@ def _diagnostics(
 def _evolve_stable(
     state: Matrix,
     hamiltonian: Matrix,
-    collapse_ops: list[Matrix],
+    collapse_ops: Sequence[CachedCollapseOperator],
     dt: float,
     max_environment_rate_per_us: float,
 ) -> Matrix:
@@ -700,7 +831,7 @@ def _evolve_stable(
     evolved = state
     for _ in range(substeps):
         evolved = clean_density_matrix(
-            rk4_step(evolved, hamiltonian, collapse_ops, sub_dt)
+            rk4_step_cached(evolved, hamiltonian, collapse_ops, sub_dt)
         )
     return evolved
 
@@ -708,7 +839,7 @@ def _evolve_stable(
 def _evolve_stable_with_substeps(
     state: Matrix,
     hamiltonian: Matrix,
-    collapse_ops: list[Matrix],
+    collapse_ops: Sequence[CachedCollapseOperator],
     dt: float,
     substeps: int,
 ) -> Matrix:
@@ -717,7 +848,7 @@ def _evolve_stable_with_substeps(
     evolved = state
     for _ in range(substeps):
         evolved = clean_density_matrix(
-            rk4_step(evolved, hamiltonian, collapse_ops, sub_dt)
+            rk4_step_cached(evolved, hamiltonian, collapse_ops, sub_dt)
         )
     return evolved
 

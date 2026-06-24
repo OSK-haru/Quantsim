@@ -18,58 +18,87 @@ from core.simulator import run_simulation
 
 def main() -> None:
     cases = [
-        ("smoke", "1Q H", _one_qubit(["H"])),
-        ("smoke", "1Q HX", _one_qubit(["H", "X"])),
-        ("A fixed total", "Bell CNOT 0.2 total 20", _bell(0.2, 20.0)),
-        ("A fixed total", "Bell CNOT 2 total 20", _bell(2.0, 20.0)),
-        ("B fixed idle", "Bell CNOT 0.2 idle 5", _bell_with_idle(0.2, 5.0)),
-        ("B fixed idle", "Bell CNOT 2 idle 5", _bell_with_idle(2.0, 5.0)),
-        ("C completion-only", "Bell CNOT 0.2 no idle", _bell_completion_only(0.2)),
-        ("C completion-only", "Bell CNOT 20 no idle", _bell_completion_only(20.0)),
+        ("baseline", "1Q H", _one_qubit(["H"])),
+        ("baseline", "1Q HX", _one_qubit(["H", "X"])),
+        ("baseline", "2Q Bell", _bell(0.2, 1.0)),
+        ("long gate", "2Q Bell long CNOT", _bell(20.0, 20.02)),
+        ("A fixed total", "2Q Bell CNOT 0.2 total 20", _bell(0.2, 20.0)),
+        ("A fixed total", "2Q Bell CNOT 2 total 20", _bell(2.0, 20.0)),
+        ("B fixed idle", "2Q Bell CNOT 0.2 idle 5", _bell_with_idle(0.2, 5.0)),
+        ("B fixed idle", "2Q Bell CNOT 2 idle 5", _bell_with_idle(2.0, 5.0)),
+        ("C completion-only", "2Q Bell CNOT 0.2 no idle", _bell_completion_only(0.2)),
+        ("C completion-only", "2Q Bell CNOT 20 no idle", _bell_completion_only(20.0)),
+        ("experimental", "3Q GHZ-like", _three_qubit_ghz_like()),
     ]
     print(",".join([
+        "backend_name",
         "group",
         "case",
         "qubits",
         "gates",
         "columns",
-        "time_steps",
-        "duration_us",
+        "configured_duration_us",
         "total_gate_duration_us",
         "idle_duration_us",
+        "actual_duration_us",
+        "time_steps",
         "wall_time_seconds",
         "peak_memory_bytes",
         "completion_fidelity",
         "final_fidelity",
-        "completion_purity",
         "final_purity",
-        "total_rk4_substeps",
-        "total_rhs_evaluations",
-        "max_generator_scale",
-        "segmented_estimated_work_units",
+        "completion_purity",
+        "complexity_total_rk4_substeps",
+        "complexity_total_rhs_evaluations",
+        "complexity_estimated_work_units_segmented",
     ]))
     for group, name, config in cases:
         result, wall_time, peak_memory = _run_profiled(config)
         diagnostics = result.diagnostics
+        if not result.times:
+            print(",".join(str(value) for value in [
+                "not_run",
+                group,
+                name,
+                config.circuit.logical_qubits,
+                _gate_count(config),
+                len(config.circuit.columns),
+                config.duration_us,
+                "",
+                "",
+                "",
+                config.time_steps,
+                f"{wall_time:.6f}",
+                peak_memory,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]))
+            continue
         print(",".join(str(value) for value in [
+            diagnostics.get("backend_name", "unknown"),
             group,
             name,
             config.circuit.logical_qubits,
             _gate_count(config),
             len(config.circuit.columns),
-            config.time_steps,
             config.duration_us,
             f"{diagnostics.get('total_gate_duration_us', 0.0):.12g}",
             f"{diagnostics.get('idle_duration_us', 0.0):.12g}",
+            f"{diagnostics.get('actual_duration_us', config.duration_us):.12g}",
+            config.time_steps,
             f"{wall_time:.6f}",
             peak_memory,
             f"{diagnostics.get('completion_fidelity', 0.0):.12g}",
-            f"{result.fidelity[-1]:.12g}",
+            f"{diagnostics.get('final_fidelity', result.fidelity[-1]):.12g}",
+            f"{diagnostics.get('final_purity', result.purity[-1]):.12g}",
             f"{diagnostics.get('completion_purity', 0.0):.12g}",
-            f"{result.purity[-1]:.12g}",
             f"{diagnostics.get('complexity_total_rk4_substeps', 0.0):.12g}",
             f"{diagnostics.get('complexity_total_rhs_evaluations', 0.0):.12g}",
-            f"{diagnostics.get('complexity_max_generator_scale_per_us', 0.0):.12g}",
             f"{diagnostics.get('complexity_estimated_work_units_segmented', 0.0):.12g}",
         ]))
 
@@ -156,6 +185,30 @@ def _bell_completion_only(cnot_duration_us: float) -> SimulationConfig:
     return _bell(
         cnot_duration_us=cnot_duration_us,
         duration_us=0.02 + cnot_duration_us,
+    )
+
+
+def _three_qubit_ghz_like() -> SimulationConfig:
+    return SimulationConfig(
+        circuit=CircuitConfig(
+            logical_qubits=3,
+            initial_states=["0", "0", "0"],
+            columns=[
+                GateColumn(step=0, gates=[GateOperation(type="H", targets=[0])]),
+                GateColumn(
+                    step=1,
+                    gates=[GateOperation(type="CNOT", targets=[1], controls=[0])],
+                ),
+                GateColumn(
+                    step=2,
+                    gates=[GateOperation(type="CNOT", targets=[2], controls=[1])],
+                ),
+            ],
+        ),
+        environment=_environment(),
+        duration_us=1.0,
+        time_steps=21,
+        fidelity_threshold=0.9,
     )
 
 
