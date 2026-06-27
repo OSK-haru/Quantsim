@@ -6,6 +6,12 @@ import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from core.backend_boundary import (
+    PYTHON_DENSE_BACKEND,
+    PYTHON_DENSE_BACKEND_NAME,
+    RUST_DENSE_PREVIEW_BACKEND,
+    backend_metadata,
+)
 from core.capabilities import (
     DEFAULT_SIMULATION_MODEL,
     GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
@@ -40,6 +46,11 @@ from core.physical_environment import (
     environment_rates_to_derived_parameters,
 )
 from core.results import SimulationConfig, SimulationResult
+from core.rust_dense_kernel import (
+    rust_rk4_evolve_segment,
+    rust_rk4_evolve_segment_cleaned,
+    rust_rk4_evolve_segment_samples,
+)
 from core.simulation_backends import (
     get_simulation_backend,
     register_simulation_backend,
@@ -54,7 +65,6 @@ from core.validation import (
 
 MAX_RK4_RATE_STEP_PRODUCT = 1.0
 MAX_GENERATOR_STEP_PRODUCT = 1.0
-PYTHON_DENSE_BACKEND_NAME = "python_dense_streaming_v1"
 
 
 @dataclass
@@ -76,6 +86,145 @@ class _SimulationCaches:
     @classmethod
     def empty(cls) -> "_SimulationCaches":
         return cls(gate_unitaries={}, column_unitaries={}, hamiltonians={})
+
+
+@dataclass
+class _KernelStats:
+    requested_backend: str
+    rust_kernel_used: bool = False
+    rust_kernel_mode: str = "none"
+    rust_kernel_fallback_used: bool = False
+    rust_kernel_fallback_reason: str = ""
+    rust_kernel_call_count: int = 0
+    rust_kernel_segment_count: int = 0
+    rust_kernel_substep_count: int = 0
+    rust_kernel_batchable_interval_count: int = 0
+    rust_kernel_actual_batch_count: int = 0
+    rust_kernel_total_batch_substeps: int = 0
+    rust_kernel_max_batch_substeps: int = 0
+    rust_kernel_batch_blocked_by_sampling_count: int = 0
+    rust_kernel_batch_blocked_by_boundary_count: int = 0
+    rust_kernel_sampled_batch_count: int = 0
+    rust_kernel_sampled_returned_state_count: int = 0
+    rust_kernel_max_sampled_batch_outputs: int = 0
+    rust_kernel_sampled_batch_fallback_count: int = 0
+    rust_kernel_sampled_batch_fallback_reason: str = ""
+    python_kernel_segment_count: int = 0
+    python_kernel_substep_count: int = 0
+
+    @property
+    def wants_rust(self) -> bool:
+        return (
+            self.requested_backend == RUST_DENSE_PREVIEW_BACKEND
+            and not self.rust_kernel_fallback_used
+        )
+
+    def to_diagnostics(self) -> dict[str, object]:
+        rust_kernel_mode = self.rust_kernel_mode
+        if self.requested_backend != RUST_DENSE_PREVIEW_BACKEND:
+            rust_kernel_mode = "none"
+        elif self.rust_kernel_fallback_used and not self.rust_kernel_used:
+            rust_kernel_mode = "fallback_python"
+        mean_batch_substeps = (
+            self.rust_kernel_total_batch_substeps / self.rust_kernel_actual_batch_count
+            if self.rust_kernel_actual_batch_count
+            else 0.0
+        )
+        mean_sampled_outputs = (
+            self.rust_kernel_sampled_returned_state_count
+            / self.rust_kernel_sampled_batch_count
+            if self.rust_kernel_sampled_batch_count
+            else 0.0
+        )
+        return {
+            "rust_kernel_used": bool(
+                self.rust_kernel_used and not self.rust_kernel_fallback_used
+            ),
+            "rust_kernel_mode": rust_kernel_mode,
+            "rust_kernel_fallback_used": bool(self.rust_kernel_fallback_used),
+            "rust_kernel_fallback_reason": self.rust_kernel_fallback_reason,
+            "rust_kernel_call_count": float(self.rust_kernel_call_count),
+            "rust_kernel_segment_count": float(self.rust_kernel_segment_count),
+            "rust_kernel_substep_count": float(self.rust_kernel_substep_count),
+            "rust_kernel_batchable_interval_count": float(
+                self.rust_kernel_batchable_interval_count
+            ),
+            "rust_kernel_actual_batch_count": float(self.rust_kernel_actual_batch_count),
+            "rust_kernel_max_batch_substeps": float(self.rust_kernel_max_batch_substeps),
+            "rust_kernel_mean_batch_substeps": float(mean_batch_substeps),
+            "rust_kernel_batch_blocked_by_sampling_count": float(
+                self.rust_kernel_batch_blocked_by_sampling_count
+            ),
+            "rust_kernel_batch_blocked_by_boundary_count": float(
+                self.rust_kernel_batch_blocked_by_boundary_count
+            ),
+            "rust_kernel_sampled_batch_count": float(
+                self.rust_kernel_sampled_batch_count
+            ),
+            "rust_kernel_sampled_returned_state_count": float(
+                self.rust_kernel_sampled_returned_state_count
+            ),
+            "rust_kernel_max_sampled_batch_outputs": float(
+                self.rust_kernel_max_sampled_batch_outputs
+            ),
+            "rust_kernel_mean_sampled_batch_outputs": float(mean_sampled_outputs),
+            "rust_kernel_sampled_batch_fallback_count": float(
+                self.rust_kernel_sampled_batch_fallback_count
+            ),
+            "rust_kernel_sampled_batch_fallback_reason": (
+                self.rust_kernel_sampled_batch_fallback_reason
+            ),
+            "python_kernel_segment_count": float(self.python_kernel_segment_count),
+            "python_kernel_substep_count": float(self.python_kernel_substep_count),
+        }
+
+    def record_rust_batch(
+        self,
+        substeps: int,
+        *,
+        blocked_by_sampling: bool,
+        blocked_by_boundary: bool,
+    ) -> None:
+        self.rust_kernel_batchable_interval_count += 1
+        self.rust_kernel_actual_batch_count += 1
+        self.rust_kernel_total_batch_substeps += int(substeps)
+        self.rust_kernel_max_batch_substeps = max(
+            self.rust_kernel_max_batch_substeps,
+            int(substeps),
+        )
+        if blocked_by_sampling:
+            self.rust_kernel_batch_blocked_by_sampling_count += 1
+        if blocked_by_boundary:
+            self.rust_kernel_batch_blocked_by_boundary_count += 1
+
+    def record_sampled_batch(
+        self,
+        returned_state_count: int,
+        total_substeps: int,
+        *,
+        blocked_by_sampling: bool,
+        blocked_by_boundary: bool,
+    ) -> None:
+        self.rust_kernel_used = True
+        self.rust_kernel_mode = "sampled_cleaned_multi_output"
+        self.rust_kernel_call_count += 1
+        self.rust_kernel_segment_count += 1
+        self.rust_kernel_substep_count += int(total_substeps)
+        self.rust_kernel_sampled_batch_count += 1
+        self.rust_kernel_sampled_returned_state_count += int(returned_state_count)
+        self.rust_kernel_max_sampled_batch_outputs = max(
+            self.rust_kernel_max_sampled_batch_outputs,
+            int(returned_state_count),
+        )
+        self.record_rust_batch(
+            int(total_substeps),
+            blocked_by_sampling=blocked_by_sampling,
+            blocked_by_boundary=blocked_by_boundary,
+        )
+
+    def record_sampled_batch_fallback(self, reason: str) -> None:
+        self.rust_kernel_sampled_batch_fallback_count += 1
+        self.rust_kernel_sampled_batch_fallback_reason = str(reason)
 
 
 def run_simulation(config: SimulationConfig) -> SimulationResult:
@@ -111,6 +260,7 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
         ])
 
     result = runner(config)
+    _attach_backend_metadata(result, config)
     diagnostic_issues = diagnose_simulation_result(result)
     result.issues = diagnostic_issues
     result.warnings = _issue_warnings(diagnostic_issues)
@@ -124,6 +274,11 @@ def _run_weak_coupling_lindblad(config: SimulationConfig) -> SimulationResult:
 
 
 def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> SimulationResult:
+    """Current open-system gate-aware path.
+
+    Future CPTP evolution should reuse the same gate/idle segment construction
+    here rather than becoming a separate simulator branch.
+    """
     rates = compute_environment_rates(config.environment)
     collapse_ops = multi_qubit_environment_collapse_operators(
         config.circuit.logical_qubits,
@@ -131,6 +286,7 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
     )
     cached_collapse_ops = prepare_collapse_operators(collapse_ops)
     caches = _SimulationCaches.empty()
+    kernel_stats = _KernelStats(config.simulation_backend)
     derived_parameters = environment_rates_to_derived_parameters(rates)
 
     try:
@@ -141,6 +297,7 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
             collapse_ops=cached_collapse_ops,
             max_environment_rate_per_us=_max_environment_rate_per_us(rates),
             caches=caches,
+            kernel_stats=kernel_stats,
         )
     except ValueError as exc:
         return _empty_result(config, [
@@ -174,6 +331,8 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
         max_trace_error=simulation_metadata["max_trace_error"],
         extra={
             "backend_name": PYTHON_DENSE_BACKEND_NAME,
+            "simulation_model": "gate_aware_open_system",
+            "evolution_mode": GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
             "simulation_mode": simulation_metadata["simulation_mode"],
             "hamiltonian_mode": simulation_metadata["hamiltonian_mode"],
             "completion_time_us": simulation_metadata["completion_time_us"],
@@ -189,6 +348,7 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
             "recorded_state_count": float(len(times)),
             "state_history_retained": 0.0,
             "state_history_storage_mode": "streaming_metrics_only",
+            **kernel_stats.to_diagnostics(),
         },
     )
     diagnostics.update(complexity_diagnostics(
@@ -223,6 +383,7 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
     )
     cached_collapse_ops = prepare_collapse_operators(collapse_ops)
     caches = _SimulationCaches.empty()
+    kernel_stats = _KernelStats(config.simulation_backend)
     derived_parameters = environment_rates_to_derived_parameters(rates)
     derived_parameters.update({
         "backend_name": PYTHON_DENSE_BACKEND_NAME,
@@ -243,6 +404,7 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         collapse_ops=cached_collapse_ops,
         max_environment_rate_per_us=_max_environment_rate_per_us(rates),
         caches=caches,
+        kernel_stats=kernel_stats,
     )
     times = simulation.times
     fidelities = simulation.fidelity
@@ -265,8 +427,10 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         ),
         max_trace_error=simulation.metadata["max_trace_error"],
         extra={
-            "backend_name": PYTHON_DENSE_BACKEND_NAME,
-            "simulation_mode": derived_parameters["simulation_mode"],
+        "backend_name": PYTHON_DENSE_BACKEND_NAME,
+        "simulation_model": "gate_aware_open_system",
+        "evolution_mode": GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
+        "simulation_mode": derived_parameters["simulation_mode"],
             "hamiltonian_mode": derived_parameters["hamiltonian_mode"],
             "completion_time_us": 0.0,
             "completion_fidelity": fidelities[0],
@@ -281,6 +445,7 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
             "recorded_state_count": float(len(times)),
             "state_history_retained": 0.0,
             "state_history_storage_mode": "streaming_metrics_only",
+            **kernel_stats.to_diagnostics(),
         },
     )
     diagnostics.update(complexity_diagnostics(
@@ -319,10 +484,30 @@ def _empty_result(
         effective_operation_time_us=None,
         output_probabilities={},
         derived_parameters={},
-        diagnostics={},
+        diagnostics={
+            **backend_metadata(config.simulation_backend),
+            "simulation_model": "gate_aware_open_system",
+            "evolution_mode": GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
+        },
         warnings=_issue_warnings(issues),
         issues=issues,
     )
+
+
+def _attach_backend_metadata(
+    result: SimulationResult,
+    config: SimulationConfig,
+) -> None:
+    result.diagnostics.update(backend_metadata(
+        config.simulation_backend,
+        rust_kernel_used=bool(result.diagnostics.get("rust_kernel_used", False)),
+        rust_kernel_fallback_used=bool(
+            result.diagnostics.get("rust_kernel_fallback_used", False)
+        ),
+        rust_kernel_fallback_reason=str(
+            result.diagnostics.get("rust_kernel_fallback_reason", "")
+        ),
+    ))
 
 
 def _runtime_issues(config: SimulationConfig) -> list[ValidationIssue]:
@@ -383,8 +568,10 @@ def _simulate_circuit_post_circuit(
     collapse_ops: Sequence[CachedCollapseOperator],
     max_environment_rate_per_us: float = 0.0,
     caches: _SimulationCaches | None = None,
+    kernel_stats: _KernelStats | None = None,
 ) -> _SimulationSeries:
     caches = caches or _SimulationCaches.empty()
+    kernel_stats = kernel_stats or _KernelStats(PYTHON_DENSE_BACKEND)
     times = _time_grid(duration_us, time_steps)
     n_qubits = config.circuit.logical_qubits
     dimension = 2 ** n_qubits
@@ -405,6 +592,7 @@ def _simulate_circuit_post_circuit(
             collapse_ops,
             dt,
             max_environment_rate_per_us,
+            kernel_stats,
         )
         fidelities.append(_state_fidelity(noisy_state, ideal_state))
         purities.append(_state_purity(noisy_state))
@@ -431,8 +619,10 @@ def _simulate_circuit_gate_aware_hamiltonian(
     collapse_ops: Sequence[CachedCollapseOperator],
     max_environment_rate_per_us: float = 0.0,
     caches: _SimulationCaches | None = None,
+    kernel_stats: _KernelStats | None = None,
 ) -> _SimulationSeries:
     caches = caches or _SimulationCaches.empty()
+    kernel_stats = kernel_stats or _KernelStats(PYTHON_DENSE_BACKEND)
     n_qubits = config.circuit.logical_qubits
     segments = _gate_aware_segments(config, n_qubits, caches)
     total_gate_duration = sum(segment["duration_us"] for segment in segments)
@@ -456,7 +646,10 @@ def _simulate_circuit_gate_aware_hamiltonian(
     completion_noisy_state = noisy_state if not segments else None
     completion_ideal_state = ideal_state if not segments else None
 
-    for target_time in times[1:]:
+    target_index = 1
+    while target_index < len(times):
+        target_time = times[target_index]
+        samples_appended_in_batch = False
         while current_time < target_time - 1e-15:
             while (
                 segment_index < len(segments)
@@ -479,6 +672,33 @@ def _simulate_circuit_gate_aware_hamiltonian(
                     completion_ideal_state = ideal_state
 
             if segment_index >= len(segments):
+                sampled_batch = _try_rust_sampled_batch(
+                    noisy_state,
+                    zero_hamiltonian(len(noisy_state)),
+                    collapse_ops,
+                    current_time,
+                    times[target_index:],
+                    actual_duration,
+                    lambda interval: _substep_count(
+                        interval,
+                        max_environment_rate_per_us,
+                    ),
+                    kernel_stats,
+                    include_boundary=True,
+                )
+                if sampled_batch is not None:
+                    sample_states, sample_times, sample_substeps = sampled_batch
+                    max_substeps = max(max_substeps, max(sample_substeps))
+                    for sampled_state in sample_states:
+                        noisy_state = sampled_state
+                        fidelities.append(_state_fidelity(noisy_state, ideal_state))
+                        purities.append(_state_purity(noisy_state))
+                        max_trace_error = max(max_trace_error, _trace_error(noisy_state))
+                    current_time = sample_times[-1]
+                    target_index += len(sample_states)
+                    samples_appended_in_batch = True
+                    continue
+
                 step_dt = target_time - current_time
                 if step_dt > 0.0:
                     substeps = _substep_count(step_dt, max_environment_rate_per_us)
@@ -489,6 +709,9 @@ def _simulate_circuit_gate_aware_hamiltonian(
                         collapse_ops,
                         step_dt,
                         substeps,
+                        kernel_stats,
+                        blocked_by_sampling=True,
+                        blocked_by_boundary=False,
                     )
                     current_time = target_time
                 continue
@@ -498,6 +721,7 @@ def _simulate_circuit_gate_aware_hamiltonian(
             remaining = duration - segment_elapsed
             step_dt = min(target_time - current_time, remaining)
             completes_segment = abs(step_dt - remaining) <= 1e-15
+            hits_sample_time = abs(current_time + step_dt - target_time) <= 1e-15
 
             if segment_elapsed == 0.0:
                 segment_start_noisy = noisy_state
@@ -512,6 +736,67 @@ def _simulate_circuit_gate_aware_hamiltonian(
                     max_environment_rate_per_us + hamiltonian_scale,
                 )
                 max_substeps = max(max_substeps, substeps)
+                if not completes_segment:
+                    segment_stop_time = current_time + remaining
+                    sample_targets = times[target_index:]
+                    noisy_batch = _try_rust_sampled_batch(
+                        noisy_state,
+                        hamiltonian,
+                        collapse_ops,
+                        current_time,
+                        sample_targets,
+                        segment_stop_time,
+                        lambda interval: _generator_substep_count(
+                            interval,
+                            max_environment_rate_per_us + hamiltonian_scale,
+                        ),
+                        kernel_stats,
+                        include_boundary=False,
+                    )
+                    ideal_batch = None
+                    if noisy_batch is not None:
+                        ideal_batch = _try_rust_sampled_batch(
+                            ideal_state,
+                            hamiltonian,
+                            [],
+                            current_time,
+                            sample_targets,
+                            segment_stop_time,
+                            lambda interval: _generator_substep_count(
+                                interval,
+                                max_environment_rate_per_us + hamiltonian_scale,
+                            ),
+                            kernel_stats,
+                            include_boundary=False,
+                        )
+                    if (
+                        noisy_batch is not None
+                        and ideal_batch is not None
+                        and len(noisy_batch[0]) == len(ideal_batch[0])
+                    ):
+                        noisy_states, sample_times, sample_substeps = noisy_batch
+                        ideal_states, _, ideal_sample_substeps = ideal_batch
+                        max_substeps = max(
+                            max_substeps,
+                            max(sample_substeps),
+                            max(ideal_sample_substeps),
+                        )
+                        for noisy_sample, ideal_sample in zip(noisy_states, ideal_states):
+                            noisy_state = noisy_sample
+                            ideal_state = ideal_sample
+                            fidelities.append(_state_fidelity(noisy_state, ideal_state))
+                            purities.append(_state_purity(noisy_state))
+                            max_trace_error = max(
+                                max_trace_error,
+                                _trace_error(noisy_state),
+                            )
+                        elapsed = sample_times[-1] - current_time
+                        current_time = sample_times[-1]
+                        segment_elapsed += elapsed
+                        target_index += len(noisy_states)
+                        samples_appended_in_batch = True
+                        continue
+
                 if collapse_ops or not completes_segment:
                     noisy_state = _evolve_stable_with_substeps(
                         noisy_state,
@@ -519,6 +804,9 @@ def _simulate_circuit_gate_aware_hamiltonian(
                         collapse_ops,
                         step_dt,
                         substeps,
+                        kernel_stats,
+                        blocked_by_sampling=hits_sample_time,
+                        blocked_by_boundary=completes_segment,
                     )
                 else:
                     noisy_state = clean_density_matrix(
@@ -536,6 +824,9 @@ def _simulate_circuit_gate_aware_hamiltonian(
                         [],
                         step_dt,
                         substeps,
+                        kernel_stats,
+                        blocked_by_sampling=True,
+                        blocked_by_boundary=False,
                     )
 
             current_time += step_dt
@@ -570,9 +861,13 @@ def _simulate_circuit_gate_aware_hamiltonian(
                 completion_noisy_state = noisy_state
                 completion_ideal_state = ideal_state
 
+        if samples_appended_in_batch:
+            continue
+
         fidelities.append(_state_fidelity(noisy_state, ideal_state))
         purities.append(_state_purity(noisy_state))
         max_trace_error = max(max_trace_error, _trace_error(noisy_state))
+        target_index += 1
 
     if completion_time is None:
         completion_time = current_time
@@ -825,15 +1120,21 @@ def _evolve_stable(
     collapse_ops: Sequence[CachedCollapseOperator],
     dt: float,
     max_environment_rate_per_us: float,
+    kernel_stats: _KernelStats | None = None,
+    blocked_by_sampling: bool = True,
+    blocked_by_boundary: bool = False,
 ) -> Matrix:
     substeps = _substep_count(dt, max_environment_rate_per_us)
-    sub_dt = dt / substeps
-    evolved = state
-    for _ in range(substeps):
-        evolved = clean_density_matrix(
-            rk4_step_cached(evolved, hamiltonian, collapse_ops, sub_dt)
-        )
-    return evolved
+    return _evolve_stable_with_substeps(
+        state,
+        hamiltonian,
+        collapse_ops,
+        dt,
+        substeps,
+        kernel_stats,
+        blocked_by_sampling=blocked_by_sampling,
+        blocked_by_boundary=blocked_by_boundary,
+    )
 
 
 def _evolve_stable_with_substeps(
@@ -842,15 +1143,176 @@ def _evolve_stable_with_substeps(
     collapse_ops: Sequence[CachedCollapseOperator],
     dt: float,
     substeps: int,
+    kernel_stats: _KernelStats | None = None,
+    blocked_by_sampling: bool = True,
+    blocked_by_boundary: bool = False,
 ) -> Matrix:
     substeps = max(1, int(substeps))
     sub_dt = dt / substeps
+    if kernel_stats is not None and kernel_stats.wants_rust:
+        try:
+            evolved = rust_rk4_evolve_segment_cleaned(
+                state,
+                hamiltonian,
+                [collapse_op.operator for collapse_op in collapse_ops],
+                sub_dt,
+                substeps,
+            )
+            kernel_stats.rust_kernel_used = True
+            if kernel_stats.rust_kernel_sampled_batch_count == 0:
+                kernel_stats.rust_kernel_mode = "cleaned_multi_substep"
+            kernel_stats.rust_kernel_call_count += 1
+            kernel_stats.rust_kernel_segment_count += 1
+            kernel_stats.rust_kernel_substep_count += substeps
+            kernel_stats.record_rust_batch(
+                substeps,
+                blocked_by_sampling=blocked_by_sampling,
+                blocked_by_boundary=blocked_by_boundary,
+            )
+            return evolved
+        except Exception as exc:
+            kernel_stats.rust_kernel_fallback_used = True
+            kernel_stats.rust_kernel_fallback_reason = str(exc)
+            kernel_stats.rust_kernel_mode = "fallback_python"
+
     evolved = state
     for _ in range(substeps):
-        evolved = clean_density_matrix(
-            rk4_step_cached(evolved, hamiltonian, collapse_ops, sub_dt)
+        evolved = _evolve_one_substep(
+            evolved,
+            hamiltonian,
+            collapse_ops,
+            sub_dt,
+            kernel_stats,
         )
     return evolved
+
+
+def _try_rust_sampled_batch(
+    state: Matrix,
+    hamiltonian: Matrix,
+    collapse_ops: Sequence[CachedCollapseOperator],
+    current_time: float,
+    target_times: Sequence[float],
+    stop_time: float,
+    substep_counter,
+    kernel_stats: _KernelStats | None,
+    include_boundary: bool,
+) -> tuple[tuple[Matrix, ...], list[float], list[int]] | None:
+    if kernel_stats is None or not kernel_stats.wants_rust:
+        return None
+
+    plan = _sampled_batch_plan(
+        current_time,
+        target_times,
+        stop_time,
+        substep_counter,
+        include_boundary,
+    )
+    if plan is None:
+        return None
+    sample_times, sample_substeps, sub_dt, blocked_by_boundary = plan
+
+    try:
+        states = rust_rk4_evolve_segment_samples(
+            state,
+            hamiltonian,
+            [collapse_op.operator for collapse_op in collapse_ops],
+            sub_dt,
+            sample_substeps,
+        )
+    except Exception as exc:
+        kernel_stats.record_sampled_batch_fallback(str(exc))
+        return None
+
+    kernel_stats.record_sampled_batch(
+        len(states),
+        sum(sample_substeps),
+        blocked_by_sampling=True,
+        blocked_by_boundary=blocked_by_boundary,
+    )
+    return states, sample_times, sample_substeps
+
+
+def _sampled_batch_plan(
+    current_time: float,
+    target_times: Sequence[float],
+    stop_time: float,
+    substep_counter,
+    include_boundary: bool,
+) -> tuple[list[float], list[int], float, bool] | None:
+    sample_times: list[float] = []
+    sample_substeps: list[int] = []
+    common_sub_dt: float | None = None
+    cursor = current_time
+    blocked_by_boundary = False
+
+    for target_time in target_times:
+        if include_boundary:
+            if target_time > stop_time + 1e-15:
+                break
+            reaches_boundary = abs(target_time - stop_time) <= 1e-15
+        else:
+            if target_time >= stop_time - 1e-15:
+                blocked_by_boundary = True
+                break
+            reaches_boundary = False
+
+        interval = target_time - cursor
+        if interval <= 1e-15:
+            break
+        substeps = max(1, int(substep_counter(interval)))
+        sub_dt = interval / substeps
+        if common_sub_dt is None:
+            common_sub_dt = sub_dt
+        elif not math.isclose(sub_dt, common_sub_dt, rel_tol=1e-12, abs_tol=1e-15):
+            break
+
+        sample_times.append(target_time)
+        sample_substeps.append(substeps)
+        cursor = target_time
+        if reaches_boundary:
+            blocked_by_boundary = True
+            break
+
+    if not sample_times or common_sub_dt is None:
+        return None
+    return sample_times, sample_substeps, common_sub_dt, blocked_by_boundary
+
+
+def _evolve_one_substep(
+    state: Matrix,
+    hamiltonian: Matrix,
+    collapse_ops: Sequence[CachedCollapseOperator],
+    dt: float,
+    kernel_stats: _KernelStats | None,
+) -> Matrix:
+    if kernel_stats is not None and kernel_stats.wants_rust:
+        try:
+            evolved = rust_rk4_evolve_segment(
+                state,
+                hamiltonian,
+                [collapse_op.operator for collapse_op in collapse_ops],
+                dt,
+                1,
+            )
+            kernel_stats.rust_kernel_used = True
+            if kernel_stats.rust_kernel_sampled_batch_count == 0:
+                kernel_stats.rust_kernel_mode = "per_substep"
+            kernel_stats.rust_kernel_call_count += 1
+            kernel_stats.rust_kernel_segment_count += 1
+            kernel_stats.rust_kernel_substep_count += 1
+            return clean_density_matrix(evolved)
+        except Exception as exc:
+            kernel_stats.rust_kernel_fallback_used = True
+            kernel_stats.rust_kernel_fallback_reason = str(exc)
+            kernel_stats.rust_kernel_mode = "fallback_python"
+
+    if kernel_stats is not None:
+        kernel_stats.python_kernel_segment_count += 1
+        kernel_stats.python_kernel_substep_count += 1
+    return clean_density_matrix(
+        rk4_step_cached(state, hamiltonian, collapse_ops, dt)
+    )
 
 
 def _integration_substeps(

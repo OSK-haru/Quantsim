@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from core.backend_boundary import PYTHON_DENSE_BACKEND
 from core.capabilities import DEFAULT_SIMULATION_MODEL
 from core.circuit_model import CircuitConfig
 from core.errors import ValidationIssue
@@ -250,6 +251,7 @@ class SimulationConfig:
     time_steps: int = 101
     fidelity_threshold: float = 0.9
     model: str = DEFAULT_SIMULATION_MODEL
+    simulation_backend: str = PYTHON_DENSE_BACKEND
 
     def __post_init__(self) -> None:
         if not isinstance(self.circuit, CircuitConfig):
@@ -266,6 +268,9 @@ class SimulationConfig:
         self.model = str(self.model)
         if not self.model:
             raise ValueError("model must not be empty")
+        self.simulation_backend = str(self.simulation_backend)
+        if not self.simulation_backend:
+            raise ValueError("simulation_backend must not be empty")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -275,6 +280,7 @@ class SimulationConfig:
             "time_steps": self.time_steps,
             "fidelity_threshold": self.fidelity_threshold,
             "model": self.model,
+            "simulation_backend": self.simulation_backend,
         }
 
     @classmethod
@@ -287,6 +293,7 @@ class SimulationConfig:
             time_steps=data.get("time_steps", 101),
             fidelity_threshold=data.get("fidelity_threshold", 0.9),
             model=data.get("model", DEFAULT_SIMULATION_MODEL),
+            simulation_backend=data.get("simulation_backend", PYTHON_DENSE_BACKEND),
         )
 
 

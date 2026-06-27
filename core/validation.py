@@ -6,6 +6,7 @@ import math
 from collections.abc import Iterable, Sequence
 from typing import Any
 
+from core.backend_boundary import SUPPORTED_SIMULATION_BACKENDS
 from core.capabilities import (
     DEFAULT_SIMULATION_MODEL,
     MAX_LOGICAL_QUBITS,
@@ -299,6 +300,14 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
             "Simulation model is not supported.",
             f"Received model={config.model!r}",
             f"Set model to {DEFAULT_SIMULATION_MODEL!r}.",
+        ))
+
+    if config.simulation_backend not in SUPPORTED_SIMULATION_BACKENDS:
+        issues.append(_error(
+            "UNSUPPORTED_SIMULATION_BACKEND",
+            "Simulation backend is not supported.",
+            f"Received simulation_backend={config.simulation_backend!r}",
+            "Use 'python_dense' or 'rust_dense_preview'.",
         ))
 
     return issues

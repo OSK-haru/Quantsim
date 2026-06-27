@@ -44,6 +44,7 @@ def config_to_dict(
             "time_steps": config.time_steps,
             "fidelity_threshold": config.fidelity_threshold,
             "model": config.model,
+            "simulation_backend": config.simulation_backend,
         },
         "ui": dict(ui or {}),
     }
@@ -76,6 +77,7 @@ def config_from_dict(data: dict[str, Any]) -> SimulationConfig:
             time_steps=simulation.get("time_steps", 101),
             fidelity_threshold=simulation.get("fidelity_threshold", 0.9),
             model=simulation.get("model", "weak_coupling_lindblad"),
+            simulation_backend=simulation.get("simulation_backend", "python_dense"),
         )
     else:
         config = SimulationConfig.from_dict(data)
