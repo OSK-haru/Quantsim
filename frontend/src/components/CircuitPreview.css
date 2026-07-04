@@ -1,0 +1,101 @@
+.circuit-preview {
+  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.86);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.35);
+  color: #e5e7eb;
+}
+
+.circuit-preview__header {
+  margin-bottom: 16px;
+}
+
+.circuit-preview__eyebrow {
+  margin-bottom: 8px;
+  color: #93c5fd;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.circuit-preview__title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.4rem;
+  letter-spacing: -0.03em;
+}
+
+.circuit-preview__subtitle {
+  margin: 10px 0 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.circuit-preview__viewport {
+  overflow-x: auto;
+}
+
+.circuit-preview__svg {
+  display: block;
+  min-width: 100%;
+  height: auto;
+}
+
+.circuit-preview__qubit-label {
+  fill: #cbd5e1;
+  font-size: 14px;
+}
+
+.circuit-preview__wire {
+  stroke: rgba(148, 163, 184, 0.42);
+  stroke-width: 2;
+}
+
+.circuit-preview__duration {
+  fill: #94a3b8;
+  font-size: 12px;
+}
+
+.circuit-preview__gate {
+  fill: rgba(15, 23, 42, 0.95);
+  stroke: rgba(148, 163, 184, 0.6);
+  stroke-width: 1.5;
+}
+
+.circuit-preview__gate--measure {
+  fill: rgba(30, 41, 59, 0.96);
+}
+
+.circuit-preview__gate-label {
+  fill: #f8fafc;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.circuit-preview__control-dot {
+  fill: #f8fafc;
+}
+
+.circuit-preview__target-ring {
+  fill: rgba(15, 23, 42, 0.95);
+  stroke: #f8fafc;
+  stroke-width: 1.8;
+}
+
+.circuit-preview__target-cross {
+  stroke: #f8fafc;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.circuit-preview__cnot-line {
+  stroke: rgba(248, 250, 252, 0.65);
+  stroke-width: 1.5;
+}
+
+@media (max-width: 640px) {
+  .circuit-preview {
+    padding: 18px 16px 16px;
+  }
+}

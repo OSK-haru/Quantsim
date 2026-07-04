@@ -1,16 +1,7 @@
 import './DiagnosticsCard.css'
+import type { SimulationDiagnostics } from '../types/simulation'
 
-export type SimulationDiagnostics = {
-  simulation_model: string
-  evolution_mode: string
-  simulation_backend: string
-  backend_name: string
-  rust_kernel_mode: string
-  rust_kernel_call_count: number
-  rust_kernel_sampled_batch_count: number
-  backend_fallback_used: boolean
-  rust_kernel_fallback_used: boolean
-}
+export type { SimulationDiagnostics } from '../types/simulation'
 
 type DiagnosticsCardProps = {
   diagnostics: SimulationDiagnostics

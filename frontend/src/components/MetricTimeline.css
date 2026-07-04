@@ -1,0 +1,144 @@
+.metric-timeline {
+  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.86);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.35);
+  color: #e5e7eb;
+}
+
+.metric-timeline__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.metric-timeline__eyebrow {
+  margin-bottom: 8px;
+  color: #93c5fd;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.metric-timeline__title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.4rem;
+  letter-spacing: -0.03em;
+}
+
+.metric-timeline__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.metric-timeline__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metric-timeline__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.metric-timeline__swatch--fidelity {
+  background: #60a5fa;
+}
+
+.metric-timeline__swatch--purity {
+  background: #34d399;
+}
+
+.metric-timeline__chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.metric-timeline__axis {
+  stroke: rgba(148, 163, 184, 0.3);
+  stroke-width: 1.2;
+}
+
+.metric-timeline__line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.metric-timeline__line--fidelity {
+  stroke: url(#fidelityGradient);
+}
+
+.metric-timeline__line--purity {
+  stroke: url(#purityGradient);
+}
+
+.metric-timeline__dot {
+  stroke: #0f172a;
+  stroke-width: 2;
+}
+
+.metric-timeline__dot--fidelity {
+  fill: #60a5fa;
+}
+
+.metric-timeline__dot--purity {
+  fill: #34d399;
+}
+
+.metric-timeline__time-label {
+  fill: #94a3b8;
+  font-size: 12px;
+}
+
+.metric-timeline__summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.metric-timeline__value-card {
+  padding: 14px 15px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.56);
+}
+
+.metric-timeline__label {
+  display: block;
+  margin-bottom: 8px;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.metric-timeline__value {
+  display: block;
+  color: #f8fafc;
+  font-size: 1rem;
+}
+
+@media (max-width: 640px) {
+  .metric-timeline {
+    padding: 18px 16px 16px;
+  }
+
+  .metric-timeline__header {
+    flex-direction: column;
+  }
+}

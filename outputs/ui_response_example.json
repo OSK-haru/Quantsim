@@ -1,0 +1,212 @@
+{
+  "circuit": {
+    "qubit_count": 2,
+    "columns": [
+      {
+        "id": "step-0",
+        "step": 0,
+        "duration_us": 0.02,
+        "gates": [
+          {
+            "label": "H",
+            "type": "H",
+            "qubits": [
+              0
+            ],
+            "kind": "single"
+          }
+        ]
+      },
+      {
+        "id": "step-1",
+        "step": 1,
+        "duration_us": 0.2,
+        "gates": [
+          {
+            "label": "CNOT",
+            "type": "CNOT",
+            "qubits": [
+              0
+            ],
+            "kind": "control"
+          },
+          {
+            "label": "CNOT",
+            "type": "CNOT",
+            "qubits": [
+              1
+            ],
+            "kind": "target"
+          }
+        ]
+      }
+    ]
+  },
+  "parameters": {
+    "environment_model": "generic_superconducting_open_system_v1",
+    "input_mode": "normalized",
+    "temperature_k": null,
+    "temperature_mk": null,
+    "normalized_temperature": 0.02,
+    "qubit_frequency_ghz": null,
+    "device_quality": null,
+    "flux_noise_phi0": null,
+    "duration_us": 2.0,
+    "time_steps": 11,
+    "fidelity_threshold": 0.9,
+    "simulation_backend": "python_dense"
+  },
+  "diagnostics": {
+    "final_time_us": 2.0,
+    "final_fidelity": 0.951577116665665,
+    "final_purity": 0.9067563036463391,
+    "min_fidelity": 0.951577116665665,
+    "min_purity": 0.9067563036463391,
+    "time_step_us": 0.2,
+    "threshold_crossed": 0.0,
+    "max_trace_error": 1.1102230246251565e-16,
+    "integration_substeps": 7.0,
+    "backend_name": "python_dense_streaming_v1",
+    "simulation_model": "gate_aware_open_system",
+    "evolution_mode": "gate_aware_hamiltonian_lindblad_v1",
+    "simulation_mode": "gate_aware_hamiltonian_lindblad_v1",
+    "hamiltonian_mode": "effective_involution_generator",
+    "completion_time_us": 0.22,
+    "completion_fidelity": 0.9958784965744776,
+    "completion_purity": 0.991789918421384,
+    "configured_duration_us": 2.0,
+    "total_gate_duration_us": 0.22,
+    "idle_duration_us": 1.78,
+    "actual_duration_us": 2.0,
+    "gate_duration_model": "default_gate_duration_us_with_params_override",
+    "gate_aware_noise": 1.0,
+    "post_circuit_degradation": 0.0,
+    "recorded_state_count": 11.0,
+    "state_history_retained": 0.0,
+    "state_history_storage_mode": "streaming_metrics_only",
+    "rust_kernel_used": false,
+    "rust_kernel_mode": "none",
+    "rust_kernel_fallback_used": false,
+    "rust_kernel_fallback_reason": "",
+    "rust_kernel_call_count": 0.0,
+    "rust_kernel_segment_count": 0.0,
+    "rust_kernel_substep_count": 0.0,
+    "rust_kernel_batchable_interval_count": 0.0,
+    "rust_kernel_actual_batch_count": 0.0,
+    "rust_kernel_max_batch_substeps": 0.0,
+    "rust_kernel_mean_batch_substeps": 0.0,
+    "rust_kernel_batch_blocked_by_sampling_count": 0.0,
+    "rust_kernel_batch_blocked_by_boundary_count": 0.0,
+    "rust_kernel_sampled_batch_count": 0.0,
+    "rust_kernel_sampled_returned_state_count": 0.0,
+    "rust_kernel_max_sampled_batch_outputs": 0.0,
+    "rust_kernel_mean_sampled_batch_outputs": 0.0,
+    "rust_kernel_sampled_batch_fallback_count": 0.0,
+    "rust_kernel_sampled_batch_fallback_reason": "",
+    "python_kernel_segment_count": 29.0,
+    "python_kernel_substep_count": 29.0,
+    "complexity_hilbert_dimension": 4.0,
+    "complexity_density_matrix_entries": 16.0,
+    "complexity_dense_matmul_scale": 64.0,
+    "complexity_collapse_operator_count": 6.0,
+    "complexity_estimated_rhs_evaluations": 280.0,
+    "complexity_estimated_rk4_steps": 70.0,
+    "complexity_estimated_work_units": 107648.0,
+    "complexity_estimated_state_storage_entries": 176.0,
+    "complexity_gate_segment_count": 2.0,
+    "complexity_idle_segment_count": 1.0,
+    "complexity_total_segments": 3.0,
+    "complexity_total_segment_count": 3.0,
+    "complexity_total_rk4_substeps": 15.0,
+    "complexity_total_rhs_evaluations": 60.0,
+    "complexity_gate_rk4_substeps": 14.0,
+    "complexity_idle_rk4_substeps": 1.0,
+    "complexity_max_hamiltonian_scale_per_us": 314.1592653589793,
+    "complexity_max_environment_rate_per_us": 0.02594257099187223,
+    "complexity_max_generator_scale_per_us": 314.18520792997117,
+    "complexity_estimated_work_units_segmented": 26880.0,
+    "backend_requested": "python_dense",
+    "backend_version": "7.10",
+    "backend_available": true,
+    "backend_fallback_used": false,
+    "backend_fallback_reason": "",
+    "simulation_backend": "python_dense"
+  },
+  "summary": {
+    "final_fidelity": 0.951577116665665,
+    "final_purity": 0.9067563036463391,
+    "completion_fidelity": 0.9958784965744776,
+    "completion_purity": 0.991789918421384,
+    "effective_time_us": 2.0
+  },
+  "timeline": [
+    {
+      "time_us": 0.0,
+      "fidelity": 1.0,
+      "purity": 1.0
+    },
+    {
+      "time_us": 0.2,
+      "fidelity": 0.9962303891744199,
+      "purity": 0.9928159573997454
+    },
+    {
+      "time_us": 0.4,
+      "fidelity": 0.991255994600919,
+      "purity": 0.9826382363301267
+    },
+    {
+      "time_us": 0.6,
+      "fidelity": 0.9861581890551765,
+      "purity": 0.9726208576016203
+    },
+    {
+      "time_us": 0.8,
+      "fidelity": 0.9811004071515099,
+      "purity": 0.9627602317558017
+    },
+    {
+      "time_us": 1.0,
+      "fidelity": 0.9760823406021306,
+      "purity": 0.9530539552376661
+    },
+    {
+      "time_us": 1.2,
+      "fidelity": 0.9711036835428584,
+      "purity": 0.9434996623370417
+    },
+    {
+      "time_us": 1.4,
+      "fidelity": 0.9661641325136885,
+      "purity": 0.9340950245832034
+    },
+    {
+      "time_us": 1.6,
+      "fidelity": 0.9612633864395147,
+      "purity": 0.9248377501492672
+    },
+    {
+      "time_us": 1.8,
+      "fidelity": 0.9564011466110109,
+      "purity": 0.9157255832662086
+    },
+    {
+      "time_us": 2.0,
+      "fidelity": 0.951577116665665,
+      "purity": 0.9067563036463391
+    }
+  ],
+  "output_probabilities": {
+    "00": 0.5008819573309702,
+    "01": 0.00953649206068438,
+    "10": 0.009895231591209638,
+    "11": 0.4796863190171359
+  },
+  "run": {
+    "status": "Completed",
+    "selected_backend": "python_dense",
+    "last_run_label": "Latest simulation"
+  },
+  "warnings": [],
+  "issues": []
+}

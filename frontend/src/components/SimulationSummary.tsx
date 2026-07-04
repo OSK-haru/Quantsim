@@ -1,8 +1,9 @@
 import './SimulationSummary.css'
-import type { MockSimulationResult } from '../types/simulation'
+import type { OutputProbabilities, SimulationSummaryData } from '../types/simulation'
 
 type SimulationSummaryProps = {
-  result: MockSimulationResult
+  summary: SimulationSummaryData
+  outputProbabilities: OutputProbabilities
 }
 
 function formatPercent(value: number) {
@@ -13,6 +14,13 @@ function formatMetric(value: number) {
   return value.toFixed(12)
 }
 
+function formatOptionalMetric(value: number | null) {
+  if (value === null) {
+    return 'not available'
+  }
+  return formatMetric(value)
+}
+
 function formatTime(value: number | null) {
   if (value === null) {
     return 'not available'
@@ -21,8 +29,8 @@ function formatTime(value: number | null) {
   return `${value.toFixed(3)} us`
 }
 
-export function SimulationSummary({ result }: SimulationSummaryProps) {
-  const entries = Object.entries(result.output_probabilities)
+export function SimulationSummary({ summary, outputProbabilities }: SimulationSummaryProps) {
+  const entries = Object.entries(outputProbabilities)
 
   return (
     <section className="simulation-summary" aria-label="Simulation result summary">
@@ -36,23 +44,23 @@ export function SimulationSummary({ result }: SimulationSummaryProps) {
       <div className="simulation-summary__metrics">
         <article className="simulation-summary__metric">
           <span className="simulation-summary__label">Final fidelity</span>
-          <strong className="simulation-summary__value">{formatMetric(result.final_fidelity)}</strong>
+          <strong className="simulation-summary__value">{formatOptionalMetric(summary.final_fidelity)}</strong>
         </article>
         <article className="simulation-summary__metric">
           <span className="simulation-summary__label">Final purity</span>
-          <strong className="simulation-summary__value">{formatMetric(result.final_purity)}</strong>
+          <strong className="simulation-summary__value">{formatOptionalMetric(summary.final_purity)}</strong>
         </article>
         <article className="simulation-summary__metric">
           <span className="simulation-summary__label">Completion fidelity</span>
-          <strong className="simulation-summary__value">{formatMetric(result.completion_fidelity)}</strong>
+          <strong className="simulation-summary__value">{formatOptionalMetric(summary.completion_fidelity)}</strong>
         </article>
         <article className="simulation-summary__metric">
           <span className="simulation-summary__label">Completion purity</span>
-          <strong className="simulation-summary__value">{formatMetric(result.completion_purity)}</strong>
+          <strong className="simulation-summary__value">{formatOptionalMetric(summary.completion_purity)}</strong>
         </article>
         <article className="simulation-summary__metric simulation-summary__metric--full">
           <span className="simulation-summary__label">Effective time</span>
-          <strong className="simulation-summary__value">{formatTime(result.effective_time_us)}</strong>
+          <strong className="simulation-summary__value">{formatTime(summary.effective_time_us)}</strong>
         </article>
       </div>
 

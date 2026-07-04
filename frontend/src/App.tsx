@@ -3,6 +3,7 @@ import './App.css'
 import { type SimulationDiagnostics } from './components/DiagnosticsCard'
 import { type MockSimulationResult } from './types/simulation'
 import { HomePage } from './pages/HomePage'
+import { HelpPage } from './pages/HelpPage'
 import { SimulatePage } from './pages/SimulatePage'
 
 const statusItems = [
@@ -40,16 +41,23 @@ const mockResult: MockSimulationResult = {
 }
 
 function App() {
-  const [screen, setScreen] = useState<'home' | 'simulate'>('home')
+  const [screen, setScreen] = useState<'home' | 'simulate' | 'help'>('home')
 
-  return screen === 'home' ? (
-    <HomePage onStartSimulation={() => setScreen('simulate')} />
-  ) : (
+  if (screen === 'home') {
+    return <HomePage onStartSimulation={() => setScreen('simulate')} />
+  }
+
+  if (screen === 'help') {
+    return <HelpPage onBackToSimulation={() => setScreen('simulate')} />
+  }
+
+  return (
     <SimulatePage
       diagnostics={mockDiagnostics}
       result={mockResult}
       statusItems={statusItems}
       onBackToHome={() => setScreen('home')}
+      onOpenHelp={() => setScreen('help')}
     />
   )
 }
