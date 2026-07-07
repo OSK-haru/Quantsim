@@ -1,0 +1,119 @@
+.gate-palette {
+  padding: 20px 24px 22px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.86);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.35);
+  color: #e5e7eb;
+}
+
+.gate-palette__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.gate-palette__eyebrow {
+  margin-bottom: 8px;
+  color: #93c5fd;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.gate-palette__title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+}
+
+.gate-palette__reset {
+  padding: 9px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.32);
+  color: #e2e8f0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gate-palette__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.gate-palette__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.gate-palette__button {
+  padding: 10px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.34);
+  color: #e2e8f0;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: 0.04em;
+}
+
+.gate-palette__button--draggable {
+  cursor: grab;
+}
+
+.gate-palette__button--draggable:active {
+  cursor: grabbing;
+}
+
+.gate-palette__action {
+  padding: 9px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.28);
+  color: #e2e8f0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.gate-palette__button--selected {
+  border-color: rgba(96, 165, 250, 0.8);
+  background: rgba(30, 41, 59, 0.98);
+  color: #f8fafc;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+}
+
+.gate-palette__button--disabled {
+  border-style: dashed;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.gate-palette__action:disabled {
+  cursor: not-allowed;
+  color: #64748b;
+  border-style: dashed;
+}
+
+.gate-palette__status {
+  margin: 14px 0 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .gate-palette {
+    padding: 18px 16px 16px;
+  }
+
+  .gate-palette__header {
+    flex-direction: column;
+  }
+}

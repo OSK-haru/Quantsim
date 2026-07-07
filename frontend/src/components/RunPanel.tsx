@@ -1,4 +1,5 @@
 import './RunPanel.css'
+import { ResultDrawer } from './ResultDrawer'
 import type { RunPanelData, SimulationLoadStatus } from '../types/simulation'
 
 type RunPanelProps = {
@@ -57,18 +58,6 @@ export function RunPanel({
           <span className="run-panel__label">Last run</span>
           <strong className="run-panel__value">{run.last_run_label}</strong>
         </div>
-        <div className="run-panel__row">
-          <span className="run-panel__label">Last fetch result</span>
-          <strong className="run-panel__value">{lastFetchResult}</strong>
-        </div>
-        <div className="run-panel__row">
-          <span className="run-panel__label">Last fetch URL</span>
-          <strong className="run-panel__value">{lastFetchUrl || 'not requested yet'}</strong>
-        </div>
-        <div className="run-panel__row">
-          <span className="run-panel__label">Last fetch started</span>
-          <strong className="run-panel__value">{lastFetchStartedAt || 'not started yet'}</strong>
-        </div>
       </div>
 
       <div className="run-panel__actions">
@@ -88,6 +77,34 @@ export function RunPanel({
         >
           Run simulation
         </button>
+      </div>
+
+      <div className="run-panel__debug">
+        <ResultDrawer
+          eyebrow="API debug"
+          title="Request snapshot"
+          description="Low-level fetch metadata for the latest request."
+          defaultOpen={false}
+        >
+          <div className="run-panel__debug-grid">
+            <div className="run-panel__debug-item">
+              <span className="run-panel__debug-label">Last fetch result</span>
+              <strong className="run-panel__debug-value">{lastFetchResult}</strong>
+            </div>
+            <div className="run-panel__debug-item">
+              <span className="run-panel__debug-label">Last fetch URL</span>
+              <strong className="run-panel__debug-value">
+                {lastFetchUrl || 'not requested yet'}
+              </strong>
+            </div>
+            <div className="run-panel__debug-item">
+              <span className="run-panel__debug-label">Last fetch started</span>
+              <strong className="run-panel__debug-value">
+                {lastFetchStartedAt || 'not started yet'}
+              </strong>
+            </div>
+          </div>
+        </ResultDrawer>
       </div>
     </section>
   )

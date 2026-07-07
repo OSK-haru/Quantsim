@@ -45,17 +45,34 @@ export type SimulationParameters = {
   simulation_backend: string
 }
 
-export type SimulateRequestParameters = {
-  normalized_temperature: number
-  normalized_magnetic_field: number
-  noise_level: number
+export type PhysicalSimulationParameters = {
+  device_quality: number
+  temperature_mk: number
+  flux_noise_phi0: number
+  qubit_frequency_ghz: number
+  t1_max_us: number
+  tphi_max_us: number
   duration_us: number
   time_steps: number
   fidelity_threshold: number
 }
 
+export type SimulateRequestParameters = PhysicalSimulationParameters
+
 export type SimulateRequestParameterErrors = Partial<
   Record<keyof SimulateRequestParameters, string>
+>
+
+export type GateDurationDefaults = {
+  H: number
+  X: number
+  Z: number
+  CNOT: number
+  MEASURE: number
+}
+
+export type GateDurationDefaultErrors = Partial<
+  Record<keyof GateDurationDefaults, string>
 >
 
 export type RunPanelData = {

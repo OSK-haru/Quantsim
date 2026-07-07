@@ -1,0 +1,47 @@
+.output-probabilities {
+  display: grid;
+  gap: 12px;
+}
+
+.output-probabilities__row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.output-probabilities__state,
+.output-probabilities__probability {
+  color: #e2e8f0;
+  font-size: 0.94rem;
+}
+
+.output-probabilities__bar-track {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.output-probabilities__bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #60a5fa 0%, #34d399 100%);
+}
+
+.output-probabilities__empty {
+  margin: 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .output-probabilities__row {
+    grid-template-columns: 44px 1fr;
+  }
+
+  .output-probabilities__probability {
+    grid-column: 2;
+    justify-self: end;
+  }
+}

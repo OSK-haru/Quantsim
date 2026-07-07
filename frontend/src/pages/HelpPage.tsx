@@ -1,8 +1,12 @@
 import './HelpPage.css'
+import { MODEL_IDS, getModelLabel } from '../utils/modelLabels'
 
 type HelpPageProps = {
   onBackToSimulation: () => void
 }
+
+const currentEvolutionLabel = getModelLabel(MODEL_IDS.evolutionMode).label
+const plannedModeLabel = getModelLabel(MODEL_IDS.plannedMode).label
 
 const helpItems = [
   {
@@ -38,7 +42,7 @@ const helpItems = [
   {
     question: 'What model is QuantaScope using?',
     answer:
-      'QuantaScope uses an educational weak-coupling open-system simulation. It uses gate-aware Lindblad-style evolution for a one-qubit H-gate model and maps environment settings into simple T1 and T2 lifetimes. The goal is to show trends under the chosen model, not to reproduce every hardware detail.',
+      `QuantaScope currently uses ${currentEvolutionLabel}, an educational weak-coupling open-system simulation. It maps environment settings into simple T1 and T2 lifetimes so users can see trends under the chosen model, not exact hardware predictions. ${plannedModeLabel} is a planned future mode and is not implemented in the current simulation path.`,
   },
   {
     question: 'Is this a hardware-accurate simulator?',
@@ -71,8 +75,8 @@ export function HelpPage({ onBackToSimulation }: HelpPageProps) {
 
       <section className="help-page__intro" aria-label="Model note">
         <p>
-          These answers describe the simplified one-qubit model used by the app.
-          The simulation is educational, gate-aware, and built to show trends under
+          These answers describe the simplified model used by the app. The current
+          simulation is educational, gate-aware, Lindblad-based, and built to show trends under
           the chosen environment settings.
         </p>
       </section>

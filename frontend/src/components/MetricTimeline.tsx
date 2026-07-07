@@ -8,6 +8,8 @@ type MetricTimelineProps = {
 const width = 640
 const height = 240
 const padding = 28
+const denseTimelineThreshold = 80
+const maxDenseMarkers = 12
 
 function scaleX(index: number, count: number) {
   if (count <= 1) {
@@ -36,10 +38,20 @@ function buildPath(points: MetricPoint[], selector: (point: MetricPoint) => numb
     .join(' ')
 }
 
+function shouldShowSample(index: number, count: number) {
+  if (count <= denseTimelineThreshold) {
+    return true
+  }
+
+  const interval = Math.max(1, Math.ceil(count / maxDenseMarkers))
+  return index === count - 1 || index % interval === 0
+}
+
 export function MetricTimeline({ timeline }: MetricTimelineProps) {
   const fidelityPath = buildPath(timeline, (point) => safeMetric(point.fidelity))
   const purityPath = buildPath(timeline, (point) => safeMetric(point.purity))
   const finalPoint = timeline[timeline.length - 1]
+  const isDense = timeline.length > denseTimelineThreshold
 
   return (
     <section className="metric-timeline" aria-label="Metric timeline">
@@ -84,17 +96,38 @@ export function MetricTimeline({ timeline }: MetricTimelineProps) {
         <path d={purityPath} className="metric-timeline__line metric-timeline__line--purity" />
 
         {timeline.map((point, index) => {
+          if (isDense && !shouldShowSample(index, timeline.length)) {
+            return null
+          }
+
           const x = scaleX(index, timeline.length)
           const fidelityY = scaleY(safeMetric(point.fidelity))
           const purityY = scaleY(safeMetric(point.purity))
 
           return (
             <g key={point.time_us}>
-              <circle cx={x} cy={fidelityY} r={4} className="metric-timeline__dot metric-timeline__dot--fidelity" />
-              <circle cx={x} cy={purityY} r={4} className="metric-timeline__dot metric-timeline__dot--purity" />
-              <text x={x} y={height - 8} textAnchor="middle" className="metric-timeline__time-label">
-                {point.time_us}us
-              </text>
+              <circle
+                cx={x}
+                cy={fidelityY}
+                r={isDense ? 3 : 4}
+                className="metric-timeline__dot metric-timeline__dot--fidelity"
+              />
+              <circle
+                cx={x}
+                cy={purityY}
+                r={isDense ? 3 : 4}
+                className="metric-timeline__dot metric-timeline__dot--purity"
+              />
+              {!isDense ? (
+                <text
+                  x={x}
+                  y={height - 8}
+                  textAnchor="middle"
+                  className="metric-timeline__time-label"
+                >
+                  {point.time_us}us
+                </text>
+              ) : null}
             </g>
           )
         })}

@@ -58,6 +58,13 @@
   text-transform: uppercase;
 }
 
+.parameter-panel__section-note {
+  margin: -4px 0 12px;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
 .parameter-panel__list {
   display: grid;
   gap: 12px;
@@ -86,6 +93,11 @@
 .parameter-panel__fields {
   display: grid;
   gap: 14px;
+}
+
+.parameter-panel__fields--compact {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
 }
 
 .parameter-panel__field {

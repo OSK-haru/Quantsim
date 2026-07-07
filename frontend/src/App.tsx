@@ -5,13 +5,14 @@ import { type MockSimulationResult } from './types/simulation'
 import { HomePage } from './pages/HomePage'
 import { HelpPage } from './pages/HelpPage'
 import { SimulatePage } from './pages/SimulatePage'
+import { MODEL_IDS, modelStatusText } from './utils/modelLabels'
 
 const statusItems = [
-  { label: 'Simulation model', value: 'gate_aware_open_system' },
-  { label: 'Evolution mode', value: 'gate_aware_hamiltonian_lindblad_v1' },
-  { label: 'Default backend', value: 'python_dense' },
-  { label: 'Preview backend', value: 'rust_dense_preview' },
-  { label: 'Future mode', value: 'gate_aware_cptp_kraus' },
+  { label: 'Simulation model', value: modelStatusText(MODEL_IDS.simulationModel) },
+  { label: 'Evolution mode', value: modelStatusText(MODEL_IDS.evolutionMode) },
+  { label: 'Default backend', value: modelStatusText(MODEL_IDS.defaultBackend) },
+  { label: 'Preview backend', value: modelStatusText(MODEL_IDS.previewBackend) },
+  { label: 'Planned mode', value: modelStatusText(MODEL_IDS.plannedMode) },
 ]
 
 const mockDiagnostics: SimulationDiagnostics = {

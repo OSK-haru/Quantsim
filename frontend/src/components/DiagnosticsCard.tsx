@@ -1,4 +1,6 @@
 import './DiagnosticsCard.css'
+import { ResultDrawer } from './ResultDrawer'
+import { getModelLabel } from '../utils/modelLabels'
 import type { SimulationDiagnostics } from '../types/simulation'
 
 export type { SimulationDiagnostics } from '../types/simulation'
@@ -7,34 +9,41 @@ type DiagnosticsCardProps = {
   diagnostics: SimulationDiagnostics
 }
 
+function ModelValue({ id }: { id: string }) {
+  const info = getModelLabel(id)
+
+  return (
+    <strong className="diagnostics-value">
+      <span>{info.label}</span>
+      <span className="diagnostics-value__id">{info.id}</span>
+    </strong>
+  )
+}
+
 export function DiagnosticsCard({ diagnostics }: DiagnosticsCardProps) {
   return (
-    <section className="diagnostics-card" aria-label="Diagnostics">
-      <div className="diagnostics-card__header">
-        <div>
-          <div className="diagnostics-card__eyebrow">Diagnostics</div>
-          <h2 className="diagnostics-card__title">Runtime snapshot</h2>
-        </div>
-      </div>
-
+    <ResultDrawer
+      eyebrow="Diagnostics"
+      title="Runtime snapshot"
+      description="Backend and runtime details for the latest response."
+      defaultOpen={false}
+    >
       <div className="diagnostics-grid">
         <div className="diagnostics-item">
           <span className="diagnostics-label">Simulation model</span>
-          <strong className="diagnostics-value">{diagnostics.simulation_model}</strong>
+          <ModelValue id={diagnostics.simulation_model} />
         </div>
         <div className="diagnostics-item">
           <span className="diagnostics-label">Evolution mode</span>
-          <strong className="diagnostics-value">{diagnostics.evolution_mode}</strong>
+          <ModelValue id={diagnostics.evolution_mode} />
         </div>
         <div className="diagnostics-item">
           <span className="diagnostics-label">Simulation backend</span>
-          <strong className="diagnostics-value">
-            {diagnostics.simulation_backend}
-          </strong>
+          <ModelValue id={diagnostics.simulation_backend} />
         </div>
         <div className="diagnostics-item">
           <span className="diagnostics-label">Backend name</span>
-          <strong className="diagnostics-value">{diagnostics.backend_name}</strong>
+          <ModelValue id={diagnostics.backend_name} />
         </div>
         <div className="diagnostics-item">
           <span className="diagnostics-label">Rust kernel mode</span>
@@ -42,9 +51,7 @@ export function DiagnosticsCard({ diagnostics }: DiagnosticsCardProps) {
         </div>
         <div className="diagnostics-item">
           <span className="diagnostics-label">Rust call count</span>
-          <strong className="diagnostics-value">
-            {diagnostics.rust_kernel_call_count}
-          </strong>
+          <strong className="diagnostics-value">{diagnostics.rust_kernel_call_count}</strong>
         </div>
         <div className="diagnostics-item">
           <span className="diagnostics-label">Sampled batches</span>
@@ -62,6 +69,6 @@ export function DiagnosticsCard({ diagnostics }: DiagnosticsCardProps) {
           {diagnostics.rust_kernel_fallback_used ? 'Rust fallback' : 'Rust active'}
         </span>
       </div>
-    </section>
+    </ResultDrawer>
   )
 }
