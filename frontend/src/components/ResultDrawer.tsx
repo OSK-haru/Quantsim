@@ -1,9 +1,12 @@
 import { useId, useState, type ReactNode } from 'react'
 import './ResultDrawer.css'
+import { SectionHeader } from './SectionHeader'
+import type { SectionIconName } from './SectionIcon'
 
 type ResultDrawerProps = {
   eyebrow: string
   title: string
+  icon?: SectionIconName
   description?: string
   defaultOpen?: boolean
   children: ReactNode
@@ -12,6 +15,7 @@ type ResultDrawerProps = {
 export function ResultDrawer({
   eyebrow,
   title,
+  icon = 'terminal',
   description,
   defaultOpen = false,
   children,
@@ -22,11 +26,14 @@ export function ResultDrawer({
   return (
     <section className="result-drawer" data-open={isOpen}>
       <div className="result-drawer__header">
-        <div className="result-drawer__heading">
-          <div className="result-drawer__eyebrow">{eyebrow}</div>
-          <h3 className="result-drawer__title">{title}</h3>
-          {description ? <p className="result-drawer__description">{description}</p> : null}
-        </div>
+        <SectionHeader
+          className="result-drawer__heading"
+          eyebrow={eyebrow}
+          title={title}
+          icon={icon}
+          description={description}
+          headingLevel="h3"
+        />
         <button
           className="result-drawer__toggle"
           type="button"

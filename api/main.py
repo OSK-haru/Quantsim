@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from typing import Literal
+from time import perf_counter
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, root_validator, validator
@@ -24,6 +25,28 @@ class GateDurationDefaultsRequest(BaseModel):
     Z: float = Field(default=0.0, ge=0.0)
     CNOT: float = Field(default=0.2, gt=0.0)
     MEASURE: float = Field(default=0.0, ge=0.0)
+
+
+class SnapshotOptionsRequest(BaseModel):
+    enabled: bool = True
+    uniform_count: int = Field(default=0, ge=0, le=100)
+    custom_times_us: list[float] = Field(default_factory=list, max_items=100)
+    include_initial: bool = True
+    include_final: bool = True
+    include_column_boundaries: bool = True
+    include_after_circuit: bool = True
+
+    @validator("uniform_count")
+    def validate_uniform_count(cls, value: int) -> int:
+        if value == 1:
+            raise ValueError("uniform_count must be 0 or an integer from 2 to 100")
+        return value
+
+    @validator("custom_times_us", each_item=True)
+    def validate_custom_time(cls, value: float) -> float:
+        if not math.isfinite(value) or value < 0.0:
+            raise ValueError("custom_times_us must contain finite, non-negative times")
+        return value
 
 
 class SimulationParametersRequest(BaseModel):
@@ -134,6 +157,7 @@ class SimulateRequest(BaseModel):
         default_factory=GateDurationDefaultsRequest
     )
     circuit_config: CircuitConfigRequest | None = None
+    snapshot_options: SnapshotOptionsRequest | None = None
     parameters: SimulationParametersRequest
 
     @root_validator(pre=True)
@@ -177,6 +201,16 @@ class SimulateRequest(BaseModel):
                 f"parameters missing required fields for {input_mode} input_mode: "
                 f"{joined_fields}"
             )
+        snapshot_options = values.get("snapshot_options")
+        if isinstance(snapshot_options, dict):
+            custom_times = snapshot_options.get("custom_times_us") or []
+            duration_us = parameters.get("duration_us")
+            if duration_us is not None:
+                for time_us in custom_times:
+                    if isinstance(time_us, (int, float)) and time_us > duration_us:
+                        raise ValueError(
+                            "snapshot_options.custom_times_us must not exceed parameters.duration_us"
+                        )
         return values
 
 
@@ -311,6 +345,19 @@ def build_config_from_simulate_request(request: SimulateRequest) -> SimulationCo
             "fidelity_threshold",
         ),
         simulation_backend=request.simulation_backend,
+        snapshot_options=(
+            None
+            if request.snapshot_options is None
+            else {
+                "enabled": request.snapshot_options.enabled,
+                "uniform_count": request.snapshot_options.uniform_count,
+                "custom_times_us": request.snapshot_options.custom_times_us,
+                "include_initial": request.snapshot_options.include_initial,
+                "include_final": request.snapshot_options.include_final,
+                "include_column_boundaries": request.snapshot_options.include_column_boundaries,
+                "include_after_circuit": request.snapshot_options.include_after_circuit,
+            }
+        ),
     )
 
 
@@ -333,11 +380,46 @@ def simulation_example() -> dict[str, object]:
 
 @app.post("/api/simulate")
 def simulate(request: SimulateRequest) -> dict[str, object]:
+    request_started_at = perf_counter()
     try:
-        result = run_simulation(build_config_from_simulate_request(request))
+        config_started_at = perf_counter()
+        config = build_config_from_simulate_request(request)
+        build_config_ms = (perf_counter() - config_started_at) * 1000.0
+
+        run_started_at = perf_counter()
+        result = run_simulation(config)
+        run_simulation_ms = (perf_counter() - run_started_at) * 1000.0
+
+        ui_response_started_at = perf_counter()
+        response = simulation_result_to_ui_response(result)
+        ui_response_ms = (perf_counter() - ui_response_started_at) * 1000.0
+
+        total_request_ms = (perf_counter() - request_started_at) * 1000.0
+        diagnostics = response.get("diagnostics")
+        if isinstance(diagnostics, dict):
+            diagnostics.update({
+                "api_build_config_ms": round(build_config_ms, 3),
+                "api_run_simulation_ms": round(run_simulation_ms, 3),
+                "api_ui_response_ms": round(ui_response_ms, 3),
+                "api_total_request_ms": round(total_request_ms, 3),
+                "api_logical_qubits": int(config.circuit.logical_qubits),
+                "api_circuit_column_count": len(config.circuit.columns),
+                "api_circuit_gate_count": sum(
+                    len(column.gates) for column in config.circuit.columns
+                ),
+                "api_time_steps": int(config.time_steps),
+                "api_duration_us": float(config.duration_us),
+            })
+
+        return response
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(
             status_code=500,
-            detail="Simulation failed.",
+            detail={
+                "message": "Simulation failed.",
+                "error_type": exc.__class__.__name__,
+                "error": str(exc),
+            },
         ) from exc
-    return simulation_result_to_ui_response(result)

@@ -6,6 +6,7 @@ import type {
   InitialQubitState,
 } from '../types/circuit'
 import { circuitEditorStateToConfig } from './circuitConfig'
+import { findColumnCollision } from './circuitEditing'
 
 export type CircuitConfigGate = {
   type: GateType
@@ -31,7 +32,8 @@ export type CircuitConfigBundle = {
   circuit_config: CircuitConfig
 }
 
-const MAX_SUPPORTED_QUBITS = 2
+const MIN_SUPPORTED_QUBITS = 2
+const MAX_SUPPORTED_QUBITS = 4
 const WRAPPER_KIND = 'quantscope_circuit_config'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -141,11 +143,8 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
   }
 
   const logicalQubits = candidate.logical_qubits
-  if (!isFiniteInteger(logicalQubits) || logicalQubits < 1 || logicalQubits > 4) {
-    throw new Error('Import failed: logical_qubits must be an integer from 1 to 4.')
-  }
-  if (logicalQubits !== MAX_SUPPORTED_QUBITS) {
-    throw new Error('Import failed: current editor supports 2 qubits only.')
+  if (!isFiniteInteger(logicalQubits) || logicalQubits < MIN_SUPPORTED_QUBITS || logicalQubits > MAX_SUPPORTED_QUBITS) {
+    throw new Error('Import failed: logical_qubits must be an integer from 2 to 4.')
   }
 
   const initialStates = candidate.initial_states
@@ -167,6 +166,9 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
   const columns = candidate.columns
   if (!Array.isArray(columns)) {
     throw new Error('Import failed: columns must be an array.')
+  }
+  if (columns.length < 1) {
+    throw new Error('Import failed: columns must include at least one column.')
   }
 
   const normalizedColumns: CircuitConfigColumn[] = columns.map((column, columnIndex) => {
@@ -234,7 +236,7 @@ function createImportedGateId(
 }
 
 export function circuitConfigToEditorState(config: CircuitConfig): CircuitEditorState {
-  return {
+  const editorState = {
     logical_qubits: config.logical_qubits,
     initial_states: [...config.initial_states] as InitialQubitState[],
     columns: config.columns.map((column): CircuitColumn => ({
@@ -254,6 +256,21 @@ export function circuitConfigToEditorState(config: CircuitConfig): CircuitEditor
       })),
     })),
   }
+
+  for (const column of editorState.columns) {
+    const acceptedGates: CircuitGate[] = []
+    for (const gate of column.gates) {
+      const collision = findColumnCollision({ ...column, gates: acceptedGates }, gate)
+      if (collision !== null) {
+        throw new Error(
+          `Import failed: ${gate.type} collides with another gate at step ${column.step}.`,
+        )
+      }
+      acceptedGates.push(gate)
+    }
+  }
+
+  return editorState
 }
 
 export function parseCircuitConfigJson(text: string): CircuitEditorState {

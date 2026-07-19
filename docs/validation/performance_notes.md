@@ -5,13 +5,13 @@ They are informational and intentionally not used as strict pass/fail thresholds
 
 | Operation | Elapsed seconds |
 | --- | ---: |
-| 1-qubit H | 0.001322 |
-| 1-qubit X | 0.001252 |
-| 2-qubit Bell | 0.006501 |
-| 1-qubit comparison | 0.003158 |
-| 2-qubit comparison | 0.013688 |
-| expert data generation | 0.001980 |
-| result JSON export | 0.000222 |
-| result CSV export | 0.000050 |
-| Markdown export | 0.001274 |
-| save/load config | 0.003553 |
+| 1-qubit H | 0.000654 |
+| 1-qubit X | 0.000667 |
+| 2-qubit Bell | 0.001350 |
+| 1-qubit comparison | 0.001306 |
+| 2-qubit comparison | 0.002905 |
+| expert data generation | 0.001580 |
+| result JSON export | 0.000197 |
+| result CSV export | 0.000045 |
+| Markdown export | 0.001780 |
+| save/load config | 0.003966 |

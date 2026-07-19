@@ -1,0 +1,2 @@
+# Optional independent-solver validation dependency. Not required by production.
+qutip>=5.2,<6

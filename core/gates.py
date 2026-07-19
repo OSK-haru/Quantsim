@@ -8,6 +8,7 @@ from math import pi, sqrt
 
 from core.capabilities import normalize_gate_type
 from core.circuit_model import GateOperation
+from core.internal_profiling import active_internal_profile, elapsed_ms, timer_start
 
 
 Matrix = tuple[tuple[complex, ...], ...]
@@ -197,20 +198,20 @@ def output_probabilities(rho: Matrix, n_qubits: int) -> dict[str, float]:
 
 def multi_qubit_collapse_operators(
     n_qubits: int,
-    gamma1: float,
-    gammaphi: float,
+    downward_rate_per_us: float,
+    dephasing_rate_per_us: float,
 ) -> list[Matrix]:
-    """Create relaxation and dephasing operators for each qubit."""
+    """Create legacy downward-relaxation and dephasing operators for each qubit."""
 
     collapse_ops: list[Matrix] = []
-    if gamma1 > 0.0:
-        relaxation = sqrt(gamma1)
+    if downward_rate_per_us > 0.0:
+        relaxation = sqrt(downward_rate_per_us)
         for qubit in range(n_qubits):
             collapse_ops.append(
                 scale(relaxation, expand_single_qubit_gate(SIGMA_MINUS, qubit, n_qubits))
             )
-    if gammaphi > 0.0:
-        dephasing = sqrt(gammaphi / 2.0)
+    if dephasing_rate_per_us > 0.0:
+        dephasing = sqrt(dephasing_rate_per_us / 2.0)
         for qubit in range(n_qubits):
             collapse_ops.append(
                 scale(dephasing, expand_single_qubit_gate(Z, qubit, n_qubits))
@@ -220,27 +221,27 @@ def multi_qubit_collapse_operators(
 
 def multi_qubit_physical_collapse_operators(
     n_qubits: int,
-    gamma_down: float,
-    gamma_up: float,
-    gamma_phi: float,
+    gamma_down_per_us: float,
+    gamma_up_per_us: float,
+    gamma_phi_per_us: float,
 ) -> list[Matrix]:
     """Create finite-temperature relaxation, excitation, and dephasing operators."""
 
     collapse_ops: list[Matrix] = []
-    if gamma_down > 0.0:
-        relaxation = sqrt(gamma_down)
+    if gamma_down_per_us > 0.0:
+        relaxation = sqrt(gamma_down_per_us)
         for qubit in range(n_qubits):
             collapse_ops.append(
                 scale(relaxation, expand_single_qubit_gate(SIGMA_MINUS, qubit, n_qubits))
             )
-    if gamma_up > 0.0:
-        excitation = sqrt(gamma_up)
+    if gamma_up_per_us > 0.0:
+        excitation = sqrt(gamma_up_per_us)
         for qubit in range(n_qubits):
             collapse_ops.append(
                 scale(excitation, expand_single_qubit_gate(SIGMA_PLUS, qubit, n_qubits))
             )
-    if gamma_phi > 0.0:
-        dephasing = sqrt(gamma_phi / 2.0)
+    if gamma_phi_per_us > 0.0:
+        dephasing = sqrt(gamma_phi_per_us / 2.0)
         for qubit in range(n_qubits):
             collapse_ops.append(
                 scale(dephasing, expand_single_qubit_gate(Z, qubit, n_qubits))
@@ -267,13 +268,27 @@ def prepare_collapse_operators(
 ) -> tuple[CachedCollapseOperator, ...]:
     """Precompute adjoint products for repeated Lindblad RHS evaluations."""
 
+    profile = active_internal_profile()
     cached = []
     for collapse_op in collapse_ops:
-        operator_adjoint = adjoint(collapse_op)
+        if profile is None:
+            operator_adjoint = adjoint(collapse_op)
+            operator_adjoint_operator = matmul(operator_adjoint, collapse_op)
+        else:
+            started_at = timer_start()
+            operator_adjoint = adjoint(collapse_op)
+            profile.collapse_adjoint_build_count += 1
+            profile.collapse_adjoint_build_ms += elapsed_ms(started_at)
+
+            started_at = timer_start()
+            operator_adjoint_operator = matmul(operator_adjoint, collapse_op)
+            profile.ldagger_l_build_count += 1
+            profile.ldagger_l_build_ms += elapsed_ms(started_at)
+
         cached.append(CachedCollapseOperator(
             operator=collapse_op,
             operator_adjoint=operator_adjoint,
-            operator_adjoint_operator=matmul(operator_adjoint, collapse_op),
+            operator_adjoint_operator=operator_adjoint_operator,
         ))
     return tuple(cached)
 
@@ -299,22 +314,61 @@ def lindblad_rhs_cached(
     hamiltonian: Matrix,
     collapse_ops: Sequence[CachedCollapseOperator],
 ) -> Matrix:
-    commutator = subtract(matmul(hamiltonian, rho), matmul(rho, hamiltonian))
-    derivative = scale(-1j, commutator)
+    profile = active_internal_profile()
+    if profile is None:
+        if _is_zero_matrix(hamiltonian):
+            derivative = zero_hamiltonian(len(rho))
+        else:
+            commutator = subtract(matmul(hamiltonian, rho), matmul(rho, hamiltonian))
+            derivative = scale(-1j, commutator)
 
-    for collapse_op in collapse_ops:
-        dissipator = subtract(
-            matmul(matmul(collapse_op.operator, rho), collapse_op.operator_adjoint),
-            scale(
-                0.5,
-                add(
-                    matmul(collapse_op.operator_adjoint_operator, rho),
-                    matmul(rho, collapse_op.operator_adjoint_operator),
+        for collapse_op in collapse_ops:
+            dissipator = subtract(
+                matmul(matmul(collapse_op.operator, rho), collapse_op.operator_adjoint),
+                scale(
+                    0.5,
+                    add(
+                        matmul(collapse_op.operator_adjoint_operator, rho),
+                        matmul(rho, collapse_op.operator_adjoint_operator),
+                    ),
                 ),
-            ),
-        )
-        derivative = add(derivative, dissipator)
-    return derivative
+            )
+            derivative = add(derivative, dissipator)
+        return derivative
+
+    rhs_started_at = timer_start()
+    profile.rhs_call_count += 1
+    try:
+        started_at = timer_start()
+        if _is_zero_matrix(hamiltonian):
+            derivative = zero_hamiltonian(len(rho))
+            profile.zero_hamiltonian_skip_count += 1
+        else:
+            commutator = subtract(matmul(hamiltonian, rho), matmul(rho, hamiltonian))
+            derivative = scale(-1j, commutator)
+        profile.hamiltonian_term_ms += elapsed_ms(started_at)
+
+        for collapse_op in collapse_ops:
+            profile.dissipator_operator_iterations += 1
+            started_at = timer_start()
+            dissipator = subtract(
+                matmul(matmul(collapse_op.operator, rho), collapse_op.operator_adjoint),
+                scale(
+                    0.5,
+                    add(
+                        matmul(collapse_op.operator_adjoint_operator, rho),
+                        matmul(rho, collapse_op.operator_adjoint_operator),
+                    ),
+                ),
+            )
+            profile.dissipator_total_ms += elapsed_ms(started_at)
+
+            started_at = timer_start()
+            derivative = add(derivative, dissipator)
+            profile.matrix_accumulation_ms += elapsed_ms(started_at)
+        return derivative
+    finally:
+        profile.rhs_total_ms += elapsed_ms(rhs_started_at)
 
 
 def rk4_step(
@@ -337,17 +391,36 @@ def rk4_step_cached(
     collapse_ops: Sequence[CachedCollapseOperator],
     dt: float,
 ) -> Matrix:
-    k1 = lindblad_rhs_cached(rho, hamiltonian, collapse_ops)
-    k2 = lindblad_rhs_cached(add(rho, scale(0.5 * dt, k1)), hamiltonian, collapse_ops)
-    k3 = lindblad_rhs_cached(add(rho, scale(0.5 * dt, k2)), hamiltonian, collapse_ops)
-    k4 = lindblad_rhs_cached(add(rho, scale(dt, k3)), hamiltonian, collapse_ops)
-    return add(
-        rho,
-        scale(
-            dt / 6.0,
-            add(k1, scale(2.0, k2), scale(2.0, k3), k4),
-        ),
-    )
+    profile = active_internal_profile()
+    if profile is None:
+        k1 = lindblad_rhs_cached(rho, hamiltonian, collapse_ops)
+        k2 = lindblad_rhs_cached(add(rho, scale(0.5 * dt, k1)), hamiltonian, collapse_ops)
+        k3 = lindblad_rhs_cached(add(rho, scale(0.5 * dt, k2)), hamiltonian, collapse_ops)
+        k4 = lindblad_rhs_cached(add(rho, scale(dt, k3)), hamiltonian, collapse_ops)
+        return add(
+            rho,
+            scale(
+                dt / 6.0,
+                add(k1, scale(2.0, k2), scale(2.0, k3), k4),
+            ),
+        )
+
+    started_at = timer_start()
+    profile.rk4_step_count += 1
+    try:
+        k1 = lindblad_rhs_cached(rho, hamiltonian, collapse_ops)
+        k2 = lindblad_rhs_cached(add(rho, scale(0.5 * dt, k1)), hamiltonian, collapse_ops)
+        k3 = lindblad_rhs_cached(add(rho, scale(0.5 * dt, k2)), hamiltonian, collapse_ops)
+        k4 = lindblad_rhs_cached(add(rho, scale(dt, k3)), hamiltonian, collapse_ops)
+        return add(
+            rho,
+            scale(
+                dt / 6.0,
+                add(k1, scale(2.0, k2), scale(2.0, k3), k4),
+            ),
+        )
+    finally:
+        profile.rk4_total_ms += elapsed_ms(started_at)
 
 
 def zero_hamiltonian(dimension: int) -> Matrix:
@@ -368,6 +441,21 @@ def identity_matrix(dimension: int) -> Matrix:
 
 
 def matmul(left: Matrix, right: Matrix) -> Matrix:
+    profile = active_internal_profile()
+    if profile is not None:
+        started_at = timer_start()
+        try:
+            return _matmul(left, right)
+        finally:
+            elapsed = elapsed_ms(started_at)
+            profile.matmul_call_count += 1
+            profile.matmul_total_ms += elapsed
+            profile.python_matmul_call_count += 1
+            profile.python_matmul_total_ms += elapsed
+    return _matmul(left, right)
+
+
+def _matmul(left: Matrix, right: Matrix) -> Matrix:
     if len(left[0]) != len(right):
         raise ValueError("matrix dimensions do not align")
     return tuple(
@@ -380,6 +468,18 @@ def matmul(left: Matrix, right: Matrix) -> Matrix:
 
 
 def add(*matrices: Matrix) -> Matrix:
+    profile = active_internal_profile()
+    if profile is not None:
+        started_at = timer_start()
+        try:
+            return _add(*matrices)
+        finally:
+            profile.matrix_add_scale_call_count += 1
+            profile.matrix_add_scale_total_ms += elapsed_ms(started_at)
+    return _add(*matrices)
+
+
+def _add(*matrices: Matrix) -> Matrix:
     if not matrices:
         raise ValueError("at least one matrix is required")
     return tuple(
@@ -396,6 +496,18 @@ def subtract(left: Matrix, right: Matrix) -> Matrix:
 
 
 def scale(value: complex, matrix: Matrix) -> Matrix:
+    profile = active_internal_profile()
+    if profile is not None:
+        started_at = timer_start()
+        try:
+            return _scale(value, matrix)
+        finally:
+            profile.matrix_add_scale_call_count += 1
+            profile.matrix_add_scale_total_ms += elapsed_ms(started_at)
+    return _scale(value, matrix)
+
+
+def _scale(value: complex, matrix: Matrix) -> Matrix:
     return tuple(
         tuple(value * entry for entry in row)
         for row in matrix
@@ -403,10 +515,26 @@ def scale(value: complex, matrix: Matrix) -> Matrix:
 
 
 def adjoint(matrix: Matrix) -> Matrix:
+    profile = active_internal_profile()
+    if profile is not None:
+        started_at = timer_start()
+        try:
+            return _adjoint(matrix)
+        finally:
+            profile.adjoint_call_count += 1
+            profile.adjoint_total_ms += elapsed_ms(started_at)
+    return _adjoint(matrix)
+
+
+def _adjoint(matrix: Matrix) -> Matrix:
     return tuple(
         tuple(matrix[row][column].conjugate() for row in range(len(matrix)))
         for column in range(len(matrix[0]))
     )
+
+
+def _is_zero_matrix(matrix: Matrix) -> bool:
+    return all(entry == 0.0 for row in matrix for entry in row)
 
 
 def trace(matrix: Matrix) -> complex:

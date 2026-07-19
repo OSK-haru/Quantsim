@@ -19,6 +19,7 @@ from core.physical_environment import (
     input_mode_from_legacy_model,
     normalize_environment_model,
 )
+from core.state_snapshots import SnapshotOptions, StateSnapshot
 
 
 @dataclass(init=False)
@@ -252,6 +253,7 @@ class SimulationConfig:
     fidelity_threshold: float = 0.9
     model: str = DEFAULT_SIMULATION_MODEL
     simulation_backend: str = PYTHON_DENSE_BACKEND
+    snapshot_options: SnapshotOptions | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.circuit, CircuitConfig):
@@ -271,6 +273,17 @@ class SimulationConfig:
         self.simulation_backend = str(self.simulation_backend)
         if not self.simulation_backend:
             raise ValueError("simulation_backend must not be empty")
+        if self.snapshot_options is not None and not isinstance(
+            self.snapshot_options,
+            SnapshotOptions,
+        ):
+            self.snapshot_options = SnapshotOptions.from_dict(self.snapshot_options)
+        if self.snapshot_options is not None:
+            for time_us in self.snapshot_options.custom_times_us:
+                if time_us > self.duration_us + 1e-12:
+                    raise ValueError(
+                        "snapshot_options.custom_times_us values must not exceed duration_us"
+                    )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -281,6 +294,11 @@ class SimulationConfig:
             "fidelity_threshold": self.fidelity_threshold,
             "model": self.model,
             "simulation_backend": self.simulation_backend,
+            "snapshot_options": (
+                None
+                if self.snapshot_options is None
+                else self.snapshot_options.to_dict()
+            ),
         }
 
     @classmethod
@@ -294,6 +312,11 @@ class SimulationConfig:
             fidelity_threshold=data.get("fidelity_threshold", 0.9),
             model=data.get("model", DEFAULT_SIMULATION_MODEL),
             simulation_backend=data.get("simulation_backend", PYTHON_DENSE_BACKEND),
+            snapshot_options=(
+                None
+                if data.get("snapshot_options") is None
+                else SnapshotOptions.from_dict(data["snapshot_options"])
+            ),
         )
 
 
@@ -311,6 +334,7 @@ class SimulationResult:
     diagnostics: dict[str, Any] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     issues: list[ValidationIssue] = field(default_factory=list)
+    state_snapshots: list[StateSnapshot] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not isinstance(self.config, SimulationConfig):
@@ -345,6 +369,12 @@ class SimulationResult:
             else ValidationIssue.from_dict(issue)
             for issue in self.issues
         ]
+        self.state_snapshots = [
+            snapshot
+            if isinstance(snapshot, StateSnapshot)
+            else StateSnapshot.from_dict(snapshot)
+            for snapshot in self.state_snapshots
+        ]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -358,6 +388,10 @@ class SimulationResult:
             "diagnostics": dict(self.diagnostics),
             "warnings": list(self.warnings),
             "issues": [issue.to_dict() for issue in self.issues],
+            "state_snapshots": [
+                snapshot.to_dict()
+                for snapshot in self.state_snapshots
+            ],
         }
 
     @classmethod
@@ -378,6 +412,12 @@ class SimulationResult:
                 if isinstance(issue, ValidationIssue)
                 else ValidationIssue.from_dict(issue)
                 for issue in data.get("issues", [])
+            ],
+            state_snapshots=[
+                snapshot
+                if isinstance(snapshot, StateSnapshot)
+                else StateSnapshot.from_dict(snapshot)
+                for snapshot in data.get("state_snapshots", [])
             ],
         )
 

@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import './SimulatePage.css'
-import { CircuitPreview } from '../components/CircuitPreview'
-import { CircuitConfigPreview } from '../components/CircuitConfigPreview'
+import { CircuitSummaryCard } from '../components/CircuitSummaryCard'
+import { DensityMatrixSummaryCard } from '../components/DensityMatrixSummaryCard'
 import { DiagnosticsCard, type SimulationDiagnostics } from '../components/DiagnosticsCard'
-import { GatePalette } from '../components/GatePalette'
 import { MetricTimeline } from '../components/MetricTimeline'
 import { ModelInfoPanel } from '../components/ModelInfoPanel'
 import { OutputProbabilities } from '../components/OutputProbabilities'
@@ -12,44 +11,20 @@ import { RunPanel } from '../components/RunPanel'
 import { ResultDrawer } from '../components/ResultDrawer'
 import { SimulationSummary } from '../components/SimulationSummary'
 import { uiResponseExample } from '../mock/uiResponseExample'
-import { createDefaultBellCircuit } from '../utils/circuitDefaults'
 import { circuitEditorStateToConfig } from '../utils/circuitConfig'
-import { parseCircuitConfigJson } from '../utils/circuitConfigTransfer'
-import {
-  clearCircuit,
-  EDITOR_COLUMN_COUNT,
-  getGateIdAtSlot,
-  isCircuitEmpty,
-  moveSingleGateInCircuit,
-  moveCnotGateInCircuit,
-  placeCnotGateFromDropInCircuit,
-  placeCnotGateInCircuit,
-  placeSingleGateInCircuit,
-  removeGateById,
-} from '../utils/circuitEditing'
-import {
-  canRedo,
-  canUndo,
-  commitCircuitChange,
-  createCircuitHistory,
-  redoCircuitChange,
-  undoCircuitChange,
-  type CircuitHistoryState,
-} from '../utils/circuitHistory'
+import { validateCircuitConfigForRun } from '../utils/circuitValidation'
+import { estimateSimulationCost } from '../utils/simulationCost'
+import { useCircuitContext } from '../context/useCircuitContext'
 import type {
   GateDurationDefaultErrors,
   GateDurationDefaults,
   SimulateRequestParameterErrors,
   SimulateRequestParameters,
+  SnapshotOptions,
   SimulationLoadStatus,
   SimulationResponse,
   SimulationSummaryData,
 } from '../types/simulation'
-import type {
-  CircuitEditorState,
-  DragGatePayload,
-  GateType,
-} from '../types/circuit'
 
 type StatusItem = {
   label: string
@@ -60,8 +35,13 @@ type SimulatePageProps = {
   diagnostics: SimulationDiagnostics
   result: SimulationSummaryData
   statusItems: StatusItem[]
+  gateDurationDefaults: GateDurationDefaults
+  onGateDurationDefaultsChange: (gateDurationDefaults: GateDurationDefaults) => void
   onBackToHome: () => void
+  onOpenCircuitStudio: () => void
+  onOpenStateExplorer: () => void
   onOpenHelp: () => void
+  onSuccessfulResponse: (response: SimulationResponse) => void
 }
 
 type SimulateRequestPayload = {
@@ -69,24 +49,14 @@ type SimulateRequestPayload = {
   input_mode: 'physical'
   circuit_config: ReturnType<typeof circuitEditorStateToConfig>
   gate_duration_defaults: GateDurationDefaults
+  snapshot_options: SnapshotOptions
   parameters: SimulateRequestParameters
 }
 
 type RequestErrorKind = 'none' | 'api' | 'validation'
-type PendingCnotControl = {
-  columnIndex: number
-  qubitIndex: number
-}
-type ActiveDragSession = {
-  source: 'palette' | 'circuit'
-  gateId?: string
-  gateType: GateType
-  committed: boolean
-}
 const API_EXAMPLE_TIMEOUT_MS = 10000
 const RUN_REQUEST_MIN_TIMEOUT_MS = 15000
 const RUN_REQUEST_TIMEOUT_PER_STEP_MS = 25
-const DEFAULT_EDITOR_HINT = 'Choose a gate, then click a circuit slot.'
 
 const initialSimulationParameters: SimulateRequestParameters = {
   device_quality: 0.8,
@@ -100,17 +70,20 @@ const initialSimulationParameters: SimulateRequestParameters = {
   fidelity_threshold: 0.9,
 }
 
-const initialGateDurationDefaults: GateDurationDefaults = {
-  H: 0.02,
-  X: 0.02,
-  Z: 0.0,
-  CNOT: 0.2,
-  MEASURE: 0.0,
+const initialSnapshotOptions: SnapshotOptions = {
+  enabled: true,
+  uniform_count: 10,
+  custom_times_us: [],
+  include_initial: true,
+  include_final: true,
+  include_column_boundaries: true,
+  include_after_circuit: true,
 }
 
 const requiredResponseKeys: Array<keyof SimulationResponse> = [
   'circuit',
   'parameters',
+  'rates',
   'diagnostics',
   'summary',
   'timeline',
@@ -120,14 +93,32 @@ const requiredResponseKeys: Array<keyof SimulationResponse> = [
   'issues',
 ]
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isResponseArray(value: unknown) {
+  return Array.isArray(value)
+}
+
 function hasRequiredResponseKeys(value: unknown): value is SimulationResponse {
   if (typeof value !== 'object' || value === null) {
     return false
   }
 
   const candidate = value as Record<string, unknown>
-  return requiredResponseKeys.every((key) =>
-    Object.prototype.hasOwnProperty.call(candidate, key),
+  return (
+    requiredResponseKeys.every((key) => Object.prototype.hasOwnProperty.call(candidate, key)) &&
+    isRecord(candidate.circuit) &&
+    isRecord(candidate.parameters) &&
+    isRecord(candidate.rates) &&
+    isRecord(candidate.diagnostics) &&
+    isRecord(candidate.summary) &&
+    isResponseArray(candidate.timeline) &&
+    isRecord(candidate.output_probabilities) &&
+    isRecord(candidate.run) &&
+    isResponseArray(candidate.warnings) &&
+    isResponseArray(candidate.issues)
   )
 }
 
@@ -230,317 +221,131 @@ function validateGateDurationDefaults(gateDurations: GateDurationDefaults): {
   return { errors, firstMessage }
 }
 
+function parseCustomSnapshotTimes(value: string): {
+  times: number[]
+  error: string | null
+} {
+  const trimmed = value.trim()
+  if (trimmed.length === 0) {
+    return { times: [], error: null }
+  }
+
+  const parts = trimmed.split(',').map((part) => part.trim()).filter(Boolean)
+  if (parts.length > 100) {
+    return { times: [], error: 'Use at most 100 custom snapshot times.' }
+  }
+  const times = parts.map(Number)
+  if (times.some((time) => !Number.isFinite(time) || time < 0)) {
+    return { times: [], error: 'Custom times must be finite, non-negative numbers.' }
+  }
+  return { times, error: null }
+}
+
+function validateSnapshotOptions(
+  options: SnapshotOptions,
+  durationUs: number,
+): string | null {
+  if (!Number.isInteger(options.uniform_count) || options.uniform_count < 0 || options.uniform_count > 100) {
+    return 'Uniform count must be an integer from 0 to 100.'
+  }
+  if (options.uniform_count === 1) {
+    return 'Uniform count 1 is ambiguous; use 0 or at least 2.'
+  }
+  if (options.custom_times_us.some((time) => time > durationUs)) {
+    return 'Custom snapshot times must not exceed total simulation time.'
+  }
+  return null
+}
+
+function formatApiFailureMessage(status: number, detail: string | null) {
+  if (status === 422) {
+    const detailSuffix = detail ? `: ${detail}` : ''
+    return `HTTP 422: request validation failed${detailSuffix}. Keeping the previous result visible.`
+  }
+
+  const detailSuffix = detail ? `: ${detail}` : ''
+  return `HTTP ${status}${detailSuffix}. Keeping the previous result visible.`
+}
+
+function normalizeApiDetail(detail: unknown): string | null {
+  if (typeof detail === 'string') {
+    const trimmed = detail.trim()
+    return trimmed.length > 0 ? trimmed.replace(/\s+/g, ' ').slice(0, 180) : null
+  }
+
+  if (Array.isArray(detail)) {
+    const joined = detail
+      .map((entry) => normalizeApiDetail(entry))
+      .filter((entry): entry is string => entry !== null)
+      .join('; ')
+    return joined.length > 0 ? joined.slice(0, 260) : null
+  }
+
+  if (typeof detail === 'object' && detail !== null) {
+    const candidate = detail as Record<string, unknown>
+    const message = normalizeApiDetail(candidate.message)
+    const pydanticMessage = normalizeApiDetail(candidate.msg)
+    const location = Array.isArray(candidate.loc)
+      ? candidate.loc.map((entry) => String(entry)).join('.')
+      : normalizeApiDetail(candidate.loc)
+    const errorType = normalizeApiDetail(candidate.error_type)
+      ?? normalizeApiDetail(candidate.type)
+    const error = normalizeApiDetail(candidate.error)
+    if (message || pydanticMessage || location || errorType || error) {
+      return [
+        location,
+        message ?? pydanticMessage,
+        errorType ? `(${errorType})` : null,
+        error,
+      ]
+        .filter((entry): entry is string => entry !== null)
+        .join(': ')
+        .slice(0, 260)
+    }
+    if ('detail' in candidate) {
+      return normalizeApiDetail(candidate.detail)
+    }
+  }
+
+  return null
+}
+
 export function SimulatePage({
-  diagnostics: _diagnostics,
-  result: _result,
   statusItems,
+  gateDurationDefaults,
+  onGateDurationDefaultsChange,
   onBackToHome,
+  onOpenCircuitStudio,
+  onOpenStateExplorer,
   onOpenHelp,
+  onSuccessfulResponse,
 }: SimulatePageProps) {
+  const { circuitState } = useCircuitContext()
   const [response, setResponse] = useState<SimulationResponse>(uiResponseExample)
-  const [circuitHistory, setCircuitHistory] = useState<CircuitHistoryState>(() =>
-    createCircuitHistory(createDefaultBellCircuit()),
-  )
   const [loadStatus, setLoadStatus] = useState<SimulationLoadStatus>('fixture')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [lastFetchUrl, setLastFetchUrl] = useState<string>('')
   const [lastFetchStartedAt, setLastFetchStartedAt] = useState<string>('')
+  const [frontendRunStartedAt, setFrontendRunStartedAt] = useState<string>('')
+  const [frontendRunFinishedAt, setFrontendRunFinishedAt] = useState<string>('')
+  const [frontendRunElapsedMs, setFrontendRunElapsedMs] = useState<number | null>(null)
+  const [frontendRunTimeoutMs, setFrontendRunTimeoutMs] = useState<number | null>(null)
   const [lastFetchResult, setLastFetchResult] = useState<string>('idle')
   const [latestSourceLabel, setLatestSourceLabel] = useState<string>('Static fixture')
   const [activeRequestLabel, setActiveRequestLabel] = useState<string>('')
   const [simulationParameters, setSimulationParameters] =
     useState<SimulateRequestParameters>(initialSimulationParameters)
-  const [gateDurationDefaults, setGateDurationDefaults] =
-    useState<GateDurationDefaults>(initialGateDurationDefaults)
-  const [selectedGateType, setSelectedGateType] = useState<GateType | null>(null)
-  const [selectedGateId, setSelectedGateId] = useState<string | null>(null)
-  const [dragPayload, setDragPayload] = useState<DragGatePayload | null>(null)
-  const [pendingCnotControl, setPendingCnotControl] =
-    useState<PendingCnotControl | null>(null)
-  const [editorHint, setEditorHint] = useState<string>(DEFAULT_EDITOR_HINT)
   const [parameterErrors, setParameterErrors] =
     useState<SimulateRequestParameterErrors>({})
   const [gateDurationErrors, setGateDurationErrors] =
     useState<GateDurationDefaultErrors>({})
+  const [snapshotOptions, setSnapshotOptions] = useState<SnapshotOptions>(initialSnapshotOptions)
+  const [customSnapshotTimesInput, setCustomSnapshotTimesInput] = useState('')
+  const [snapshotOptionsError, setSnapshotOptionsError] = useState<string | null>(null)
   const [requestErrorKind, setRequestErrorKind] = useState<RequestErrorKind>('none')
   const abortControllerRef = useRef<AbortController | null>(null)
   const requestIdRef = useRef(0)
-  const gateIdCounterRef = useRef(0)
-  const activeDragRef = useRef<ActiveDragSession | null>(null)
   const mountedRef = useRef(true)
-  const circuitState = circuitHistory.present
-
-  function finalizeCircuitEdit(nextCircuit: CircuitEditorState) {
-    setCircuitHistory((currentHistory) =>
-      commitCircuitChange(currentHistory, nextCircuit),
-    )
-    setSelectedGateId(null)
-    setPendingCnotControl(null)
-  }
-
-  function handleSelectGateType(gateType: GateType | null) {
-    setSelectedGateType(gateType)
-    setSelectedGateId(null)
-    setPendingCnotControl(null)
-
-    if (gateType === null) {
-      setEditorHint(DEFAULT_EDITOR_HINT)
-      return
-    }
-
-    if (gateType === 'CNOT') {
-      setEditorHint('CNOT: click control, then target in the same column.')
-      return
-    }
-
-    setEditorHint(`Selected gate: ${gateType}. Click a circuit slot.`)
-  }
-
-  function handleGateSelect(gateId: string | null) {
-    setSelectedGateId(gateId)
-    setPendingCnotControl(null)
-    setEditorHint(
-      gateId ? 'Selected gate. Delete it or choose another slot.' : DEFAULT_EDITOR_HINT,
-    )
-  }
-
-  function handleResetCircuitToBell() {
-    finalizeCircuitEdit(createDefaultBellCircuit())
-    setSelectedGateType(null)
-    setSelectedGateId(null)
-    setPendingCnotControl(null)
-    setEditorHint(DEFAULT_EDITOR_HINT)
-    gateIdCounterRef.current = 0
-  }
-
-  function handleCircuitSlotClick(columnIndex: number, qubitIndex: number) {
-    if (!selectedGateType) {
-      const gateId = getGateIdAtSlot(circuitState, columnIndex, qubitIndex)
-      setSelectedGateId(gateId)
-      setEditorHint(
-        gateId ? 'Selected gate. Delete it or choose another slot.' : DEFAULT_EDITOR_HINT,
-      )
-      return
-    }
-
-    const gateType = selectedGateType
-
-    if (gateType === 'CNOT') {
-      if (pendingCnotControl === null) {
-        setPendingCnotControl({ columnIndex, qubitIndex })
-        setEditorHint(`CNOT: choose target in column ${columnIndex + 1}.`)
-        return
-      }
-
-      if (pendingCnotControl.columnIndex !== columnIndex) {
-        setPendingCnotControl({ columnIndex, qubitIndex })
-        setEditorHint(`CNOT: choose target in column ${columnIndex + 1}.`)
-        return
-      }
-
-      if (pendingCnotControl.qubitIndex === qubitIndex) {
-        setEditorHint('CNOT: control and target must differ.')
-        return
-      }
-
-      finalizeCircuitEdit(
-        placeCnotGateInCircuit(
-          circuitState,
-          EDITOR_COLUMN_COUNT,
-          columnIndex,
-          pendingCnotControl.qubitIndex,
-          qubitIndex,
-          gateDurationDefaults.CNOT,
-          `cnot-${columnIndex}-${pendingCnotControl.qubitIndex}-${qubitIndex}-${gateIdCounterRef.current++}`,
-        ),
-      )
-      setEditorHint('CNOT placed. Click control, then target in the same column.')
-      return
-    }
-
-    finalizeCircuitEdit(
-      placeSingleGateInCircuit(
-        circuitState,
-        EDITOR_COLUMN_COUNT,
-        columnIndex,
-        qubitIndex,
-        gateType,
-        gateDurationDefaults[gateType],
-        `${gateType.toLowerCase()}-${columnIndex}-${qubitIndex}-${gateIdCounterRef.current++}`,
-      ),
-    )
-    setEditorHint(`Selected gate: ${gateType}. Click a circuit slot.`)
-  }
-
-  function handleDeleteSelectedGate() {
-    if (!selectedGateId) {
-      return
-    }
-
-    finalizeCircuitEdit(removeGateById(circuitState, selectedGateId))
-    setEditorHint('Selected gate deleted.')
-  }
-
-  function handleClearCircuit() {
-    finalizeCircuitEdit(clearCircuit(circuitState, EDITOR_COLUMN_COUNT))
-    setEditorHint('Circuit cleared.')
-  }
-
-  function handleUndoCircuit() {
-    setCircuitHistory((currentHistory) => undoCircuitChange(currentHistory))
-    setSelectedGateId(null)
-    setPendingCnotControl(null)
-    setEditorHint('Undid last circuit edit.')
-  }
-
-  function handleRedoCircuit() {
-    setCircuitHistory((currentHistory) => redoCircuitChange(currentHistory))
-    setSelectedGateId(null)
-    setPendingCnotControl(null)
-    setEditorHint('Redid circuit edit.')
-  }
-
-  function handlePaletteGateDragStart(gateType: GateType) {
-    activeDragRef.current = {
-      source: 'palette',
-      gateType,
-      committed: false,
-    }
-    setDragPayload({ source: 'palette', gateType })
-    setSelectedGateType(null)
-    setSelectedGateId(null)
-    setPendingCnotControl(null)
-    setEditorHint(`Dragging ${gateType}. Drop it onto a circuit slot.`)
-  }
-
-  function handleCircuitGateDragStart(
-    gateId: string,
-    gateType: GateType,
-    fromColumn: number,
-    fromQubit: number,
-  ) {
-    activeDragRef.current = {
-      source: 'circuit',
-      gateId,
-      gateType,
-      committed: false,
-    }
-    setDragPayload({
-      source: 'circuit',
-      gateId,
-      gateType,
-      fromColumn,
-      fromQubit,
-    })
-    setSelectedGateType(null)
-    setSelectedGateId(gateId)
-    setPendingCnotControl(null)
-    setEditorHint(`Moving ${gateType}. Drop it onto a circuit slot.`)
-  }
-
-  function handleGateDragEnd() {
-    const dragSession = activeDragRef.current
-    if (
-      dragSession?.source === 'circuit' &&
-      dragSession.committed === false &&
-      dragSession.gateId
-    ) {
-      finalizeCircuitEdit(removeGateById(circuitState, dragSession.gateId))
-      setEditorHint(`${dragSession.gateType} deleted by drag-out.`)
-    }
-
-    activeDragRef.current = null
-    setDragPayload(null)
-  }
-
-  function handleCircuitSlotDrop(columnIndex: number, qubitIndex: number) {
-    if (!dragPayload) {
-      return
-    }
-
-    if (dragPayload.source === 'palette') {
-      const nextCircuit =
-        dragPayload.gateType === 'CNOT'
-          ? placeCnotGateFromDropInCircuit(
-              circuitState,
-              EDITOR_COLUMN_COUNT,
-              columnIndex,
-              qubitIndex,
-              gateDurationDefaults.CNOT,
-              `cnot-${columnIndex}-${qubitIndex}-${gateIdCounterRef.current++}`,
-            )
-          : placeSingleGateInCircuit(
-              circuitState,
-              EDITOR_COLUMN_COUNT,
-              columnIndex,
-              qubitIndex,
-              dragPayload.gateType,
-              gateDurationDefaults[dragPayload.gateType],
-              `${dragPayload.gateType.toLowerCase()}-${columnIndex}-${qubitIndex}-${gateIdCounterRef.current++}`,
-            )
-
-      if (activeDragRef.current) {
-        activeDragRef.current.committed = true
-      }
-
-      finalizeCircuitEdit(nextCircuit)
-      setEditorHint(`${dragPayload.gateType} placed by drag-and-drop.`)
-      setDragPayload(null)
-      return
-    }
-
-    if (
-      dragPayload.fromColumn === columnIndex &&
-      dragPayload.fromQubit === qubitIndex
-    ) {
-      if (activeDragRef.current) {
-        activeDragRef.current.committed = true
-      }
-      setEditorHint(`${dragPayload.gateType} stayed in place.`)
-      setDragPayload(null)
-      return
-    }
-
-    const nextCircuit =
-      dragPayload.gateType === 'CNOT'
-        ? moveCnotGateInCircuit(
-            circuitState,
-            EDITOR_COLUMN_COUNT,
-            dragPayload.gateId,
-            columnIndex,
-            qubitIndex,
-          )
-        : moveSingleGateInCircuit(
-            circuitState,
-            EDITOR_COLUMN_COUNT,
-            dragPayload.gateId,
-            columnIndex,
-            qubitIndex,
-          )
-
-    if (activeDragRef.current) {
-      activeDragRef.current.committed = true
-    }
-
-    finalizeCircuitEdit(nextCircuit)
-    setEditorHint(
-      nextCircuit === circuitState
-        ? `${dragPayload.gateType} stayed in place.`
-        : `${dragPayload.gateType} moved by drag-and-drop.`,
-    )
-    setDragPayload(null)
-  }
-
-  async function handleImportCircuitConfig(file: File) {
-    const text = await file.text()
-    const importedCircuit = parseCircuitConfigJson(text)
-
-    finalizeCircuitEdit(importedCircuit)
-    setSelectedGateType(null)
-    setEditorHint('Imported circuit loaded.')
-
-    return 'Imported circuit loaded.'
-  }
 
   function handleSimulationParametersChange(nextParameters: SimulateRequestParameters) {
     const validation = validateSimulationParameters(nextParameters)
@@ -560,7 +365,7 @@ export function SimulatePage({
 
   function handleGateDurationDefaultsChange(nextGateDurations: GateDurationDefaults) {
     const validation = validateGateDurationDefaults(nextGateDurations)
-    setGateDurationDefaults(nextGateDurations)
+    onGateDurationDefaultsChange(nextGateDurations)
     setGateDurationErrors(validation.errors)
 
     const parameterValidation = validateSimulationParameters(simulationParameters)
@@ -613,6 +418,7 @@ export function SimulatePage({
       }
 
       setResponse(parsed as SimulationResponse)
+      onSuccessfulResponse(parsed as SimulationResponse)
       setLoadStatus('api')
       setLatestSourceLabel('API example')
       setLastFetchResult('success')
@@ -646,12 +452,34 @@ export function SimulatePage({
   }
 
   async function runSimulationFromApi() {
+    const frontendStartedAtMs = performance.now()
+    const frontendStartedAtIso = new Date().toISOString()
+    const timeoutMs = getRunRequestTimeoutMs(
+      simulationParameters.time_steps,
+      circuitState.logical_qubits,
+    )
+    setFrontendRunStartedAt(frontendStartedAtIso)
+    setFrontendRunFinishedAt('')
+    setFrontendRunElapsedMs(null)
+    setFrontendRunTimeoutMs(timeoutMs)
+
     const validation = validateSimulationParameters(simulationParameters)
     const gateDurationValidation = validateGateDurationDefaults(gateDurationDefaults)
+    const parsedSnapshotTimes = parseCustomSnapshotTimes(customSnapshotTimesInput)
+    const requestedSnapshotOptions = {
+      ...snapshotOptions,
+      custom_times_us: parsedSnapshotTimes.times,
+    }
+    const snapshotValidationMessage =
+      parsedSnapshotTimes.error ??
+      validateSnapshotOptions(requestedSnapshotOptions, simulationParameters.duration_us)
+    setSnapshotOptionsError(snapshotValidationMessage)
     setParameterErrors(validation.errors)
     setGateDurationErrors(gateDurationValidation.errors)
     const firstValidationMessage =
-      validation.firstMessage ?? gateDurationValidation.firstMessage
+      validation.firstMessage ??
+      gateDurationValidation.firstMessage ??
+      snapshotValidationMessage
     if (firstValidationMessage !== null) {
       setLoadStatus('error')
       setActiveRequestLabel('POST /api/simulate')
@@ -660,6 +488,23 @@ export function SimulatePage({
       setLastFetchResult('validation failed')
       setRequestErrorKind('validation')
       setErrorMessage(firstValidationMessage)
+      setFrontendRunFinishedAt(new Date().toISOString())
+      setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
+      return
+    }
+
+    const circuitConfig = circuitEditorStateToConfig(circuitState)
+    const circuitValidation = validateCircuitConfigForRun(circuitConfig)
+    if (!circuitValidation.valid) {
+      setLoadStatus('error')
+      setActiveRequestLabel('POST /api/simulate')
+      setLastFetchUrl('not requested - validation failed')
+      setLastFetchStartedAt(new Date().toISOString())
+      setLastFetchResult('validation failed')
+      setRequestErrorKind('validation')
+      setErrorMessage(circuitValidation.message)
+      setFrontendRunFinishedAt(new Date().toISOString())
+      setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
       return
     }
 
@@ -672,10 +517,6 @@ export function SimulatePage({
     abortControllerRef.current = controller
     const url = `/api/simulate?ts=${Date.now()}`
     const startedAt = new Date().toISOString()
-    const timeoutMs = Math.max(
-      RUN_REQUEST_MIN_TIMEOUT_MS,
-      simulationParameters.time_steps * RUN_REQUEST_TIMEOUT_PER_STEP_MS,
-    )
     const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
 
     setLoadStatus('loading')
@@ -690,8 +531,9 @@ export function SimulatePage({
       const payload: SimulateRequestPayload = {
         simulation_backend: 'python_dense',
         input_mode: 'physical',
-        circuit_config: circuitEditorStateToConfig(circuitState),
+        circuit_config: circuitConfig,
         gate_duration_defaults: gateDurationDefaults,
+        snapshot_options: requestedSnapshotOptions,
         parameters: simulationParameters,
       }
       const apiResponse = await fetch(url, {
@@ -704,7 +546,18 @@ export function SimulatePage({
         signal: controller.signal,
       })
       if (!apiResponse.ok) {
-        throw new Error(`HTTP ${apiResponse.status}`)
+        const rawError = await apiResponse.text()
+        let errorDetail: string | null = null
+        if (rawError.trim().length > 0) {
+          try {
+            const parsedError = JSON.parse(rawError) as unknown
+            errorDetail = normalizeApiDetail(parsedError)
+          } catch {
+            errorDetail = rawError.trim().replace(/\s+/g, ' ').slice(0, 180)
+          }
+        }
+
+        throw new Error(formatApiFailureMessage(apiResponse.status, errorDetail))
       }
 
       const parsed = (await apiResponse.json()) as unknown
@@ -717,11 +570,14 @@ export function SimulatePage({
       }
 
       setResponse(parsed as SimulationResponse)
+      onSuccessfulResponse(parsed as SimulationResponse)
       setLoadStatus('api')
       setLatestSourceLabel('POST /api/simulate')
       setLastFetchResult('success')
       setErrorMessage(null)
       setRequestErrorKind('none')
+      setFrontendRunFinishedAt(new Date().toISOString())
+      setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
     } catch (error) {
       if (!mountedRef.current || requestId !== requestIdRef.current) {
         return
@@ -731,14 +587,16 @@ export function SimulatePage({
       if (error instanceof Error) {
         message =
           error.name === 'AbortError'
-            ? 'Run request timed out. Keeping the previous result visible.'
-            : `${error.message}. Keeping the previous result visible.`
+            ? `Run request timed out after ${timeoutMs} ms. Keeping the previous result visible.`
+            : error.message
       }
 
       setLoadStatus('error')
       setLastFetchResult('failed')
       setErrorMessage(message)
       setRequestErrorKind('api')
+      setFrontendRunFinishedAt(new Date().toISOString())
+      setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
     } finally {
       window.clearTimeout(timeoutId)
       if (abortControllerRef.current === controller) {
@@ -756,35 +614,6 @@ export function SimulatePage({
       abortControllerRef.current?.abort()
     }
   }, [])
-
-  useEffect(() => {
-    function handleWindowKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
-        return
-      }
-
-      const target = event.target
-      if (target instanceof HTMLElement) {
-        const tagName = target.tagName.toLowerCase()
-        if (
-          tagName === 'input' ||
-          tagName === 'textarea' ||
-          tagName === 'select' ||
-          target.isContentEditable
-        ) {
-          return
-        }
-      }
-
-      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedGateId !== null) {
-        event.preventDefault()
-        handleDeleteSelectedGate()
-      }
-    }
-
-    window.addEventListener('keydown', handleWindowKeyDown)
-    return () => window.removeEventListener('keydown', handleWindowKeyDown)
-  }, [selectedGateId, handleDeleteSelectedGate])
 
   const connectionLabel =
     loadStatus === 'loading'
@@ -811,11 +640,18 @@ export function SimulatePage({
             : `Previous result retained (${latestSourceLabel})`
           : 'Static fixture'
   const hasAlerts = response.warnings.length > 0 || response.issues.length > 0
-  const canUndoCircuit = canUndo(circuitHistory)
-  const canRedoCircuit = canRedo(circuitHistory)
-  const canDeleteSelected = selectedGateId !== null
-  const canClearCircuit = !isCircuitEmpty(circuitState)
-
+  const circuitGateCount = circuitState.columns.reduce(
+    (count, column) => count + column.gates.length,
+    0,
+  )
+  const circuitColumnCount = circuitState.columns.filter((column) => column.gates.length > 0).length
+  const costEstimate = estimateSimulationCost({
+    logicalQubits: circuitState.logical_qubits,
+    timeSteps: simulationParameters.time_steps,
+    durationUs: simulationParameters.duration_us,
+    circuitGateCount,
+    circuitColumnCount,
+  })
   return (
     <main className="simulate-page">
       <header className="simulate-page__header">
@@ -827,6 +663,15 @@ export function SimulatePage({
           </p>
         </div>
         <div className="simulate-page__header-actions">
+          <button className="simulate-page__back simulate-page__back--active" type="button">
+            Simulation Lab
+          </button>
+          <button className="simulate-page__back" type="button" onClick={onOpenCircuitStudio}>
+            Circuit Studio
+          </button>
+          <button className="simulate-page__back" type="button" onClick={onOpenStateExplorer}>
+            State Explorer
+          </button>
           <button className="simulate-page__back" type="button" onClick={onOpenHelp}>
             Help / Q&amp;A
           </button>
@@ -846,35 +691,10 @@ export function SimulatePage({
       </section>
 
       <div className="simulate-page__core-stack">
-        <GatePalette
-          selectedGateType={selectedGateType}
-          onSelectGateType={handleSelectGateType}
-          onResetToBell={handleResetCircuitToBell}
-          statusText={editorHint}
-          canUndo={canUndoCircuit}
-          canRedo={canRedoCircuit}
-          canDeleteSelected={canDeleteSelected}
-          canClearCircuit={canClearCircuit}
-          onUndo={handleUndoCircuit}
-          onRedo={handleRedoCircuit}
-          onDeleteSelected={handleDeleteSelectedGate}
-          onClearCircuit={handleClearCircuit}
-          onGateDragStart={handlePaletteGateDragStart}
-          onGateDragEnd={handleGateDragEnd}
-        />
-        <CircuitPreview
+        <CircuitSummaryCard
           circuit={circuitState}
-          gateDurationDefaults={gateDurationDefaults}
-          columnCount={EDITOR_COLUMN_COUNT}
-          selectedGateType={selectedGateType}
-          selectedGateId={selectedGateId}
-          pendingCnotControl={pendingCnotControl}
-          dragPayload={dragPayload}
-          onSlotClick={handleCircuitSlotClick}
-          onGateSelect={handleGateSelect}
-          onCircuitGateDragStart={handleCircuitGateDragStart}
-          onDragEnd={handleGateDragEnd}
-          onSlotDrop={handleCircuitSlotDrop}
+          actionLabel="Edit in Circuit Studio"
+          onAction={onOpenCircuitStudio}
         />
         <ParameterPanel
           parameters={response.parameters}
@@ -885,8 +705,87 @@ export function SimulatePage({
           onEditableParametersChange={handleSimulationParametersChange}
           onGateDurationDefaultsChange={handleGateDurationDefaultsChange}
         />
+        <section className="simulate-page__snapshot-controls" aria-labelledby="snapshot-controls-title">
+          <div className="simulate-page__snapshot-heading">
+            <div>
+              <span className="simulate-page__section-eyebrow">Sampling</span>
+              <h2 id="snapshot-controls-title">Snapshot sampling</h2>
+            </div>
+            <label className="simulate-page__snapshot-toggle">
+              <input
+                type="checkbox"
+                checked={snapshotOptions.enabled}
+                onChange={(event) =>
+                  setSnapshotOptions((current) => ({
+                    ...current,
+                    enabled: event.target.checked,
+                  }))
+                }
+              />
+              Enabled
+            </label>
+          </div>
+          <p className="simulate-page__snapshot-help">
+            Choose bounded time samples while keeping event snapshots such as initial, column boundaries, and final.
+          </p>
+          <div className="simulate-page__snapshot-grid">
+            <label>
+              Uniform count
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={snapshotOptions.uniform_count}
+                onChange={(event) =>
+                  setSnapshotOptions((current) => ({
+                    ...current,
+                    uniform_count: Number(event.target.value),
+                  }))
+                }
+              />
+            </label>
+            <label>
+              Custom times [us]
+              <input
+                type="text"
+                value={customSnapshotTimesInput}
+                placeholder="0.5, 1.25"
+                onChange={(event) => setCustomSnapshotTimesInput(event.target.value)}
+              />
+            </label>
+          </div>
+          <div className="simulate-page__snapshot-checks">
+            {([
+              ['include_initial', 'Initial'],
+              ['include_final', 'Final'],
+              ['include_column_boundaries', 'Column boundaries'],
+              ['include_after_circuit', 'After circuit'],
+            ] as const).map(([key, label]) => (
+              <label key={key}>
+                <input
+                  type="checkbox"
+                  checked={snapshotOptions[key]}
+                  onChange={(event) =>
+                    setSnapshotOptions((current) => ({
+                      ...current,
+                      [key]: event.target.checked,
+                    }))
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          {snapshotOptionsError ? (
+            <p className="simulate-page__snapshot-error" role="alert">
+              {snapshotOptionsError}
+            </p>
+          ) : null}
+        </section>
         <RunPanel
           run={response.run}
+          costEstimate={costEstimate}
           connectionLabel={connectionLabel}
           dataSourceLabel={dataSourceLabel}
           loadStatus={loadStatus}
@@ -894,6 +793,10 @@ export function SimulatePage({
           lastFetchResult={lastFetchResult}
           lastFetchUrl={lastFetchUrl}
           lastFetchStartedAt={lastFetchStartedAt}
+          frontendRunStartedAt={frontendRunStartedAt}
+          frontendRunFinishedAt={frontendRunFinishedAt}
+          frontendRunElapsedMs={frontendRunElapsedMs}
+          frontendRunTimeoutMs={frontendRunTimeoutMs}
           onReloadApiExample={() => {
             void loadExampleFromApi()
           }}
@@ -910,14 +813,11 @@ export function SimulatePage({
           simulationModelId={response.diagnostics.simulation_model}
           evolutionModeId={response.diagnostics.evolution_mode}
         />
-        <CircuitConfigPreview
-          circuit={circuitState}
-          onImportCircuitConfig={handleImportCircuitConfig}
-        />
         {hasAlerts ? (
           <ResultDrawer
             eyebrow="Alerts"
             title="Warnings and issues"
+            icon="warning"
             description="Non-fatal notes surfaced by the latest response."
             defaultOpen
           >
@@ -959,9 +859,27 @@ export function SimulatePage({
             ) : null}
           </ResultDrawer>
         ) : null}
-        <OutputProbabilities outputProbabilities={response.output_probabilities} />
-        <DiagnosticsCard diagnostics={response.diagnostics} />
+        <OutputProbabilities
+          outputProbabilities={response.output_probabilities}
+          qubitCount={response.circuit.qubit_count}
+        />
+        <DensityMatrixSummaryCard
+          response={response}
+          onOpenStateExplorer={onOpenStateExplorer}
+        />
+        <DiagnosticsCard diagnostics={response.diagnostics} rates={response.rates} />
       </div>
     </main>
   )
+}
+
+function getRunRequestTimeoutMs(timeSteps: number, logicalQubits: number): number {
+  const stepBudget = Math.max(
+    RUN_REQUEST_MIN_TIMEOUT_MS,
+    timeSteps * RUN_REQUEST_TIMEOUT_PER_STEP_MS,
+  )
+  // 3/4-qubit dense runs need a larger floor while we measure where time is spent.
+  const qubitBudget =
+    logicalQubits >= 4 ? 60000 : logicalQubits === 3 ? 30000 : RUN_REQUEST_MIN_TIMEOUT_MS
+  return Math.max(stepBudget, qubitBudget)
 }

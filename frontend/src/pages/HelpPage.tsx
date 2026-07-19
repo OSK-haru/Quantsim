@@ -3,6 +3,7 @@ import { MODEL_IDS, getModelLabel } from '../utils/modelLabels'
 
 type HelpPageProps = {
   onBackToSimulation: () => void
+  onOpenCircuitStudio: () => void
 }
 
 const currentEvolutionLabel = getModelLabel(MODEL_IDS.evolutionMode).label
@@ -56,7 +57,7 @@ const helpItems = [
   },
 ]
 
-export function HelpPage({ onBackToSimulation }: HelpPageProps) {
+export function HelpPage({ onBackToSimulation, onOpenCircuitStudio }: HelpPageProps) {
   return (
     <main className="help-page">
       <header className="help-page__header">
@@ -68,9 +69,17 @@ export function HelpPage({ onBackToSimulation }: HelpPageProps) {
             understanding why the result changes.
           </p>
         </div>
-        <button className="help-page__back" type="button" onClick={onBackToSimulation}>
-          Back to simulation
-        </button>
+        <div className="help-page__header-actions" aria-label="Navigation">
+          <button className="help-page__back help-page__back--active" type="button">
+            Help
+          </button>
+          <button className="help-page__back" type="button" onClick={onOpenCircuitStudio}>
+            Circuit Studio
+          </button>
+          <button className="help-page__back" type="button" onClick={onBackToSimulation}>
+            Simulation Lab
+          </button>
+        </div>
       </header>
 
       <section className="help-page__intro" aria-label="Model note">

@@ -18,6 +18,49 @@ export type MetricPoint = {
   purity: number | null
 }
 
+export type SerializableComplexMatrix = {
+  real: number[][]
+  imag: number[][]
+}
+
+export type StateSnapshotKind =
+  | 'initial'
+  | 'uniform_time'
+  | 'custom_time'
+  | 'column_boundary'
+  | 'after_circuit'
+  | 'idle_sample'
+  | 'final'
+
+export type StateSnapshot = {
+  index: number
+  requested_time_us?: number | null
+  time_us?: number
+  progress?: number
+  kind?: StateSnapshotKind | string
+  capture_method?: string | null
+  event_kind?: string | null
+  column_index?: number | null
+  density_matrix: SerializableComplexMatrix
+}
+
+export type SnapshotOptions = {
+  enabled: boolean
+  uniform_count: number
+  custom_times_us: number[]
+  include_initial: boolean
+  include_final: boolean
+  include_column_boundaries: boolean
+  include_after_circuit: boolean
+}
+
+export type SimulationDiagnosticsValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+
 export type SimulationDiagnostics = {
   simulation_model: string
   evolution_mode: string
@@ -28,7 +71,7 @@ export type SimulationDiagnostics = {
   rust_kernel_sampled_batch_count: number
   backend_fallback_used: boolean
   rust_kernel_fallback_used: boolean
-}
+} & Record<string, SimulationDiagnosticsValue>
 
 export type SimulationParameters = {
   environment_model: string
@@ -43,6 +86,20 @@ export type SimulationParameters = {
   time_steps: number
   fidelity_threshold: number
   simulation_backend: string
+}
+
+export type SimulationRates = {
+  gamma0_per_us: number | null
+  gamma_down_per_us: number | null
+  gamma_up_per_us: number | null
+  gamma_population_relaxation_per_us: number | null
+  gamma_phi_per_us: number | null
+  t1_base_us: number | null
+  t1_effective_us: number | null
+  tphi_base_us: number | null
+  t2_effective_us: number | null
+  gamma1_per_us: number | null
+  gamma1_per_us_deprecation: string
 }
 
 export type PhysicalSimulationParameters = {
@@ -93,10 +150,12 @@ export type SimulationIssue = {
 export type SimulationResponse = {
   circuit: CircuitPreviewData
   parameters: SimulationParameters
+  rates: SimulationRates
   diagnostics: SimulationDiagnostics
   summary: SimulationSummaryData
   timeline: MetricPoint[]
   output_probabilities: OutputProbabilities
+  state_snapshots: StateSnapshot[]
   run: RunPanelData
   warnings: string[]
   issues: SimulationIssue[]

@@ -87,6 +87,23 @@
   filter: brightness(1.05);
 }
 
+.home-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.home-page__actions .home-page__button {
+  margin-top: 0;
+}
+
+.home-page__button--secondary {
+  border-color: rgba(148, 163, 184, 0.34);
+  background: rgba(30, 41, 59, 0.9);
+  color: #e2e8f0;
+}
+
 @media (max-width: 640px) {
   .home-page {
     padding: 24px 16px;

@@ -94,6 +94,44 @@ class ApiSimulateCircuitConfigTest(unittest.TestCase):
         self._response_keys(response)
         self.assertEqual(response["diagnostics"]["simulation_backend"], "python_dense")
 
+    def test_independent_cnot_operations_in_same_column_work(self) -> None:
+        payload = self._base_request()
+        payload["circuit_config"] = {
+            "logical_qubits": 4,
+            "initial_states": [0, 0, 0, 0],
+            "columns": [
+                {
+                    "step": 0,
+                    "gates": [
+                        {
+                            "type": "CNOT",
+                            "targets": [1],
+                            "controls": [0],
+                            "params": {},
+                        },
+                        {
+                            "type": "CNOT",
+                            "targets": [3],
+                            "controls": [2],
+                            "params": {},
+                        },
+                    ],
+                }
+            ],
+        }
+
+        request = SimulateRequest(**payload)
+        response = simulate(request)
+
+        self._response_keys(response)
+        self.assertEqual(response["circuit"]["qubit_count"], 4)
+        cnot_markers = [
+            gate
+            for gate in response["circuit"]["columns"][0]["gates"]
+            if gate["label"] == "CNOT"
+        ]
+        self.assertEqual(len(cnot_markers), 4)
+
     def test_custom_non_bell_simple_circuit_works(self) -> None:
         payload = self._base_request()
         payload["circuit_config"] = {

@@ -15,21 +15,6 @@
   margin-bottom: 18px;
 }
 
-.run-panel__eyebrow {
-  margin-bottom: 8px;
-  color: #93c5fd;
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.run-panel__title {
-  margin: 0;
-  color: #f8fafc;
-  font-size: 1.4rem;
-  letter-spacing: -0.03em;
-}
-
 .run-panel__note {
   margin: 2px 0 0;
   max-width: 34ch;
@@ -61,10 +46,14 @@
 }
 
 .run-panel__error {
-  margin: 0;
-  color: #fca5a5;
-  font-size: 0.78rem;
-  line-height: 1.45;
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.16);
+  color: #fecaca;
+  font-size: 0.82rem;
+  line-height: 1.5;
   text-align: right;
 }
 

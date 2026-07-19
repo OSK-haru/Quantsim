@@ -1,9 +1,13 @@
 import './RunPanel.css'
 import { ResultDrawer } from './ResultDrawer'
+import { SectionHeader } from './SectionHeader'
+import { RunCostNotice } from './RunCostNotice'
 import type { RunPanelData, SimulationLoadStatus } from '../types/simulation'
+import type { SimulationCostEstimate } from '../utils/simulationCost'
 
 type RunPanelProps = {
   run: RunPanelData
+  costEstimate: SimulationCostEstimate
   connectionLabel: string
   dataSourceLabel: string
   loadStatus: SimulationLoadStatus
@@ -11,12 +15,24 @@ type RunPanelProps = {
   lastFetchResult: string
   lastFetchUrl: string
   lastFetchStartedAt: string
+  frontendRunStartedAt: string
+  frontendRunFinishedAt: string
+  frontendRunElapsedMs: number | null
+  frontendRunTimeoutMs: number | null
   onReloadApiExample: () => void
   onRunSimulation: () => void
 }
 
+function formatElapsedMs(value: number | null) {
+  if (value === null) {
+    return 'not available'
+  }
+  return `${value.toFixed(1)} ms`
+}
+
 export function RunPanel({
   run,
+  costEstimate,
   connectionLabel,
   dataSourceLabel,
   loadStatus,
@@ -24,6 +40,10 @@ export function RunPanel({
   lastFetchResult,
   lastFetchUrl,
   lastFetchStartedAt,
+  frontendRunStartedAt,
+  frontendRunFinishedAt,
+  frontendRunElapsedMs,
+  frontendRunTimeoutMs,
   onReloadApiExample,
   onRunSimulation,
 }: RunPanelProps) {
@@ -33,15 +53,16 @@ export function RunPanel({
   return (
     <section className="run-panel" aria-label="Run simulation" data-load-status={loadStatus}>
       <div className="run-panel__header">
-        <div>
-          <div className="run-panel__eyebrow">Execution</div>
-          <h2 className="run-panel__title">Run simulation</h2>
-        </div>
+        <SectionHeader icon="terminal" eyebrow="Execution" title="Run simulation" />
         <div className="run-panel__meta">
           <p className="run-panel__status">Load status: {loadStatus}</p>
           <p className="run-panel__source">Connection: {connectionLabel}</p>
           <p className="run-panel__source">Data source: {dataSourceLabel}</p>
-          {errorMessage ? <p className="run-panel__error">{errorMessage}</p> : null}
+          {errorMessage ? (
+            <p className="run-panel__error" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -79,10 +100,13 @@ export function RunPanel({
         </button>
       </div>
 
+      <RunCostNotice estimate={costEstimate} />
+
       <div className="run-panel__debug">
         <ResultDrawer
           eyebrow="API debug"
           title="Request snapshot"
+          icon="terminal"
           description="Low-level fetch metadata for the latest request."
           defaultOpen={false}
         >
@@ -101,6 +125,30 @@ export function RunPanel({
               <span className="run-panel__debug-label">Last fetch started</span>
               <strong className="run-panel__debug-value">
                 {lastFetchStartedAt || 'not started yet'}
+              </strong>
+            </div>
+            <div className="run-panel__debug-item">
+              <span className="run-panel__debug-label">Frontend run started</span>
+              <strong className="run-panel__debug-value">
+                {frontendRunStartedAt || 'not started yet'}
+              </strong>
+            </div>
+            <div className="run-panel__debug-item">
+              <span className="run-panel__debug-label">Frontend run finished</span>
+              <strong className="run-panel__debug-value">
+                {frontendRunFinishedAt || 'not finished yet'}
+              </strong>
+            </div>
+            <div className="run-panel__debug-item">
+              <span className="run-panel__debug-label">Frontend run elapsed</span>
+              <strong className="run-panel__debug-value">
+                {formatElapsedMs(frontendRunElapsedMs)}
+              </strong>
+            </div>
+            <div className="run-panel__debug-item">
+              <span className="run-panel__debug-label">Frontend timeout</span>
+              <strong className="run-panel__debug-value">
+                {frontendRunTimeoutMs === null ? 'not available' : `${frontendRunTimeoutMs} ms`}
               </strong>
             </div>
           </div>

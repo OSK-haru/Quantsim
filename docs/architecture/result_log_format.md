@@ -26,13 +26,17 @@ sample counts.
 - `environment_model`
 - `input_mode`
 - `n_th`
+- `gamma0_per_us`
 - `gamma_down_per_us`
 - `gamma_up_per_us`
+- `gamma_population_relaxation_per_us`
 - `gamma_phi_per_us`
 - `gamma_phi_base_per_us`
 - `gamma_phi_flux_per_us`
+- `t1_zero_temperature_us`
 - `t1_base_us`
 - `tphi_base_us`
+- `tphi_effective_us`
 - `t1_effective_us`
 - `t2_effective_us`
 
@@ -43,6 +47,10 @@ Compatibility aliases remain available for older consumers:
 - `gamma_phi_total_per_us`
 - `t1_us`
 - `t2_us`
+
+`gamma1_per_us` is specifically an alias for `gamma_down_per_us`. It must not
+be interpreted as the finite-temperature population relaxation rate; use
+`gamma_population_relaxation_per_us` for `1 / t1_effective_us`.
 
 ## CSV
 

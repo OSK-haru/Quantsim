@@ -1,7 +1,8 @@
 import type { CircuitEditorState } from '../types/circuit'
+import { DEFAULT_EDITOR_COLUMN_COUNT, ensureCircuitColumnCount } from './circuitEditing'
 
 export function createDefaultBellCircuit(): CircuitEditorState {
-  return {
+  return ensureCircuitColumnCount({
     logical_qubits: 2,
     initial_states: [0, 0],
     columns: [
@@ -29,5 +30,5 @@ export function createDefaultBellCircuit(): CircuitEditorState {
         ],
       },
     ],
-  }
+  }, DEFAULT_EDITOR_COLUMN_COUNT)
 }

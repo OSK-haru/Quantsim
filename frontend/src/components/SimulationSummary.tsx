@@ -1,4 +1,5 @@
 import './SimulationSummary.css'
+import { SectionHeader } from './SectionHeader'
 import type { SimulationSummaryData } from '../types/simulation'
 
 type SimulationSummaryProps = {
@@ -28,10 +29,11 @@ export function SimulationSummary({ summary }: SimulationSummaryProps) {
   return (
     <section className="simulation-summary" aria-label="Simulation result summary">
       <div className="simulation-summary__header">
-        <div>
-          <div className="simulation-summary__eyebrow">Result summary</div>
-          <h2 className="simulation-summary__title">Static simulation snapshot</h2>
-        </div>
+        <SectionHeader
+          icon="gauge"
+          eyebrow="Result summary"
+          title="Static simulation snapshot"
+        />
       </div>
 
       <div className="simulation-summary__metrics">

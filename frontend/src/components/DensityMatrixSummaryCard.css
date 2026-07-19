@@ -1,0 +1,51 @@
+.density-matrix-summary-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.72));
+}
+
+.density-matrix-summary-card__eyebrow {
+  color: #93c5fd;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.density-matrix-summary-card h2 {
+  margin: 4px 0 0;
+  color: #f8fafc;
+  font-size: 1.05rem;
+}
+
+.density-matrix-summary-card p {
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 0.86rem;
+}
+
+.density-matrix-summary-card button {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border: 1px solid rgba(96, 165, 250, 0.44);
+  border-radius: 999px;
+  background: rgba(30, 64, 175, 0.46);
+  color: #dbeafe;
+  cursor: pointer;
+}
+
+.density-matrix-summary-card button:hover {
+  border-color: rgba(147, 197, 253, 0.76);
+  background: rgba(37, 99, 235, 0.58);
+}
+
+@media (max-width: 640px) {
+  .density-matrix-summary-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

@@ -54,13 +54,18 @@ class EnvironmentRates:
     model: str
     input_mode: str
     n_th: float
+    gamma0_per_us: float
     gamma_down_per_us: float
     gamma_up_per_us: float
+    gamma_population_relaxation_per_us: float
     gamma_phi_per_us: float
     gamma_phi_base_per_us: float
     gamma_phi_flux_per_us: float
+    t1_zero_temperature_us: float
     t1_base_us: float
+    tphi_zero_temperature_us: float
     tphi_base_us: float
+    tphi_effective_us: float
     t1_effective_us: float
     t2_effective_us: float
     device_quality: float
@@ -70,6 +75,18 @@ class EnvironmentRates:
     t1_max_us: float
     tphi_max_us: float
     ideal_reference: bool = False
+
+    @property
+    def gamma1_per_us(self) -> float:
+        """Deprecated alias for gamma_down_per_us, not total 1/T1."""
+
+        return self.gamma_down_per_us
+
+    @property
+    def gammaphi_per_us(self) -> float:
+        """Deprecated spelling alias for gamma_phi_per_us."""
+
+        return self.gamma_phi_per_us
 
 
 def normalize_environment_model(model: str | None) -> str:
@@ -103,7 +120,9 @@ def compute_device_quality_times(
         profile.tphi_max_us / profile.tphi_min_us
     ) ** quality
     return {
+        "t1_zero_temperature_us": t1_base,
         "t1_base_us": t1_base,
+        "tphi_zero_temperature_us": tphi_base,
         "tphi_base_us": tphi_base,
     }
 
@@ -225,14 +244,18 @@ def environment_rates_to_derived_parameters(rates: EnvironmentRates) -> dict[str
         "environment_model": rates.model,
         "input_mode": rates.input_mode,
         "n_th": rates.n_th,
+        "gamma0_per_us": rates.gamma0_per_us,
         "t1_base_us": rates.t1_base_us,
+        "t1_zero_temperature_us": rates.t1_zero_temperature_us,
         "tphi_base_us": rates.tphi_base_us,
         "gamma_down_per_us": rates.gamma_down_per_us,
         "gamma_up_per_us": rates.gamma_up_per_us,
+        "gamma_population_relaxation_per_us": rates.gamma_population_relaxation_per_us,
         "gamma_phi_per_us": rates.gamma_phi_per_us,
         "gamma_phi_total_per_us": rates.gamma_phi_per_us,
         "gamma_phi_base_per_us": rates.gamma_phi_base_per_us,
         "gamma_phi_flux_per_us": rates.gamma_phi_flux_per_us,
+        "tphi_effective_us": rates.tphi_effective_us,
         "t1_effective_us": rates.t1_effective_us,
         "t2_effective_us": rates.t2_effective_us,
         "device_quality": rates.device_quality,
@@ -291,32 +314,37 @@ def _compute_rates_from_physical_inputs(
             "tphi_max_us": profile.tphi_max_us,
             "ideal_reference": True,
             "n_th": 0.0,
+            "gamma0_per_us": 0.0,
             "t1_base_us": math.inf,
+            "t1_zero_temperature_us": math.inf,
             "tphi_base_us": math.inf,
+            "tphi_zero_temperature_us": math.inf,
             "gamma_down_per_us": 0.0,
             "gamma_up_per_us": 0.0,
+            "gamma_population_relaxation_per_us": 0.0,
             "gamma_phi_base_per_us": 0.0,
             "gamma_phi_flux_per_us": 0.0,
             "gamma_phi_per_us": 0.0,
+            "tphi_effective_us": math.inf,
             "t1_effective_us": math.inf,
             "t2_effective_us": math.inf,
         }
 
     quality_times = compute_device_quality_times(device_quality, profile)
-    t1_base_us = quality_times["t1_base_us"]
-    tphi_base_us = quality_times["tphi_base_us"]
-    gamma1_base = 1.0 / t1_base_us
-    gamma_phi_base = 1.0 / tphi_base_us
+    t1_zero_temperature_us = quality_times["t1_zero_temperature_us"]
+    tphi_zero_temperature_us = quality_times["tphi_zero_temperature_us"]
+    gamma0 = 1.0 / t1_zero_temperature_us
+    gamma_phi_base = 1.0 / tphi_zero_temperature_us
     n_th = compute_thermal_occupation(temperature_mk, qubit_frequency_ghz)
-    gamma_down = gamma1_base * (1.0 + n_th)
-    gamma_up = gamma1_base * n_th
+    gamma_down = gamma0 * (1.0 + n_th)
+    gamma_up = gamma0 * n_th
 
     flux_scale = 0.0
     if profile.flux_noise_max_phi0 > 0.0:
         flux_scale = max(0.0, flux_noise_phi0) / profile.flux_noise_max_phi0
     gamma_phi_flux = profile.flux_noise_gamma_phi_per_us_at_max * flux_scale
     gamma_phi_total = gamma_phi_base + gamma_phi_flux
-    total_relaxation = gamma_down + gamma_up
+    population_relaxation = gamma_down + gamma_up
 
     return {
         "device_quality": device_quality,
@@ -327,15 +355,20 @@ def _compute_rates_from_physical_inputs(
         "tphi_max_us": profile.tphi_max_us,
         "ideal_reference": False,
         "n_th": n_th,
-        "t1_base_us": t1_base_us,
-        "tphi_base_us": tphi_base_us,
+        "gamma0_per_us": gamma0,
+        "t1_zero_temperature_us": t1_zero_temperature_us,
+        "t1_base_us": t1_zero_temperature_us,
+        "tphi_zero_temperature_us": tphi_zero_temperature_us,
+        "tphi_base_us": tphi_zero_temperature_us,
         "gamma_down_per_us": gamma_down,
         "gamma_up_per_us": gamma_up,
+        "gamma_population_relaxation_per_us": population_relaxation,
         "gamma_phi_base_per_us": gamma_phi_base,
         "gamma_phi_flux_per_us": gamma_phi_flux,
         "gamma_phi_per_us": gamma_phi_total,
-        "t1_effective_us": _inverse_or_inf(total_relaxation),
-        "t2_effective_us": _inverse_or_inf(0.5 * total_relaxation + gamma_phi_total),
+        "tphi_effective_us": _inverse_or_inf(gamma_phi_total),
+        "t1_effective_us": _inverse_or_inf(population_relaxation),
+        "t2_effective_us": _inverse_or_inf(0.5 * population_relaxation + gamma_phi_total),
     }
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from time import perf_counter
 
 from core.backend_boundary import (
     PYTHON_DENSE_BACKEND,
@@ -19,6 +20,7 @@ from core.capabilities import (
     POST_CIRCUIT_DEGRADATION_MODEL,
 )
 from core.complexity import complexity_diagnostics
+from core.dense_numpy import evolve_segment_numpy, should_use_numpy_dense
 from core.errors import ValidationIssue
 from core.gates import (
     CachedCollapseOperator,
@@ -38,6 +40,7 @@ from core.gates import (
     trace,
     zero_hamiltonian,
 )
+from core.internal_profiling import active_internal_profile
 from core.metrics import effective_time
 from core.physical_environment import (
     SUPPORTED_ENVIRONMENT_MODELS,
@@ -55,6 +58,14 @@ from core.simulation_backends import (
     get_simulation_backend,
     register_simulation_backend,
     registered_simulation_models,
+)
+from core.state_snapshots import (
+    SnapshotPlan,
+    StateSnapshot,
+    StateSnapshotCollector,
+    build_snapshot_plan,
+    idle_sample_times,
+    is_planned_time,
 )
 from core.validation import (
     diagnose_simulation_result,
@@ -75,6 +86,7 @@ class _SimulationSeries:
     final_noisy_state: Matrix
     final_ideal_state: Matrix
     metadata: dict[str, object]
+    state_snapshots: list[StateSnapshot]
 
 
 @dataclass
@@ -86,6 +98,74 @@ class _SimulationCaches:
     @classmethod
     def empty(cls) -> "_SimulationCaches":
         return cls(gate_unitaries={}, column_unitaries={}, hamiltonians={})
+
+
+@dataclass
+class _CoreProfilingStats:
+    dimension: int = 0
+    density_matrix_shape: str = ""
+    segments_count: int = 0
+    idle_segments_count: int = 0
+    gate_segments_count: int = 0
+    total_segment_duration_us: float = 0.0
+    total_idle_duration_us: float = 0.0
+    total_gate_duration_us: float = 0.0
+    time_steps: int = 0
+    total_rk4_substeps: int = 0
+    total_rhs_evaluations: int = 0
+    collapse_operator_count: int = 0
+    lindblad_operator_build_ms: float = 0.0
+    segment_setup_ms: float = 0.0
+    idle_evolution_ms: float = 0.0
+    gate_evolution_ms: float = 0.0
+    output_probabilities_ms: float = 0.0
+    diagnostics_build_ms: float = 0.0
+    dense_execution_engine: str = "python_tuple_v1"
+    zero_hamiltonian_fast_path_used: bool = False
+    has_gate_segments: bool = False
+    has_idle_after_circuit: bool = False
+    idle_only: bool = False
+
+    @property
+    def total_evolution_ms(self) -> float:
+        return self.idle_evolution_ms + self.gate_evolution_ms
+
+    def to_diagnostics(self) -> dict[str, object]:
+        rk4_step_count = int(self.total_rk4_substeps)
+        rhs_call_count = 4 * rk4_step_count
+        lindblad_term_evaluation_count = rhs_call_count * int(self.collapse_operator_count)
+        return {
+            "core_dimension": int(self.dimension),
+            "core_density_matrix_shape": self.density_matrix_shape,
+            "core_segments_count": int(self.segments_count),
+            "core_idle_segments_count": int(self.idle_segments_count),
+            "core_gate_segments_count": int(self.gate_segments_count),
+            "core_total_segment_duration_us": float(self.total_segment_duration_us),
+            "core_total_idle_duration_us": float(self.total_idle_duration_us),
+            "core_total_gate_duration_us": float(self.total_gate_duration_us),
+            "core_time_steps": int(self.time_steps),
+            "core_total_rk4_substeps": rk4_step_count,
+            "core_total_rhs_evaluations": int(self.total_rhs_evaluations),
+            "core_collapse_operator_count": int(self.collapse_operator_count),
+            "core_lindblad_operator_build_ms": float(self.lindblad_operator_build_ms),
+            "core_segment_setup_ms": float(self.segment_setup_ms),
+            "core_idle_evolution_ms": float(self.idle_evolution_ms),
+            "core_gate_evolution_ms": float(self.gate_evolution_ms),
+            "core_total_evolution_ms": float(self.total_evolution_ms),
+            "core_output_probabilities_ms": float(self.output_probabilities_ms),
+            "core_diagnostics_build_ms": float(self.diagnostics_build_ms),
+            "core_dense_execution_engine": self.dense_execution_engine,
+            "core_zero_hamiltonian_fast_path_used": bool(
+                self.zero_hamiltonian_fast_path_used
+            ),
+            "core_rk4_step_count": rk4_step_count,
+            "core_rhs_call_count": rhs_call_count,
+            "core_commutator_evaluation_count": rhs_call_count,
+            "core_lindblad_term_evaluation_count": lindblad_term_evaluation_count,
+            "core_idle_only": bool(self.idle_only),
+            "core_has_gate_segments": bool(self.has_gate_segments),
+            "core_has_idle_after_circuit": bool(self.has_idle_after_circuit),
+        }
 
 
 @dataclass
@@ -279,12 +359,16 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
     Future CPTP evolution should reuse the same gate/idle segment construction
     here rather than becoming a separate simulator branch.
     """
+    profile = _core_profiling_stats(config)
+    lindblad_started_at = perf_counter()
     rates = compute_environment_rates(config.environment)
     collapse_ops = multi_qubit_environment_collapse_operators(
         config.circuit.logical_qubits,
         rates,
     )
     cached_collapse_ops = prepare_collapse_operators(collapse_ops)
+    profile.lindblad_operator_build_ms = (perf_counter() - lindblad_started_at) * 1000.0
+    profile.collapse_operator_count = len(collapse_ops)
     caches = _SimulationCaches.empty()
     kernel_stats = _KernelStats(config.simulation_backend)
     derived_parameters = environment_rates_to_derived_parameters(rates)
@@ -298,6 +382,7 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
             max_environment_rate_per_us=_max_environment_rate_per_us(rates),
             caches=caches,
             kernel_stats=kernel_stats,
+            profile=profile,
         )
     except ValueError as exc:
         return _empty_result(config, [
@@ -322,6 +407,16 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
         config.fidelity_threshold,
     )
 
+    output_probabilities_started_at = perf_counter()
+    output_distribution = output_probabilities(
+        simulation.final_noisy_state,
+        config.circuit.logical_qubits,
+    )
+    profile.output_probabilities_ms = (
+        perf_counter() - output_probabilities_started_at
+    ) * 1000.0
+
+    diagnostics_started_at = perf_counter()
     diagnostics = _diagnostics(
         times=times,
         fidelities=fidelities,
@@ -348,6 +443,7 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
             "recorded_state_count": float(len(times)),
             "state_history_retained": 0.0,
             "state_history_storage_mode": "streaming_metrics_only",
+            **_snapshot_diagnostics_from_metadata(simulation_metadata),
             **kernel_stats.to_diagnostics(),
         },
     )
@@ -356,6 +452,11 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
         diagnostics=diagnostics,
         derived_parameters=derived_parameters,
     ))
+    profile.diagnostics_build_ms = (perf_counter() - diagnostics_started_at) * 1000.0
+    diagnostics.update(profile.to_diagnostics())
+    internal_profile = active_internal_profile()
+    if internal_profile is not None:
+        diagnostics.update(internal_profile.to_diagnostics())
 
     result = SimulationResult(
         config=config,
@@ -363,25 +464,27 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
         fidelity=fidelities,
         purity=purities,
         effective_operation_time_us=effective_operation_time_us,
-        output_probabilities=output_probabilities(
-            simulation.final_noisy_state,
-            config.circuit.logical_qubits,
-        ),
+        output_probabilities=output_distribution,
         derived_parameters=derived_parameters,
         diagnostics=diagnostics,
         warnings=[],
         issues=[],
+        state_snapshots=simulation.state_snapshots,
     )
     return result
 
 
 def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
+    profile = _core_profiling_stats(config)
+    lindblad_started_at = perf_counter()
     rates = compute_environment_rates(config.environment)
     collapse_ops = multi_qubit_environment_collapse_operators(
         config.circuit.logical_qubits,
         rates,
     )
     cached_collapse_ops = prepare_collapse_operators(collapse_ops)
+    profile.lindblad_operator_build_ms = (perf_counter() - lindblad_started_at) * 1000.0
+    profile.collapse_operator_count = len(collapse_ops)
     caches = _SimulationCaches.empty()
     kernel_stats = _KernelStats(config.simulation_backend)
     derived_parameters = environment_rates_to_derived_parameters(rates)
@@ -405,6 +508,7 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         max_environment_rate_per_us=_max_environment_rate_per_us(rates),
         caches=caches,
         kernel_stats=kernel_stats,
+        profile=profile,
     )
     times = simulation.times
     fidelities = simulation.fidelity
@@ -415,6 +519,16 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         config.fidelity_threshold,
     )
 
+    output_probabilities_started_at = perf_counter()
+    output_distribution = output_probabilities(
+        simulation.final_noisy_state,
+        config.circuit.logical_qubits,
+    )
+    profile.output_probabilities_ms = (
+        perf_counter() - output_probabilities_started_at
+    ) * 1000.0
+
+    diagnostics_started_at = perf_counter()
     diagnostics = _diagnostics(
         times=times,
         fidelities=fidelities,
@@ -445,6 +559,7 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
             "recorded_state_count": float(len(times)),
             "state_history_retained": 0.0,
             "state_history_storage_mode": "streaming_metrics_only",
+            **_snapshot_diagnostics_from_metadata(simulation.metadata),
             **kernel_stats.to_diagnostics(),
         },
     )
@@ -453,6 +568,11 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         diagnostics=diagnostics,
         derived_parameters=derived_parameters,
     ))
+    profile.diagnostics_build_ms = (perf_counter() - diagnostics_started_at) * 1000.0
+    diagnostics.update(profile.to_diagnostics())
+    internal_profile = active_internal_profile()
+    if internal_profile is not None:
+        diagnostics.update(internal_profile.to_diagnostics())
 
     result = SimulationResult(
         config=config,
@@ -460,14 +580,12 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         fidelity=fidelities,
         purity=purities,
         effective_operation_time_us=effective_operation_time_us,
-        output_probabilities=output_probabilities(
-            simulation.final_noisy_state,
-            config.circuit.logical_qubits,
-        ),
+        output_probabilities=output_distribution,
         derived_parameters=derived_parameters,
         diagnostics=diagnostics,
         warnings=[],
         issues=[],
+        state_snapshots=simulation.state_snapshots,
     )
     return result
 
@@ -528,12 +646,12 @@ def _runtime_issues(config: SimulationConfig) -> list[ValidationIssue]:
             f"Received model={config.environment.model!r}",
             f"Use {UNIFIED_ENVIRONMENT_MODEL!r}.",
         ))
-    if config.circuit.logical_qubits > 2:
+    if config.circuit.logical_qubits > 4:
         issues.append(_runtime_error(
             "UNSUPPORTED_QUBIT_COUNT",
-            "The current simulator supports 1 or 2 logical qubits.",
+            "The current simulator supports up to 4 logical qubits.",
             f"Received logical_qubits={config.circuit.logical_qubits}",
-            "Use a circuit with 1 or 2 logical qubits.",
+            "Use a circuit with 4 or fewer logical qubits.",
         ))
     return issues
 
@@ -569,23 +687,51 @@ def _simulate_circuit_post_circuit(
     max_environment_rate_per_us: float = 0.0,
     caches: _SimulationCaches | None = None,
     kernel_stats: _KernelStats | None = None,
+    profile: _CoreProfilingStats | None = None,
 ) -> _SimulationSeries:
     caches = caches or _SimulationCaches.empty()
     kernel_stats = kernel_stats or _KernelStats(PYTHON_DENSE_BACKEND)
-    times = _time_grid(duration_us, time_steps)
+    profile = profile or _core_profiling_stats(config)
+    snapshot_plan = _snapshot_plan(config, duration_us)
+    times = _simulation_times(duration_us, time_steps, snapshot_plan)
     n_qubits = config.circuit.logical_qubits
     dimension = 2 ** n_qubits
     hamiltonian = zero_hamiltonian(dimension)
 
     initial_state = initial_density_matrix(config.circuit.initial_states)
+    collector = StateSnapshotCollector(
+        actual_duration_us=duration_us,
+        max_snapshots=100 if snapshot_plan.enabled else 10,
+        plan=snapshot_plan,
+    )
+    collector.capture_event(
+        time_us=0.0,
+        event_kind="initial",
+        density_matrix=initial_state,
+    )
     noisy_state = _apply_circuit_operations(initial_state, config, n_qubits, caches)
     ideal_state = _apply_circuit_operations(initial_state, config, n_qubits, caches)
+    collector.capture_event(
+        time_us=0.0,
+        event_kind="after_circuit",
+        density_matrix=noisy_state,
+    )
+    planned_idle_samples = (
+        set()
+        if snapshot_plan.enabled
+        else idle_sample_times(
+            times,
+            completion_time_us=0.0,
+            final_time_us=duration_us,
+        )
+    )
 
     fidelities = [_state_fidelity(noisy_state, ideal_state)]
     purities = [_state_purity(noisy_state)]
     max_trace_error = _trace_error(noisy_state)
     for start_time, end_time in zip(times, times[1:]):
         dt = end_time - start_time
+        idle_started_at = perf_counter()
         noisy_state = _evolve_stable(
             noisy_state,
             hamiltonian,
@@ -593,10 +739,43 @@ def _simulate_circuit_post_circuit(
             dt,
             max_environment_rate_per_us,
             kernel_stats,
+            profile,
         )
+        profile.idle_evolution_ms += (perf_counter() - idle_started_at) * 1000.0
+        if is_planned_time(end_time, planned_idle_samples):
+            collector.capture(
+                time_us=end_time,
+                kind="idle_sample",
+                density_matrix=noisy_state,
+            )
+        collector.capture_requested_time(time_us=end_time, density_matrix=noisy_state)
         fidelities.append(_state_fidelity(noisy_state, ideal_state))
         purities.append(_state_purity(noisy_state))
         max_trace_error = max(max_trace_error, _trace_error(noisy_state))
+    collector.capture_event(
+        time_us=duration_us,
+        event_kind="final",
+        density_matrix=noisy_state,
+    )
+    state_snapshots, snapshot_diagnostics = collector.finalize()
+
+    profile.segment_setup_ms = 0.0
+    profile.gate_segments_count = len(config.circuit.columns)
+    profile.idle_segments_count = 1 if duration_us > 0.0 else 0
+    profile.segments_count = profile.gate_segments_count + profile.idle_segments_count
+    profile.total_gate_duration_us = _total_gate_duration_us(config)
+    profile.total_idle_duration_us = duration_us
+    profile.total_segment_duration_us = profile.total_gate_duration_us + profile.total_idle_duration_us
+    profile.total_rk4_substeps = _integration_substeps(
+        duration_us,
+        time_steps,
+        max_environment_rate_per_us,
+    )
+    profile.total_rhs_evaluations = 4 * profile.total_rk4_substeps
+    profile.has_gate_segments = profile.gate_segments_count > 0
+    profile.has_idle_after_circuit = profile.idle_segments_count > 0
+    profile.idle_only = not profile.has_gate_segments and profile.has_idle_after_circuit
+    profile.time_steps = time_steps
 
     return _SimulationSeries(
         times=times,
@@ -608,7 +787,9 @@ def _simulate_circuit_post_circuit(
             "max_trace_error": max_trace_error,
             "state_history_retained": False,
             "state_history_storage_mode": "streaming_metrics_only",
+            **snapshot_diagnostics.to_dict(),
         },
+        state_snapshots=state_snapshots,
     )
 
 
@@ -620,18 +801,42 @@ def _simulate_circuit_gate_aware_hamiltonian(
     max_environment_rate_per_us: float = 0.0,
     caches: _SimulationCaches | None = None,
     kernel_stats: _KernelStats | None = None,
+    profile: _CoreProfilingStats | None = None,
 ) -> _SimulationSeries:
     caches = caches or _SimulationCaches.empty()
     kernel_stats = kernel_stats or _KernelStats(PYTHON_DENSE_BACKEND)
+    profile = profile or _core_profiling_stats(config)
     n_qubits = config.circuit.logical_qubits
+    segment_setup_started_at = perf_counter()
     segments = _gate_aware_segments(config, n_qubits, caches)
+    profile.segment_setup_ms = (perf_counter() - segment_setup_started_at) * 1000.0
     total_gate_duration = sum(segment["duration_us"] for segment in segments)
     actual_duration = max(duration_us, total_gate_duration)
     idle_duration = max(0.0, actual_duration - total_gate_duration)
-    times = _time_grid(actual_duration, time_steps)
+    snapshot_plan = _snapshot_plan(config, actual_duration)
+    times = _simulation_times(actual_duration, time_steps, snapshot_plan)
 
     noisy_state = initial_density_matrix(config.circuit.initial_states)
     ideal_state = initial_density_matrix(config.circuit.initial_states)
+    collector = StateSnapshotCollector(
+        actual_duration_us=actual_duration,
+        max_snapshots=100 if snapshot_plan.enabled else 10,
+        plan=snapshot_plan,
+    )
+    collector.capture_event(
+        time_us=0.0,
+        event_kind="initial",
+        density_matrix=noisy_state,
+    )
+    planned_idle_samples = (
+        set()
+        if snapshot_plan.enabled
+        else idle_sample_times(
+            times,
+            completion_time_us=total_gate_duration,
+            final_time_us=actual_duration,
+        )
+    )
     fidelities = [_state_fidelity(noisy_state, ideal_state)]
     purities = [_state_purity(noisy_state)]
     max_trace_error = _trace_error(noisy_state)
@@ -666,55 +871,92 @@ def _simulate_circuit_gate_aware_hamiltonian(
                 segment_elapsed = 0.0
                 segment_start_noisy = noisy_state
                 segment_start_ideal = ideal_state
+                collector.capture_event(
+                    time_us=current_time,
+                    event_kind="column_boundary",
+                    column_index=int(segments[segment_index - 1]["column_index"]),
+                    density_matrix=noisy_state,
+                )
                 if segment_index >= len(segments) and completion_time is None:
                     completion_time = current_time
                     completion_noisy_state = noisy_state
                     completion_ideal_state = ideal_state
+                    collector.capture_event(
+                        time_us=current_time,
+                        event_kind="after_circuit",
+                        density_matrix=noisy_state,
+                    )
 
             if segment_index >= len(segments):
-                sampled_batch = _try_rust_sampled_batch(
-                    noisy_state,
-                    zero_hamiltonian(len(noisy_state)),
-                    collapse_ops,
-                    current_time,
-                    times[target_index:],
-                    actual_duration,
-                    lambda interval: _substep_count(
-                        interval,
-                        max_environment_rate_per_us,
-                    ),
-                    kernel_stats,
-                    include_boundary=True,
-                )
-                if sampled_batch is not None:
-                    sample_states, sample_times, sample_substeps = sampled_batch
-                    max_substeps = max(max_substeps, max(sample_substeps))
-                    for sampled_state in sample_states:
-                        noisy_state = sampled_state
-                        fidelities.append(_state_fidelity(noisy_state, ideal_state))
-                        purities.append(_state_purity(noisy_state))
-                        max_trace_error = max(max_trace_error, _trace_error(noisy_state))
-                    current_time = sample_times[-1]
-                    target_index += len(sample_states)
-                    samples_appended_in_batch = True
-                    continue
-
-                step_dt = target_time - current_time
-                if step_dt > 0.0:
-                    substeps = _substep_count(step_dt, max_environment_rate_per_us)
-                    max_substeps = max(max_substeps, substeps)
-                    noisy_state = _evolve_stable_with_substeps(
+                idle_started_at = perf_counter()
+                try:
+                    sampled_batch = _try_rust_sampled_batch(
                         noisy_state,
                         zero_hamiltonian(len(noisy_state)),
                         collapse_ops,
-                        step_dt,
-                        substeps,
+                        current_time,
+                        times[target_index:],
+                        actual_duration,
+                        lambda interval: _substep_count(
+                            interval,
+                            max_environment_rate_per_us,
+                        ),
                         kernel_stats,
-                        blocked_by_sampling=True,
-                        blocked_by_boundary=False,
+                        include_boundary=True,
                     )
-                    current_time = target_time
-                continue
+                    if sampled_batch is not None:
+                        sample_states, sample_times, sample_substeps = sampled_batch
+                        max_substeps = max(max_substeps, max(sample_substeps))
+                        for sampled_state in sample_states:
+                            noisy_state = sampled_state
+                            fidelities.append(_state_fidelity(noisy_state, ideal_state))
+                            purities.append(_state_purity(noisy_state))
+                            max_trace_error = max(max_trace_error, _trace_error(noisy_state))
+                        for sampled_state, sample_time in zip(sample_states, sample_times):
+                            if is_planned_time(sample_time, planned_idle_samples):
+                                collector.capture(
+                                    time_us=sample_time,
+                                    kind="idle_sample",
+                                    density_matrix=sampled_state,
+                                )
+                            collector.capture_requested_time(
+                                time_us=sample_time,
+                                density_matrix=sampled_state,
+                            )
+                        current_time = sample_times[-1]
+                        target_index += len(sample_states)
+                        samples_appended_in_batch = True
+                        continue
+
+                    step_dt = target_time - current_time
+                    if step_dt > 0.0:
+                        substeps = _substep_count(step_dt, max_environment_rate_per_us)
+                        max_substeps = max(max_substeps, substeps)
+                        noisy_state = _evolve_stable_with_substeps(
+                            noisy_state,
+                            zero_hamiltonian(len(noisy_state)),
+                            collapse_ops,
+                            step_dt,
+                            substeps,
+                            kernel_stats,
+                            profile,
+                            blocked_by_sampling=True,
+                            blocked_by_boundary=False,
+                        )
+                        current_time = target_time
+                        if is_planned_time(current_time, planned_idle_samples):
+                            collector.capture(
+                                time_us=current_time,
+                                kind="idle_sample",
+                                density_matrix=noisy_state,
+                            )
+                        collector.capture_requested_time(
+                            time_us=current_time,
+                            density_matrix=noisy_state,
+                        )
+                    continue
+                finally:
+                    profile.idle_evolution_ms += (perf_counter() - idle_started_at) * 1000.0
 
             segment = segments[segment_index]
             duration = segment["duration_us"]
@@ -731,34 +973,20 @@ def _simulate_circuit_gate_aware_hamiltonian(
             hamiltonian = segment["hamiltonian"]
             hamiltonian_scale = segment["hamiltonian_scale_per_us"]
             if step_dt > 0.0:
-                substeps = _generator_substep_count(
-                    step_dt,
-                    max_environment_rate_per_us + hamiltonian_scale,
-                )
-                max_substeps = max(max_substeps, substeps)
-                if not completes_segment:
-                    segment_stop_time = current_time + remaining
-                    sample_targets = times[target_index:]
-                    noisy_batch = _try_rust_sampled_batch(
-                        noisy_state,
-                        hamiltonian,
-                        collapse_ops,
-                        current_time,
-                        sample_targets,
-                        segment_stop_time,
-                        lambda interval: _generator_substep_count(
-                            interval,
-                            max_environment_rate_per_us + hamiltonian_scale,
-                        ),
-                        kernel_stats,
-                        include_boundary=False,
+                gate_started_at = perf_counter()
+                try:
+                    substeps = _generator_substep_count(
+                        step_dt,
+                        max_environment_rate_per_us + hamiltonian_scale,
                     )
-                    ideal_batch = None
-                    if noisy_batch is not None:
-                        ideal_batch = _try_rust_sampled_batch(
-                            ideal_state,
+                    max_substeps = max(max_substeps, substeps)
+                    if not completes_segment:
+                        segment_stop_time = current_time + remaining
+                        sample_targets = times[target_index:]
+                        noisy_batch = _try_rust_sampled_batch(
+                            noisy_state,
                             hamiltonian,
-                            [],
+                            collapse_ops,
                             current_time,
                             sample_targets,
                             segment_stop_time,
@@ -769,65 +997,90 @@ def _simulate_circuit_gate_aware_hamiltonian(
                             kernel_stats,
                             include_boundary=False,
                         )
-                    if (
-                        noisy_batch is not None
-                        and ideal_batch is not None
-                        and len(noisy_batch[0]) == len(ideal_batch[0])
-                    ):
-                        noisy_states, sample_times, sample_substeps = noisy_batch
-                        ideal_states, _, ideal_sample_substeps = ideal_batch
-                        max_substeps = max(
-                            max_substeps,
-                            max(sample_substeps),
-                            max(ideal_sample_substeps),
-                        )
-                        for noisy_sample, ideal_sample in zip(noisy_states, ideal_states):
-                            noisy_state = noisy_sample
-                            ideal_state = ideal_sample
-                            fidelities.append(_state_fidelity(noisy_state, ideal_state))
-                            purities.append(_state_purity(noisy_state))
-                            max_trace_error = max(
-                                max_trace_error,
-                                _trace_error(noisy_state),
+                        ideal_batch = None
+                        if noisy_batch is not None:
+                            ideal_batch = _try_rust_sampled_batch(
+                                ideal_state,
+                                hamiltonian,
+                                [],
+                                current_time,
+                                sample_targets,
+                                segment_stop_time,
+                                lambda interval: _generator_substep_count(
+                                    interval,
+                                    max_environment_rate_per_us + hamiltonian_scale,
+                                ),
+                                kernel_stats,
+                                include_boundary=False,
                             )
-                        elapsed = sample_times[-1] - current_time
-                        current_time = sample_times[-1]
-                        segment_elapsed += elapsed
-                        target_index += len(noisy_states)
-                        samples_appended_in_batch = True
-                        continue
+                        if (
+                            noisy_batch is not None
+                            and ideal_batch is not None
+                            and len(noisy_batch[0]) == len(ideal_batch[0])
+                        ):
+                            noisy_states, sample_times, sample_substeps = noisy_batch
+                            ideal_states, _, ideal_sample_substeps = ideal_batch
+                            max_substeps = max(
+                                max_substeps,
+                                max(sample_substeps),
+                                max(ideal_sample_substeps),
+                            )
+                            for noisy_sample, ideal_sample in zip(noisy_states, ideal_states):
+                                noisy_state = noisy_sample
+                                ideal_state = ideal_sample
+                                fidelities.append(_state_fidelity(noisy_state, ideal_state))
+                                purities.append(_state_purity(noisy_state))
+                                max_trace_error = max(
+                                    max_trace_error,
+                                    _trace_error(noisy_state),
+                                )
+                            for noisy_sample, sample_time in zip(noisy_states, sample_times):
+                                collector.capture_requested_time(
+                                    time_us=sample_time,
+                                    density_matrix=noisy_sample,
+                                )
+                            elapsed = sample_times[-1] - current_time
+                            current_time = sample_times[-1]
+                            segment_elapsed += elapsed
+                            target_index += len(noisy_states)
+                            samples_appended_in_batch = True
+                            continue
 
-                if collapse_ops or not completes_segment:
-                    noisy_state = _evolve_stable_with_substeps(
-                        noisy_state,
-                        hamiltonian,
-                        collapse_ops,
-                        step_dt,
-                        substeps,
-                        kernel_stats,
-                        blocked_by_sampling=hits_sample_time,
-                        blocked_by_boundary=completes_segment,
-                    )
-                else:
-                    noisy_state = clean_density_matrix(
-                        apply_unitary_to_density(segment_start_noisy, unitary)
-                    )
+                    if collapse_ops or not completes_segment:
+                        noisy_state = _evolve_stable_with_substeps(
+                            noisy_state,
+                            hamiltonian,
+                            collapse_ops,
+                            step_dt,
+                            substeps,
+                            kernel_stats,
+                            profile,
+                            blocked_by_sampling=hits_sample_time,
+                            blocked_by_boundary=completes_segment,
+                        )
+                    else:
+                        noisy_state = clean_density_matrix(
+                            apply_unitary_to_density(segment_start_noisy, unitary)
+                        )
 
-                if completes_segment:
-                    ideal_state = clean_density_matrix(
-                        apply_unitary_to_density(segment_start_ideal, unitary)
-                    )
-                else:
-                    ideal_state = _evolve_stable_with_substeps(
-                        ideal_state,
-                        hamiltonian,
-                        [],
-                        step_dt,
-                        substeps,
-                        kernel_stats,
-                        blocked_by_sampling=True,
-                        blocked_by_boundary=False,
-                    )
+                    if completes_segment:
+                        ideal_state = clean_density_matrix(
+                            apply_unitary_to_density(segment_start_ideal, unitary)
+                        )
+                    else:
+                        ideal_state = _evolve_stable_with_substeps(
+                            ideal_state,
+                            hamiltonian,
+                            [],
+                            step_dt,
+                            substeps,
+                            kernel_stats,
+                            profile,
+                            blocked_by_sampling=True,
+                            blocked_by_boundary=False,
+                        )
+                finally:
+                    profile.gate_evolution_ms += (perf_counter() - gate_started_at) * 1000.0
 
             current_time += step_dt
             segment_elapsed += step_dt
@@ -836,10 +1089,21 @@ def _simulate_circuit_gate_aware_hamiltonian(
                 segment_elapsed = 0.0
                 segment_start_noisy = noisy_state
                 segment_start_ideal = ideal_state
+                collector.capture_event(
+                    time_us=current_time,
+                    event_kind="column_boundary",
+                    column_index=int(segment["column_index"]),
+                    density_matrix=noisy_state,
+                )
                 if segment_index >= len(segments) and completion_time is None:
                     completion_time = current_time
                     completion_noisy_state = noisy_state
                     completion_ideal_state = ideal_state
+                    collector.capture_event(
+                        time_us=current_time,
+                        event_kind="after_circuit",
+                        density_matrix=noisy_state,
+                    )
 
         while (
             segment_index < len(segments)
@@ -856,10 +1120,21 @@ def _simulate_circuit_gate_aware_hamiltonian(
             segment_elapsed = 0.0
             segment_start_noisy = noisy_state
             segment_start_ideal = ideal_state
+            collector.capture_event(
+                time_us=current_time,
+                event_kind="column_boundary",
+                column_index=int(segments[segment_index - 1]["column_index"]),
+                density_matrix=noisy_state,
+            )
             if segment_index >= len(segments) and completion_time is None:
                 completion_time = current_time
                 completion_noisy_state = noisy_state
                 completion_ideal_state = ideal_state
+                collector.capture_event(
+                    time_us=current_time,
+                    event_kind="after_circuit",
+                    density_matrix=noisy_state,
+                )
 
         if samples_appended_in_batch:
             continue
@@ -867,18 +1142,46 @@ def _simulate_circuit_gate_aware_hamiltonian(
         fidelities.append(_state_fidelity(noisy_state, ideal_state))
         purities.append(_state_purity(noisy_state))
         max_trace_error = max(max_trace_error, _trace_error(noisy_state))
+        collector.capture_requested_time(
+            time_us=current_time,
+            density_matrix=noisy_state,
+        )
         target_index += 1
 
     if completion_time is None:
         completion_time = current_time
         completion_noisy_state = noisy_state
         completion_ideal_state = ideal_state
+        collector.capture_event(
+            time_us=current_time,
+            event_kind="after_circuit",
+            density_matrix=noisy_state,
+        )
+
+    collector.capture_event(
+        time_us=actual_duration,
+        event_kind="final",
+        density_matrix=noisy_state,
+    )
+    state_snapshots, snapshot_diagnostics = collector.finalize()
 
     segment_complexity = _segment_complexity_metadata(
         segments,
         idle_duration,
         max_environment_rate_per_us,
     )
+    profile.gate_segments_count = int(segment_complexity["gate_segment_count"])
+    profile.idle_segments_count = int(segment_complexity["idle_segment_count"])
+    profile.segments_count = int(segment_complexity["total_segment_count"])
+    profile.total_rk4_substeps = int(segment_complexity["total_rk4_substeps"])
+    profile.total_rhs_evaluations = int(segment_complexity["total_rhs_evaluations"])
+    profile.total_gate_duration_us = total_gate_duration
+    profile.total_idle_duration_us = idle_duration
+    profile.total_segment_duration_us = actual_duration
+    profile.has_gate_segments = profile.gate_segments_count > 0
+    profile.has_idle_after_circuit = profile.idle_segments_count > 0
+    profile.idle_only = not profile.has_gate_segments and profile.has_idle_after_circuit
+    profile.time_steps = time_steps
     metadata = {
         "backend_name": PYTHON_DENSE_BACKEND_NAME,
         "simulation_mode": GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
@@ -899,6 +1202,7 @@ def _simulate_circuit_gate_aware_hamiltonian(
         "max_trace_error": max_trace_error,
         "state_history_retained": False,
         "state_history_storage_mode": "streaming_metrics_only",
+        **snapshot_diagnostics.to_dict(),
         **segment_complexity,
     }
     return _SimulationSeries(
@@ -908,6 +1212,7 @@ def _simulate_circuit_gate_aware_hamiltonian(
         final_noisy_state=noisy_state,
         final_ideal_state=ideal_state,
         metadata=metadata,
+        state_snapshots=state_snapshots,
     )
 
 
@@ -918,7 +1223,9 @@ def _gate_aware_segments(
 ) -> list[dict[str, object]]:
     caches = caches or _SimulationCaches.empty()
     segments: list[dict[str, object]] = []
-    for column in sorted(config.circuit.columns, key=lambda column: column.step):
+    for column_index, column in enumerate(
+        sorted(config.circuit.columns, key=lambda column: column.step)
+    ):
         unitary = _column_unitary_cached(column, n_qubits, caches)
         duration = column_duration_us(column)
         if duration == 0.0:
@@ -928,6 +1235,7 @@ def _gate_aware_segments(
             hamiltonian_scale = 2.0 * math.pi / duration
         segments.append({
             "segment_type": "gate",
+            "column_index": column_index,
             "unitary": unitary,
             "duration_us": duration,
             "hamiltonian": hamiltonian,
@@ -979,6 +1287,15 @@ def _segment_complexity_metadata(
     }
 
 
+def _core_profiling_stats(config: SimulationConfig) -> _CoreProfilingStats:
+    dimension = 2 ** config.circuit.logical_qubits
+    return _CoreProfilingStats(
+        dimension=dimension,
+        density_matrix_shape=f"{dimension}x{dimension}",
+        time_steps=int(config.time_steps),
+    )
+
+
 def _total_gate_duration_us(config: SimulationConfig) -> float:
     return sum(column_duration_us(column) for column in config.circuit.columns)
 
@@ -992,6 +1309,36 @@ def _time_grid(duration_us: float, step_count: int) -> list[float]:
         duration_us * step_index / (step_count - 1)
         for step_index in range(step_count)
     ]
+
+
+def _snapshot_plan(config: SimulationConfig, actual_duration_us: float) -> SnapshotPlan:
+    return build_snapshot_plan(
+        config.snapshot_options,
+        actual_duration_us=actual_duration_us,
+    )
+
+
+def _simulation_times(
+    duration_us: float,
+    step_count: int,
+    snapshot_plan: SnapshotPlan,
+) -> list[float]:
+    times = _time_grid(duration_us, step_count)
+    if not snapshot_plan.enabled:
+        return times
+    combined = [*times, *snapshot_plan.requested_times]
+    combined.sort()
+    deduped: list[float] = []
+    for time_us in combined:
+        if deduped and math.isclose(
+            deduped[-1],
+            time_us,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            continue
+        deduped.append(float(time_us))
+    return deduped
 
 
 def _apply_circuit_operations(
@@ -1114,6 +1461,16 @@ def _diagnostics(
     return diagnostics
 
 
+def _snapshot_diagnostics_from_metadata(
+    metadata: Mapping[str, object],
+) -> dict[str, object]:
+    return {
+        str(key): value
+        for key, value in metadata.items()
+        if str(key).startswith("state_snapshot_")
+    }
+
+
 def _evolve_stable(
     state: Matrix,
     hamiltonian: Matrix,
@@ -1121,6 +1478,7 @@ def _evolve_stable(
     dt: float,
     max_environment_rate_per_us: float,
     kernel_stats: _KernelStats | None = None,
+    profile: _CoreProfilingStats | None = None,
     blocked_by_sampling: bool = True,
     blocked_by_boundary: bool = False,
 ) -> Matrix:
@@ -1132,6 +1490,7 @@ def _evolve_stable(
         dt,
         substeps,
         kernel_stats,
+        profile,
         blocked_by_sampling=blocked_by_sampling,
         blocked_by_boundary=blocked_by_boundary,
     )
@@ -1144,6 +1503,7 @@ def _evolve_stable_with_substeps(
     dt: float,
     substeps: int,
     kernel_stats: _KernelStats | None = None,
+    profile: _CoreProfilingStats | None = None,
     blocked_by_sampling: bool = True,
     blocked_by_boundary: bool = False,
 ) -> Matrix:
@@ -1175,6 +1535,28 @@ def _evolve_stable_with_substeps(
             kernel_stats.rust_kernel_fallback_reason = str(exc)
             kernel_stats.rust_kernel_mode = "fallback_python"
 
+    if should_use_numpy_dense():
+        evolved = evolve_segment_numpy(
+            state,
+            hamiltonian,
+            collapse_ops,
+            dt,
+            substeps,
+        )
+        if profile is not None:
+            profile.dense_execution_engine = "numpy_dense_v1"
+            profile.zero_hamiltonian_fast_path_used = (
+                profile.zero_hamiltonian_fast_path_used
+                or evolved.zero_hamiltonian_fast_path_used
+            )
+        if kernel_stats is not None:
+            kernel_stats.python_kernel_segment_count += substeps
+            kernel_stats.python_kernel_substep_count += substeps
+        return evolved.state
+
+    if profile is not None and profile.dense_execution_engine != "numpy_dense_v1":
+        profile.dense_execution_engine = "python_tuple_v1"
+
     evolved = state
     for _ in range(substeps):
         evolved = _evolve_one_substep(
@@ -1183,6 +1565,7 @@ def _evolve_stable_with_substeps(
             collapse_ops,
             sub_dt,
             kernel_stats,
+            profile,
         )
     return evolved
 
@@ -1285,6 +1668,7 @@ def _evolve_one_substep(
     collapse_ops: Sequence[CachedCollapseOperator],
     dt: float,
     kernel_stats: _KernelStats | None,
+    profile: _CoreProfilingStats | None = None,
 ) -> Matrix:
     if kernel_stats is not None and kernel_stats.wants_rust:
         try:
@@ -1307,6 +1691,12 @@ def _evolve_one_substep(
             kernel_stats.rust_kernel_fallback_reason = str(exc)
             kernel_stats.rust_kernel_mode = "fallback_python"
 
+    if profile is not None and profile.dense_execution_engine != "numpy_dense_v1":
+        profile.dense_execution_engine = "python_tuple_v1"
+        profile.zero_hamiltonian_fast_path_used = (
+            profile.zero_hamiltonian_fast_path_used
+            or _is_zero_hamiltonian(hamiltonian)
+        )
     if kernel_stats is not None:
         kernel_stats.python_kernel_segment_count += 1
         kernel_stats.python_kernel_substep_count += 1
@@ -1330,6 +1720,10 @@ def _substep_count(dt: float, max_environment_rate_per_us: float) -> int:
     if rate_step <= MAX_RK4_RATE_STEP_PRODUCT:
         return 1
     return max(1, int(math.ceil(rate_step / MAX_RK4_RATE_STEP_PRODUCT)))
+
+
+def _is_zero_hamiltonian(hamiltonian: Matrix) -> bool:
+    return all(entry == 0.0 for row in hamiltonian for entry in row)
 
 
 def _generator_substep_count(dt: float, generator_scale_per_us: float) -> int:

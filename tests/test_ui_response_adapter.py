@@ -17,10 +17,12 @@ class UiResponseAdapterTests(unittest.TestCase):
             {
                 "circuit",
                 "parameters",
+                "rates",
                 "diagnostics",
                 "summary",
                 "timeline",
                 "output_probabilities",
+                "state_snapshots",
                 "run",
                 "warnings",
                 "issues",
@@ -64,6 +66,29 @@ class UiResponseAdapterTests(unittest.TestCase):
         self.assertAlmostEqual(0.015, parameters["temperature_k"])
         self.assertAlmostEqual(15.0, parameters["temperature_mk"])
         self.assertIsNone(parameters["normalized_temperature"])
+
+    def test_physical_rates_expose_canonical_fields_and_legacy_alias(self):
+        config = SimulationConfig(
+            environment=EnvironmentConfig(
+                input_mode="physical",
+                temperature_mk=15.0,
+                qubit_frequency_ghz=5.0,
+                device_quality=0.85,
+                flux_noise_phi0=0.02,
+            )
+        )
+
+        rates = simulation_result_to_ui_response(run_simulation(config))["rates"]
+
+        self.assertIsNotNone(rates["gamma_down_per_us"])
+        self.assertIsNotNone(rates["gamma_up_per_us"])
+        self.assertIsNotNone(rates["gamma_population_relaxation_per_us"])
+        self.assertAlmostEqual(
+            rates["gamma_down_per_us"] + rates["gamma_up_per_us"],
+            rates["gamma_population_relaxation_per_us"],
+        )
+        self.assertEqual(rates["gamma_down_per_us"], rates["gamma1_per_us"])
+        self.assertIn("Legacy alias", rates["gamma1_per_us_deprecation"])
 
     def test_normalized_parameters_do_not_invent_temperature_k(self):
         result = run_simulation(SimulationConfig())

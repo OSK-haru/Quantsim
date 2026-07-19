@@ -19,7 +19,7 @@ SUPPORTED_SIMULATION_MODELS = frozenset({
     GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
 })
 SUPPORTED_GATES = frozenset({"I", "H", "X", "Z", "CNOT", "MEASURE"})
-MAX_LOGICAL_QUBITS = 2
+MAX_LOGICAL_QUBITS = 4
 
 
 def normalize_gate_type(gate_type: str) -> str:

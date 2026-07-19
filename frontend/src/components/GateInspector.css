@@ -1,0 +1,120 @@
+.gate-inspector {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.2);
+  color: #e5e7eb;
+}
+
+.gate-inspector__header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.gate-inspector__eyebrow {
+  color: #93c5fd;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gate-inspector h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.gate-inspector__details {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.gate-inspector__details div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.44);
+}
+
+.gate-inspector dt {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gate-inspector dd {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.gate-inspector__debug dd {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.gate-inspector__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gate-inspector__reveal,
+.gate-inspector__delete {
+  padding: 7px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.gate-inspector__reveal {
+  border: 1px solid rgba(96, 165, 250, 0.34);
+  background: rgba(37, 99, 235, 0.14);
+  color: #bfdbfe;
+}
+
+.gate-inspector__delete {
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  background: rgba(127, 29, 29, 0.14);
+  color: #fecaca;
+}
+
+.gate-inspector__reveal:hover {
+  border-color: rgba(96, 165, 250, 0.62);
+  background: rgba(37, 99, 235, 0.22);
+}
+
+.gate-inspector__delete:hover {
+  border-color: rgba(248, 113, 113, 0.62);
+  background: rgba(127, 29, 29, 0.22);
+}
+
+@media (max-width: 640px) {
+  .gate-inspector {
+    align-items: stretch;
+  }
+
+  .gate-inspector__details {
+    flex-basis: 100%;
+  }
+}

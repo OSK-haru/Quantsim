@@ -66,6 +66,7 @@ def check_health(name: str, url: str) -> HealthCheck:
 
 
 def build_recommendation(
+    port_8001: PortCheck,
     port_8000: PortCheck,
     port_5173: PortCheck,
     api_health: HealthCheck,
@@ -75,9 +76,11 @@ def build_recommendation(
         return "FastAPI is running and the Vite proxy is connected to it."
     if port_5173.reachable and not vite_proxy_health.ok and api_health.ok:
         return "Vite is reachable but the proxy health check failed. The Vite proxy may be misconfigured or Vite should be restarted."
+    if port_8001.reachable and not api_health.ok:
+        return "Port 8001 is reachable but /api/health did not return ok. Something other than the QuantaScope API may be using port 8001."
     if port_8000.reachable and not api_health.ok:
         return "Port 8000 is reachable but /api/health did not return ok. Something other than the QuantaScope API may be using port 8000."
-    if not port_8000.reachable and not port_5173.reachable:
+    if not port_8001.reachable and not port_8000.reachable and not port_5173.reachable:
         return "Both dev servers appear stopped."
     if api_health.ok:
         return "FastAPI is running. Start or restart Vite if the frontend is not reaching it."
@@ -88,12 +91,14 @@ def build_recommendation(
 
 def main() -> int:
     try:
+        port_8001 = check_port(8001)
         port_8000 = check_port(8000)
         port_5173 = check_port(5173)
-        api_health = check_health("Direct API health", "http://127.0.0.1:8000/api/health")
+        api_health = check_health("Direct API health", "http://127.0.0.1:8001/api/health")
         vite_proxy_health = check_health("Vite proxy health", "http://127.0.0.1:5173/api/health")
 
         print("QuantaScope Dev Server Doctor")
+        print(f"Port 8001: {'reachable' if port_8001.reachable else 'not reachable'}")
         print(f"Port 8000: {'reachable' if port_8000.reachable else 'not reachable'}")
         print(f"Port 5173: {'reachable' if port_5173.reachable else 'not reachable'}")
         print(
@@ -106,7 +111,13 @@ def main() -> int:
         )
         print(
             "Recommendation: "
-            + build_recommendation(port_8000, port_5173, api_health, vite_proxy_health)
+            + build_recommendation(
+                port_8001,
+                port_8000,
+                port_5173,
+                api_health,
+                vite_proxy_health,
+            )
         )
         if not api_health.ok:
             print(

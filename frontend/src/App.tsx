@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import { type SimulationDiagnostics } from './components/DiagnosticsCard'
 import { type MockSimulationResult } from './types/simulation'
+import type { GateDurationDefaults } from './types/simulation'
+import { CircuitProvider } from './context/CircuitContext'
+import { CircuitStudioPage } from './pages/CircuitStudioPage'
 import { HomePage } from './pages/HomePage'
 import { HelpPage } from './pages/HelpPage'
 import { SimulatePage } from './pages/SimulatePage'
+import { StateExplorerPage } from './pages/StateExplorerPage'
 import { MODEL_IDS, modelStatusText } from './utils/modelLabels'
+import type { SimulationResponse } from './types/simulation'
 
 const statusItems = [
   { label: 'Simulation model', value: modelStatusText(MODEL_IDS.simulationModel) },
@@ -41,25 +46,122 @@ const mockResult: MockSimulationResult = {
   },
 }
 
-function App() {
-  const [screen, setScreen] = useState<'home' | 'simulate' | 'help'>('home')
+const initialGateDurationDefaults: GateDurationDefaults = {
+  H: 0.02,
+  X: 0.02,
+  Z: 0.0,
+  CNOT: 0.2,
+  MEASURE: 0.0,
+}
 
-  if (screen === 'home') {
-    return <HomePage onStartSimulation={() => setScreen('simulate')} />
+type Screen = 'home' | 'simulate' | 'circuit-studio' | 'state-explorer' | 'help'
+
+function screenFromPath(pathname: string): Screen {
+  if (pathname === '/simulate') {
+    return 'simulate'
+  }
+  if (pathname === '/circuit-studio') {
+    return 'circuit-studio'
+  }
+  if (pathname === '/state-explorer') {
+    return 'state-explorer'
+  }
+  if (pathname === '/help') {
+    return 'help'
+  }
+  return 'home'
+}
+
+function pathFromScreen(screen: Screen) {
+  if (screen === 'simulate') {
+    return '/simulate'
+  }
+  if (screen === 'circuit-studio') {
+    return '/circuit-studio'
+  }
+  if (screen === 'state-explorer') {
+    return '/state-explorer'
+  }
+  if (screen === 'help') {
+    return '/help'
+  }
+  return '/'
+}
+
+function App() {
+  const [screen, setScreen] = useState<Screen>(() => screenFromPath(window.location.pathname))
+  const [gateDurationDefaults, setGateDurationDefaults] =
+    useState<GateDurationDefaults>(initialGateDurationDefaults)
+  const [latestSimulationResponse, setLatestSimulationResponse] =
+    useState<SimulationResponse | null>(null)
+
+  function navigate(nextScreen: Screen) {
+    const nextPath = pathFromScreen(nextScreen)
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState(null, '', nextPath)
+    }
+    setScreen(nextScreen)
   }
 
-  if (screen === 'help') {
-    return <HelpPage onBackToSimulation={() => setScreen('simulate')} />
+  useEffect(() => {
+    function handlePopState() {
+      setScreen(screenFromPath(window.location.pathname))
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  if (screen === 'home') {
+    return (
+      <HomePage
+        onStartSimulation={() => navigate('simulate')}
+        onOpenStateExplorer={() => navigate('state-explorer')}
+      />
+    )
   }
 
   return (
-    <SimulatePage
-      diagnostics={mockDiagnostics}
-      result={mockResult}
-      statusItems={statusItems}
-      onBackToHome={() => setScreen('home')}
-      onOpenHelp={() => setScreen('help')}
-    />
+    <CircuitProvider gateDurationDefaults={gateDurationDefaults}>
+      {screen === 'help' ? (
+        <HelpPage
+          onBackToSimulation={() => navigate('simulate')}
+          onOpenCircuitStudio={() => navigate('circuit-studio')}
+        />
+      ) : null}
+
+      {screen === 'circuit-studio' ? (
+        <CircuitStudioPage
+          gateDurationDefaults={gateDurationDefaults}
+          onOpenSimulation={() => navigate('simulate')}
+          onOpenStateExplorer={() => navigate('state-explorer')}
+          onOpenHelp={() => navigate('help')}
+        />
+      ) : null}
+
+      {screen === 'state-explorer' ? (
+        <StateExplorerPage
+          response={latestSimulationResponse}
+          onOpenSimulation={() => navigate('simulate')}
+          onOpenCircuitStudio={() => navigate('circuit-studio')}
+        />
+      ) : null}
+
+      {screen === 'simulate' ? (
+        <SimulatePage
+          diagnostics={mockDiagnostics}
+          result={mockResult}
+          statusItems={statusItems}
+          gateDurationDefaults={gateDurationDefaults}
+          onGateDurationDefaultsChange={setGateDurationDefaults}
+          onBackToHome={() => navigate('home')}
+          onOpenCircuitStudio={() => navigate('circuit-studio')}
+          onOpenStateExplorer={() => navigate('state-explorer')}
+          onOpenHelp={() => navigate('help')}
+          onSuccessfulResponse={setLatestSimulationResponse}
+        />
+      ) : null}
+    </CircuitProvider>
   )
 }
 

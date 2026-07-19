@@ -16,30 +16,8 @@
   align-items: start;
 }
 
-.result-drawer__heading {
-  min-width: 0;
-}
-
-.result-drawer__eyebrow {
-  margin-bottom: 8px;
-  color: #93c5fd;
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.result-drawer__title {
-  margin: 0;
-  color: #f8fafc;
-  font-size: 1.4rem;
-  letter-spacing: -0.03em;
-}
-
-.result-drawer__description {
-  margin: 8px 0 0;
-  max-width: 48ch;
-  color: #94a3b8;
-  line-height: 1.6;
+.result-drawer__heading .section-header__title {
+  font-size: 1.35rem;
 }
 
 .result-drawer__toggle {

@@ -2,6 +2,7 @@ import './HomePage.css'
 
 type HomePageProps = {
   onStartSimulation: () => void
+  onOpenStateExplorer: () => void
 }
 
 const featureBullets = [
@@ -11,7 +12,7 @@ const featureBullets = [
   'Future CPTP mode planned',
 ]
 
-export function HomePage({ onStartSimulation }: HomePageProps) {
+export function HomePage({ onStartSimulation, onOpenStateExplorer }: HomePageProps) {
   return (
     <main className="home-page">
       <section className="home-page__hero">
@@ -29,9 +30,14 @@ export function HomePage({ onStartSimulation }: HomePageProps) {
             <li key={feature}>{feature}</li>
           ))}
         </ul>
-        <button className="home-page__button" type="button" onClick={onStartSimulation}>
-          Start simulation
-        </button>
+        <div className="home-page__actions">
+          <button className="home-page__button" type="button" onClick={onStartSimulation}>
+            Start simulation
+          </button>
+          <button className="home-page__button home-page__button--secondary" type="button" onClick={onOpenStateExplorer}>
+            State Explorer
+          </button>
+        </div>
       </section>
     </main>
   )

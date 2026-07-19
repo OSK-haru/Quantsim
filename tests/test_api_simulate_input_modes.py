@@ -1,5 +1,7 @@
 import unittest
+from unittest.mock import patch
 
+from fastapi import HTTPException
 from pydantic import ValidationError
 
 from api.main import SimulateRequest, build_config_from_simulate_request, simulate
@@ -116,7 +118,7 @@ class ApiSimulateInputModesTest(unittest.TestCase):
                 },
             )
 
-    def test_simulate_accepts_physical_payload_without_response_shape_change(self) -> None:
+    def test_simulate_accepts_physical_payload_with_rate_details(self) -> None:
         request = SimulateRequest(
             circuit_preset="bell",
             simulation_backend="python_dense",
@@ -138,6 +140,7 @@ class ApiSimulateInputModesTest(unittest.TestCase):
 
         self.assertIn("circuit", response)
         self.assertIn("parameters", response)
+        self.assertIn("rates", response)
         self.assertIn("diagnostics", response)
         self.assertIn("summary", response)
         self.assertIn("timeline", response)
@@ -146,6 +149,46 @@ class ApiSimulateInputModesTest(unittest.TestCase):
         self.assertIn("warnings", response)
         self.assertIn("issues", response)
         self.assertEqual(response["parameters"]["input_mode"], "physical")
+        self.assertIn("gamma_down_per_us", response["rates"])
+        self.assertIn("gamma_up_per_us", response["rates"])
+        self.assertIn("gamma_population_relaxation_per_us", response["rates"])
+        self.assertEqual(
+            response["rates"]["gamma_down_per_us"],
+            response["rates"]["gamma1_per_us"],
+        )
+        self.assertIn("api_total_request_ms", response["diagnostics"])
+        self.assertIn("api_build_config_ms", response["diagnostics"])
+        self.assertIn("api_run_simulation_ms", response["diagnostics"])
+        self.assertIn("api_ui_response_ms", response["diagnostics"])
+        self.assertIn("api_logical_qubits", response["diagnostics"])
+
+    def test_simulate_returns_structured_error_detail_on_failure(self) -> None:
+        request = SimulateRequest(
+            circuit_preset="bell",
+            simulation_backend="python_dense",
+            input_mode="physical",
+            parameters={
+                "device_quality": 0.8,
+                "temperature_mk": 15.0,
+                "flux_noise_phi0": 0.000001,
+                "qubit_frequency_ghz": 5.0,
+                "t1_max_us": 100.0,
+                "tphi_max_us": 100.0,
+                "duration_us": 2.0,
+                "time_steps": 11,
+                "fidelity_threshold": 0.9,
+            },
+        )
+
+        with patch("api.main.run_simulation", side_effect=ValueError("boom")):
+            with self.assertRaises(HTTPException) as context:
+                simulate(request)
+
+        detail = context.exception.detail
+        self.assertIsInstance(detail, dict)
+        self.assertEqual(detail["message"], "Simulation failed.")
+        self.assertEqual(detail["error_type"], "ValueError")
+        self.assertIn("boom", str(detail["error"]))
 
     def test_physical_payload_requires_physical_environment_fields(self) -> None:
         with self.assertRaises(ValidationError):

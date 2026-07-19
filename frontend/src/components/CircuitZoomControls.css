@@ -1,0 +1,19 @@
+.circuit-zoom-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.circuit-zoom-controls__value {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 48px;
+  color: #cbd5e1;
+  font-size: 0.86rem;
+  font-weight: 800;
+}

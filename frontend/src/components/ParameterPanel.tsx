@@ -1,4 +1,5 @@
 import './ParameterPanel.css'
+import { SectionHeader } from './SectionHeader'
 import type {
   GateDurationDefaultErrors,
   GateDurationDefaults,
@@ -146,10 +147,11 @@ export function ParameterPanel({
   return (
     <section className="parameter-panel" aria-label="Simulation parameters">
       <div className="parameter-panel__header">
-        <div>
-          <div className="parameter-panel__eyebrow">Parameters</div>
-          <h2 className="parameter-panel__title">Simulation parameters</h2>
-        </div>
+        <SectionHeader
+          icon="chip"
+          eyebrow="Parameters"
+          title="Simulation parameters"
+        />
         <p className="parameter-panel__note">
           This is a generic educational profile, not a calibrated hardware model.
         </p>
@@ -157,22 +159,17 @@ export function ParameterPanel({
 
       <div className="parameter-panel__sections">
         <article className="parameter-panel__section">
-          <h3 className="parameter-panel__section-title">Device / Environment</h3>
+          <SectionHeader
+            className="parameter-panel__section-header"
+            icon="chip"
+            title="Device"
+            headingLevel="h3"
+          />
           <div className="parameter-panel__fields">
             {renderNumberInput(
               'device_quality',
               'Device quality',
               'Abstract 0-1 profile parameter used by the educational device model.',
-            )}
-            {renderNumberInput(
-              'temperature_mk',
-              'Temperature [mK]',
-              '0 or more',
-            )}
-            {renderNumberInput(
-              'flux_noise_phi0',
-              'Flux noise [\u03a60]',
-              '0 or more',
             )}
             {renderNumberInput(
               'qubit_frequency_ghz',
@@ -193,7 +190,33 @@ export function ParameterPanel({
         </article>
 
         <article className="parameter-panel__section">
-          <h3 className="parameter-panel__section-title">Simulation</h3>
+          <SectionHeader
+            className="parameter-panel__section-header"
+            icon="thermometer"
+            title="Environment"
+            headingLevel="h3"
+          />
+          <div className="parameter-panel__fields">
+            {renderNumberInput(
+              'temperature_mk',
+              'Temperature [mK]',
+              '0 or more',
+            )}
+            {renderNumberInput(
+              'flux_noise_phi0',
+              'Flux noise [\u03a60]',
+              '0 or more',
+            )}
+          </div>
+        </article>
+
+        <article className="parameter-panel__section">
+          <SectionHeader
+            className="parameter-panel__section-header"
+            icon="clock"
+            title="Simulation time"
+            headingLevel="h3"
+          />
           <div className="parameter-panel__fields">
             {renderNumberInput(
               'duration_us',
@@ -210,7 +233,12 @@ export function ParameterPanel({
         </article>
 
         <article className="parameter-panel__section">
-          <h3 className="parameter-panel__section-title">Gate Durations</h3>
+          <SectionHeader
+            className="parameter-panel__section-header"
+            icon="stopwatch"
+            title="Gate duration defaults"
+            headingLevel="h3"
+          />
           <p className="parameter-panel__section-note">
             Default operation time used for each gate type in the current preset.
           </p>

@@ -1,0 +1,241 @@
+.density-matrix-viewer {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.density-matrix-viewer__toolbar {
+  display: grid;
+  gap: 12px;
+}
+
+.density-matrix-viewer__navigation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.density-matrix-viewer__button,
+.density-matrix-viewer__mode {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.34);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.density-matrix-viewer__button {
+  padding: 9px 13px;
+}
+
+.density-matrix-viewer__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.density-matrix-viewer__button:not(:disabled):hover,
+.density-matrix-viewer__mode:hover {
+  border-color: rgba(96, 165, 250, 0.42);
+}
+
+.density-matrix-viewer__button:focus-visible,
+.density-matrix-viewer__mode:focus-visible,
+.density-matrix-viewer__slider:focus-visible,
+.density-matrix-viewer__cell:focus-visible,
+.density-matrix-viewer__matrix-scroll:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.72);
+  outline-offset: 2px;
+}
+
+.density-matrix-viewer__position {
+  min-width: 64px;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.density-matrix-viewer__slider-label {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr);
+  gap: 12px;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 0.86rem;
+}
+
+.density-matrix-viewer__slider {
+  width: 100%;
+  accent-color: #60a5fa;
+}
+
+.density-matrix-viewer__modes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.density-matrix-viewer__mode {
+  padding: 8px 12px;
+}
+
+.density-matrix-viewer__mode[data-active='true'] {
+  border-color: rgba(52, 211, 153, 0.54);
+  background: rgba(20, 83, 45, 0.42);
+  color: #dcfce7;
+}
+
+.density-matrix-viewer__metadata,
+.density-matrix-viewer__caption,
+.density-matrix-viewer__details {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.density-matrix-viewer__metadata span,
+.density-matrix-viewer__caption span,
+.density-matrix-viewer__details span,
+.density-matrix-viewer__details strong {
+  padding: 6px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.28);
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.density-matrix-viewer__details strong {
+  color: #f8fafc;
+}
+
+.density-matrix-viewer__caption {
+  justify-content: space-between;
+}
+
+.density-matrix-viewer__matrix-scroll {
+  max-width: 100%;
+  max-height: 520px;
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.38));
+}
+
+.density-matrix-viewer__matrix {
+  --density-label-size: 58px;
+  --density-cell-size: clamp(28px, 4.4vw, 42px);
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+}
+
+.density-matrix-viewer__corner,
+.density-matrix-viewer__axis-label {
+  min-height: 34px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  background: rgba(15, 23, 42, 0.94);
+  z-index: 1;
+}
+
+.density-matrix-viewer__corner,
+.density-matrix-viewer__axis-label--column {
+  position: sticky;
+  top: 0;
+}
+
+.density-matrix-viewer__corner,
+.density-matrix-viewer__axis-label--row {
+  position: sticky;
+  left: 0;
+}
+
+.density-matrix-viewer__corner {
+  z-index: 3;
+}
+
+.density-matrix-viewer__axis-label--row {
+  z-index: 2;
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.density-matrix-viewer__axis-label--column {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.density-matrix-viewer__cell {
+  width: var(--density-cell-size);
+  height: var(--density-cell-size);
+  box-sizing: border-box;
+  border: 1px solid rgba(15, 23, 42, 0.72);
+  color: #f8fafc;
+  cursor: crosshair;
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.density-matrix-viewer__cell[data-sign='positive'] {
+  background: rgba(52, 211, 153, var(--density-cell-alpha));
+}
+
+.density-matrix-viewer__cell[data-sign='negative'] {
+  background: rgba(248, 113, 113, var(--density-cell-alpha));
+}
+
+.density-matrix-viewer__cell[data-sign='zero'] {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.density-matrix-viewer__cell:hover,
+.density-matrix-viewer__cell:focus-visible {
+  border-color: rgba(248, 250, 252, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(248, 250, 252, 0.6);
+}
+
+.density-matrix-viewer__cell-value {
+  filter: drop-shadow(0 1px 1px rgba(2, 6, 23, 0.8));
+}
+
+.density-matrix-viewer__empty,
+.density-matrix-viewer__note {
+  margin: 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.density-matrix-viewer__note {
+  font-size: 0.84rem;
+}
+
+@media (min-width: 780px) {
+  .density-matrix-viewer__toolbar {
+    grid-template-columns: auto minmax(180px, 1fr) auto;
+    align-items: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .density-matrix-viewer__slider-label {
+    grid-template-columns: 1fr;
+  }
+
+  .density-matrix-viewer__button,
+  .density-matrix-viewer__mode {
+    flex: 1;
+  }
+
+  .density-matrix-viewer__matrix {
+    --density-label-size: 48px;
+    --density-cell-size: 30px;
+  }
+}

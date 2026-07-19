@@ -1,0 +1,2629 @@
+{
+  "validation": "VALIDATION-7",
+  "base_git_commit": "8b98eb43284d4fb518b9015455a168d47e4af053",
+  "environment": {
+    "python": "3.14.4 (tags/v3.14.4:23116f9, Apr  7 2026, 14:10:54) [MSC v.1944 64 bit (AMD64)]",
+    "qutip": "5.2.3",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "os": "Windows-11-10.0.26200-SP0",
+    "quanta_backend": "production dense NumPy RK4 through _evolve_stable_with_substeps"
+  },
+  "solver_options": {
+    "store_states": true,
+    "normalize_output": false,
+    "progress_bar": false,
+    "method": "dop853",
+    "atol": 1e-12,
+    "rtol": 1e-12,
+    "nsteps": 100000,
+    "max_step_us": 0.015625
+  },
+  "quanta_internal_step_us": 0.03125,
+  "basis_and_qubit_order_audit": {
+    "basis": "|0>=(1,0), |1>=(0,1); sigma_down maps |1> to |0>; sigma_z has +1/-1 eigenvalues",
+    "qubit_order": "q0 is the most significant bit: |00>, |01>, |10>, |11>",
+    "adapter_policy": "Existing QuantaScope matrices are converted directly to Qobj; sigmam/sigmap/tensor are not used to reconstruct physics."
+  },
+  "cases": [
+    {
+      "name": "V7-1",
+      "description": "downward relaxation",
+      "tolerance": 1e-08,
+      "initial_density_matrix": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0
+          ]
+        ]
+      ],
+      "segments": [
+        {
+          "duration_us": 50.0,
+          "hamiltonian": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        }
+      ],
+      "collapse_operators": [
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.31622776601683794,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ]
+      ],
+      "records": [
+        {
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "metrics": {
+            "max_element_difference": 0.0,
+            "frobenius_difference": 0.0,
+            "trace_distance": 0.0,
+            "population_difference": 0.0,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0,
+            "qutip_trace_error": 0.0,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.0
+          },
+          "population_quanta": 1.0,
+          "population_qutip": 1.0,
+          "pass": true
+        },
+        {
+          "segment_index": 0,
+          "global_time_us": 2.5,
+          "requested_time_us": 2.5,
+          "actual_time_us": 2.5,
+          "metrics": {
+            "max_element_difference": 1.553202011450594e-13,
+            "frobenius_difference": 2.1945976117031312e-13,
+            "trace_distance": 1.5518142326698126e-13,
+            "population_difference": 1.553202011450594e-13,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.22119921692844005,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.2211992169285951
+          },
+          "population_quanta": 0.77880078307156,
+          "population_qutip": 0.7788007830714047,
+          "pass": true
+        },
+        {
+          "segment_index": 1,
+          "global_time_us": 5.0,
+          "requested_time_us": 5.0,
+          "actual_time_us": 5.0,
+          "metrics": {
+            "max_element_difference": 2.414179967047403e-13,
+            "frobenius_difference": 3.412988685209798e-13,
+            "trace_distance": 2.413347299778934e-13,
+            "population_difference": 2.414179967047403e-13,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.39346934028712516,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.3934693402873666
+          },
+          "population_quanta": 0.6065306597128749,
+          "population_qutip": 0.6065306597126336,
+          "pass": true
+        },
+        {
+          "segment_index": 2,
+          "global_time_us": 10.0,
+          "requested_time_us": 10.0,
+          "actual_time_us": 10.0,
+          "metrics": {
+            "max_element_difference": 2.9348745655966013e-13,
+            "frobenius_difference": 4.1501469099784116e-13,
+            "trace_distance": 2.934597009840445e-13,
+            "population_difference": 2.9348745655966013e-13,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.3678794411717353,
+            "qutip_trace_error": 0.0,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.36787944117144183
+          },
+          "population_quanta": 0.3678794411717353,
+          "population_qutip": 0.36787944117144183,
+          "pass": true
+        },
+        {
+          "segment_index": 3,
+          "global_time_us": 20.0,
+          "requested_time_us": 20.0,
+          "actual_time_us": 20.0,
+          "metrics": {
+            "max_element_difference": 2.1552204465535851e-13,
+            "frobenius_difference": 3.0469608356537745e-13,
+            "trace_distance": 2.1545265571631944e-13,
+            "population_difference": 2.1552204465535851e-13,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.13533528323682836,
+            "qutip_trace_error": 1.1102230246251565e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.13533528323661284
+          },
+          "population_quanta": 0.13533528323682836,
+          "population_qutip": 0.13533528323661284,
+          "pass": true
+        },
+        {
+          "segment_index": 4,
+          "global_time_us": 50.0,
+          "requested_time_us": 50.0,
+          "actual_time_us": 50.0,
+          "metrics": {
+            "max_element_difference": 2.6856988855072927e-14,
+            "frobenius_difference": 3.6982199509069523e-14,
+            "trace_distance": 2.6140548059494506e-14,
+            "population_difference": 2.6856988855072927e-14,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.006737946999112331,
+            "qutip_trace_error": 1.3322676295501878e-15,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.006737946999085474
+          },
+          "population_quanta": 0.006737946999112331,
+          "population_qutip": 0.006737946999085474,
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "case": "V7-1",
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 0.0,
+          "frobenius_difference": 0.0,
+          "trace_distance": 0.0,
+          "population_difference": 0.0,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0,
+          "qutip_trace_error": 0.0,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.0,
+          "result": "pass"
+        },
+        {
+          "case": "V7-1",
+          "segment_index": 0,
+          "global_time_us": 2.5,
+          "requested_time_us": 2.5,
+          "actual_time_us": 2.5,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.553202011450594e-13,
+          "frobenius_difference": 2.1945976117031312e-13,
+          "trace_distance": 1.5518142326698126e-13,
+          "population_difference": 1.553202011450594e-13,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.22119921692844005,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.2211992169285951,
+          "result": "pass"
+        },
+        {
+          "case": "V7-1",
+          "segment_index": 1,
+          "global_time_us": 5.0,
+          "requested_time_us": 5.0,
+          "actual_time_us": 5.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 2.414179967047403e-13,
+          "frobenius_difference": 3.412988685209798e-13,
+          "trace_distance": 2.413347299778934e-13,
+          "population_difference": 2.414179967047403e-13,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.39346934028712516,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.3934693402873666,
+          "result": "pass"
+        },
+        {
+          "case": "V7-1",
+          "segment_index": 2,
+          "global_time_us": 10.0,
+          "requested_time_us": 10.0,
+          "actual_time_us": 10.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 2.9348745655966013e-13,
+          "frobenius_difference": 4.1501469099784116e-13,
+          "trace_distance": 2.934597009840445e-13,
+          "population_difference": 2.9348745655966013e-13,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.3678794411717353,
+          "qutip_trace_error": 0.0,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.36787944117144183,
+          "result": "pass"
+        },
+        {
+          "case": "V7-1",
+          "segment_index": 3,
+          "global_time_us": 20.0,
+          "requested_time_us": 20.0,
+          "actual_time_us": 20.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 2.1552204465535851e-13,
+          "frobenius_difference": 3.0469608356537745e-13,
+          "trace_distance": 2.1545265571631944e-13,
+          "population_difference": 2.1552204465535851e-13,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.13533528323682836,
+          "qutip_trace_error": 1.1102230246251565e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.13533528323661284,
+          "result": "pass"
+        },
+        {
+          "case": "V7-1",
+          "segment_index": 4,
+          "global_time_us": 50.0,
+          "requested_time_us": 50.0,
+          "actual_time_us": 50.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 2.6856988855072927e-14,
+          "frobenius_difference": 3.6982199509069523e-14,
+          "trace_distance": 2.6140548059494506e-14,
+          "population_difference": 2.6856988855072927e-14,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.006737946999112331,
+          "qutip_trace_error": 1.3322676295501878e-15,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.006737946999085474,
+          "result": "pass"
+        }
+      ],
+      "max_element_difference": 2.9348745655966013e-13,
+      "max_trace_distance": 2.934597009840445e-13,
+      "pass": true
+    },
+    {
+      "name": "V7-2",
+      "description": "pure dephasing",
+      "tolerance": 1e-08,
+      "initial_density_matrix": [
+        [
+          [
+            0.4999999999999999,
+            0.0
+          ],
+          [
+            0.4999999999999999,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.4999999999999999,
+            0.0
+          ],
+          [
+            0.4999999999999999,
+            0.0
+          ]
+        ]
+      ],
+      "segments": [
+        {
+          "duration_us": 50.0,
+          "hamiltonian": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        }
+      ],
+      "collapse_operators": [
+        [
+          [
+            [
+              0.22360679774997896,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.22360679774997896,
+              0.0
+            ]
+          ]
+        ]
+      ],
+      "records": [
+        {
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "metrics": {
+            "max_element_difference": 0.0,
+            "frobenius_difference": 0.0,
+            "trace_distance": 0.0,
+            "population_difference": 0.0,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 2.220446049250313e-16,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.0
+          },
+          "population_quanta": 0.4999999999999999,
+          "population_qutip": 0.4999999999999999,
+          "pass": true
+        },
+        {
+          "segment_index": 0,
+          "global_time_us": 2.5,
+          "requested_time_us": 2.5,
+          "actual_time_us": 2.5,
+          "metrics": {
+            "max_element_difference": 7.760458942129844e-14,
+            "frobenius_difference": 1.0974957517184246e-13,
+            "trace_distance": 7.760458942129844e-14,
+            "population_difference": 1.1102230246251565e-16,
+            "coherence_difference": 7.760458942129844e-14,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.1105996084642201,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.11059960846429762
+          },
+          "population_quanta": 0.5,
+          "population_qutip": 0.4999999999999999,
+          "pass": true
+        },
+        {
+          "segment_index": 1,
+          "global_time_us": 5.0,
+          "requested_time_us": 5.0,
+          "actual_time_us": 5.0,
+          "metrics": {
+            "max_element_difference": 1.20570220474292e-13,
+            "frobenius_difference": 1.7051211330090908e-13,
+            "trace_distance": 1.20570220474292e-13,
+            "population_difference": 1.1102230246251565e-16,
+            "coherence_difference": 1.20570220474292e-13,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.1967346701435626,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.19673467014368307
+          },
+          "population_quanta": 0.5,
+          "population_qutip": 0.4999999999999999,
+          "pass": true
+        },
+        {
+          "segment_index": 2,
+          "global_time_us": 10.0,
+          "requested_time_us": 10.0,
+          "actual_time_us": 10.0,
+          "metrics": {
+            "max_element_difference": 1.4693801730913947e-13,
+            "frobenius_difference": 2.078017962227113e-13,
+            "trace_distance": 1.4693801730913947e-13,
+            "population_difference": 1.1102230246251565e-16,
+            "coherence_difference": 1.4693801730913947e-13,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.3160602794141322,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.31606027941427906
+          },
+          "population_quanta": 0.5,
+          "population_qutip": 0.4999999999999999,
+          "pass": true
+        },
+        {
+          "segment_index": 3,
+          "global_time_us": 20.0,
+          "requested_time_us": 20.0,
+          "actual_time_us": 20.0,
+          "metrics": {
+            "max_element_difference": 1.0787204463014177e-13,
+            "frobenius_difference": 1.5255418931408565e-13,
+            "trace_distance": 1.0787204463014177e-13,
+            "population_difference": 1.1102230246251565e-16,
+            "coherence_difference": 1.0787204463014177e-13,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.4323323583815858,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.4323323583816936
+          },
+          "population_quanta": 0.5,
+          "population_qutip": 0.4999999999999999,
+          "pass": true
+        },
+        {
+          "segment_index": 4,
+          "global_time_us": 50.0,
+          "requested_time_us": 50.0,
+          "actual_time_us": 50.0,
+          "metrics": {
+            "max_element_difference": 1.3431530193619423e-14,
+            "frobenius_difference": 1.8995701055436426e-14,
+            "trace_distance": 1.3431530193619423e-14,
+            "population_difference": 1.1102230246251565e-16,
+            "coherence_difference": 1.3431530193619423e-14,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.4966310265004439,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.4966310265004572
+          },
+          "population_quanta": 0.5,
+          "population_qutip": 0.4999999999999999,
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "case": "V7-2",
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 0.0,
+          "frobenius_difference": 0.0,
+          "trace_distance": 0.0,
+          "population_difference": 0.0,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 2.220446049250313e-16,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.0,
+          "result": "pass"
+        },
+        {
+          "case": "V7-2",
+          "segment_index": 0,
+          "global_time_us": 2.5,
+          "requested_time_us": 2.5,
+          "actual_time_us": 2.5,
+          "matrix_dimension": 2,
+          "max_element_difference": 7.760458942129844e-14,
+          "frobenius_difference": 1.0974957517184246e-13,
+          "trace_distance": 7.760458942129844e-14,
+          "population_difference": 1.1102230246251565e-16,
+          "coherence_difference": 7.760458942129844e-14,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.1105996084642201,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.11059960846429762,
+          "result": "pass"
+        },
+        {
+          "case": "V7-2",
+          "segment_index": 1,
+          "global_time_us": 5.0,
+          "requested_time_us": 5.0,
+          "actual_time_us": 5.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.20570220474292e-13,
+          "frobenius_difference": 1.7051211330090908e-13,
+          "trace_distance": 1.20570220474292e-13,
+          "population_difference": 1.1102230246251565e-16,
+          "coherence_difference": 1.20570220474292e-13,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.1967346701435626,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.19673467014368307,
+          "result": "pass"
+        },
+        {
+          "case": "V7-2",
+          "segment_index": 2,
+          "global_time_us": 10.0,
+          "requested_time_us": 10.0,
+          "actual_time_us": 10.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.4693801730913947e-13,
+          "frobenius_difference": 2.078017962227113e-13,
+          "trace_distance": 1.4693801730913947e-13,
+          "population_difference": 1.1102230246251565e-16,
+          "coherence_difference": 1.4693801730913947e-13,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.3160602794141322,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.31606027941427906,
+          "result": "pass"
+        },
+        {
+          "case": "V7-2",
+          "segment_index": 3,
+          "global_time_us": 20.0,
+          "requested_time_us": 20.0,
+          "actual_time_us": 20.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.0787204463014177e-13,
+          "frobenius_difference": 1.5255418931408565e-13,
+          "trace_distance": 1.0787204463014177e-13,
+          "population_difference": 1.1102230246251565e-16,
+          "coherence_difference": 1.0787204463014177e-13,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.4323323583815858,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.4323323583816936,
+          "result": "pass"
+        },
+        {
+          "case": "V7-2",
+          "segment_index": 4,
+          "global_time_us": 50.0,
+          "requested_time_us": 50.0,
+          "actual_time_us": 50.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.3431530193619423e-14,
+          "frobenius_difference": 1.8995701055436426e-14,
+          "trace_distance": 1.3431530193619423e-14,
+          "population_difference": 1.1102230246251565e-16,
+          "coherence_difference": 1.3431530193619423e-14,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.4966310265004439,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.4966310265004572,
+          "result": "pass"
+        }
+      ],
+      "max_element_difference": 1.4693801730913947e-13,
+      "max_trace_distance": 1.4693801730913947e-13,
+      "pass": true
+    },
+    {
+      "name": "V7-3",
+      "description": "finite-temperature relaxation",
+      "tolerance": 1e-08,
+      "initial_density_matrix": [
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0
+          ]
+        ]
+      ],
+      "segments": [
+        {
+          "duration_us": 50.0,
+          "hamiltonian": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        }
+      ],
+      "collapse_operators": [
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.22583179581272428,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.22135943621178655,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ]
+      ],
+      "records": [
+        {
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "metrics": {
+            "max_element_difference": 0.0,
+            "frobenius_difference": 0.0,
+            "trace_distance": 0.0,
+            "population_difference": 0.0,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0,
+            "qutip_trace_error": 0.0,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.0
+          },
+          "population_quanta": 1.0,
+          "population_qutip": 1.0,
+          "pass": true
+        },
+        {
+          "segment_index": 0,
+          "global_time_us": 2.5,
+          "requested_time_us": 2.5,
+          "actual_time_us": 2.5,
+          "metrics": {
+            "max_element_difference": 7.926992395823618e-14,
+            "frobenius_difference": 1.119967097123316e-13,
+            "trace_distance": 7.91935961252932e-14,
+            "population_difference": 7.926992395823618e-14,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.11281160063350436,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.11281160063358348
+          },
+          "population_quanta": 0.8871883993664956,
+          "population_qutip": 0.8871883993664164,
+          "pass": true
+        },
+        {
+          "segment_index": 1,
+          "global_time_us": 5.0,
+          "requested_time_us": 5.0,
+          "actual_time_us": 5.0,
+          "metrics": {
+            "max_element_difference": 1.2329026688462363e-13,
+            "frobenius_difference": 1.7408421819557867e-13,
+            "trace_distance": 1.2309597785531423e-13,
+            "population_difference": 1.2329026688462363e-13,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.2006693635464337,
+            "qutip_trace_error": 4.440892098500626e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.20066936354655698
+          },
+          "population_quanta": 0.7993306364535663,
+          "population_qutip": 0.7993306364534434,
+          "pass": true
+        },
+        {
+          "segment_index": 2,
+          "global_time_us": 10.0,
+          "requested_time_us": 10.0,
+          "actual_time_us": 10.0,
+          "metrics": {
+            "max_element_difference": 1.4999113062685865e-13,
+            "frobenius_difference": 2.1137501294578502e-13,
+            "trace_distance": 1.494637746901617e-13,
+            "population_difference": 1.4999113062685865e-13,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.3223814850024149,
+            "qutip_trace_error": 1.1102230246251565e-15,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.32238148500256386
+          },
+          "population_quanta": 0.6776185149975851,
+          "population_qutip": 0.6776185149974351,
+          "pass": true
+        },
+        {
+          "segment_index": 3,
+          "global_time_us": 20.0,
+          "requested_time_us": 20.0,
+          "actual_time_us": 20.0,
+          "metrics": {
+            "max_element_difference": 1.1035616864774056e-13,
+            "frobenius_difference": 1.548551495854722e-13,
+            "trace_distance": 1.0949574580365606e-13,
+            "population_difference": 1.1035616864774056e-13,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.4409790055492177,
+            "qutip_trace_error": 1.6653345369377348e-15,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.44097900554932634
+          },
+          "population_quanta": 0.5590209944507823,
+          "population_qutip": 0.559020994450672,
+          "pass": true
+        },
+        {
+          "segment_index": 4,
+          "global_time_us": 50.0,
+          "requested_time_us": 50.0,
+          "actual_time_us": 50.0,
+          "metrics": {
+            "max_element_difference": 1.5765166949677223e-14,
+            "frobenius_difference": 1.9806826826317346e-14,
+            "trace_distance": 1.3877787807814457e-14,
+            "population_difference": 1.5765166949677223e-14,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.4934363529695475,
+            "qutip_trace_error": 3.774758283725532e-15,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.49343635296953176
+          },
+          "population_quanta": 0.4934363529695475,
+          "population_qutip": 0.49343635296953176,
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "case": "V7-3",
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 0.0,
+          "frobenius_difference": 0.0,
+          "trace_distance": 0.0,
+          "population_difference": 0.0,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0,
+          "qutip_trace_error": 0.0,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.0,
+          "result": "pass"
+        },
+        {
+          "case": "V7-3",
+          "segment_index": 0,
+          "global_time_us": 2.5,
+          "requested_time_us": 2.5,
+          "actual_time_us": 2.5,
+          "matrix_dimension": 2,
+          "max_element_difference": 7.926992395823618e-14,
+          "frobenius_difference": 1.119967097123316e-13,
+          "trace_distance": 7.91935961252932e-14,
+          "population_difference": 7.926992395823618e-14,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.11281160063350436,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.11281160063358348,
+          "result": "pass"
+        },
+        {
+          "case": "V7-3",
+          "segment_index": 1,
+          "global_time_us": 5.0,
+          "requested_time_us": 5.0,
+          "actual_time_us": 5.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.2329026688462363e-13,
+          "frobenius_difference": 1.7408421819557867e-13,
+          "trace_distance": 1.2309597785531423e-13,
+          "population_difference": 1.2329026688462363e-13,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.2006693635464337,
+          "qutip_trace_error": 4.440892098500626e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.20066936354655698,
+          "result": "pass"
+        },
+        {
+          "case": "V7-3",
+          "segment_index": 2,
+          "global_time_us": 10.0,
+          "requested_time_us": 10.0,
+          "actual_time_us": 10.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.4999113062685865e-13,
+          "frobenius_difference": 2.1137501294578502e-13,
+          "trace_distance": 1.494637746901617e-13,
+          "population_difference": 1.4999113062685865e-13,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.3223814850024149,
+          "qutip_trace_error": 1.1102230246251565e-15,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.32238148500256386,
+          "result": "pass"
+        },
+        {
+          "case": "V7-3",
+          "segment_index": 3,
+          "global_time_us": 20.0,
+          "requested_time_us": 20.0,
+          "actual_time_us": 20.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.1035616864774056e-13,
+          "frobenius_difference": 1.548551495854722e-13,
+          "trace_distance": 1.0949574580365606e-13,
+          "population_difference": 1.1035616864774056e-13,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.4409790055492177,
+          "qutip_trace_error": 1.6653345369377348e-15,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.44097900554932634,
+          "result": "pass"
+        },
+        {
+          "case": "V7-3",
+          "segment_index": 4,
+          "global_time_us": 50.0,
+          "requested_time_us": 50.0,
+          "actual_time_us": 50.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.5765166949677223e-14,
+          "frobenius_difference": 1.9806826826317346e-14,
+          "trace_distance": 1.3877787807814457e-14,
+          "population_difference": 1.5765166949677223e-14,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.4934363529695475,
+          "qutip_trace_error": 3.774758283725532e-15,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.49343635296953176,
+          "result": "pass"
+        }
+      ],
+      "max_element_difference": 1.4999113062685865e-13,
+      "max_trace_distance": 1.494637746901617e-13,
+      "pass": true
+    },
+    {
+      "name": "V7-0",
+      "description": "unitary H gate",
+      "tolerance": 1e-08,
+      "initial_density_matrix": [
+        [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "segments": [
+        {
+          "duration_us": 8.0,
+          "hamiltonian": [
+            [
+              [
+                0.05750944903191314,
+                0.0
+              ],
+              [
+                -0.13884009181744894,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.13884009181744894,
+                0.0
+              ],
+              [
+                0.335189632666811,
+                0.0
+              ]
+            ]
+          ]
+        }
+      ],
+      "collapse_operators": [],
+      "records": [
+        {
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "metrics": {
+            "max_element_difference": 0.0,
+            "frobenius_difference": 0.0,
+            "trace_distance": 0.0,
+            "population_difference": 0.0,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0,
+            "qutip_trace_error": 0.0,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.0
+          },
+          "population_quanta": 0.0,
+          "population_qutip": 0.0,
+          "pass": true
+        },
+        {
+          "segment_index": 0,
+          "global_time_us": 8.0,
+          "requested_time_us": 8.0,
+          "actual_time_us": 8.0,
+          "metrics": {
+            "max_element_difference": 2.09918893969112e-10,
+            "frobenius_difference": 2.968778704455351e-10,
+            "trace_distance": 2.0992435537616116e-10,
+            "population_difference": 1.5183965204666404e-12,
+            "coherence_difference": 2.09918893969112e-10,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 1.517896919267514e-12,
+            "qutip_trace_error": 4.440892098500626e-16,
+            "qutip_hermiticity_error": 1.2451702039762186e-16,
+            "qutip_minimum_eigenvalue": -3.0531133177191805e-16
+          },
+          "population_quanta": 0.4999999999984821,
+          "population_qutip": 0.5000000000000001,
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "case": "V7-0",
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 0.0,
+          "frobenius_difference": 0.0,
+          "trace_distance": 0.0,
+          "population_difference": 0.0,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0,
+          "qutip_trace_error": 0.0,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.0,
+          "result": "pass"
+        },
+        {
+          "case": "V7-0",
+          "segment_index": 0,
+          "global_time_us": 8.0,
+          "requested_time_us": 8.0,
+          "actual_time_us": 8.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 2.09918893969112e-10,
+          "frobenius_difference": 2.968778704455351e-10,
+          "trace_distance": 2.0992435537616116e-10,
+          "population_difference": 1.5183965204666404e-12,
+          "coherence_difference": 2.09918893969112e-10,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 1.517896919267514e-12,
+          "qutip_trace_error": 4.440892098500626e-16,
+          "qutip_hermiticity_error": 1.2451702039762186e-16,
+          "qutip_minimum_eigenvalue": -3.0531133177191805e-16,
+          "result": "pass"
+        }
+      ],
+      "max_element_difference": 2.09918893969112e-10,
+      "max_trace_distance": 2.0992435537616116e-10,
+      "pass": true
+    },
+    {
+      "name": "V7-4",
+      "description": "driven one-qubit H gate",
+      "tolerance": 1e-07,
+      "initial_density_matrix": [
+        [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "segments": [
+        {
+          "duration_us": 8.0,
+          "hamiltonian": [
+            [
+              [
+                0.05750944903191314,
+                0.0
+              ],
+              [
+                -0.13884009181744894,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.13884009181744894,
+                0.0
+              ],
+              [
+                0.335189632666811,
+                0.0
+              ]
+            ]
+          ]
+        }
+      ],
+      "collapse_operators": [
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.1414213562373095,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.05477225575051661,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.08660254037844387,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.08660254037844387,
+              0.0
+            ]
+          ]
+        ]
+      ],
+      "records": [
+        {
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "metrics": {
+            "max_element_difference": 0.0,
+            "frobenius_difference": 0.0,
+            "trace_distance": 0.0,
+            "population_difference": 0.0,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0,
+            "qutip_trace_error": 0.0,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.0
+          },
+          "population_quanta": 0.0,
+          "population_qutip": 0.0,
+          "pass": true
+        },
+        {
+          "segment_index": 0,
+          "global_time_us": 8.0,
+          "requested_time_us": 8.0,
+          "actual_time_us": 8.0,
+          "metrics": {
+            "max_element_difference": 1.6962130501382235e-10,
+            "frobenius_difference": 2.439875238954057e-10,
+            "trace_distance": 1.7252523267132504e-10,
+            "population_difference": 3.1521285581726854e-11,
+            "coherence_difference": 1.6962130501382235e-10,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0593583299560316,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 1.0888758524337804e-16,
+            "qutip_minimum_eigenvalue": 0.05935832999750751
+          },
+          "population_quanta": 0.4662031614845708,
+          "population_qutip": 0.4662031614530495,
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "case": "V7-4",
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 0.0,
+          "frobenius_difference": 0.0,
+          "trace_distance": 0.0,
+          "population_difference": 0.0,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0,
+          "qutip_trace_error": 0.0,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.0,
+          "result": "pass"
+        },
+        {
+          "case": "V7-4",
+          "segment_index": 0,
+          "global_time_us": 8.0,
+          "requested_time_us": 8.0,
+          "actual_time_us": 8.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.6962130501382235e-10,
+          "frobenius_difference": 2.439875238954057e-10,
+          "trace_distance": 1.7252523267132504e-10,
+          "population_difference": 3.1521285581726854e-11,
+          "coherence_difference": 1.6962130501382235e-10,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0593583299560316,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 1.0888758524337804e-16,
+          "qutip_minimum_eigenvalue": 0.05935832999750751,
+          "result": "pass"
+        }
+      ],
+      "max_element_difference": 1.6962130501382235e-10,
+      "max_trace_distance": 1.7252523267132504e-10,
+      "pass": true
+    },
+    {
+      "name": "V7-5",
+      "description": "two-qubit Bell circuit",
+      "tolerance": 2e-07,
+      "initial_density_matrix": [
+        [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0
+          ]
+        ]
+      ],
+      "segments": [
+        {
+          "duration_us": 8.0,
+          "hamiltonian": [
+            [
+              [
+                0.05750944903191314,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.13884009181744894,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.05750944903191314,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.13884009181744894,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.13884009181744894,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.335189632666811,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.13884009181744894,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.335189632666811,
+                0.0
+              ]
+            ]
+          ]
+        },
+        {
+          "duration_us": 16.0,
+          "hamiltonian": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.09817477042468103,
+                0.0
+              ],
+              [
+                -0.09817477042468103,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.09817477042468103,
+                0.0
+              ],
+              [
+                0.09817477042468103,
+                0.0
+              ]
+            ]
+          ]
+        }
+      ],
+      "collapse_operators": [
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.1414213562373095,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.1414213562373095,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.1414213562373095,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.1414213562373095,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.05477225575051661,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.05477225575051661,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.05477225575051661,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.05477225575051661,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.08660254037844387,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.08660254037844387,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.08660254037844387,
+              0.0
+            ],
+            [
+              -0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.0,
+              0.0
+            ],
+            [
+              -0.08660254037844387,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.08660254037844387,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.08660254037844387,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.08660254037844387,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.08660254037844387,
+              0.0
+            ]
+          ]
+        ]
+      ],
+      "records": [
+        {
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "metrics": {
+            "max_element_difference": 0.0,
+            "frobenius_difference": 0.0,
+            "trace_distance": 0.0,
+            "population_difference": 0.0,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0,
+            "qutip_trace_error": 0.0,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.0
+          },
+          "population_quanta": 0.0,
+          "population_qutip": 0.0,
+          "pass": true
+        },
+        {
+          "segment_index": 0,
+          "global_time_us": 8.0,
+          "requested_time_us": 8.0,
+          "actual_time_us": 8.0,
+          "metrics": {
+            "max_element_difference": 1.6497234721267694e-10,
+            "frobenius_difference": 2.3856305829671134e-10,
+            "trace_distance": 1.7540186974210314e-10,
+            "population_difference": 3.454503350042163e-11,
+            "coherence_difference": 1.6497234721267694e-10,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0013012187002703936,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 3.152284314321778e-18,
+            "qutip_minimum_eigenvalue": 0.0013012186978985738
+          },
+          "population_quanta": 0.01021983385563721,
+          "population_qutip": 0.010219833858661462,
+          "pass": true
+        },
+        {
+          "segment_index": 1,
+          "global_time_us": 24.0,
+          "requested_time_us": 24.0,
+          "actual_time_us": 24.0,
+          "metrics": {
+            "max_element_difference": 8.993151912385522e-11,
+            "frobenius_difference": 1.3304393944990187e-10,
+            "trace_distance": 9.960300019630015e-11,
+            "population_difference": 2.5537572057032805e-11,
+            "coherence_difference": 8.993151912385522e-11,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.06397834268234477,
+            "qutip_trace_error": 7.771561172376096e-16,
+            "qutip_hermiticity_error": 9.71446169463028e-17,
+            "qutip_minimum_eigenvalue": 0.06397834268226282
+          },
+          "population_quanta": 0.28563126543138184,
+          "population_qutip": 0.2856312654076001,
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "case": "V7-5",
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "matrix_dimension": 4,
+          "max_element_difference": 0.0,
+          "frobenius_difference": 0.0,
+          "trace_distance": 0.0,
+          "population_difference": 0.0,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0,
+          "qutip_trace_error": 0.0,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.0,
+          "result": "pass"
+        },
+        {
+          "case": "V7-5",
+          "segment_index": 0,
+          "global_time_us": 8.0,
+          "requested_time_us": 8.0,
+          "actual_time_us": 8.0,
+          "matrix_dimension": 4,
+          "max_element_difference": 1.6497234721267694e-10,
+          "frobenius_difference": 2.3856305829671134e-10,
+          "trace_distance": 1.7540186974210314e-10,
+          "population_difference": 3.454503350042163e-11,
+          "coherence_difference": 1.6497234721267694e-10,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0013012187002703936,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 3.152284314321778e-18,
+          "qutip_minimum_eigenvalue": 0.0013012186978985738,
+          "result": "pass"
+        },
+        {
+          "case": "V7-5",
+          "segment_index": 1,
+          "global_time_us": 24.0,
+          "requested_time_us": 24.0,
+          "actual_time_us": 24.0,
+          "matrix_dimension": 4,
+          "max_element_difference": 8.993151912385522e-11,
+          "frobenius_difference": 1.3304393944990187e-10,
+          "trace_distance": 9.960300019630015e-11,
+          "population_difference": 2.5537572057032805e-11,
+          "coherence_difference": 8.993151912385522e-11,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.06397834268234477,
+          "qutip_trace_error": 7.771561172376096e-16,
+          "qutip_hermiticity_error": 9.71446169463028e-17,
+          "qutip_minimum_eigenvalue": 0.06397834268226282,
+          "result": "pass"
+        }
+      ],
+      "max_element_difference": 1.6497234721267694e-10,
+      "max_trace_distance": 1.7540186974210314e-10,
+      "pass": true
+    },
+    {
+      "name": "V7-6",
+      "description": "physical-input-derived rates",
+      "tolerance": 1e-07,
+      "initial_density_matrix": [
+        [
+          [
+            0.4999999999999999,
+            0.0
+          ],
+          [
+            0.4999999999999999,
+            0.0
+          ]
+        ],
+        [
+          [
+            0.4999999999999999,
+            0.0
+          ],
+          [
+            0.4999999999999999,
+            0.0
+          ]
+        ]
+      ],
+      "segments": [
+        {
+          "duration_us": 50.0,
+          "hamiltonian": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        }
+      ],
+      "collapse_operators": [
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.10487184119177928,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.03159276934606673,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.07071067811865475,
+              0.0
+            ],
+            [
+              0.0,
+              0.0
+            ]
+          ],
+          [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              -0.07071067811865475,
+              0.0
+            ]
+          ]
+        ]
+      ],
+      "records": [
+        {
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "metrics": {
+            "max_element_difference": 0.0,
+            "frobenius_difference": 0.0,
+            "trace_distance": 0.0,
+            "population_difference": 0.0,
+            "coherence_difference": 0.0,
+            "quanta_trace_error": 2.220446049250313e-16,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.0
+          },
+          "population_quanta": 0.4999999999999999,
+          "population_qutip": 0.4999999999999999,
+          "pass": true
+        },
+        {
+          "segment_index": 0,
+          "global_time_us": 2.5,
+          "requested_time_us": 2.5,
+          "actual_time_us": 2.5,
+          "metrics": {
+            "max_element_difference": 4.440892098500626e-16,
+            "frobenius_difference": 6.866350197783356e-16,
+            "trace_distance": 4.449557262054371e-16,
+            "population_difference": 2.220446049250313e-16,
+            "coherence_difference": 4.440892098500626e-16,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.019445195239240265,
+            "qutip_trace_error": 4.440892098500626e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.019445195239240903
+          },
+          "population_quanta": 0.4876855808718005,
+          "population_qutip": 0.48768558087180064,
+          "pass": true
+        },
+        {
+          "segment_index": 1,
+          "global_time_us": 5.0,
+          "requested_time_us": 5.0,
+          "actual_time_us": 5.0,
+          "metrics": {
+            "max_element_difference": 9.992007221626409e-16,
+            "frobenius_difference": 1.3911054626160788e-15,
+            "trace_distance": 7.71185559270127e-16,
+            "population_difference": 9.992007221626409e-16,
+            "coherence_difference": 6.661338147750939e-16,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.0378000660917403,
+            "qutip_trace_error": 1.1102230246251565e-15,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.03780006609174158
+          },
+          "population_quanta": 0.4757349944842994,
+          "population_qutip": 0.4757349944842996,
+          "pass": true
+        },
+        {
+          "segment_index": 2,
+          "global_time_us": 10.0,
+          "requested_time_us": 10.0,
+          "actual_time_us": 10.0,
+          "metrics": {
+            "max_element_difference": 7.216449660063518e-16,
+            "frobenius_difference": 1.063440672225858e-15,
+            "trace_distance": 7.264329320467944e-16,
+            "population_difference": 7.216449660063518e-16,
+            "coherence_difference": 4.996003610813204e-16,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.07132274107321443,
+            "qutip_trace_error": 4.440892098500626e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.07132274107321515
+          },
+          "population_quanta": 0.4528826393944503,
+          "population_qutip": 0.452882639394451,
+          "pass": true
+        },
+        {
+          "segment_index": 3,
+          "global_time_us": 20.0,
+          "requested_time_us": 20.0,
+          "actual_time_us": 20.0,
+          "metrics": {
+            "max_element_difference": 1.1657341758564144e-15,
+            "frobenius_difference": 1.4676375744040777e-15,
+            "trace_distance": 1.0284555048505842e-15,
+            "population_difference": 1.1657341758564144e-15,
+            "coherence_difference": 5.551115123125783e-17,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.12618481324482878,
+            "qutip_trace_error": 2.220446049250313e-16,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.12618481324482916
+          },
+          "population_quanta": 0.4110917038938463,
+          "population_qutip": 0.41109170389384747,
+          "pass": true
+        },
+        {
+          "segment_index": 4,
+          "global_time_us": 50.0,
+          "requested_time_us": 50.0,
+          "actual_time_us": 50.0,
+          "metrics": {
+            "max_element_difference": 2.220446049250313e-15,
+            "frobenius_difference": 2.305885381033559e-15,
+            "trace_distance": 1.417981262901691e-15,
+            "population_difference": 2.220446049250313e-15,
+            "coherence_difference": 8.326672684688674e-17,
+            "quanta_trace_error": 0.0,
+            "quanta_hermiticity_error": 0.0,
+            "quanta_minimum_eigenvalue": 0.20702914761706687,
+            "qutip_trace_error": 1.5543122344752192e-15,
+            "qutip_hermiticity_error": 0.0,
+            "qutip_minimum_eigenvalue": 0.20702914761706692
+          },
+          "population_quanta": 0.3119887892302525,
+          "population_qutip": 0.3119887892302531,
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "case": "V7-6",
+          "segment_index": 0,
+          "global_time_us": 0.0,
+          "requested_time_us": 0.0,
+          "actual_time_us": 0.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 0.0,
+          "frobenius_difference": 0.0,
+          "trace_distance": 0.0,
+          "population_difference": 0.0,
+          "coherence_difference": 0.0,
+          "quanta_trace_error": 2.220446049250313e-16,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.0,
+          "result": "pass"
+        },
+        {
+          "case": "V7-6",
+          "segment_index": 0,
+          "global_time_us": 2.5,
+          "requested_time_us": 2.5,
+          "actual_time_us": 2.5,
+          "matrix_dimension": 2,
+          "max_element_difference": 4.440892098500626e-16,
+          "frobenius_difference": 6.866350197783356e-16,
+          "trace_distance": 4.449557262054371e-16,
+          "population_difference": 2.220446049250313e-16,
+          "coherence_difference": 4.440892098500626e-16,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.019445195239240265,
+          "qutip_trace_error": 4.440892098500626e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.019445195239240903,
+          "result": "pass"
+        },
+        {
+          "case": "V7-6",
+          "segment_index": 1,
+          "global_time_us": 5.0,
+          "requested_time_us": 5.0,
+          "actual_time_us": 5.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 9.992007221626409e-16,
+          "frobenius_difference": 1.3911054626160788e-15,
+          "trace_distance": 7.71185559270127e-16,
+          "population_difference": 9.992007221626409e-16,
+          "coherence_difference": 6.661338147750939e-16,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.0378000660917403,
+          "qutip_trace_error": 1.1102230246251565e-15,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.03780006609174158,
+          "result": "pass"
+        },
+        {
+          "case": "V7-6",
+          "segment_index": 2,
+          "global_time_us": 10.0,
+          "requested_time_us": 10.0,
+          "actual_time_us": 10.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 7.216449660063518e-16,
+          "frobenius_difference": 1.063440672225858e-15,
+          "trace_distance": 7.264329320467944e-16,
+          "population_difference": 7.216449660063518e-16,
+          "coherence_difference": 4.996003610813204e-16,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.07132274107321443,
+          "qutip_trace_error": 4.440892098500626e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.07132274107321515,
+          "result": "pass"
+        },
+        {
+          "case": "V7-6",
+          "segment_index": 3,
+          "global_time_us": 20.0,
+          "requested_time_us": 20.0,
+          "actual_time_us": 20.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 1.1657341758564144e-15,
+          "frobenius_difference": 1.4676375744040777e-15,
+          "trace_distance": 1.0284555048505842e-15,
+          "population_difference": 1.1657341758564144e-15,
+          "coherence_difference": 5.551115123125783e-17,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.12618481324482878,
+          "qutip_trace_error": 2.220446049250313e-16,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.12618481324482916,
+          "result": "pass"
+        },
+        {
+          "case": "V7-6",
+          "segment_index": 4,
+          "global_time_us": 50.0,
+          "requested_time_us": 50.0,
+          "actual_time_us": 50.0,
+          "matrix_dimension": 2,
+          "max_element_difference": 2.220446049250313e-15,
+          "frobenius_difference": 2.305885381033559e-15,
+          "trace_distance": 1.417981262901691e-15,
+          "population_difference": 2.220446049250313e-15,
+          "coherence_difference": 8.326672684688674e-17,
+          "quanta_trace_error": 0.0,
+          "quanta_hermiticity_error": 0.0,
+          "quanta_minimum_eigenvalue": 0.20702914761706687,
+          "qutip_trace_error": 1.5543122344752192e-15,
+          "qutip_hermiticity_error": 0.0,
+          "qutip_minimum_eigenvalue": 0.20702914761706692,
+          "result": "pass"
+        }
+      ],
+      "max_element_difference": 2.220446049250313e-15,
+      "max_trace_distance": 1.417981262901691e-15,
+      "pass": true,
+      "environment_rates": {
+        "n_th": 0.09981030749537737,
+        "gamma_down_per_us": 0.010998103074953773,
+        "gamma_up_per_us": 0.0009981030749537736,
+        "gamma_phi_per_us": 0.01
+      }
+    }
+  ],
+  "overall_pass": true,
+  "scope_and_limitations": [
+    "QuTiP receives the same QuantaScope Hamiltonian, initial density matrix, collapse operators, and segment durations.",
+    "This validates the tested Lindblad equation integration, not the physical calibration of the generic device profile.",
+    "A pass does not prove that finite RK4 steps are CPTP for arbitrary circuits."
+  ]
+}

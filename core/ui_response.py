@@ -8,6 +8,7 @@ from typing import Any
 from core.circuit_model import GateColumn, GateOperation
 from core.gates import column_duration_us
 from core.results import EnvironmentConfig, SimulationConfig, SimulationResult
+from core.state_snapshots import serialize_state_snapshots
 
 
 def simulation_result_to_ui_response(result: SimulationResult) -> dict[str, Any]:
@@ -20,16 +21,53 @@ def simulation_result_to_ui_response(result: SimulationResult) -> dict[str, Any]
     timeline, timeline_warnings = _timeline(result)
     warnings.extend(timeline_warnings)
 
+    state_snapshots, snapshot_serialization_ms = serialize_state_snapshots(
+        result.state_snapshots
+    )
+    diagnostics = _diagnostics_response(result)
+    diagnostics["state_snapshot_serialization_ms"] = _safe_float(
+        round(snapshot_serialization_ms, 3)
+    )
+
     return {
         "circuit": _circuit_response(result.config),
         "parameters": _parameters_response(result.config),
-        "diagnostics": _diagnostics_response(result),
+        "rates": _rates_response(result),
+        "diagnostics": diagnostics,
         "summary": _summary_response(result),
         "timeline": timeline,
         "output_probabilities": _output_probabilities(result),
+        "state_snapshots": state_snapshots,
         "run": _run_response(result),
         "warnings": warnings,
         "issues": [_issue_to_dict(issue) for issue in result.issues],
+    }
+
+
+def _rates_response(result: SimulationResult) -> dict[str, Any]:
+    """Expose rate diagnostics with canonical names and one legacy read alias."""
+
+    derived = result.derived_parameters
+    gamma_down = _safe_float_or_none(derived.get("gamma_down_per_us"))
+    legacy_gamma1 = _safe_float_or_none(derived.get("gamma1_per_us"))
+
+    return {
+        "gamma0_per_us": _safe_float_or_none(derived.get("gamma0_per_us")),
+        "gamma_down_per_us": gamma_down,
+        "gamma_up_per_us": _safe_float_or_none(derived.get("gamma_up_per_us")),
+        "gamma_population_relaxation_per_us": _safe_float_or_none(
+            derived.get("gamma_population_relaxation_per_us")
+        ),
+        "gamma_phi_per_us": _safe_float_or_none(derived.get("gamma_phi_per_us")),
+        "t1_base_us": _safe_float_or_none(derived.get("t1_base_us")),
+        "t1_effective_us": _safe_float_or_none(derived.get("t1_effective_us")),
+        "tphi_base_us": _safe_float_or_none(derived.get("tphi_base_us")),
+        "t2_effective_us": _safe_float_or_none(derived.get("t2_effective_us")),
+        # Compatibility only: gamma1 historically meant the downward rate, not total T1 decay.
+        "gamma1_per_us": legacy_gamma1 if legacy_gamma1 is not None else gamma_down,
+        "gamma1_per_us_deprecation": (
+            "Legacy alias for gamma_down_per_us; it is not the population relaxation rate."
+        ),
     }
 
 

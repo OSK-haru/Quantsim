@@ -59,6 +59,20 @@
   white-space: nowrap;
 }
 
+.help-page__back--active {
+  border-color: rgba(96, 165, 250, 0.62);
+  background: rgba(30, 41, 59, 0.96);
+  color: #f8fafc;
+  cursor: default;
+}
+
+.help-page__header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+
 .help-page__intro {
   width: min(960px, 100%);
   margin: 0 auto;
@@ -109,6 +123,10 @@
 
   .help-page__header {
     flex-direction: column;
+  }
+
+  .help-page__header-actions {
+    justify-content: start;
   }
 
   .help-page__grid {

@@ -1,4 +1,5 @@
 import './MetricTimeline.css'
+import { SectionHeader } from './SectionHeader'
 import type { MetricPoint } from '../types/simulation'
 
 type MetricTimelineProps = {
@@ -48,18 +49,16 @@ function shouldShowSample(index: number, count: number) {
 }
 
 export function MetricTimeline({ timeline }: MetricTimelineProps) {
+  const hasTimeline = timeline.length > 0
   const fidelityPath = buildPath(timeline, (point) => safeMetric(point.fidelity))
   const purityPath = buildPath(timeline, (point) => safeMetric(point.purity))
-  const finalPoint = timeline[timeline.length - 1]
+  const finalPoint = hasTimeline ? timeline[timeline.length - 1] : null
   const isDense = timeline.length > denseTimelineThreshold
 
   return (
     <section className="metric-timeline" aria-label="Metric timeline">
       <div className="metric-timeline__header">
-        <div>
-          <div className="metric-timeline__eyebrow">Timeline</div>
-          <h2 className="metric-timeline__title">Metric timeline</h2>
-        </div>
+        <SectionHeader icon="chart" eyebrow="Timeline" title="Metric timeline" />
         <div className="metric-timeline__legend">
           <span className="metric-timeline__legend-item">
             <span className="metric-timeline__swatch metric-timeline__swatch--fidelity" />
@@ -72,77 +71,87 @@ export function MetricTimeline({ timeline }: MetricTimelineProps) {
         </div>
       </div>
 
-      <svg
-        className="metric-timeline__chart"
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label="Line chart showing fidelity and purity over time"
-      >
-        <defs>
-          <linearGradient id="fidelityGradient" x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" stopColor="#60a5fa" />
-            <stop offset="100%" stopColor="#93c5fd" />
-          </linearGradient>
-          <linearGradient id="purityGradient" x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" stopColor="#34d399" />
-            <stop offset="100%" stopColor="#6ee7b7" />
-          </linearGradient>
-        </defs>
+      {hasTimeline ? (
+        <>
+          <svg
+            className="metric-timeline__chart"
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-label="Line chart showing fidelity and purity over time"
+          >
+            <defs>
+              <linearGradient id="fidelityGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+                <stop offset="0%" stopColor="#60a5fa" />
+                <stop offset="100%" stopColor="#93c5fd" />
+              </linearGradient>
+              <linearGradient id="purityGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+                <stop offset="0%" stopColor="#34d399" />
+                <stop offset="100%" stopColor="#6ee7b7" />
+              </linearGradient>
+            </defs>
 
-        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="metric-timeline__axis" />
-        <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="metric-timeline__axis" />
+            <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="metric-timeline__axis" />
+            <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="metric-timeline__axis" />
 
-        <path d={fidelityPath} className="metric-timeline__line metric-timeline__line--fidelity" />
-        <path d={purityPath} className="metric-timeline__line metric-timeline__line--purity" />
+            <path d={fidelityPath} className="metric-timeline__line metric-timeline__line--fidelity" />
+            <path d={purityPath} className="metric-timeline__line metric-timeline__line--purity" />
 
-        {timeline.map((point, index) => {
-          if (isDense && !shouldShowSample(index, timeline.length)) {
-            return null
-          }
+            {timeline.map((point, index) => {
+              if (isDense && !shouldShowSample(index, timeline.length)) {
+                return null
+              }
 
-          const x = scaleX(index, timeline.length)
-          const fidelityY = scaleY(safeMetric(point.fidelity))
-          const purityY = scaleY(safeMetric(point.purity))
+              const x = scaleX(index, timeline.length)
+              const fidelityY = scaleY(safeMetric(point.fidelity))
+              const purityY = scaleY(safeMetric(point.purity))
 
-          return (
-            <g key={point.time_us}>
-              <circle
-                cx={x}
-                cy={fidelityY}
-                r={isDense ? 3 : 4}
-                className="metric-timeline__dot metric-timeline__dot--fidelity"
-              />
-              <circle
-                cx={x}
-                cy={purityY}
-                r={isDense ? 3 : 4}
-                className="metric-timeline__dot metric-timeline__dot--purity"
-              />
-              {!isDense ? (
-                <text
-                  x={x}
-                  y={height - 8}
-                  textAnchor="middle"
-                  className="metric-timeline__time-label"
-                >
-                  {point.time_us}us
-                </text>
-              ) : null}
-            </g>
-          )
-        })}
-      </svg>
+              return (
+                <g key={point.time_us}>
+                  <circle
+                    cx={x}
+                    cy={fidelityY}
+                    r={isDense ? 3 : 4}
+                    className="metric-timeline__dot metric-timeline__dot--fidelity"
+                  />
+                  <circle
+                    cx={x}
+                    cy={purityY}
+                    r={isDense ? 3 : 4}
+                    className="metric-timeline__dot metric-timeline__dot--purity"
+                  />
+                  {!isDense ? (
+                    <text
+                      x={x}
+                      y={height - 8}
+                      textAnchor="middle"
+                      className="metric-timeline__time-label"
+                    >
+                      {point.time_us}us
+                    </text>
+                  ) : null}
+                </g>
+              )
+            })}
+          </svg>
 
-      <div className="metric-timeline__summary">
-        <article className="metric-timeline__value-card">
-          <span className="metric-timeline__label">Final fidelity</span>
-          <strong className="metric-timeline__value">{safeMetric(finalPoint.fidelity).toFixed(4)}</strong>
-        </article>
-        <article className="metric-timeline__value-card">
-          <span className="metric-timeline__label">Final purity</span>
-          <strong className="metric-timeline__value">{safeMetric(finalPoint.purity).toFixed(4)}</strong>
-        </article>
-      </div>
+          <div className="metric-timeline__summary">
+            <article className="metric-timeline__value-card">
+              <span className="metric-timeline__label">Final fidelity</span>
+              <strong className="metric-timeline__value">
+                {finalPoint ? safeMetric(finalPoint.fidelity).toFixed(4) : 'not available'}
+              </strong>
+            </article>
+            <article className="metric-timeline__value-card">
+              <span className="metric-timeline__label">Final purity</span>
+              <strong className="metric-timeline__value">
+                {finalPoint ? safeMetric(finalPoint.purity).toFixed(4) : 'not available'}
+              </strong>
+            </article>
+          </div>
+        </>
+      ) : (
+        <p className="metric-timeline__empty">No timeline data was returned for this run.</p>
+      )}
     </section>
   )
 }

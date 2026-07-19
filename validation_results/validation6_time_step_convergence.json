@@ -1,0 +1,1744 @@
+{
+  "validation": "VALIDATION-6",
+  "base_git_commit": "8b98eb43284d4fb518b9015455a168d47e4af053",
+  "solver_method": "fixed-step RK4 with production dense NumPy or tuple backend",
+  "integration_policy_audit": {
+    "substep_selection": "core.simulator._integration_substeps() calls _substep_count(dt, max_environment_rate_per_us)",
+    "evolution": "core.simulator._evolve_stable_with_substeps() uses RK4 and chooses Rust, NumPy, or tuple execution",
+    "gate_boundaries": "core.simulator._gate_aware_segments() creates finite-duration column segments; each segment ends exactly at a column boundary",
+    "snapshots": "requested output times split solver segments in the production scheduler; this validation uses exact requested boundaries with a fixed explicit internal cap",
+    "time_steps": "production time_steps controls output intervals; the rate-based policy may add internal substeps",
+    "post_step_cleaning": "both dense paths clean density matrices after RK4 substeps; this validation does not add normalization or clipping"
+  },
+  "step_grids": {
+    "candidate_max_internal_step_us": [
+      1.0,
+      0.5,
+      0.25,
+      0.125,
+      0.0625
+    ],
+    "fine_reference_max_internal_step_us": 0.03125
+  },
+  "reference_policy": "analytic density matrices for V6-1 to V6-3; separate 0.03125 us numerical reference for V6-4 and V6-5",
+  "tolerances": {
+    "analytic_fine_max_error": 1e-08,
+    "gate_0_125_max_error": 1e-07,
+    "gate_0_0625_max_error": 1e-08,
+    "physicality": 1e-10,
+    "backend": 1e-10
+  },
+  "cases": [
+    {
+      "name": "V6-1",
+      "reference_type": "analytic downward relaxation",
+      "records": [
+        {
+          "max_internal_step_us": 1.0,
+          "actual_internal_step_count": 51,
+          "runtime_ms": 4.416799998580245,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 8.387823713373876e-08,
+              "frobenius_error": 1.1862174054247992e-07,
+              "trace_distance": 8.387823713373876e-08,
+              "population_error": 8.387823713373876e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.221199133050358
+            },
+            {
+              "max_element_error": 1.306488804919681e-07,
+              "frobenius_error": 1.8476541870060298e-07,
+              "trace_distance": 1.306488804919681e-07,
+              "population_error": 1.306488804919681e-07,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3934692096384861
+            },
+            {
+              "max_element_error": 2.4586307789675743e-07,
+              "frobenius_error": 3.4770289920913477e-07,
+              "trace_distance": 2.4586307786900186e-07,
+              "population_error": 2.4586307789675743e-07,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3678796870345202
+            },
+            {
+              "max_element_error": 2.130405871436647e-07,
+              "frobenius_error": 3.0128488761561937e-07,
+              "trace_distance": 2.1304058710203133e-07,
+              "population_error": 2.130405871436647e-07,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.13533549627719985
+            },
+            {
+              "max_element_error": 1.2347259592537796e-07,
+              "frobenius_error": 1.7461661968020401e-07,
+              "trace_distance": 1.234725958837446e-07,
+              "population_error": 1.2347259592537796e-07,
+              "coherence_error": 0.0,
+              "trace_error": 1.1102230246251565e-16,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.04978719184045979
+            },
+            {
+              "max_element_error": 2.8917280229211195e-08,
+              "frobenius_error": 4.089520981410907e-08,
+              "trace_distance": 2.8917280177603172e-08,
+              "population_error": 2.8917280229211195e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.006737975916365696
+            }
+          ],
+          "max_error": 2.4586307789675743e-07,
+          "observed_order": 3.6215084398197446,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.5,
+          "actual_internal_step_count": 100,
+          "runtime_ms": 5.302499997924315,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 1.0572349357085287e-08,
+              "frobenius_error": 1.495155982731033e-08,
+              "trace_distance": 1.0572349343207499e-08,
+              "population_error": 1.0572349357085287e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.22119920635624576
+            },
+            {
+              "max_element_error": 1.6467508023865207e-08,
+              "frobenius_error": 2.328857318583794e-08,
+              "trace_distance": 1.6467508023865207e-08,
+              "population_error": 1.6467508023865207e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.39346932381985855
+            },
+            {
+              "max_element_error": 1.9976097276330762e-08,
+              "frobenius_error": 2.8250467652218898e-08,
+              "trace_distance": 1.9976097248575186e-08,
+              "population_error": 1.9976097276330762e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3678794611475396
+            },
+            {
+              "max_element_error": 1.4697591421697354e-08,
+              "frobenius_error": 2.078553300502592e-08,
+              "trace_distance": 1.4697591338430627e-08,
+              "population_error": 1.4697591421697354e-08,
+              "coherence_error": 0.0,
+              "trace_error": 2.220446049250313e-16,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.13533529793420412
+            },
+            {
+              "max_element_error": 8.110412896833452e-09,
+              "frobenius_error": 1.1469855856269062e-08,
+              "trace_distance": 8.110412855200089e-09,
+              "population_error": 8.110412896833452e-09,
+              "coherence_error": 0.0,
+              "trace_error": 1.1102230246251565e-16,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.04978707647827676
+            },
+            {
+              "max_element_error": 1.8293751296791227e-09,
+              "frobenius_error": 2.5871270166362567e-09,
+              "trace_distance": 1.8293750572544176e-09,
+              "population_error": 1.8293751296791227e-09,
+              "coherence_error": 0.0,
+              "trace_error": 2.220446049250313e-16,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.006737948828460597
+            }
+          ],
+          "max_error": 1.9976097276330762e-08,
+          "observed_order": 4.030082798938084,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.25,
+          "actual_internal_step_count": 200,
+          "runtime_ms": 12.542399999802,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 6.471361502224937e-10,
+              "frobenius_error": 9.151886222157898e-10,
+              "trace_distance": 6.471360808335547e-10,
+              "population_error": 6.471361502224937e-10,
+              "coherence_error": 0.0,
+              "trace_error": 1.1102230246251565e-16,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.22119921628145897
+            },
+            {
+              "max_element_error": 1.0079803658413766e-09,
+              "frobenius_error": 1.425499464726358e-09,
+              "trace_distance": 1.007980338085801e-09,
+              "population_error": 1.0079803658413766e-09,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.39346933927938627
+            },
+            {
+              "max_element_error": 1.2227420187471694e-09,
+              "frobenius_error": 1.7292183461957042e-09,
+              "trace_distance": 1.2227420187471694e-09,
+              "population_error": 1.2227420187471694e-09,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.36787944239418435
+            },
+            {
+              "max_element_error": 8.996432487862194e-10,
+              "frobenius_error": 1.272287683730864e-09,
+              "trace_distance": 8.996432487862194e-10,
+              "population_error": 8.996432487862194e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.13533528413625595
+            },
+            {
+              "max_element_error": 4.964403679807994e-10,
+              "frobenius_error": 7.020726767752423e-10,
+              "trace_distance": 4.964403506335646e-10,
+              "population_error": 4.964403679807994e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.04978706886430431
+            },
+            {
+              "max_element_error": 1.1197649751881755e-10,
+              "frobenius_error": 1.5835863239276727e-10,
+              "trace_distance": 1.1197646282434803e-10,
+              "population_error": 1.1197649751881755e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0067379471110619645
+            }
+          ],
+          "max_error": 1.2227420187471694e-09,
+          "observed_order": 4.015039812839075,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.125,
+          "actual_internal_step_count": 400,
+          "runtime_ms": 21.80669999870588,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 4.002687070681077e-11,
+              "frobenius_error": 5.660640603000272e-11,
+              "trace_distance": 4.0026773562296114e-11,
+              "population_error": 4.002687070681077e-11,
+              "coherence_error": 0.0,
+              "trace_error": 2.220446049250313e-16,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.22119921688856845
+            },
+            {
+              "max_element_error": 6.23455176373966e-11,
+              "frobenius_error": 8.816983734367454e-11,
+              "trace_distance": 6.234548988182098e-11,
+              "population_error": 6.23455176373966e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.39346934022502106
+            },
+            {
+              "max_element_error": 7.562883652667551e-11,
+              "frobenius_error": 1.0695532632252223e-10,
+              "trace_distance": 7.562883652667551e-11,
+              "population_error": 7.562883652667551e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.36787944124707117
+            },
+            {
+              "max_element_error": 5.5644711061120233e-11,
+              "frobenius_error": 7.869346580466674e-11,
+              "trace_distance": 5.564468330554462e-11,
+              "population_error": 5.5644711061120233e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.13533528329225736
+            },
+            {
+              "max_element_error": 3.070583370901048e-11,
+              "frobenius_error": 4.3424562316427623e-11,
+              "trace_distance": 3.070580248398791e-11,
+              "population_error": 3.070583370901048e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.04978706839856978
+            },
+            {
+              "max_element_error": 6.925971081372939e-12,
+              "frobenius_error": 9.794755010558076e-12,
+              "trace_distance": 6.925937687946027e-12,
+              "population_error": 6.925971081372939e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.006737947006011438
+            }
+          ],
+          "max_error": 7.562883652667551e-11,
+          "observed_order": 4.007584901424722,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.0625,
+          "actual_internal_step_count": 800,
+          "runtime_ms": 44.314000002486864,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 2.488675931999751e-12,
+              "frobenius_error": 3.519499629284538e-12,
+              "trace_distance": 2.488662054211943e-12,
+              "population_error": 2.488675931999751e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.22119921692610647
+            },
+            {
+              "max_element_error": 3.8764547127811966e-12,
+              "frobenius_error": 5.482095576569327e-12,
+              "trace_distance": 3.876426957205581e-12,
+              "population_error": 3.8764547127811966e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3934693402834902
+            },
+            {
+              "max_element_error": 4.702016553892463e-12,
+              "frobenius_error": 6.649577076858001e-12,
+              "trace_distance": 4.701961042741232e-12,
+              "population_error": 4.702016553892463e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.36787944117614435
+            },
+            {
+              "max_element_error": 3.4594827003076034e-12,
+              "frobenius_error": 4.892427727453742e-12,
+              "trace_distance": 3.4594688225197956e-12,
+              "population_error": 3.4594827003076034e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.13533528324007219
+            },
+            {
+              "max_element_error": 1.909077063100284e-12,
+              "frobenius_error": 2.6997298262149592e-12,
+              "trace_distance": 1.908997265820389e-12,
+              "population_error": 1.909077063100284e-12,
+              "coherence_error": 0.0,
+              "trace_error": 2.220446049250313e-16,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.04978706836977302
+            },
+            {
+              "max_element_error": 4.306260209530066e-13,
+              "frobenius_error": 6.089395100391519e-13,
+              "trace_distance": 4.3058525495132116e-13,
+              "population_error": 4.306260209530066e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.006737946999516093
+            }
+          ],
+          "max_error": 4.702016553892463e-12,
+          "observed_order": 4.00436684416913,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.03125,
+          "actual_internal_step_count": 1600,
+          "runtime_ms": 85.03790000031586,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 1.5509815654013437e-13,
+              "frobenius_error": 2.193222912005176e-13,
+              "trace_distance": 1.5508427875232655e-13,
+              "population_error": 1.5509815654013437e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.22119921692844005
+            },
+            {
+              "max_element_error": 2.4147350785597155e-13,
+              "frobenius_error": 3.414558597083933e-13,
+              "trace_distance": 2.414457522803559e-13,
+              "population_error": 2.4147350785597155e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.39346934028712516
+            },
+            {
+              "max_element_error": 2.929878561985788e-13,
+              "frobenius_error": 4.1426890266209024e-13,
+              "trace_distance": 2.9293234504734755e-13,
+              "population_error": 2.929878561985788e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3678794411717353
+            },
+            {
+              "max_element_error": 2.1566082253343666e-13,
+              "frobenius_error": 3.049512103140701e-13,
+              "trace_distance": 2.1563306695782103e-13,
+              "population_error": 2.1566082253343666e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.13533528323682836
+            },
+            {
+              "max_element_error": 1.1901590823981678e-13,
+              "frobenius_error": 1.6831391157090068e-13,
+              "trace_distance": 1.1901590823981678e-13,
+              "population_error": 1.1901590823981678e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.04978706836798296
+            },
+            {
+              "max_element_error": 2.6863927748976835e-14,
+              "frobenius_error": 3.791535588046036e-14,
+              "trace_distance": 2.6810151321221554e-14,
+              "population_error": 2.6863927748976835e-14,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.006737946999112331
+            }
+          ],
+          "max_error": 2.929878561985788e-13,
+          "observed_order": null,
+          "order_reliable": false
+        }
+      ],
+      "fine_error": 2.929878561985788e-13,
+      "pass": true
+    },
+    {
+      "name": "V6-2",
+      "reference_type": "analytic pure dephasing",
+      "records": [
+        {
+          "max_internal_step_us": 1.0,
+          "actual_internal_step_count": 51,
+          "runtime_ms": 2.8509000003396068,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 4.193911856686938e-08,
+              "frobenius_error": 5.931087027123996e-08,
+              "trace_distance": 4.193911856686938e-08,
+              "population_error": 0.0,
+              "coherence_error": 4.193911856686938e-08,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.110599566525179
+            },
+            {
+              "max_element_error": 6.532444024598405e-08,
+              "frobenius_error": 9.238270935030149e-08,
+              "trace_distance": 6.532444024598405e-08,
+              "population_error": 0.0,
+              "coherence_error": 6.532444024598405e-08,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.1967346048192431
+            },
+            {
+              "max_element_error": 1.229315389761343e-07,
+              "frobenius_error": 1.7385144966344586e-07,
+              "trace_distance": 1.229315389761343e-07,
+              "population_error": 0.0,
+              "coherence_error": 1.229315389761343e-07,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3160601564827399
+            },
+            {
+              "max_element_error": 1.0652029359958792e-07,
+              "frobenius_error": 1.5064244387650125e-07,
+              "trace_distance": 1.0652029359958792e-07,
+              "population_error": 0.0,
+              "coherence_error": 1.0652029359958792e-07,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.43233225186140006
+            },
+            {
+              "max_element_error": 6.17362979418723e-08,
+              "frobenius_error": 8.730830984010201e-08,
+              "trace_distance": 6.17362979418723e-08,
+              "population_error": 0.0,
+              "coherence_error": 6.17362979418723e-08,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4751064040797701
+            },
+            {
+              "max_element_error": 1.4458640116774002e-08,
+              "frobenius_error": 2.0447604946613504e-08,
+              "trace_distance": 1.4458640116774002e-08,
+              "population_error": 0.0,
+              "coherence_error": 1.4458640116774002e-08,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.49663101204181714
+            }
+          ],
+          "max_error": 1.229315389761343e-07,
+          "observed_order": 3.6215084361364034,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.5,
+          "actual_internal_step_count": 100,
+          "runtime_ms": 5.224500000622356,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 5.2861746646648555e-09,
+              "frobenius_error": 7.475779903842086e-09,
+              "trace_distance": 5.2861746646648555e-09,
+              "population_error": 0.0,
+              "coherence_error": 5.2861746646648555e-09,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.1105996031781229
+            },
+            {
+              "max_element_error": 8.233754011932604e-09,
+              "frobenius_error": 1.164428659291897e-08,
+              "trace_distance": 8.233754011932604e-09,
+              "population_error": 0.0,
+              "coherence_error": 8.233754011932604e-09,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.19673466190992928
+            },
+            {
+              "max_element_error": 9.988048665920957e-09,
+              "frobenius_error": 1.4125233884987915e-08,
+              "trace_distance": 9.988048665920957e-09,
+              "population_error": 0.0,
+              "coherence_error": 9.988048665920957e-09,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.31606026942623017
+            },
+            {
+              "max_element_error": 7.348795738604252e-09,
+              "frobenius_error": 1.039276660064374e-08,
+              "trace_distance": 7.348795738604252e-09,
+              "population_error": 0.0,
+              "coherence_error": 7.348795738604252e-09,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4323323510328979
+            },
+            {
+              "max_element_error": 4.0552064206611504e-09,
+              "frobenius_error": 5.734927918321453e-09,
+              "trace_distance": 4.0552064206611504e-09,
+              "population_error": 0.0,
+              "coherence_error": 4.0552064206611504e-09,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4751064617608616
+            },
+            {
+              "max_element_error": 9.14687566140604e-10,
+              "frobenius_error": 1.2935635613700795e-09,
+              "trace_distance": 9.14687566140604e-10,
+              "population_error": 0.0,
+              "coherence_error": 9.14687566140604e-10,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.49663102558576966
+            }
+          ],
+          "max_error": 9.988048665920957e-09,
+          "observed_order": 4.030082737450382,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.25,
+          "actual_internal_step_count": 200,
+          "runtime_ms": 11.798499999713385,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 3.2356806123345905e-10,
+              "frobenius_error": 4.5759434054712586e-10,
+              "trace_distance": 3.2356806123345905e-10,
+              "population_error": 0.0,
+              "coherence_error": 3.2356806123345905e-10,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.11059960814072947
+            },
+            {
+              "max_element_error": 5.039901829206883e-10,
+              "frobenius_error": 7.127497519893344e-10,
+              "trace_distance": 5.039901829206883e-10,
+              "population_error": 0.0,
+              "coherence_error": 5.039901829206883e-10,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.1967346696396931
+            },
+            {
+              "max_element_error": 6.113710371291603e-10,
+              "frobenius_error": 8.646092123501635e-10,
+              "trace_distance": 6.113710371291603e-10,
+              "population_error": 0.0,
+              "coherence_error": 6.113710371291603e-10,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.31606027880290777
+            },
+            {
+              "max_element_error": 4.498216382708975e-10,
+              "frobenius_error": 6.361438614915877e-10,
+              "trace_distance": 4.498216382708975e-10,
+              "population_error": 0.0,
+              "coherence_error": 4.498216382708975e-10,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.43233235793187197
+            },
+            {
+              "max_element_error": 2.482201909292936e-10,
+              "frobenius_error": 3.510363604670461e-10,
+              "trace_distance": 2.482201909292936e-10,
+              "population_error": 0.0,
+              "coherence_error": 2.482201909292936e-10,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.47510646556784786
+            },
+            {
+              "max_element_error": 5.598825092781312e-11,
+              "frobenius_error": 7.917934379566134e-11,
+              "trace_distance": 5.598825092781312e-11,
+              "population_error": 0.0,
+              "coherence_error": 5.598825092781312e-11,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.496631026444469
+            }
+          ],
+          "max_error": 6.113710371291603e-10,
+          "observed_order": 4.015039878335852,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.125,
+          "actual_internal_step_count": 400,
+          "runtime_ms": 22.918800001207273,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 2.0013435353405384e-11,
+              "frobenius_error": 2.8303271706463073e-11,
+              "trace_distance": 2.0013435353405384e-11,
+              "population_error": 0.0,
+              "coherence_error": 2.0013435353405384e-11,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.11059960844428415
+            },
+            {
+              "max_element_error": 3.1172786574273914e-11,
+              "frobenius_error": 4.40849775503001e-11,
+              "trace_distance": 3.1172786574273914e-11,
+              "population_error": 0.0,
+              "coherence_error": 3.1172786574273914e-11,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.19673467011251053
+            },
+            {
+              "max_element_error": 3.781441826333776e-11,
+              "frobenius_error": 5.3477663161261116e-11,
+              "trace_distance": 3.781441826333776e-11,
+              "population_error": 0.0,
+              "coherence_error": 3.781441826333776e-11,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3160602793764644
+            },
+            {
+              "max_element_error": 2.782234165277231e-11,
+              "frobenius_error": 3.934673290232847e-11,
+              "trace_distance": 2.782234165277231e-11,
+              "population_error": 0.0,
+              "coherence_error": 2.782234165277231e-11,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4323323583538713
+            },
+            {
+              "max_element_error": 1.535292032395219e-11,
+              "frobenius_error": 2.171230814416672e-11,
+              "trace_distance": 1.535292032395219e-11,
+              "population_error": 0.0,
+              "coherence_error": 1.535292032395219e-11,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.47510646580071514
+            },
+            {
+              "max_element_error": 3.4629864080482076e-12,
+              "frobenius_error": 4.8974023445754645e-12,
+              "trace_distance": 3.4629864080482076e-12,
+              "population_error": 0.0,
+              "coherence_error": 3.4629864080482076e-12,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4966310264969943
+            }
+          ],
+          "max_error": 3.781441826333776e-11,
+          "observed_order": 4.00744865029926,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.0625,
+          "actual_internal_step_count": 800,
+          "runtime_ms": 43.21909999998752,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 1.2443379659998755e-12,
+              "frobenius_error": 1.7597596276927752e-12,
+              "trace_distance": 1.2443379659998755e-12,
+              "population_error": 0.0,
+              "coherence_error": 1.2443379659998755e-12,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.11059960846305322
+            },
+            {
+              "max_element_error": 1.938393889844292e-12,
+              "frobenius_error": 2.741302928238937e-12,
+              "trace_distance": 1.938393889844292e-12,
+              "population_error": 0.0,
+              "coherence_error": 1.938393889844292e-12,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.19673467014174495
+            },
+            {
+              "max_element_error": 2.3512303215511565e-12,
+              "frobenius_error": 3.325141809000499e-12,
+              "trace_distance": 2.3512303215511565e-12,
+              "population_error": 0.0,
+              "coherence_error": 2.3512303215511565e-12,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3160602794119276
+            },
+            {
+              "max_element_error": 1.7298940058196877e-12,
+              "frobenius_error": 2.4464395644981242e-12,
+              "trace_distance": 1.7298940058196877e-12,
+              "population_error": 0.0,
+              "coherence_error": 1.7298940058196877e-12,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.43233235837996375
+            },
+            {
+              "max_element_error": 9.545732260196615e-13,
+              "frobenius_error": 1.3499704025152432e-12,
+              "trace_distance": 9.545732260196615e-13,
+              "population_error": 0.0,
+              "coherence_error": 9.545732260196615e-13,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4751064658151134
+            },
+            {
+              "max_element_error": 2.1531474519997928e-13,
+              "frobenius_error": 3.0450103284071795e-13,
+              "trace_distance": 2.1531474519997928e-13,
+              "population_error": 0.0,
+              "coherence_error": 2.1531474519997928e-13,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.49663102650024193
+            }
+          ],
+          "max_error": 2.3512303215511565e-12,
+          "observed_order": 4.003137036068496,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.03125,
+          "actual_internal_step_count": 1600,
+          "runtime_ms": 86.77950000128476,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 7.743805596760467e-14,
+              "frobenius_error": 1.0951394899319331e-13,
+              "trace_distance": 7.743805596760467e-14,
+              "population_error": 0.0,
+              "coherence_error": 7.743805596760467e-14,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.1105996084642201
+            },
+            {
+              "max_element_error": 1.2068124277675452e-13,
+              "frobenius_error": 1.7066905025892634e-13,
+              "trace_distance": 1.2068124277675452e-13,
+              "population_error": 0.0,
+              "coherence_error": 1.2068124277675452e-13,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.1967346701435626
+            },
+            {
+              "max_element_error": 1.4663270597736755e-13,
+              "frobenius_error": 2.073699614806596e-13,
+              "trace_distance": 1.4663270597736755e-13,
+              "population_error": 0.0,
+              "coherence_error": 1.4663270597736755e-13,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3160602794141322
+            },
+            {
+              "max_element_error": 1.0787204463014177e-13,
+              "frobenius_error": 1.525541085168623e-13,
+              "trace_distance": 1.0787204463014177e-13,
+              "population_error": 0.0,
+              "coherence_error": 1.0787204463014177e-13,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4323323583815858
+            },
+            {
+              "max_element_error": 5.954958748333183e-14,
+              "frobenius_error": 8.421583425265098e-14,
+              "trace_distance": 5.954958748333183e-14,
+              "population_error": 0.0,
+              "coherence_error": 5.954958748333183e-14,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.47510646581600846
+            },
+            {
+              "max_element_error": 1.3432831236226406e-14,
+              "frobenius_error": 1.899689211534033e-14,
+              "trace_distance": 1.3432831236226406e-14,
+              "population_error": 0.0,
+              "coherence_error": 1.3432831236226406e-14,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4966310265004439
+            }
+          ],
+          "max_error": 1.4663270597736755e-13,
+          "observed_order": null,
+          "order_reliable": false
+        }
+      ],
+      "fine_error": 1.4663270597736755e-13,
+      "pass": true
+    },
+    {
+      "name": "V6-3",
+      "reference_type": "analytic finite-temperature relaxation",
+      "records": [
+        {
+          "max_internal_step_us": 1.0,
+          "actual_internal_step_count": 51,
+          "runtime_ms": 4.736899998533772,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 4.2777900999269036e-08,
+              "frobenius_error": 6.049708774339369e-08,
+              "trace_distance": 4.277790098539125e-08,
+              "population_error": 4.2777900999269036e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.11281155785568256
+            },
+            {
+              "max_element_error": 6.663092921854741e-08,
+              "frobenius_error": 9.423036371551301e-08,
+              "trace_distance": 6.663092917691404e-08,
+              "population_error": 6.663092921854741e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.20066929691562782
+            },
+            {
+              "max_element_error": 1.2539016980284146e-07,
+              "frobenius_error": 1.773284787234437e-07,
+              "trace_distance": 1.2539016980284146e-07,
+              "population_error": 1.2539016980284146e-07,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.32238135961239456
+            },
+            {
+              "max_element_error": 1.0865069954846263e-07,
+              "frobenius_error": 1.5365529282350786e-07,
+              "trace_distance": 1.0865069952070705e-07,
+              "population_error": 1.0865069954846263e-07,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.44097889689862807
+            },
+            {
+              "max_element_error": 6.297102395080856e-08,
+              "frobenius_error": 8.905447606850215e-08,
+              "trace_distance": 6.297102392305298e-08,
+              "population_error": 6.297102395080856e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4846085321613655
+            },
+            {
+              "max_element_error": 1.4747813081861239e-08,
+              "frobenius_error": 2.0856557197206893e-08,
+              "trace_distance": 1.4747813026350087e-08,
+              "population_error": 1.4747813081861239e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.49343636771734667
+            }
+          ],
+          "max_error": 1.2539016980284146e-07,
+          "observed_order": 3.621508427088956,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.5,
+          "actual_internal_step_count": 100,
+          "runtime_ms": 8.292000002256827,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 5.391898261208894e-09,
+              "frobenius_error": 7.625295618498293e-09,
+              "trace_distance": 5.391898240392212e-09,
+              "population_error": 5.391898261208894e-09,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.11281159524168531
+            },
+            {
+              "max_element_error": 8.398429202083335e-09,
+              "frobenius_error": 1.1877172382085726e-08,
+              "trace_distance": 8.398429132694396e-09,
+              "population_error": 8.398429202083335e-09,
+              "coherence_error": 0.0,
+              "trace_error": 1.1102230246251565e-16,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.20066935514812775
+            },
+            {
+              "max_element_error": 1.018780970696298e-08,
+              "frobenius_error": 1.4407738658463314e-08,
+              "trace_distance": 1.018780970696298e-08,
+              "population_error": 1.018780970696298e-08,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.32238147481475465
+            },
+            {
+              "max_element_error": 7.495771836563137e-09,
+              "frobenius_error": 1.0600622152469559e-08,
+              "trace_distance": 7.495771808807561e-09,
+              "population_error": 7.495771836563137e-09,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4409789980535557
+            },
+            {
+              "max_element_error": 4.136310738367399e-09,
+              "frobenius_error": 5.849626665884025e-09,
+              "trace_distance": 4.136310682856248e-09,
+              "population_error": 4.136310738367399e-09,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4846085909960788
+            },
+            {
+              "max_element_error": 9.329814698588734e-10,
+              "frobenius_error": 1.3194349696125832e-09,
+              "trace_distance": 9.329814143477222e-10,
+              "population_error": 9.329814698588734e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.49343635390251506
+            }
+          ],
+          "max_error": 1.018780970696298e-08,
+          "observed_order": 4.03008289216103,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.25,
+          "actual_internal_step_count": 200,
+          "runtime_ms": 17.33329999842681,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 3.3003946797727224e-10,
+              "frobenius_error": 4.667462721057038e-10,
+              "trace_distance": 3.3003945409948443e-10,
+              "population_error": 3.3003946797727224e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.11281160030354406
+            },
+            {
+              "max_element_error": 5.140700087835626e-10,
+              "frobenius_error": 7.270047391786599e-10,
+              "trace_distance": 5.14069981027987e-10,
+              "population_error": 5.140700087835626e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.200669363032487
+            },
+            {
+              "max_element_error": 6.235983951441426e-10,
+              "frobenius_error": 8.819012686346323e-10,
+              "trace_distance": 6.23598367388567e-10,
+              "population_error": 6.235983951441426e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.322381484378966
+            },
+            {
+              "max_element_error": 4.588182056508572e-10,
+              "frobenius_error": 6.488668505905119e-10,
+              "trace_distance": 4.5881815013970595e-10,
+              "population_error": 4.588182056508572e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.44097900509050947
+            },
+            {
+              "max_element_error": 2.531846399200788e-10,
+              "frobenius_error": 3.580571123072146e-10,
+              "trace_distance": 2.5318461216450316e-10,
+              "population_error": 2.531846399200788e-10,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.48460859487920477
+            },
+            {
+              "max_element_error": 5.710809602987865e-11,
+              "frobenius_error": 8.076296542217472e-11,
+              "trace_distance": 5.710804051872742e-11,
+              "population_error": 5.710809602987865e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4934363530266417
+            }
+          ],
+          "max_error": 6.235983951441426e-10,
+          "observed_order": 4.015033670333526,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.125,
+          "actual_internal_step_count": 400,
+          "runtime_ms": 33.92419999727281,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 2.0413670753782753e-11,
+              "frobenius_error": 2.886927041166951e-11,
+              "trace_distance": 2.0413656875994945e-11,
+              "population_error": 2.0413670753782753e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.11281160061316989
+            },
+            {
+              "max_element_error": 3.17962878249034e-11,
+              "frobenius_error": 4.4966702222802575e-11,
+              "trace_distance": 3.1796260069327786e-11,
+              "population_error": 3.17962878249034e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.20066936351476067
+            },
+            {
+              "max_element_error": 3.857086872116611e-11,
+              "frobenius_error": 5.454740640568796e-11,
+              "trace_distance": 3.857084096559049e-11,
+              "population_error": 3.857086872116611e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3223814849639935
+            },
+            {
+              "max_element_error": 2.8378910332804708e-11,
+              "frobenius_error": 4.013380062573011e-11,
+              "trace_distance": 2.8378882577229092e-11,
+              "population_error": 2.8378910332804708e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.44097900552094865
+            },
+            {
+              "max_element_error": 1.5660139851547683e-11,
+              "frobenius_error": 2.214674291444144e-11,
+              "trace_distance": 1.5660112095972067e-11,
+              "population_error": 1.5660139851547683e-11,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4846085951167293
+            },
+            {
+              "max_element_error": 3.5323410862986293e-12,
+              "frobenius_error": 4.9954454190139805e-12,
+              "trace_distance": 3.5323133307230137e-12,
+              "population_error": 3.5323410862986293e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.49343635297306593
+            }
+          ],
+          "max_error": 3.857086872116611e-11,
+          "observed_order": 4.007625697043935,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.0625,
+          "actual_internal_step_count": 800,
+          "runtime_ms": 69.65320000017527,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 1.2693179840539415e-12,
+              "frobenius_error": 1.7950278305115917e-12,
+              "trace_distance": 1.269276350690518e-12,
+              "population_error": 1.2693179840539415e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.1128116006323143
+            },
+            {
+              "max_element_error": 1.9769741399500163e-12,
+              "frobenius_error": 2.795824389142275e-12,
+              "trace_distance": 1.9769463843744006e-12,
+              "population_error": 1.9769741399500163e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.20066936354458004
+            },
+            {
+              "max_element_error": 2.3979707108878756e-12,
+              "frobenius_error": 3.3912427015110856e-12,
+              "trace_distance": 2.3979707108878756e-12,
+              "population_error": 2.3979707108878756e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3223814850001664
+            },
+            {
+              "max_element_error": 1.7643664307342988e-12,
+              "frobenius_error": 2.495151683337536e-12,
+              "trace_distance": 1.7643386751586831e-12,
+              "population_error": 1.7643664307342988e-12,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.44097900554756325
+            },
+            {
+              "max_element_error": 9.736655925962623e-13,
+              "frobenius_error": 1.3768925838807382e-12,
+              "trace_distance": 9.73610081445031e-13,
+              "population_error": 9.736655925962623e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.48460859513141585
+            },
+            {
+              "max_element_error": 2.195466031196247e-13,
+              "frobenius_error": 3.104465338747459e-13,
+              "trace_distance": 2.1951884754400908e-13,
+              "population_error": 2.195466031196247e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.49343635296975313
+            }
+          ],
+          "max_error": 2.3979707108878756e-12,
+          "observed_order": 4.0042142043446525,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.03125,
+          "actual_internal_step_count": 1600,
+          "runtime_ms": 139.04489999913494,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.0,
+              "frobenius_error": 0.0,
+              "trace_distance": 0.0,
+              "population_error": 0.0,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.0
+            },
+            {
+              "max_element_error": 7.917277944358148e-14,
+              "frobenius_error": 1.1195740581207856e-13,
+              "trace_distance": 7.916584054967757e-14,
+              "population_error": 7.917277944358148e-14,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.11281160063350436
+            },
+            {
+              "max_element_error": 1.23262511309008e-13,
+              "frobenius_error": 1.742998901745845e-13,
+              "trace_distance": 1.232486335212002e-13,
+              "population_error": 1.23262511309008e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.2006693635464337
+            },
+            {
+              "max_element_error": 1.4943601911454607e-13,
+              "frobenius_error": 2.1133444493883611e-13,
+              "trace_distance": 1.4943601911454607e-13,
+              "population_error": 1.4943601911454607e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.3223814850024149
+            },
+            {
+              "max_element_error": 1.099120794378905e-13,
+              "frobenius_error": 1.5539990605557835e-13,
+              "trace_distance": 1.0988432386227487e-13,
+              "population_error": 1.099120794378905e-13,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4409790055492177
+            },
+            {
+              "max_element_error": 6.072919944699606e-14,
+              "frobenius_error": 8.58055887795141e-14,
+              "trace_distance": 6.06736882957648e-14,
+              "population_error": 6.072919944699606e-14,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4846085951323288
+            },
+            {
+              "max_element_error": 1.3988810110276972e-14,
+              "frobenius_error": 1.974395168611217e-14,
+              "trace_distance": 1.3961054534661343e-14,
+              "population_error": 1.3988810110276972e-14,
+              "coherence_error": 0.0,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.4934363529695475
+            }
+          ],
+          "max_error": 1.4943601911454607e-13,
+          "observed_order": null,
+          "order_reliable": false
+        }
+      ],
+      "fine_error": 1.4943601911454607e-13,
+      "pass": true
+    },
+    {
+      "name": "V6-4",
+      "reference_type": "fine numerical reference",
+      "gate_durations_us": [
+        8.0
+      ],
+      "records": [
+        {
+          "max_internal_step_us": 1.0,
+          "actual_internal_step_count": 8,
+          "runtime_ms": 1.2003999981970992,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 0.00018438707451018323,
+              "frobenius_error": 0.00026096953496358656,
+              "trace_distance": 0.00018453332785585186,
+              "population_error": 7.345464119623557e-06,
+              "coherence_error": 0.00018438707451018323,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.05935115281401576
+            }
+          ],
+          "max_error": 0.00018438707451018323,
+          "observed_order": 4.017343854219672,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.5,
+          "actual_internal_step_count": 16,
+          "runtime_ms": 2.1281999979692046,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 1.1386479558786667e-05,
+              "frobenius_error": 1.6149679845335122e-05,
+              "trace_distance": 1.1419548132628178e-05,
+              "population_error": 8.684254780289002e-07,
+              "coherence_error": 1.1386479558786667e-05,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.059356677803139496
+            }
+          ],
+          "max_error": 1.1386479558786667e-05,
+          "observed_order": 4.0166251022874055,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.25,
+          "actual_internal_step_count": 32,
+          "runtime_ms": 4.110399997443892,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 7.035011856357613e-07,
+              "frobenius_error": 1.0038608806517275e-06,
+              "trace_distance": 7.098368360767362e-07,
+              "population_error": 9.462777433855152e-08,
+              "coherence_error": 7.035011856357613e-07,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.05935819062139561
+            }
+          ],
+          "max_error": 7.035011856357613e-07,
+          "observed_order": 4.0152944834828865,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.125,
+          "actual_internal_step_count": 64,
+          "runtime_ms": 8.662799999001436,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 4.3505158251015285e-08,
+              "frobenius_error": 6.234459061610477e-08,
+              "trace_distance": 4.408428279494688e-08,
+              "population_error": 7.122162304362689e-09,
+              "coherence_error": 4.3505158251015285e-08,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.059358320188386327
+            }
+          ],
+          "max_error": 4.3505158251015285e-08,
+          "observed_order": 4.0927837073113595,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.0625,
+          "actual_internal_step_count": 128,
+          "runtime_ms": 16.931900001509348,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 2.5497059127421253e-09,
+              "frobenius_error": 3.6624991662086966e-09,
+              "trace_distance": 2.589777996516244e-09,
+              "population_error": 4.5381703950297947e-10,
+              "coherence_error": 2.5497059127421253e-09,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.05935832935064955
+            }
+          ],
+          "max_error": 2.5497059127421253e-09,
+          "observed_order": null,
+          "order_reliable": false
+        }
+      ],
+      "fine_error": 2.5497059127421253e-09,
+      "pass": true
+    },
+    {
+      "name": "V6-5",
+      "reference_type": "fine numerical reference",
+      "gate_durations_us": [
+        8.0,
+        16.0
+      ],
+      "records": [
+        {
+          "max_internal_step_us": 1.0,
+          "actual_internal_step_count": 24,
+          "runtime_ms": 5.936800000199582,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 9.809231770083508e-05,
+              "frobenius_error": 0.0001399615568719513,
+              "trace_distance": 0.00010518726579165954,
+              "population_error": 6.585086221699843e-06,
+              "coherence_error": 3.6815859222327774e-07,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.06397659031169868
+            }
+          ],
+          "max_error": 9.809231770083508e-05,
+          "observed_order": 4.020335448597502,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.5,
+          "actual_internal_step_count": 48,
+          "runtime_ms": 11.71980000071926,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 6.044960027199809e-06,
+              "frobenius_error": 8.703697487681635e-06,
+              "trace_distance": 6.531997721008928e-06,
+              "population_error": 8.670610123773237e-07,
+              "coherence_error": 1.0416465617141268e-07,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.06397829472517201
+            }
+          ],
+          "max_error": 6.044960027199809e-06,
+          "observed_order": 4.017763791074209,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.25,
+          "actual_internal_step_count": 96,
+          "runtime_ms": 23.47870000085095,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 3.7318657906453867e-07,
+              "frobenius_error": 5.439832285205116e-07,
+              "trace_distance": 4.0776619587800896e-07,
+              "population_error": 7.924890077504188e-08,
+              "coherence_error": 8.946843339102672e-09,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.06397834149940411
+            }
+          ],
+          "max_error": 3.7318657906453867e-07,
+          "observed_order": 4.015760090474064,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.125,
+          "actual_internal_step_count": 192,
+          "runtime_ms": 45.09220000181813,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 2.3070753244240917e-08,
+              "frobenius_error": 3.389917823020833e-08,
+              "trace_distance": 2.5392919556516864e-08,
+              "population_error": 5.839509764626882e-09,
+              "coherence_error": 6.309465346021614e-10,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.06397834266307202
+            }
+          ],
+          "max_error": 2.3070753244240917e-08,
+          "observed_order": 4.09298437073005,
+          "order_reliable": true
+        },
+        {
+          "max_internal_step_us": 0.0625,
+          "actual_internal_step_count": 384,
+          "runtime_ms": 91.23989999716287,
+          "snapshot_metrics": [
+            {
+              "max_element_error": 1.3519191092359556e-09,
+              "frobenius_error": 1.9950539633578664e-09,
+              "trace_distance": 1.4938987263426978e-09,
+              "population_error": 3.6911895762159475e-10,
+              "coherence_error": 3.920126723233608e-11,
+              "trace_error": 0.0,
+              "hermiticity_error": 0.0,
+              "minimum_eigenvalue": 0.06397834268274132
+            }
+          ],
+          "max_error": 1.3519191092359556e-09,
+          "observed_order": null,
+          "order_reliable": false
+        }
+      ],
+      "fine_error": 1.3519191092359556e-09,
+      "pass": true
+    }
+  ],
+  "snapshot_grid_independence": {
+    "fixed_max_internal_step_us": 0.125,
+    "max_common_time_element_difference": 0.0,
+    "pass": true
+  },
+  "backend_consistency": {
+    "fixed_max_internal_step_us": 0.125,
+    "one_qubit_max_element_difference": 1.1102230246251565e-16,
+    "two_qubit_max_element_difference": 5.551115123125783e-17,
+    "pass": true
+  },
+  "overall_pass": true,
+  "scope": {
+    "proves": [
+      "tested internal-step convergence",
+      "tested snapshot-grid independence",
+      "NumPy/Python dense agreement for selected paths"
+    ],
+    "does_not_prove": [
+      "arbitrary-step CPTP behavior",
+      "general convergence for all circuits",
+      "adaptive solver correctness"
+    ]
+  }
+}

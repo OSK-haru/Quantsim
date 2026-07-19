@@ -46,6 +46,7 @@ export function ModelInfoPanel({
     <ResultDrawer
       eyebrow="Physics model"
       title="Computation method"
+      icon="atom"
       description="Canonical labels for the model, backend, and planned modes."
       defaultOpen={false}
     >

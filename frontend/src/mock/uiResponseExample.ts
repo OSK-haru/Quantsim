@@ -47,6 +47,20 @@ export const uiResponseExample: SimulationResponse = {
     fidelity_threshold: 0.9,
     simulation_backend: 'rust_dense_preview',
   },
+  rates: {
+    gamma0_per_us: 0.01,
+    gamma_down_per_us: 0.0100001,
+    gamma_up_per_us: 0.0000001,
+    gamma_population_relaxation_per_us: 0.0100002,
+    gamma_phi_per_us: 0.005,
+    t1_base_us: 100,
+    t1_effective_us: 99.998,
+    tphi_base_us: 200,
+    t2_effective_us: 66.666,
+    gamma1_per_us: 0.0100001,
+    gamma1_per_us_deprecation:
+      'Legacy alias for gamma_down_per_us; it is not the population relaxation rate.',
+  },
   diagnostics: {
     simulation_model: 'gate_aware_open_system',
     evolution_mode: 'gate_aware_hamiltonian_lindblad_v1',
@@ -79,6 +93,7 @@ export const uiResponseExample: SimulationResponse = {
     '10': 0.01,
     '11': 0.49,
   },
+  state_snapshots: [],
   run: {
     status: 'Mock result loaded',
     selected_backend: 'rust_dense_preview',

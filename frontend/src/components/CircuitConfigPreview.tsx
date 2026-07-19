@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import './CircuitConfigPreview.css'
 import { ResultDrawer } from './ResultDrawer'
 import type { CircuitEditorState } from '../types/circuit'
@@ -8,6 +8,8 @@ import { exportCircuitConfigBundleJson } from '../utils/circuitConfigTransfer'
 type CircuitConfigPreviewProps = {
   circuit: CircuitEditorState
   onImportCircuitConfig: (file: File) => Promise<string>
+  defaultOpen?: boolean
+  showTransferActions?: boolean
 }
 
 const PREVIEW_NOTE =
@@ -16,22 +18,24 @@ const PREVIEW_NOTE =
 export function CircuitConfigPreview({
   circuit,
   onImportCircuitConfig,
+  defaultOpen = false,
+  showTransferActions = true,
 }: CircuitConfigPreviewProps) {
   const previewJson = JSON.stringify(circuitEditorStateToConfig(circuit), null, 2)
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const [copyStatus, setCopyStatus] = useState<{
+    status: 'idle' | 'copied' | 'failed'
+    json: string
+  }>({ status: 'idle', json: '' })
   const [transferStatus, setTransferStatus] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-
-  useEffect(() => {
-    setCopyStatus('idle')
-  }, [previewJson])
+  const visibleCopyStatus = copyStatus.json === previewJson ? copyStatus.status : 'idle'
 
   async function handleCopyJson() {
     try {
       await navigator.clipboard.writeText(previewJson)
-      setCopyStatus('copied')
+      setCopyStatus({ status: 'copied', json: previewJson })
     } catch {
-      setCopyStatus('failed')
+      setCopyStatus({ status: 'failed', json: previewJson })
     }
   }
 
@@ -72,43 +76,61 @@ export function CircuitConfigPreview({
     <ResultDrawer
       eyebrow="Editor"
       title="CircuitConfig preview"
+      icon="braces"
       description="Converted circuit state shown as API-compatible JSON."
-      defaultOpen={false}
+      defaultOpen={defaultOpen}
     >
       <div className="circuit-config-preview">
         <p className="circuit-config-preview__note">{PREVIEW_NOTE}</p>
 
-        <div className="circuit-config-preview__actions">
-          <button
-            className="circuit-config-preview__copy"
-            type="button"
-            onClick={handleExportJson}
-          >
-            Export JSON
-          </button>
-          <button
-            className="circuit-config-preview__copy"
-            type="button"
-            onClick={handleCopyJson}
-          >
-            Copy JSON
-          </button>
-          <button className="circuit-config-preview__copy" type="button" onClick={openFilePicker}>
-            Import JSON
-          </button>
-          <span className="circuit-config-preview__status" aria-live="polite">
-            {transferStatus || (copyStatus === 'copied' ? 'Copied' : copyStatus === 'failed' ? 'Copy failed' : ' ')}
-          </span>
-        </div>
+        {showTransferActions ? (
+          <div className="circuit-config-preview__actions">
+            <button
+              className="circuit-config-preview__copy"
+              type="button"
+              onClick={handleExportJson}
+            >
+              Export JSON
+            </button>
+            <button
+              className="circuit-config-preview__copy"
+              type="button"
+              onClick={handleCopyJson}
+            >
+              Copy JSON
+            </button>
+            <button className="circuit-config-preview__copy" type="button" onClick={openFilePicker}>
+              Import JSON
+            </button>
+            <span className="circuit-config-preview__status" aria-live="polite">
+              {transferStatus || (visibleCopyStatus === 'copied' ? 'Copied' : visibleCopyStatus === 'failed' ? 'Copy failed' : ' ')}
+            </span>
+          </div>
+        ) : (
+          <div className="circuit-config-preview__actions">
+            <button
+              className="circuit-config-preview__copy circuit-config-preview__copy--inline"
+              type="button"
+              onClick={handleCopyJson}
+            >
+              Copy JSON
+            </button>
+            <span className="circuit-config-preview__status" aria-live="polite">
+              {visibleCopyStatus === 'copied' ? 'Copied' : visibleCopyStatus === 'failed' ? 'Copy failed' : ' '}
+            </span>
+          </div>
+        )}
 
-        <input
-          ref={fileInputRef}
-          className="circuit-config-preview__file-input"
-          type="file"
-          accept=".json,.qscope.json,application/json"
-          aria-label="Import circuit configuration JSON"
-          onChange={handleFileChange}
-        />
+        {showTransferActions ? (
+          <input
+            ref={fileInputRef}
+            className="circuit-config-preview__file-input"
+            type="file"
+            accept=".json,.qscope.json,application/json"
+            aria-label="Import circuit configuration JSON"
+            onChange={handleFileChange}
+          />
+        ) : null}
 
         <pre className="circuit-config-preview__json" aria-label="Circuit configuration JSON">
           {previewJson}
