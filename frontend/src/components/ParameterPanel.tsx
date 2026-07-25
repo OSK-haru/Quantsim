@@ -145,15 +145,15 @@ export function ParameterPanel({
   }
 
   return (
-    <section className="parameter-panel" aria-label="Simulation parameters">
+    <section className="parameter-panel" aria-label="シミュレーションパラメーター">
       <div className="parameter-panel__header">
         <SectionHeader
           icon="chip"
-          eyebrow="Parameters"
-          title="Simulation parameters"
+          eyebrow="パラメーター"
+          title="シミュレーションパラメーター"
         />
         <p className="parameter-panel__note">
-          This is a generic educational profile, not a calibrated hardware model.
+          校正済みのハードウェアモデルではなく、学習用の一般的なプロファイルです。
         </p>
       </div>
 
@@ -162,29 +162,29 @@ export function ParameterPanel({
           <SectionHeader
             className="parameter-panel__section-header"
             icon="chip"
-            title="Device"
+            title="デバイス"
             headingLevel="h3"
           />
           <div className="parameter-panel__fields">
             {renderNumberInput(
               'device_quality',
-              'Device quality',
-              'Abstract 0-1 profile parameter used by the educational device model.',
+              'デバイス品質',
+              '学習用デバイスモデルで使用する 0〜1 の抽象的なプロファイル値です。',
             )}
             {renderNumberInput(
               'qubit_frequency_ghz',
-              'Qubit frequency [GHz]',
-              'greater than 0',
+              '量子ビット周波数 [GHz]',
+              '0 より大きい値',
             )}
             {renderNumberInput(
               't1_max_us',
-              'Max T1 [\u03bcs]',
-              'greater than 0',
+              '最大 T1 [\u03bcs]',
+              '0 より大きい値',
             )}
             {renderNumberInput(
               'tphi_max_us',
-              'Max T\u03c6 [\u03bcs]',
-              'greater than 0',
+              '最大 T\u03c6 [\u03bcs]',
+              '0 より大きい値',
             )}
           </div>
         </article>
@@ -193,19 +193,19 @@ export function ParameterPanel({
           <SectionHeader
             className="parameter-panel__section-header"
             icon="thermometer"
-            title="Environment"
+            title="環境"
             headingLevel="h3"
           />
           <div className="parameter-panel__fields">
             {renderNumberInput(
               'temperature_mk',
-              'Temperature [mK]',
-              '0 or more',
+              '温度 [mK]',
+              '0 以上',
             )}
             {renderNumberInput(
               'flux_noise_phi0',
-              'Flux noise [\u03a60]',
-              '0 or more',
+              '磁束ノイズ [\u03a60]',
+              '0 以上',
             )}
           </div>
         </article>
@@ -214,20 +214,20 @@ export function ParameterPanel({
           <SectionHeader
             className="parameter-panel__section-header"
             icon="clock"
-            title="Simulation time"
+            title="シミュレーション時間"
             headingLevel="h3"
           />
           <div className="parameter-panel__fields">
             {renderNumberInput(
               'duration_us',
-              'Total simulation time [\u03bcs]',
-              'Includes gate operation time and any idle/observation time after the circuit completes.',
+              '総シミュレーション時間 [\u03bcs]',
+              'ゲート操作時間と、回路完了後の待機・観測時間を含みます。',
             )}
-            {renderNumberInput('time_steps', 'Time steps', 'integer, 2 or more')}
+            {renderNumberInput('time_steps', '時間ステップ数', '2 以上の整数')}
             {renderNumberInput(
               'fidelity_threshold',
-              'Fidelity threshold',
-              '0.0 to 1.0',
+              '忠実度のしきい値',
+              '0.0〜1.0',
             )}
           </div>
         </article>
@@ -236,33 +236,33 @@ export function ParameterPanel({
           <SectionHeader
             className="parameter-panel__section-header"
             icon="stopwatch"
-            title="Gate duration defaults"
+            title="ゲート時間のデフォルト"
             headingLevel="h3"
           />
           <p className="parameter-panel__section-note">
-            Default operation time used for each gate type in the current preset.
+            現在のプリセットで各ゲート種別に使用するデフォルトの操作時間です。
           </p>
           <div className="parameter-panel__fields parameter-panel__fields--compact">
             {renderGateDurationInput('H', 'H [\u03bcs]')}
             {renderGateDurationInput('X', 'X [\u03bcs]')}
             {renderGateDurationInput('Z', 'Z [\u03bcs]')}
             {renderGateDurationInput('CNOT', 'CNOT [\u03bcs]')}
-            {renderGateDurationInput('MEASURE', 'Measure [\u03bcs]')}
+            {renderGateDurationInput('MEASURE', '測定 [\u03bcs]')}
           </div>
         </article>
       </div>
 
-      <dl className="parameter-panel__snapshot" aria-label="Latest response context">
+      <dl className="parameter-panel__snapshot" aria-label="最新の応答情報">
         <div className="parameter-panel__snapshot-item">
-          <dt>Input mode</dt>
+          <dt>入力モード</dt>
           <dd>{parameters.input_mode}</dd>
         </div>
         <div className="parameter-panel__snapshot-item">
-          <dt>Backend</dt>
+          <dt>バックエンド</dt>
           <dd>{parameters.simulation_backend}</dd>
         </div>
         <div className="parameter-panel__snapshot-item">
-          <dt>Latest duration</dt>
+          <dt>最新の実行時間</dt>
           <dd>{parameters.duration_us.toFixed(2)} us</dd>
         </div>
       </dl>

@@ -56,17 +56,17 @@ export function MetricTimeline({ timeline }: MetricTimelineProps) {
   const isDense = timeline.length > denseTimelineThreshold
 
   return (
-    <section className="metric-timeline" aria-label="Metric timeline">
+    <section className="metric-timeline" aria-label="指標のタイムライン">
       <div className="metric-timeline__header">
-        <SectionHeader icon="chart" eyebrow="Timeline" title="Metric timeline" />
+        <SectionHeader icon="chart" eyebrow="タイムライン" title="指標のタイムライン" />
         <div className="metric-timeline__legend">
           <span className="metric-timeline__legend-item">
             <span className="metric-timeline__swatch metric-timeline__swatch--fidelity" />
-            Fidelity
+            忠実度
           </span>
           <span className="metric-timeline__legend-item">
             <span className="metric-timeline__swatch metric-timeline__swatch--purity" />
-            Purity
+            純度
           </span>
         </div>
       </div>
@@ -77,7 +77,7 @@ export function MetricTimeline({ timeline }: MetricTimelineProps) {
             className="metric-timeline__chart"
             viewBox={`0 0 ${width} ${height}`}
             role="img"
-            aria-label="Line chart showing fidelity and purity over time"
+            aria-label="時間経過による忠実度と純度の折れ線グラフ"
           >
             <defs>
               <linearGradient id="fidelityGradient" x1="0%" x2="100%" y1="0%" y2="0%">
@@ -136,21 +136,21 @@ export function MetricTimeline({ timeline }: MetricTimelineProps) {
 
           <div className="metric-timeline__summary">
             <article className="metric-timeline__value-card">
-              <span className="metric-timeline__label">Final fidelity</span>
+              <span className="metric-timeline__label">最終忠実度</span>
               <strong className="metric-timeline__value">
-                {finalPoint ? safeMetric(finalPoint.fidelity).toFixed(4) : 'not available'}
+                {finalPoint ? safeMetric(finalPoint.fidelity).toFixed(4) : '利用できません'}
               </strong>
             </article>
             <article className="metric-timeline__value-card">
-              <span className="metric-timeline__label">Final purity</span>
+              <span className="metric-timeline__label">最終純度</span>
               <strong className="metric-timeline__value">
-                {finalPoint ? safeMetric(finalPoint.purity).toFixed(4) : 'not available'}
+                {finalPoint ? safeMetric(finalPoint.purity).toFixed(4) : '利用できません'}
               </strong>
             </article>
           </div>
         </>
       ) : (
-        <p className="metric-timeline__empty">No timeline data was returned for this run.</p>
+        <p className="metric-timeline__empty">この実行ではタイムラインデータが返されませんでした。</p>
       )}
     </section>
   )

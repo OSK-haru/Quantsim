@@ -1,0 +1,18 @@
+.pulse-population__legend [style]::before {
+  background: var(--series-color);
+}
+
+.pulse-population__note {
+  margin: 8px 0 0;
+  color: #91a8ac;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 680px) {
+  .pulse-waveform__heading,
+  .pulse-population__heading,
+  .pulse-density__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

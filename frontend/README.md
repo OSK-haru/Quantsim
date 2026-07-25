@@ -1,75 +1,82 @@
-# React + TypeScript + Vite
+# QuantaScope Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend is a React 19 and TypeScript application built with Vite. It is
+the current QuantaScope UI; the former Streamlit UI is not part of the active
+tree.
 
-Currently, two official plugins are available:
+## Local Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Start the FastAPI service from the repository root:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn api.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then start Vite:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```powershell
+cd frontend
+npm ci
+npm run dev
 ```
+
+Vite proxies `/api` requests to `http://127.0.0.1:8001`.
+
+## Routes
+
+The application uses a small History API based screen switcher without a
+routing dependency:
+
+```text
+/                 Home
+/simulate         Gate-aware simulation
+/circuit-studio   Circuit editor
+/state-explorer   Density-matrix and Bloch-state inspection
+/pulse-lab        Experimental two-level and qutrit pulse simulation
+/help             Help / Q&A
+```
+
+## Current Features
+
+- Physical environment parameter editing.
+- Editable gate-duration defaults.
+- 2-4 qubit circuit editor.
+- Click and drag-and-drop gate placement.
+- CNOT placement and movement.
+- Delete, drag-out deletion, Clear, Undo, and Redo.
+- Circuit JSON import/export.
+- Arbitrary `circuit_config` submission to `POST /api/simulate`.
+- Summary, timeline, output probability, diagnostic, model, warning, and API
+  detail views.
+- State snapshot requests and State Explorer visualization.
+- Separate Pulse Lab for the frozen two-level baseline and qutrit extension.
+- Square and Gaussian envelopes, target-angle or peak-amplitude input, and
+  physical or direct-rate environments.
+- Qutrit leakage timelines and summaries, DRAG control, and a 3x3 final
+  density-matrix heatmap.
+- Client-side validation and bounded-work checks before pulse requests.
+
+The responsibility boundary is explicit:
+
+- Circuit Studio and State Explorer belong to the gate-aware
+  `POST /api/simulate` flow.
+- Pulse Lab runs one control pulse through `POST /api/pulse/simulate`.
+- Pulse Lab does not read `CircuitEditorState` or `circuit_config`.
+- Pulse results stay in Pulse Lab; they are not loaded into the gate-aware
+  State Explorer.
+
+Pulse Extension B is frozen as
+`driven_transmon_qutrit_rwa_experimental_v1` /
+`pulse-extension-b-v1` with the restrictions documented in
+[`../docs/validation/pulse-extension-b-report.md`](../docs/validation/pulse-extension-b-report.md).
+
+## Checks
+
+```powershell
+cd frontend
+npm.cmd run lint
+npm.cmd run build
+npm.cmd run validate:pulse-lab
+```
+
+No external drag-and-drop, routing, or charting library is used.

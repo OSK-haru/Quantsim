@@ -25,7 +25,7 @@ type RunPanelProps = {
 
 function formatElapsedMs(value: number | null) {
   if (value === null) {
-    return 'not available'
+    return '利用できません'
   }
   return `${value.toFixed(1)} ms`
 }
@@ -51,13 +51,13 @@ export function RunPanel({
   const isRequestPending = loadStatus === 'loading'
 
   return (
-    <section className="run-panel" aria-label="Run simulation" data-load-status={loadStatus}>
+    <section className="run-panel" aria-label="シミュレーションの実行" data-load-status={loadStatus}>
       <div className="run-panel__header">
-        <SectionHeader icon="terminal" eyebrow="Execution" title="Run simulation" />
+        <SectionHeader icon="terminal" eyebrow="実行" title="シミュレーションを実行" />
         <div className="run-panel__meta">
-          <p className="run-panel__status">Load status: {loadStatus}</p>
-          <p className="run-panel__source">Connection: {connectionLabel}</p>
-          <p className="run-panel__source">Data source: {dataSourceLabel}</p>
+          <p className="run-panel__status">読み込み状態: {loadStatus}</p>
+          <p className="run-panel__source">接続: {connectionLabel}</p>
+          <p className="run-panel__source">データソース: {dataSourceLabel}</p>
           {errorMessage ? (
             <p className="run-panel__error" role="alert">
               {errorMessage}
@@ -68,15 +68,15 @@ export function RunPanel({
 
       <div className="run-panel__rows">
         <div className="run-panel__row">
-          <span className="run-panel__label">Status</span>
+          <span className="run-panel__label">状態</span>
           <strong className="run-panel__value">{run.status}</strong>
         </div>
         <div className="run-panel__row">
-          <span className="run-panel__label">Backend</span>
+          <span className="run-panel__label">バックエンド</span>
           <strong className="run-panel__value">{run.selected_backend}</strong>
         </div>
         <div className="run-panel__row">
-          <span className="run-panel__label">Last run</span>
+          <span className="run-panel__label">前回の実行</span>
           <strong className="run-panel__value">{run.last_run_label}</strong>
         </div>
       </div>
@@ -88,7 +88,7 @@ export function RunPanel({
           onClick={onReloadApiExample}
           disabled={isRequestPending}
         >
-          Reload API example
+          API サンプルを再読み込み
         </button>
         <button
           className="run-panel__button"
@@ -96,7 +96,7 @@ export function RunPanel({
           onClick={onRunSimulation}
           disabled={!canRun || isRequestPending}
         >
-          Run simulation
+          シミュレーションを実行
         </button>
       </div>
 
@@ -104,51 +104,51 @@ export function RunPanel({
 
       <div className="run-panel__debug">
         <ResultDrawer
-          eyebrow="API debug"
-          title="Request snapshot"
+          eyebrow="API デバッグ"
+          title="リクエストのスナップショット"
           icon="terminal"
-          description="Low-level fetch metadata for the latest request."
+          description="最新のリクエストに関する低レベルの取得メタデータです。"
           defaultOpen={false}
         >
           <div className="run-panel__debug-grid">
             <div className="run-panel__debug-item">
-              <span className="run-panel__debug-label">Last fetch result</span>
+                <span className="run-panel__debug-label">前回の取得結果</span>
               <strong className="run-panel__debug-value">{lastFetchResult}</strong>
             </div>
             <div className="run-panel__debug-item">
-              <span className="run-panel__debug-label">Last fetch URL</span>
+                <span className="run-panel__debug-label">前回の取得 URL</span>
               <strong className="run-panel__debug-value">
-                {lastFetchUrl || 'not requested yet'}
+                {lastFetchUrl || '未リクエスト'}
               </strong>
             </div>
             <div className="run-panel__debug-item">
-              <span className="run-panel__debug-label">Last fetch started</span>
+                <span className="run-panel__debug-label">前回の取得開始</span>
               <strong className="run-panel__debug-value">
-                {lastFetchStartedAt || 'not started yet'}
+                {lastFetchStartedAt || '未開始'}
               </strong>
             </div>
             <div className="run-panel__debug-item">
-              <span className="run-panel__debug-label">Frontend run started</span>
+                <span className="run-panel__debug-label">フロントエンド実行開始</span>
               <strong className="run-panel__debug-value">
-                {frontendRunStartedAt || 'not started yet'}
+                {frontendRunStartedAt || '未開始'}
               </strong>
             </div>
             <div className="run-panel__debug-item">
-              <span className="run-panel__debug-label">Frontend run finished</span>
+                <span className="run-panel__debug-label">フロントエンド実行終了</span>
               <strong className="run-panel__debug-value">
-                {frontendRunFinishedAt || 'not finished yet'}
+                {frontendRunFinishedAt || '未終了'}
               </strong>
             </div>
             <div className="run-panel__debug-item">
-              <span className="run-panel__debug-label">Frontend run elapsed</span>
+                <span className="run-panel__debug-label">フロントエンド実行時間</span>
               <strong className="run-panel__debug-value">
                 {formatElapsedMs(frontendRunElapsedMs)}
               </strong>
             </div>
             <div className="run-panel__debug-item">
-              <span className="run-panel__debug-label">Frontend timeout</span>
+                <span className="run-panel__debug-label">フロントエンドのタイムアウト</span>
               <strong className="run-panel__debug-value">
-                {frontendRunTimeoutMs === null ? 'not available' : `${frontendRunTimeoutMs} ms`}
+                {frontendRunTimeoutMs === null ? '利用できません' : `${frontendRunTimeoutMs} ms`}
               </strong>
             </div>
           </div>

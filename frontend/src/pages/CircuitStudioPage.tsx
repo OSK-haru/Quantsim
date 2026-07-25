@@ -34,11 +34,11 @@ function getCircuitCounts(circuit: CircuitEditorState) {
 
 function formatStudioValidationMessage(message: string | null) {
   if (!message) {
-    return 'Circuit validation failed.'
+    return '回路の検証に失敗しました。'
   }
 
   return message
-    .replace('This circuit was not simulated. ', 'Circuit validation failed. ')
+    .replace('This circuit was not simulated. ', '回路の検証に失敗しました。')
     .replace(' The previous result is still shown.', '')
 }
 
@@ -58,7 +58,7 @@ export function CircuitStudioPage({
     )
     setValidationStatus(
       validation.valid
-        ? 'Validation passed'
+        ? '検証に成功しました'
         : formatStudioValidationMessage(validation.message),
     )
   }
@@ -67,25 +67,26 @@ export function CircuitStudioPage({
     <main className="circuit-studio-page">
       <header className="circuit-studio-page__header">
         <div>
-          <div className="circuit-studio-page__eyebrow">QuantaScope</div>
-          <h1>Circuit Studio</h1>
+          <div className="circuit-studio-page__eyebrow">QuantaScope / Gate-aware</div>
+          <h1>Gate-aware 回路スタジオ</h1>
           <p className="circuit-studio-page__lede">
-            A dedicated editing surface for the circuit used by the Simulation Lab.
+            Gate-aware シミュレーションで使用する回路を編集します。Pulse
+            Labの単一パルスモデルには接続されていません。
           </p>
         </div>
         <div className="circuit-studio-page__header-panel">
-          <div className="circuit-studio-page__summary" aria-label="Circuit summary">
-            <span>{circuit.circuitState.logical_qubits} qubits</span>
-            <span>{circuit.circuitState.columns.length} columns</span>
-            <span>{counts.gates} gates</span>
-            <span>{counts.cnots} CNOTs</span>
+          <div className="circuit-studio-page__summary" aria-label="回路の概要">
+            <span>量子ビット {circuit.circuitState.logical_qubits}</span>
+            <span>列 {circuit.circuitState.columns.length}</span>
+            <span>ゲート {counts.gates}</span>
+            <span>CNOT {counts.cnots}</span>
           </div>
-          <div className="circuit-studio-page__header-actions" aria-label="Navigation">
+          <div className="circuit-studio-page__header-actions" aria-label="ナビゲーション">
             <button className="circuit-studio-page__nav" type="button" onClick={onOpenStateExplorer}>
-              State Explorer
+              Gate-aware 状態エクスプローラー
             </button>
             <button className="circuit-studio-page__nav" type="button" onClick={onOpenHelp}>
-              Help
+              ヘルプ
             </button>
           </div>
         </div>

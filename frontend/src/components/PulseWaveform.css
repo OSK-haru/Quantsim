@@ -1,0 +1,97 @@
+.pulse-waveform,
+.pulse-population,
+.pulse-density {
+  padding: 22px;
+  border: 1px solid rgba(87, 161, 169, 0.2);
+  border-radius: 18px;
+  background: rgba(9, 19, 27, 0.94);
+}
+
+.pulse-waveform__heading,
+.pulse-population__heading,
+.pulse-density__heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 15px;
+}
+
+.pulse-waveform__heading span,
+.pulse-population__heading span,
+.pulse-density__heading span {
+  color: #5fd8c2;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+.pulse-waveform h2,
+.pulse-population h2,
+.pulse-density h2 {
+  margin: 2px 0 0;
+}
+
+.pulse-waveform__legend,
+.pulse-population__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  color: #9bb1b5;
+  font-size: 0.78rem;
+}
+
+.pulse-waveform__legend span::before,
+.pulse-population__legend span::before {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--series-color, #fff);
+  content: '';
+}
+
+.pulse-waveform__legend [data-series='x'] { --series-color: #5edbc4; }
+.pulse-waveform__legend [data-series='y'] { --series-color: #f2a25c; }
+
+.pulse-waveform svg,
+.pulse-population svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.pulse-waveform svg text,
+.pulse-population svg text {
+  fill: #758f96;
+  font-size: 11px;
+}
+
+.pulse-waveform__axis,
+.pulse-population__axis,
+.pulse-population__grid {
+  stroke: rgba(133, 165, 170, 0.23);
+  stroke-width: 1;
+}
+
+.pulse-waveform__boundary {
+  stroke: rgba(242, 162, 92, 0.45);
+  stroke-dasharray: 4 5;
+}
+
+.pulse-waveform__line,
+.pulse-population__line {
+  fill: none;
+  stroke-width: 2.3;
+  vector-effect: non-scaling-stroke;
+}
+
+.pulse-waveform__line--x { stroke: #5edbc4; }
+.pulse-waveform__line--y { stroke: #f2a25c; }
+
+.pulse-waveform p {
+  margin: 8px 0 0;
+  color: #7f989e;
+  font-size: 0.82rem;
+}

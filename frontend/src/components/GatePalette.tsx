@@ -36,7 +36,7 @@ export function GatePalette({
         }${isDraggable ? ' gate-palette__button--draggable' : ''}`}
         aria-pressed={isSelected}
         draggable={isDraggable}
-        title={`Click or drag ${gateType}`}
+        title={`${gateType} をクリックまたはドラッグ`}
         onDragStart={(event) => {
           if (!isDraggable) {
             event.preventDefault()
@@ -56,9 +56,9 @@ export function GatePalette({
   }
 
   return (
-    <section className="gate-palette" aria-label="Gate palette">
-      <div className="gate-palette__group" role="radiogroup" aria-label="Logical qubits">
-        <span className="gate-palette__label">Qubits</span>
+    <section className="gate-palette" aria-label="ゲートパレット">
+      <div className="gate-palette__group" role="radiogroup" aria-label="論理量子ビット">
+        <span className="gate-palette__label">量子ビット</span>
         <div className="gate-palette__qubit-selector-buttons">
           {[2, 3, 4].map((count) => {
             const isSelected = logicalQubits === count
@@ -72,27 +72,27 @@ export function GatePalette({
                 aria-pressed={isSelected}
                 onClick={() => onSelectLogicalQubits(count)}
               >
-                {count} qubits
+                量子ビット {count}
               </button>
             )
           })}
         </div>
       </div>
 
-      <div className="gate-palette__group" role="toolbar" aria-label="Single-qubit gates">
-        <span className="gate-palette__label">1-qubit</span>
+      <div className="gate-palette__group" role="toolbar" aria-label="1量子ビットゲート">
+        <span className="gate-palette__label">1量子ビット</span>
         <div className="gate-palette__buttons">
           {singleQubitGateTypes.map((gateType) => renderGateButton(gateType))}
         </div>
       </div>
 
-      <div className="gate-palette__group" role="toolbar" aria-label="Measurement gates">
-        <span className="gate-palette__label">Measure</span>
+      <div className="gate-palette__group" role="toolbar" aria-label="測定ゲート">
+        <span className="gate-palette__label">測定</span>
         <div className="gate-palette__buttons">{renderGateButton('MEASURE')}</div>
       </div>
 
-      <div className="gate-palette__group" role="toolbar" aria-label="Controlled gates">
-        <span className="gate-palette__label">Control</span>
+      <div className="gate-palette__group" role="toolbar" aria-label="制御ゲート">
+        <span className="gate-palette__label">制御</span>
         <div className="gate-palette__buttons">{renderGateButton('CNOT')}</div>
       </div>
     </section>

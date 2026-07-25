@@ -11,49 +11,49 @@ const plannedModeLabel = getModelLabel(MODEL_IDS.plannedMode).label
 
 const helpItems = [
   {
-    question: 'What is State Fidelity?',
+    question: '状態忠実度とは何ですか？',
     answer:
-      'State fidelity measures how close the noisy result is to the ideal result. A value near 1 means the state stayed close to the target, while a lower value means the state drifted away more strongly. In this app, fidelity is the main signal for how quickly the circuit loses effectiveness.',
+      '状態忠実度は、ノイズを含む結果が理想的な結果にどれだけ近いかを表します。1 に近いほど目標状態に近く、低いほど状態が大きく離れています。このアプリでは、回路の有効性がどの程度の速さで失われるかを示す主要な指標です。',
   },
   {
-    question: 'What is Purity?',
+    question: '純度とは何ですか？',
     answer:
-      'Purity shows how clean or mixed the quantum state is. A pure state has purity near 1, while a mixed state has a lower value. Purity can stay fairly high even when fidelity starts to fall, because the state can remain orderly while still moving away from the ideal target.',
+      '純度は、量子状態がどれだけ純粋か、または混合しているかを表します。純粋状態の純度は 1 に近く、混合状態では低くなります。忠実度が下がり始めても、状態が整ったまま理想的な目標から離れる場合があるため、純度は比較的高く保たれることがあります。',
   },
   {
-    question: 'What is Effective Operation Time?',
+    question: '有効操作時間とは何ですか？',
     answer:
-      'Effective operation time is the first time the fidelity drops below the threshold. It gives a simple answer to the question, "How long does the circuit stay usable?" In this app, a shorter effective time means the environment is degrading the circuit more quickly.',
+      '有効操作時間は、忠実度がしきい値を下回る最初の時刻です。「回路はどのくらいの時間使えるのか？」という問いに、分かりやすく答える指標です。このアプリでは、有効時間が短いほど環境による回路の劣化が速いことを意味します。',
   },
   {
-    question: 'Why can Fidelity be low while Purity is high?',
+    question: '忠実度が低いのに純度が高いのはなぜですか？',
     answer:
-      'Fidelity and purity measure different things. Fidelity checks closeness to the ideal target, while purity checks how mixed the state is. A state can still be fairly clean and ordered, but point in the wrong direction compared with the ideal result.',
+      '忠実度と純度は異なるものを測定します。忠実度は理想的な目標への近さを確認し、純度は状態がどの程度混合しているかを確認します。そのため、状態が比較的純粋で整っていても、理想的な結果とは異なる方向を向いていることがあります。',
   },
   {
-    question: 'Why does high noise reduce Fidelity?',
+    question: 'ノイズが大きいと忠実度が下がるのはなぜですか？',
     answer:
-      'Noise adds random disturbance to the state as it evolves. That disturbance makes the result drift away from the ideal trajectory more quickly. In this simplified model, higher noise usually means faster fidelity loss and a shorter usable time.',
+      'ノイズは、状態が発展する間にランダムな乱れを加えます。その乱れによって、結果は理想的な軌跡からより速く離れていきます。この簡略化されたモデルでは、ノイズが大きいほど通常は忠実度の低下が速くなり、使用可能な時間が短くなります。',
   },
   {
-    question: 'What is the difference between completion fidelity and final fidelity?',
+    question: '完了時の忠実度と最終忠実度の違いは何ですか？',
     answer:
-      'Completion fidelity measures the state when the intended operation is considered complete. Final fidelity measures the state at the end of the whole simulated timeline. They can be different when the state keeps evolving after the gate has finished.',
+      '完了時の忠実度は、意図した操作が完了した時点の状態を測定します。最終忠実度は、シミュレーション全体のタイムラインが終了した時点の状態を測定します。ゲート完了後も状態が発展し続ける場合、両者は異なる値になります。',
   },
   {
-    question: 'What model is QuantaScope using?',
+    question: 'QuantaScope はどのモデルを使用していますか？',
     answer:
-      `QuantaScope currently uses ${currentEvolutionLabel}, an educational weak-coupling open-system simulation. It maps environment settings into simple T1 and T2 lifetimes so users can see trends under the chosen model, not exact hardware predictions. ${plannedModeLabel} is a planned future mode and is not implemented in the current simulation path.`,
+      `QuantaScope は現在、学習用の弱結合開放系シミュレーションである「${currentEvolutionLabel}」を使用しています。環境設定を単純化した T1・T2 緩和時間に変換し、選択したモデルでの傾向を確認できるようにしています。特定のハードウェアを正確に予測するものではありません。「${plannedModeLabel}」は将来対応予定で、現在のシミュレーション経路には未実装です。`,
   },
   {
-    question: 'Is this a hardware-accurate simulator?',
+    question: 'ハードウェアを正確に再現するシミュレーターですか？',
     answer:
-      'No. It is a simplified teaching model, not strict hardware calibration. The results suggest trends under the chosen assumptions, but they are not exact predictions for any specific device.',
+      'いいえ。厳密に校正されたハードウェアモデルではなく、簡略化された学習用モデルです。結果は選択した前提条件での傾向を示すもので、特定のデバイスに対する正確な予測ではありません。',
   },
   {
-    question: 'What should I try when fidelity drops?',
+    question: '忠実度が下がったときは何を試せばよいですか？',
     answer:
-      'First compare a low-noise run with a high-noise run and watch how the effective time changes. If fidelity drops quickly, lower the noise level first, then compare temperature and magnetic field changes. The point is to see which condition is pushing the state away from the ideal result most strongly.',
+      'まず低ノイズ条件と高ノイズ条件で実行し、有効時間がどのように変化するかを比較してください。忠実度が急速に低下する場合は、最初にノイズレベルを下げ、その後で温度や磁場の変化を比較します。どの条件が状態を理想的な結果から最も強く引き離しているかを確認することが目的です。',
   },
 ]
 
@@ -63,34 +63,33 @@ export function HelpPage({ onBackToSimulation, onOpenCircuitStudio }: HelpPagePr
       <header className="help-page__header">
         <div>
           <div className="help-page__eyebrow">QuantaScope</div>
-          <h1>Help / Q&amp;A</h1>
+          <h1>ヘルプ / Q&amp;A</h1>
           <p className="help-page__lede">
-            Short answers for reading the simulation screen, comparing metrics, and
-            understanding why the result changes.
+            シミュレーション画面の見方、指標の比較、結果が変化する理由を説明します。
           </p>
         </div>
-        <div className="help-page__header-actions" aria-label="Navigation">
+        <div className="help-page__header-actions" aria-label="ナビゲーション">
           <button className="help-page__back help-page__back--active" type="button">
-            Help
+            ヘルプ
           </button>
           <button className="help-page__back" type="button" onClick={onOpenCircuitStudio}>
-            Circuit Studio
+            回路スタジオ
           </button>
           <button className="help-page__back" type="button" onClick={onBackToSimulation}>
-            Simulation Lab
+            シミュレーションラボ
           </button>
         </div>
       </header>
 
-      <section className="help-page__intro" aria-label="Model note">
+      <section className="help-page__intro" aria-label="モデルについての注意">
         <p>
-          These answers describe the simplified model used by the app. The current
-          simulation is educational, gate-aware, Lindblad-based, and built to show trends under
-          the chosen environment settings.
+          ここで説明する内容は、このアプリで使用している簡略化モデルに基づいています。
+          現在のシミュレーションは学習用で、ゲートを考慮した Lindblad ベースのモデルです。
+          選択した環境設定による傾向を確認することを目的としています。
         </p>
       </section>
 
-      <section className="help-page__grid" aria-label="Help questions">
+      <section className="help-page__grid" aria-label="ヘルプの質問">
         {helpItems.map((item) => (
           <article className="help-page__card" key={item.question}>
             <h2 className="help-page__question">{item.question}</h2>

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type CSSProperties } from 'react'
+import { Fragment, useState, type CSSProperties } from 'react'
 import './DensityMatrixViewer.css'
 import type { StateSnapshot } from '../types/simulation'
 import {
@@ -13,41 +13,45 @@ import {
 
 type DensityMatrixViewerProps = {
   snapshots?: StateSnapshot[] | null
+  snapshotIndex?: number
+  onSnapshotIndexChange?: (snapshotIndex: number) => void
 }
 
 const MODE_OPTIONS: Array<{ label: string; value: DensityMatrixMode }> = [
-  { label: 'Magnitude', value: 'magnitude' },
-  { label: 'Real', value: 'real' },
-  { label: 'Imaginary', value: 'imaginary' },
+  { label: '絶対値', value: 'magnitude' },
+  { label: '実部', value: 'real' },
+  { label: '虚部', value: 'imaginary' },
 ]
 
 type DensityCellStyle = CSSProperties & {
   '--density-cell-alpha': string
 }
 
-export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
+type ActiveCellSelection = {
+  key: string
+  cell: DensityMatrixCell
+}
+
+export function DensityMatrixViewer({
+  snapshots,
+  snapshotIndex: controlledSnapshotIndex,
+  onSnapshotIndexChange,
+}: DensityMatrixViewerProps) {
   const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
-  const [snapshotIndex, setSnapshotIndex] = useState(0)
+  const [internalSnapshotIndex, setInternalSnapshotIndex] = useState(0)
   const [mode, setMode] = useState<DensityMatrixMode>('magnitude')
-  const [activeCell, setActiveCell] = useState<DensityMatrixCell | null>(null)
-
-  useEffect(() => {
-    setSnapshotIndex((currentIndex) => {
-      if (safeSnapshots.length === 0) {
-        return 0
-      }
-      return Math.min(currentIndex, safeSnapshots.length - 1)
-    })
-  }, [safeSnapshots.length])
-
-  useEffect(() => {
-    setActiveCell(null)
-  }, [snapshotIndex, mode])
+  const [activeCellSelection, setActiveCellSelection] = useState<ActiveCellSelection | null>(null)
+  const requestedSnapshotIndex = controlledSnapshotIndex ?? internalSnapshotIndex
+  const snapshotIndex = clamp(requestedSnapshotIndex, 0, Math.max(safeSnapshots.length - 1, 0))
+  const activeCellKey = `${snapshotIndex}:${mode}`
+  const activeCell = activeCellSelection?.key === activeCellKey
+    ? activeCellSelection.cell
+    : null
 
   if (safeSnapshots.length === 0) {
     return (
       <p className="density-matrix-viewer__empty">
-        No density matrix snapshots are available for this run.
+        この実行には密度行列スナップショットがありません。
       </p>
     )
   }
@@ -55,25 +59,34 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
   const activeSnapshot = safeSnapshots[snapshotIndex]
   const validation = validateDensityMatrixSnapshot(activeSnapshot, mode)
 
+  function selectSnapshot(nextSnapshotIndex: number) {
+    const clampedIndex = clamp(nextSnapshotIndex, 0, safeSnapshots.length - 1)
+    if (onSnapshotIndexChange) {
+      onSnapshotIndexChange(clampedIndex)
+      return
+    }
+    setInternalSnapshotIndex(clampedIndex)
+  }
+
   function goToPreviousSnapshot() {
-    setSnapshotIndex((currentIndex) => Math.max(currentIndex - 1, 0))
+    selectSnapshot(snapshotIndex - 1)
   }
 
   function goToNextSnapshot() {
-    setSnapshotIndex((currentIndex) => Math.min(currentIndex + 1, safeSnapshots.length - 1))
+    selectSnapshot(snapshotIndex + 1)
   }
 
   return (
     <div className="density-matrix-viewer">
       <div className="density-matrix-viewer__toolbar">
-        <div className="density-matrix-viewer__navigation" aria-label="Snapshot navigation">
+        <div className="density-matrix-viewer__navigation" aria-label="スナップショットのナビゲーション">
           <button
             className="density-matrix-viewer__button"
             type="button"
             onClick={goToPreviousSnapshot}
             disabled={snapshotIndex === 0}
           >
-            Previous snapshot
+            前のスナップショット
           </button>
           <span className="density-matrix-viewer__position" aria-live="polite">
             {snapshotIndex + 1} / {safeSnapshots.length}
@@ -84,12 +97,12 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
             onClick={goToNextSnapshot}
             disabled={snapshotIndex === safeSnapshots.length - 1}
           >
-            Next snapshot
+            次のスナップショット
           </button>
         </div>
 
         <label className="density-matrix-viewer__slider-label">
-          <span>Snapshot</span>
+          <span>スナップショット</span>
           <input
             className="density-matrix-viewer__slider"
             type="range"
@@ -97,11 +110,11 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
             max={Math.max(safeSnapshots.length - 1, 0)}
             step="1"
             value={snapshotIndex}
-            onChange={(event) => setSnapshotIndex(Number(event.currentTarget.value))}
+            onChange={(event) => selectSnapshot(Number(event.currentTarget.value))}
           />
         </label>
 
-        <div className="density-matrix-viewer__modes" aria-label="Density matrix view mode">
+        <div className="density-matrix-viewer__modes" aria-label="密度行列の表示モード">
           {MODE_OPTIONS.map((option) => (
             <button
               className="density-matrix-viewer__mode"
@@ -117,21 +130,21 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
         </div>
       </div>
 
-      <div className="density-matrix-viewer__metadata" aria-label="Snapshot metadata">
+      <div className="density-matrix-viewer__metadata" aria-label="スナップショットのメタデータ">
         <span>{snapshotKindLabel(activeSnapshot)}</span>
         <span>{formatSnapshotTimeUs(activeSnapshot.time_us)}</span>
         <span>{formatSnapshotProgress(activeSnapshot.progress)}</span>
         {activeSnapshot?.column_index == null ? null : (
-          <span>Column {activeSnapshot.column_index + 1}</span>
+          <span>列 {activeSnapshot.column_index + 1}</span>
         )}
         {activeSnapshot?.requested_time_us == null ? null : (
-          <span>Requested {formatSnapshotTimeUs(activeSnapshot.requested_time_us)}</span>
+          <span>指定時刻 {formatSnapshotTimeUs(activeSnapshot.requested_time_us)}</span>
         )}
         {activeSnapshot?.capture_method ? (
-          <span>Capture {activeSnapshot.capture_method}</span>
+          <span>取得方法 {activeSnapshot.capture_method}</span>
         ) : null}
         {activeSnapshot?.event_kind ? (
-          <span>Event {activeSnapshot.event_kind}</span>
+          <span>イベント {activeSnapshot.event_kind}</span>
         ) : null}
       </div>
 
@@ -141,11 +154,11 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
         <>
           <div className="density-matrix-viewer__caption">
             <span>
-              {validation.matrix.dimension}x{validation.matrix.dimension} density matrix /
+              {validation.matrix.dimension}x{validation.matrix.dimension} 密度行列 /
               {' '}
               {validation.matrix.qubitCount} qubits
             </span>
-            <span>Per-snapshot scale: {validation.matrix.scaleLabel}</span>
+            <span>スナップショットごとのスケール: {validation.matrix.scaleLabel}</span>
           </div>
 
           <div className="density-matrix-viewer__matrix-scroll" tabIndex={0}>
@@ -155,7 +168,7 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
                 gridTemplateColumns: `var(--density-label-size) repeat(${validation.matrix.dimension}, var(--density-cell-size))`,
               }}
               role="grid"
-              aria-label={`${MODE_OPTIONS.find((option) => option.value === mode)?.label} density matrix heatmap`}
+              aria-label={`${MODE_OPTIONS.find((option) => option.value === mode)?.label} 密度行列ヒートマップ`}
             >
               <div className="density-matrix-viewer__corner" aria-hidden="true" />
               {validation.matrix.labels.map((label) => (
@@ -194,8 +207,8 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
                           style={cellStyle}
                           title={cellTitle(cell)}
                           aria-label={cellTitle(cell)}
-                          onFocus={() => setActiveCell(cell)}
-                          onMouseEnter={() => setActiveCell(cell)}
+                          onFocus={() => setActiveCellSelection({ key: activeCellKey, cell })}
+                          onMouseEnter={() => setActiveCellSelection({ key: activeCellKey, cell })}
                         >
                           <span className="density-matrix-viewer__cell-value">
                             {formatCellValue(cell.value)}
@@ -210,21 +223,21 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
 
           <div className="density-matrix-viewer__details" aria-live="polite">
             {activeCell === null ? (
-              <span>Hover or focus a cell to inspect exact values.</span>
+              <span>セルにカーソルを合わせるかフォーカスすると、正確な値を確認できます。</span>
             ) : (
               <>
                 <strong>
                   rho[{activeCell.rowLabel}, {activeCell.columnLabel}]
                 </strong>
-                <span>real: {formatDensityValue(activeCell.real)}</span>
-                <span>imag: {formatDensityValue(activeCell.imag)}</span>
-                <span>magnitude: {formatDensityValue(activeCell.magnitude)}</span>
+                <span>実部: {formatDensityValue(activeCell.real)}</span>
+                <span>虚部: {formatDensityValue(activeCell.imag)}</span>
+                <span>絶対値: {formatDensityValue(activeCell.magnitude)}</span>
               </>
             )}
           </div>
 
           <p className="density-matrix-viewer__note">
-            Basis labels follow QuantaScope q0 -&gt; qN-1 ordering.
+            基底ラベルは QuantaScope の q0 -&gt; qN-1 の順序に従います。
           </p>
         </>
       )}
@@ -235,9 +248,9 @@ export function DensityMatrixViewer({ snapshots }: DensityMatrixViewerProps) {
 function cellTitle(cell: DensityMatrixCell): string {
   return [
     `rho[${cell.rowLabel}, ${cell.columnLabel}]`,
-    `real: ${formatDensityValue(cell.real)}`,
-    `imag: ${formatDensityValue(cell.imag)}`,
-    `magnitude: ${formatDensityValue(cell.magnitude)}`,
+    `実部: ${formatDensityValue(cell.real)}`,
+    `虚部: ${formatDensityValue(cell.imag)}`,
+    `絶対値: ${formatDensityValue(cell.magnitude)}`,
   ].join('\n')
 }
 
@@ -249,4 +262,8 @@ function formatCellValue(value: number): string {
     return value.toFixed(1)
   }
   return value.toFixed(2)
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value))
 }

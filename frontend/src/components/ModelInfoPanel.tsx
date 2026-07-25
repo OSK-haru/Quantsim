@@ -44,24 +44,23 @@ export function ModelInfoPanel({
 }: ModelInfoPanelProps) {
   return (
     <ResultDrawer
-      eyebrow="Physics model"
-      title="Computation method"
+      eyebrow="物理モデル"
+      title="計算方法"
       icon="atom"
-      description="Canonical labels for the model, backend, and planned modes."
+      description="モデル、バックエンド、計画中のモードを示します。"
       defaultOpen={false}
     >
       <div className="model-info-panel">
-        <ModelInfoRow title="Simulation model" id={simulationModelId} />
-        <ModelInfoRow title="Evolution mode" id={evolutionModeId} />
-        <ModelInfoRow title="Default backend" id={defaultBackendId} />
-        <ModelInfoRow title="Preview backend" id={previewBackendId} />
-        <ModelInfoRow title="Planned mode" id={plannedModeId} />
+        <ModelInfoRow title="シミュレーションモデル" id={simulationModelId} />
+        <ModelInfoRow title="発展モード" id={evolutionModeId} />
+        <ModelInfoRow title="デフォルトバックエンド" id={defaultBackendId} />
+        <ModelInfoRow title="プレビューバックエンド" id={previewBackendId} />
+        <ModelInfoRow title="計画中のモード" id={plannedModeId} />
       </div>
 
       <p className="model-info-panel__note">
-        Current runs use the gate-aware Hamiltonian Lindblad path. Planned modes
-        are shown for orientation only and are not available through the current
-        simulation API.
+        現在の実行では、ゲートを考慮したハミルトニアン Lindblad 経路を使用します。
+        計画中のモードは参考情報として表示しているだけで、現在のシミュレーション API では利用できません。
       </p>
     </ResultDrawer>
   )

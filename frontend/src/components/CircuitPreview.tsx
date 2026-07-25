@@ -324,10 +324,12 @@ export function CircuitPreview({
 
             return (
               <g key={`step-${column.step}-${columnIndex}`}>
-                {cnotGates.map((cnotGate, cnotIndex) => {
+                {cnotGates.map((cnotGate) => {
                   const cnotQubits = getCnotQubits(cnotGate)
-                  const xOffset = cnotGates.length > 1 ? (cnotIndex - (cnotGates.length - 1) / 2) * 14 : 0
-                  const cnotX = x + xOffset
+                  // All gates in a column share the same time slot. Keep every
+                  // CNOT on the column center so its connector and symbols stay
+                  // aligned with the wires and the slot hit areas.
+                  const cnotX = x
                   const isSelectedCnot = selectedGateId === cnotGate.id
                   const cnotDuration = getGateDuration(cnotGate, gateDurationDefaults)
                   const cnotDurationY = cnotQubits.length > 0

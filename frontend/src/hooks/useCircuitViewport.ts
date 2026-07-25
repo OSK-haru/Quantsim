@@ -164,7 +164,11 @@ export function useCircuitViewport({
       return
     }
 
-    revealColumnIfNeeded(selectedColumnIndex)
+    const frameId = window.requestAnimationFrame(() => {
+      revealColumnIfNeeded(selectedColumnIndex)
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
   }, [revealColumnIfNeeded, selectedColumnIndex])
 
   useEffect(() => {

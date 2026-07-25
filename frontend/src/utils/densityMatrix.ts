@@ -28,16 +28,10 @@ export type DensityMatrixValidationResult =
   | { valid: false; message: string }
 
 export function inferQubitCountFromDimension(dimension: number): number | null {
-  if (dimension === 4) {
-    return 2
-  }
-  if (dimension === 8) {
-    return 3
-  }
-  if (dimension === 16) {
-    return 4
-  }
-  return null
+  const qubitCount = Math.log2(dimension)
+  return Number.isInteger(qubitCount) && qubitCount >= 1 && qubitCount <= 4
+    ? qubitCount
+    : null
 }
 
 export function basisLabelsForDimension(dimension: number): string[] {
@@ -53,7 +47,7 @@ export function basisLabelsForDimension(dimension: number): string[] {
 
 export function formatDensityValue(value: number): string {
   if (!Number.isFinite(value)) {
-    return 'not finite'
+    return '有限値ではありません'
   }
   if (Object.is(value, -0) || Math.abs(value) < 0.0000005) {
     return '0.000000'
@@ -66,7 +60,7 @@ export function formatDensityValue(value: number): string {
 
 export function formatSnapshotTimeUs(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return 'not available'
+    return '利用できません'
   }
   if (Math.abs(value) >= 100) {
     return `${value.toFixed(2)} us`
@@ -79,7 +73,7 @@ export function formatSnapshotTimeUs(value: number | null | undefined): string {
 
 export function formatSnapshotProgress(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return 'not available'
+    return '利用できません'
   }
   const normalized = value <= 1 ? value * 100 : value
   return `${Math.max(0, Math.min(normalized, 100)).toFixed(1)}%`
@@ -87,32 +81,32 @@ export function formatSnapshotProgress(value: number | null | undefined): string
 
 export function snapshotKindLabel(snapshot: StateSnapshot | null | undefined): string {
   if (!snapshot?.kind) {
-    return 'Snapshot'
+    return 'スナップショット'
   }
   if (snapshot.kind === 'initial') {
-    return 'Initial state'
+    return '初期状態'
   }
   if (snapshot.kind === 'column_boundary') {
     return snapshot.column_index == null
-      ? 'After column'
-      : `After column ${snapshot.column_index + 1}`
+      ? '列の後'
+      : `列 ${snapshot.column_index + 1} の後`
   }
   if (snapshot.kind === 'uniform_time') {
-    return 'Uniform time sample'
+    return '均等時刻サンプル'
   }
   if (snapshot.kind === 'custom_time') {
-    return 'Custom time sample'
+    return 'カスタム時刻サンプル'
   }
   if (snapshot.kind === 'after_circuit') {
-    return 'After circuit'
+    return '回路の後'
   }
   if (snapshot.kind === 'idle_sample') {
-    return 'Idle sample'
+    return '待機サンプル'
   }
   if (snapshot.kind === 'final') {
-    return 'Final state'
+    return '最終状態'
   }
-  return 'Snapshot'
+  return 'スナップショット'
 }
 
 export function validateDensityMatrixSnapshot(
@@ -123,7 +117,7 @@ export function validateDensityMatrixSnapshot(
   const imag = snapshot?.density_matrix?.imag
 
   if (!Array.isArray(real) || !Array.isArray(imag)) {
-    return { valid: false, message: 'Density matrix data is missing.' }
+    return { valid: false, message: '密度行列データがありません。' }
   }
 
   const dimension = real.length
@@ -131,20 +125,20 @@ export function validateDensityMatrixSnapshot(
   if (qubitCount === null) {
     return {
       valid: false,
-      message: 'Density matrix dimension must be 4x4, 8x8, or 16x16.',
+      message: '密度行列の次元は 4x4、8x8、または 16x16 である必要があります。',
     }
   }
 
   if (imag.length !== dimension) {
-    return { valid: false, message: 'Density matrix real and imaginary shapes do not match.' }
+    return { valid: false, message: '密度行列の実部と虚部の形状が一致しません。' }
   }
 
   for (let row = 0; row < dimension; row += 1) {
     if (!Array.isArray(real[row]) || !Array.isArray(imag[row])) {
-      return { valid: false, message: 'Density matrix rows are malformed.' }
+      return { valid: false, message: '密度行列の行形式が不正です。' }
     }
     if (real[row].length !== dimension || imag[row].length !== dimension) {
-      return { valid: false, message: 'Density matrix must be square.' }
+      return { valid: false, message: '密度行列は正方行列である必要があります。' }
     }
   }
 
@@ -167,7 +161,7 @@ export function validateDensityMatrixSnapshot(
       const imagValue = imag[row][column]
 
       if (!Number.isFinite(realValue) || !Number.isFinite(imagValue)) {
-        return { valid: false, message: 'Density matrix contains non-finite values.' }
+        return { valid: false, message: '密度行列に有限でない値が含まれています。' }
       }
 
       const magnitude = Math.hypot(realValue, imagValue)
@@ -214,8 +208,8 @@ export function validateDensityMatrixSnapshot(
       cells,
       scaleLabel:
         mode === 'magnitude'
-          ? `0 to ${formatDensityValue(maxMagnitude)}`
-          : `-${formatDensityValue(maxAbs)} to +${formatDensityValue(maxAbs)}`,
+          ? `0 から ${formatDensityValue(maxMagnitude)}`
+          : `-${formatDensityValue(maxAbs)} から +${formatDensityValue(maxAbs)}`,
     },
   }
 }

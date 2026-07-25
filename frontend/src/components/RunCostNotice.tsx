@@ -11,7 +11,7 @@ export function RunCostNotice({ estimate }: RunCostNoticeProps) {
     <div className="run-cost-notice" data-level={estimate.level} role="status" aria-live="polite">
       <SectionIcon name={estimate.level === 'low' ? 'clock' : 'warning'} />
       <div className="run-cost-notice__copy">
-        <div className="run-cost-notice__eyebrow">Run cost</div>
+        <div className="run-cost-notice__eyebrow">実行コスト</div>
         <div className="run-cost-notice__title">{estimate.label}</div>
         <p className="run-cost-notice__message">{estimate.message}</p>
         {estimate.suggestion ? (

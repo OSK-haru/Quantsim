@@ -19,14 +19,14 @@ export function DensityMatrixSummaryCard({
   return (
     <section className="density-matrix-summary-card" aria-labelledby="density-matrix-summary-title">
       <div>
-        <span className="density-matrix-summary-card__eyebrow">State analysis</span>
-        <h2 id="density-matrix-summary-title">Density matrix snapshots</h2>
+        <span className="density-matrix-summary-card__eyebrow">状態分析</span>
+        <h2 id="density-matrix-summary-title">密度行列のスナップショット</h2>
         <p>
-          {snapshots.length} snapshots / {dimension === null ? 'matrix size unavailable' : `${dimension} x ${dimension}`}
+          スナップショット {snapshots.length} 個 / {dimension === null ? '行列サイズ不明' : `${dimension} x ${dimension}`}
         </p>
       </div>
       <button type="button" onClick={onOpenStateExplorer}>
-        Open in State Explorer
+        状態エクスプローラーで開く
       </button>
     </section>
   )

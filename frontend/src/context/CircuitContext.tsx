@@ -54,7 +54,7 @@ type CircuitProviderProps = {
   children: ReactNode
 }
 
-const DEFAULT_EDITOR_HINT = 'Choose a gate, then click a circuit slot.'
+const DEFAULT_EDITOR_HINT = 'ゲートを選択してから、回路スロットをクリックしてください。'
 
 export function CircuitProvider({ gateDurationDefaults, children }: CircuitProviderProps) {
   const [circuitHistory, setCircuitHistory] = useState<CircuitHistoryState>(() =>
@@ -86,17 +86,17 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     }
 
     if (gateType === 'CNOT') {
-      setEditorHint('CNOT: click control, then target in the same column.')
+      setEditorHint('CNOT: 同じ列で制御ビット、続けて対象ビットをクリックしてください。')
       return
     }
 
-    setEditorHint(`Selected gate: ${gateType}. Click a circuit slot.`)
+    setEditorHint(`選択中のゲート: ${gateType}。回路スロットをクリックしてください。`)
   }
 
   function handleGateSelect(gateId: string | null) {
     setSelectedGateId(gateId)
     setPendingCnotControl(null)
-    setEditorHint(gateId ? 'Selected gate. Delete it or choose another slot.' : DEFAULT_EDITOR_HINT)
+    setEditorHint(gateId ? 'ゲートを選択中です。削除するか、別のスロットを選択してください。' : DEFAULT_EDITOR_HINT)
   }
 
   function handleResetCircuitToBell() {
@@ -244,7 +244,7 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     setSelectedGateType(null)
     setSelectedGateId(null)
     setPendingCnotControl(null)
-    setEditorHint(`Dragging ${gateType}. Drop it onto a circuit slot.`)
+    setEditorHint(`${gateType} をドラッグ中です。回路スロットにドロップしてください。`)
   }
 
   function handleCircuitGateDragStart(
@@ -258,7 +258,7 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     setSelectedGateType(null)
     setSelectedGateId(gateId)
     setPendingCnotControl(null)
-    setEditorHint(`Moving ${gateType}. Drop it onto a circuit slot.`)
+    setEditorHint(`${gateType} を移動中です。回路スロットにドロップしてください。`)
   }
 
   function handleGateDragEnd() {
@@ -387,9 +387,9 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     setSelectedGateType(null)
     setSelectedGateId(null)
     setPendingCnotControl(null)
-    setEditorHint('Imported circuit loaded.')
+    setEditorHint('回路をインポートしました。')
 
-    return 'Imported circuit loaded.'
+    return '回路をインポートしました。'
   }
 
   useEffect(() => {

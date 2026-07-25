@@ -116,25 +116,25 @@ function getWorkspaceStatus({
 >) {
   if (dragPayload) {
     return dragPayload.source === 'circuit'
-      ? `Dragging ${dragPayload.gateType}`
-      : `Dragging ${dragPayload.gateType} from palette`
+      ? `${dragPayload.gateType} をドラッグ中`
+      : `パレットから ${dragPayload.gateType} をドラッグ中`
   }
 
   if (selectedGateType === 'CNOT' && pendingCnotControl) {
-    return `Select CNOT target from q${pendingCnotControl.qubitIndex}`
+    return `q${pendingCnotControl.qubitIndex} の CNOT 対象を選択してください`
   }
 
   const selectedGate = getSelectedGateInfo(circuit, selectedGateId)
   if (selectedGate) {
     const duration = formatDurationLabel(getGateDuration(selectedGate.gate, gateDurationDefaults))
-    return `Gate selected: ${selectedGate.gate.type} ${formatGateLocation(selectedGate.gate)}, ${duration}`
+    return `ゲートを選択中: ${selectedGate.gate.type} ${formatGateLocation(selectedGate.gate)}、${duration}`
   }
 
   if (selectedGateType) {
-    return `Placing ${selectedGateType}`
+    return `${selectedGateType} を配置中`
   }
 
-  return editorHint === 'Ready to edit the circuit.' ? 'Circuit ready' : editorHint || 'Circuit ready'
+  return editorHint === 'Ready to edit the circuit.' ? '回路を編集できます' : editorHint || '回路を編集できます'
 }
 
 export function CircuitWorkspace({
@@ -208,7 +208,7 @@ export function CircuitWorkspace({
     anchor.click()
     anchor.remove()
     window.setTimeout(() => window.URL.revokeObjectURL(url), 0)
-    setTransferStatus('Exported circuit JSON.')
+    setTransferStatus('回路 JSON をエクスポートしました。')
   }
 
   function openFilePicker() {
@@ -226,32 +226,32 @@ export function CircuitWorkspace({
       const message = await onImportCircuitConfig(file)
       setTransferStatus(message)
     } catch (error) {
-      setTransferStatus(error instanceof Error ? error.message : 'Import failed.')
+      setTransferStatus(error instanceof Error ? error.message : 'インポートに失敗しました。')
     }
   }
 
   return (
-    <section className="circuit-workspace" aria-label="Circuit workspace">
-      <div className="circuit-workspace__toolbar" aria-label="Circuit editing toolbar">
-        <div className="circuit-workspace__tool-group" role="group" aria-label="History">
-          <span className="circuit-workspace__tool-label">History</span>
+    <section className="circuit-workspace" aria-label="回路編集ワークスペース">
+      <div className="circuit-workspace__toolbar" aria-label="回路編集ツールバー">
+        <div className="circuit-workspace__tool-group" role="group" aria-label="履歴">
+          <span className="circuit-workspace__tool-label">履歴</span>
           <button type="button" onClick={onUndo} disabled={!canUndo}>
-            Undo
+            元に戻す
           </button>
           <button type="button" onClick={onRedo} disabled={!canRedo}>
-            Redo
+            やり直す
           </button>
         </div>
 
-        <div className="circuit-workspace__tool-group" role="group" aria-label="Edit actions">
-          <span className="circuit-workspace__tool-label">Edit</span>
+        <div className="circuit-workspace__tool-group" role="group" aria-label="編集操作">
+          <span className="circuit-workspace__tool-label">編集</span>
           <button
             className="circuit-workspace__toolbar-danger"
             type="button"
             onClick={onDeleteSelected}
             disabled={!canDeleteSelected}
           >
-            Delete selected
+            選択項目を削除
           </button>
           <button
             className="circuit-workspace__toolbar-danger"
@@ -259,21 +259,21 @@ export function CircuitWorkspace({
             onClick={onClearCircuit}
             disabled={!canClearCircuit}
           >
-            Clear
+            クリア
           </button>
           <button type="button" onClick={onResetToBell}>
-            Reset to Bell
+            Bell 状態にリセット
           </button>
         </div>
 
-        <div className="circuit-workspace__tool-group" role="group" aria-label="Columns">
-          <span className="circuit-workspace__tool-label">Columns</span>
+        <div className="circuit-workspace__tool-group" role="group" aria-label="列">
+          <span className="circuit-workspace__tool-label">列</span>
           <button type="button" onClick={onRemoveLastColumn} disabled={!canRemoveLastColumn}>
-            - Column
+            - 列
           </button>
-          <span className="circuit-workspace__column-count">{circuit.columns.length} columns</span>
+          <span className="circuit-workspace__column-count">列 {circuit.columns.length}</span>
           <button type="button" onClick={handleAddColumn}>
-            + Column
+            + 列
           </button>
         </div>
 
@@ -295,38 +295,38 @@ export function CircuitWorkspace({
           onLast={viewport.goLast}
         />
 
-        <div className="circuit-workspace__tool-group" role="group" aria-label="Files">
-          <span className="circuit-workspace__tool-label">Files</span>
+        <div className="circuit-workspace__tool-group" role="group" aria-label="ファイル">
+          <span className="circuit-workspace__tool-label">ファイル</span>
           <button type="button" onClick={openFilePicker}>
-            Import
+            インポート
           </button>
           <button type="button" onClick={handleExportJson}>
-            Export
+            エクスポート
           </button>
           <button
             type="button"
             aria-pressed={showConfigPreview}
             onClick={() => setShowConfigPreview((isOpen) => !isOpen)}
           >
-            {showConfigPreview ? 'Hide JSON' : 'Preview JSON'}
+            {showConfigPreview ? 'JSON を隠す' : 'JSON をプレビュー'}
           </button>
           <input
             ref={fileInputRef}
             className="circuit-workspace__file-input"
             type="file"
             accept=".json,.qscope.json,application/json"
-            aria-label="Import circuit configuration JSON"
+            aria-label="回路設定 JSON をインポート"
             onChange={handleFileChange}
           />
         </div>
 
-        <div className="circuit-workspace__tool-group" role="group" aria-label="Actions">
-          <span className="circuit-workspace__tool-label">Actions</span>
+        <div className="circuit-workspace__tool-group" role="group" aria-label="操作">
+          <span className="circuit-workspace__tool-label">操作</span>
           <button type="button" onClick={onValidateCircuit}>
-            Validate
+            検証
           </button>
           <button type="button" onClick={onOpenSimulation}>
-            Simulation Lab
+            シミュレーションラボ
           </button>
           <button
             type="button"
@@ -334,7 +334,7 @@ export function CircuitWorkspace({
             disabled={!selectedGateId}
             onClick={() => setShowInspector((isOpen) => !isOpen)}
           >
-            {showInspector ? 'Hide inspector' : 'Inspector'}
+            {showInspector ? 'インスペクターを隠す' : 'インスペクター'}
           </button>
         </div>
       </div>
@@ -386,7 +386,7 @@ export function CircuitWorkspace({
           ) : null}
         </div>
         <p className="circuit-workspace__shortcut-hints">
-          Delete: remove selected | F: fit | Home/End: first/last
+          Delete: 選択項目を削除 | F: 回路に合わせる | Home/End: 最初/最後
         </p>
         <p className="circuit-workspace__transfer-status" aria-live="polite">
           {transferStatus || ' '}

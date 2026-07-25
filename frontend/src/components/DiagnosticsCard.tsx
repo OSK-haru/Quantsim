@@ -163,39 +163,39 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
 
   return (
     <ResultDrawer
-      eyebrow="Diagnostics"
-      title="Runtime snapshot"
+      eyebrow="診断情報"
+      title="実行時スナップショット"
       icon="wrench"
-      description="Backend and runtime details for the latest response."
+      description="最新の応答に関するバックエンドと実行時の詳細です。"
       defaultOpen={false}
     >
       <div className="diagnostics-grid">
         <div className="diagnostics-item">
-          <span className="diagnostics-label">Simulation model</span>
+          <span className="diagnostics-label">シミュレーションモデル</span>
           <ModelValue id={diagnostics.simulation_model} />
         </div>
         <div className="diagnostics-item">
-          <span className="diagnostics-label">Evolution mode</span>
+          <span className="diagnostics-label">発展モード</span>
           <ModelValue id={diagnostics.evolution_mode} />
         </div>
         <div className="diagnostics-item">
-          <span className="diagnostics-label">Simulation backend</span>
+          <span className="diagnostics-label">シミュレーションバックエンド</span>
           <ModelValue id={diagnostics.simulation_backend} />
         </div>
         <div className="diagnostics-item">
-          <span className="diagnostics-label">Backend name</span>
+          <span className="diagnostics-label">バックエンド名</span>
           <ModelValue id={diagnostics.backend_name} />
         </div>
         <div className="diagnostics-item">
-          <span className="diagnostics-label">Rust kernel mode</span>
+          <span className="diagnostics-label">Rust カーネルモード</span>
           <strong className="diagnostics-value">{diagnostics.rust_kernel_mode}</strong>
         </div>
         <div className="diagnostics-item">
-          <span className="diagnostics-label">Rust call count</span>
+          <span className="diagnostics-label">Rust 呼び出し回数</span>
           <strong className="diagnostics-value">{diagnostics.rust_kernel_call_count}</strong>
         </div>
         <div className="diagnostics-item">
-          <span className="diagnostics-label">Sampled batches</span>
+          <span className="diagnostics-label">サンプルバッチ数</span>
           <strong className="diagnostics-value">
             {diagnostics.rust_kernel_sampled_batch_count}
           </strong>
@@ -204,16 +204,16 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
 
       <div className="diagnostics-badges">
         <span className={`diagnostics-badge ${diagnostics.backend_fallback_used ? 'is-warn' : 'is-ok'}`}>
-          {diagnostics.backend_fallback_used ? 'Backend fallback' : 'No fallback'}
+          {diagnostics.backend_fallback_used ? 'バックエンドフォールバック' : 'フォールバックなし'}
         </span>
         <span className={`diagnostics-badge ${diagnostics.rust_kernel_fallback_used ? 'is-warn' : 'is-ok'}`}>
-          {diagnostics.rust_kernel_fallback_used ? 'Rust fallback' : 'Rust active'}
+          {diagnostics.rust_kernel_fallback_used ? 'Rust フォールバック' : 'Rust 有効'}
         </span>
       </div>
 
       {rateRows.length > 0 ? (
-        <div className="diagnostics-performance" aria-label="Environment rates">
-          <h4 className="diagnostics-performance__title">Environment rates</h4>
+        <div className="diagnostics-performance" aria-label="環境レート">
+          <h4 className="diagnostics-performance__title">環境レート</h4>
           <div className="diagnostics-performance__grid">
             {rateRows.map((row) => (
               <div className="diagnostics-performance__item" key={row.label}>
@@ -226,8 +226,8 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
       ) : null}
 
       {performanceRows.length > 0 ? (
-        <div className="diagnostics-performance" aria-label="Performance and timing">
-          <h4 className="diagnostics-performance__title">Performance / timing</h4>
+        <div className="diagnostics-performance" aria-label="性能と時間">
+          <h4 className="diagnostics-performance__title">性能 / 時間</h4>
           <div className="diagnostics-performance__grid">
             {performanceRows.map((row) => (
               <div className="diagnostics-performance__item" key={row.label}>
@@ -240,8 +240,8 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
       ) : null}
 
       {coreProfilingRows.length > 0 ? (
-        <div className="diagnostics-performance" aria-label="Core profiling">
-          <h4 className="diagnostics-performance__title">Core profiling</h4>
+        <div className="diagnostics-performance" aria-label="Core プロファイリング">
+          <h4 className="diagnostics-performance__title">Core プロファイリング</h4>
           <div className="diagnostics-performance__grid">
             {coreProfilingRows.map((row) => (
               <div className="diagnostics-performance__item" key={row.label}>
@@ -254,8 +254,8 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
       ) : null}
 
       {internalProfilingRows.length > 0 ? (
-        <div className="diagnostics-performance" aria-label="Internal core profiling">
-          <h4 className="diagnostics-performance__title">Internal core profiling</h4>
+        <div className="diagnostics-performance" aria-label="内部 Core プロファイリング">
+          <h4 className="diagnostics-performance__title">内部 Core プロファイリング</h4>
           <div className="diagnostics-performance__grid">
             {internalProfilingRows.map((row) => (
               <div className="diagnostics-performance__item" key={row.label}>
@@ -273,7 +273,7 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
 function formatMilliseconds(value: unknown) {
   const number = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(number)) {
-    return 'not available'
+    return '利用できません'
   }
   return `${number.toFixed(3)} ms`
 }
@@ -281,7 +281,7 @@ function formatMilliseconds(value: unknown) {
 function formatInteger(value: unknown) {
   const number = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(number)) {
-    return 'not available'
+    return '利用できません'
   }
   return `${Math.round(number)}`
 }
@@ -296,7 +296,7 @@ function formatBoolean(value: unknown) {
 function formatMicroseconds(value: unknown) {
   const number = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(number)) {
-    return 'not available'
+    return '利用できません'
   }
   return `${number.toFixed(3)} us`
 }
@@ -304,7 +304,7 @@ function formatMicroseconds(value: unknown) {
 function formatRate(value: unknown) {
   const number = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(number)) {
-    return 'not available'
+    return '利用できません'
   }
   return `${number.toExponential(3)} 1/us`
 }

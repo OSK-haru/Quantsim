@@ -19,43 +19,43 @@ export const MODEL_IDS = {
 export const modelLabels: Record<string, ModelLabelInfo> = {
   [MODEL_IDS.simulationModel]: {
     id: MODEL_IDS.simulationModel,
-    label: 'Gate-aware open system',
+    label: 'ゲートを考慮した開放系',
     description:
-      'The circuit is evolved as an open quantum system rather than as ideal instantaneous gates.',
+      '理想的な瞬時ゲートではなく、開放量子系として回路を発展させます。',
     status: 'current',
-    statusLabel: 'Current model',
+    statusLabel: '現在のモデル',
   },
   [MODEL_IDS.evolutionMode]: {
     id: MODEL_IDS.evolutionMode,
-    label: 'Gate-aware Hamiltonian Lindblad v1',
+    label: 'ゲートを考慮したハミルトニアン Lindblad v1',
     description:
-      'Each gate column is represented by an effective Hamiltonian while Lindblad noise acts during the operation.',
+      '各ゲート列を有効ハミルトニアンで表現し、操作中に Lindblad ノイズを作用させます。',
     status: 'current',
-    statusLabel: 'Current evolution',
+    statusLabel: '現在の発展方式',
   },
   [MODEL_IDS.defaultBackend]: {
     id: MODEL_IDS.defaultBackend,
-    label: 'Python dense backend',
+    label: 'Python 密行列バックエンド',
     description:
-      'Default reference backend for small dense density-matrix simulations.',
+      '小規模な密度行列シミュレーション用の標準参照バックエンドです。',
     status: 'default',
-    statusLabel: 'Default backend',
+    statusLabel: 'デフォルトバックエンド',
   },
   [MODEL_IDS.previewBackend]: {
     id: MODEL_IDS.previewBackend,
-    label: 'Rust dense preview',
+    label: 'Rust 密行列プレビュー',
     description:
-      'Optional preview acceleration path. It should not be presented as the default validated backend.',
+      '任意で使用できる高速化プレビュー経路です。検証済みの標準バックエンドではありません。',
     status: 'preview',
-    statusLabel: 'Preview backend',
+    statusLabel: 'プレビューバックエンド',
   },
   [MODEL_IDS.plannedMode]: {
     id: MODEL_IDS.plannedMode,
-    label: 'CPTP Kraus evolution',
+    label: 'CPTP Kraus 発展',
     description:
-      'Planned future mode. Not implemented in the current simulation path.',
+      '将来対応予定のモードです。現在のシミュレーション経路には未実装です。',
     status: 'planned',
-    statusLabel: 'Planned mode',
+    statusLabel: '計画中のモード',
   },
 }
 
@@ -64,14 +64,14 @@ export function getModelLabel(id: string): ModelLabelInfo {
     modelLabels[id] ?? {
       id,
       label: id,
-      description: 'No frontend label has been registered for this internal ID yet.',
+      description: 'この内部 ID に対応する表示名はまだ登録されていません。',
       status: 'current',
-      statusLabel: 'Internal ID',
+      statusLabel: '内部 ID',
     }
   )
 }
 
 export function modelStatusText(id: string) {
   const info = getModelLabel(id)
-  return info.status === 'planned' ? `${info.label} (not available yet)` : info.label
+  return info.status === 'planned' ? `${info.label}（未提供）` : info.label
 }

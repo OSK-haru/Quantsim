@@ -33,7 +33,7 @@ function formatColumnPreview(circuit: CircuitEditorState) {
     .slice(0, 4)
 
   if (occupiedColumns.length === 0) {
-    return 'Empty circuit'
+    return '空の回路'
   }
 
   return occupiedColumns
@@ -43,17 +43,17 @@ function formatColumnPreview(circuit: CircuitEditorState) {
 
 export function CircuitSummaryCard({
   circuit,
-  title = 'Circuit selected for simulation',
+  title = 'シミュレーション対象の回路',
   actionLabel,
   onAction,
 }: CircuitSummaryCardProps) {
   const gateCounts = getGateCounts(circuit)
 
   return (
-    <section className="circuit-summary-card" aria-label="Circuit summary">
+    <section className="circuit-summary-card" aria-label="回路の概要">
       <div className="circuit-summary-card__header">
         <div>
-          <div className="circuit-summary-card__eyebrow">Circuit</div>
+          <div className="circuit-summary-card__eyebrow">回路</div>
           <h2>{title}</h2>
           <p className="circuit-summary-card__preview">{formatColumnPreview(circuit)}</p>
         </div>
@@ -64,10 +64,10 @@ export function CircuitSummaryCard({
         ) : null}
       </div>
       <div className="circuit-summary-card__stats">
-        <span>{circuit.logical_qubits} qubits</span>
-        <span>{circuit.columns.length} columns</span>
-        <span>{gateCounts.total} gates</span>
-        <span>{gateCounts.cnot} CNOTs</span>
+        <span>量子ビット {circuit.logical_qubits}</span>
+        <span>列 {circuit.columns.length}</span>
+        <span>ゲート {gateCounts.total}</span>
+        <span>CNOT {gateCounts.cnot}</span>
       </div>
     </section>
   )

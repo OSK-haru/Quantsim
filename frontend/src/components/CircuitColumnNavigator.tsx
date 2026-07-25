@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { type FormEvent } from 'react'
 import './CircuitColumnNavigator.css'
 import type { VisibleColumnRange } from '../utils/circuitViewport'
 
@@ -25,53 +25,53 @@ export function CircuitColumnNavigator({
   onNextGroup,
   onLast,
 }: CircuitColumnNavigatorProps) {
-  const [columnInput, setColumnInput] = useState(String(visibleRange.start))
-
-  useEffect(() => {
-    setColumnInput(String(visibleRange.start))
-  }, [visibleRange.start])
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const parsedColumn = Number.parseInt(columnInput, 10)
+    const input = event.currentTarget.elements.namedItem('column')
+    if (!(input instanceof HTMLInputElement)) {
+      return
+    }
+
+    const parsedColumn = Number.parseInt(input.value, 10)
     if (Number.isNaN(parsedColumn)) {
-      setColumnInput(String(visibleRange.start))
+      input.value = String(visibleRange.start)
       return
     }
 
     const clampedColumn = clampColumn(parsedColumn, columnCount)
-    setColumnInput(String(clampedColumn))
+    input.value = String(clampedColumn)
     onJumpToColumn(clampedColumn - 1)
   }
 
   return (
-    <form className="circuit-column-navigator" aria-label="Column navigator" onSubmit={handleSubmit}>
-      <span className="circuit-workspace__tool-label">Columns</span>
-      <button type="button" onClick={onFirst} title="First column (Home)">
-        First
+    <form className="circuit-column-navigator" aria-label="列ナビゲーター" onSubmit={handleSubmit}>
+      <span className="circuit-workspace__tool-label">列</span>
+      <button type="button" onClick={onFirst} title="最初の列 (Home)">
+        最初
       </button>
-      <button type="button" onClick={onPreviousGroup} title="Previous 4 columns">
-        Prev
+      <button type="button" onClick={onPreviousGroup} title="前の 4 列">
+        前へ
       </button>
       <label className="circuit-column-navigator__jump">
-        <span>Jump</span>
+        <span>移動</span>
         <input
+          key={visibleRange.start}
+          name="column"
           type="number"
           min="1"
           max={Math.max(1, columnCount)}
-          value={columnInput}
-          onChange={(event) => setColumnInput(event.target.value)}
+          defaultValue={String(visibleRange.start)}
         />
       </label>
-      <button type="submit">Go</button>
-      <button type="button" onClick={onNextGroup} title="Next 4 columns">
-        Next
+      <button type="submit">移動</button>
+      <button type="button" onClick={onNextGroup} title="次の 4 列">
+        次へ
       </button>
-      <button type="button" onClick={onLast} title="Last column (End)">
-        Last
+      <button type="button" onClick={onLast} title="最後の列 (End)">
+        最後
       </button>
       <span className="circuit-column-navigator__range">
-        Showing {visibleRange.start}-{visibleRange.end} of {visibleRange.total}
+        {visibleRange.total} 列中 {visibleRange.start}〜{visibleRange.end} を表示
       </span>
     </form>
   )

@@ -27,20 +27,20 @@ export function OutputProbabilities({
 
   return (
     <ResultDrawer
-      eyebrow="Results"
-      title="Output probabilities"
+      eyebrow="結果"
+      title="出力確率"
       icon="bars"
-      description={`Computational basis probabilities: ${basisStateCount} states for ${resolvedQubitCount} qubits.`}
+      description={`計算基底の確率: 量子ビット ${resolvedQubitCount} 個、状態数 ${basisStateCount}。`}
       defaultOpen={false}
     >
       {rows.length === 0 ? (
-        <p className="output-probabilities__empty">No output probabilities available.</p>
+        <p className="output-probabilities__empty">出力確率を利用できません。</p>
       ) : (
         <>
           <p className="output-probabilities__summary" aria-live="polite">
-            {basisStateCount} basis states / {resolvedQubitCount} qubits
+            基底状態 {basisStateCount} 個 / 量子ビット {resolvedQubitCount} 個
           </p>
-          <div className="output-probabilities" role="table" aria-label="Output probabilities">
+          <div className="output-probabilities" role="table" aria-label="出力確率">
             {rows.map(({ state, probability, isExpected }) => (
               <div
                 className="output-probabilities__row"

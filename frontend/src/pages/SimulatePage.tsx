@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import './SimulatePage.css'
 import { CircuitSummaryCard } from '../components/CircuitSummaryCard'
 import { DensityMatrixSummaryCard } from '../components/DensityMatrixSummaryCard'
@@ -41,6 +41,7 @@ type SimulatePageProps = {
   onOpenCircuitStudio: () => void
   onOpenStateExplorer: () => void
   onOpenHelp: () => void
+  onOpenPulseLab: () => void
   onSuccessfulResponse: (response: SimulationResponse) => void
 }
 
@@ -138,53 +139,53 @@ function validateSimulationParameters(parameters: SimulateRequestParameters): {
   ) => {
     const value = parameters[name]
     if (!Number.isFinite(value) || value < 0 || value > 1) {
-      errors[name] = `${label} must be between 0 and 1.`
+      errors[name] = `${label} は 0 以上 1 以下で入力してください。`
     }
   }
 
-  validateZeroToOne('device_quality', 'Device quality')
-  validateZeroToOne('fidelity_threshold', 'Fidelity threshold')
+  validateZeroToOne('device_quality', 'デバイス品質')
+  validateZeroToOne('fidelity_threshold', '忠実度のしきい値')
 
   if (!Number.isFinite(parameters.temperature_mk)) {
-    errors.temperature_mk = 'Temperature must be a finite number.'
+    errors.temperature_mk = '温度は有限の数値で入力してください。'
   } else if (parameters.temperature_mk < 0) {
-    errors.temperature_mk = 'Temperature must be greater than or equal to 0 mK.'
+    errors.temperature_mk = '温度は 0 mK 以上で入力してください。'
   }
 
   if (!Number.isFinite(parameters.flux_noise_phi0)) {
-    errors.flux_noise_phi0 = 'Flux noise must be a finite number.'
+    errors.flux_noise_phi0 = '磁束ノイズは有限の数値で入力してください。'
   } else if (parameters.flux_noise_phi0 < 0) {
-    errors.flux_noise_phi0 = 'Flux noise must be greater than or equal to 0.'
+    errors.flux_noise_phi0 = '磁束ノイズは 0 以上で入力してください。'
   }
 
   if (!Number.isFinite(parameters.qubit_frequency_ghz)) {
-    errors.qubit_frequency_ghz = 'Qubit frequency must be a finite number.'
+    errors.qubit_frequency_ghz = '量子ビット周波数は有限の数値で入力してください。'
   } else if (parameters.qubit_frequency_ghz <= 0) {
-    errors.qubit_frequency_ghz = 'Qubit frequency must be greater than 0 GHz.'
+    errors.qubit_frequency_ghz = '量子ビット周波数は 0 GHz より大きい値で入力してください。'
   }
 
   if (!Number.isFinite(parameters.t1_max_us)) {
-    errors.t1_max_us = 'Max T1 must be a finite number.'
+    errors.t1_max_us = '最大 T1 は有限の数値で入力してください。'
   } else if (parameters.t1_max_us <= 0) {
-    errors.t1_max_us = 'Max T1 must be greater than 0 us.'
+    errors.t1_max_us = '最大 T1 は 0 us より大きい値で入力してください。'
   }
 
   if (!Number.isFinite(parameters.tphi_max_us)) {
-    errors.tphi_max_us = 'Max Tphi must be a finite number.'
+    errors.tphi_max_us = '最大 Tφ は有限の数値で入力してください。'
   } else if (parameters.tphi_max_us <= 0) {
-    errors.tphi_max_us = 'Max Tphi must be greater than 0 us.'
+    errors.tphi_max_us = '最大 Tφ は 0 us より大きい値で入力してください。'
   }
 
   if (!Number.isFinite(parameters.duration_us)) {
-    errors.duration_us = 'Duration must be a finite number.'
+    errors.duration_us = 'シミュレーション時間は有限の数値で入力してください。'
   } else if (parameters.duration_us <= 0) {
-    errors.duration_us = 'Duration must be greater than 0.'
+    errors.duration_us = 'シミュレーション時間は 0 より大きい値で入力してください。'
   }
 
   if (!Number.isFinite(parameters.time_steps)) {
-    errors.time_steps = 'Time steps must be a finite number.'
+    errors.time_steps = '時間ステップ数は有限の数値で入力してください。'
   } else if (!Number.isInteger(parameters.time_steps) || parameters.time_steps < 2) {
-    errors.time_steps = 'Time steps must be an integer greater than or equal to 2.'
+    errors.time_steps = '時間ステップ数は 2 以上の整数で入力してください。'
   }
 
   const firstMessage = Object.values(errors)[0] ?? null
@@ -200,22 +201,22 @@ function validateGateDurationDefaults(gateDurations: GateDurationDefaults): {
   const validateNonNegative = (name: keyof GateDurationDefaults, label: string) => {
     const value = gateDurations[name]
     if (!Number.isFinite(value) || value < 0) {
-      errors[name] = `${label} must be greater than or equal to 0 us.`
+      errors[name] = `${label} は 0 us 以上で入力してください。`
     }
   }
 
   const validatePositive = (name: keyof GateDurationDefaults, label: string) => {
     const value = gateDurations[name]
     if (!Number.isFinite(value) || value <= 0) {
-      errors[name] = `${label} must be greater than 0 us.`
+      errors[name] = `${label} は 0 us より大きい値で入力してください。`
     }
   }
 
-  validatePositive('H', 'H duration')
-  validatePositive('X', 'X duration')
-  validateNonNegative('Z', 'Z duration')
-  validatePositive('CNOT', 'CNOT duration')
-  validateNonNegative('MEASURE', 'Measure duration')
+  validatePositive('H', 'H の操作時間')
+  validatePositive('X', 'X の操作時間')
+  validateNonNegative('Z', 'Z の操作時間')
+  validatePositive('CNOT', 'CNOT の操作時間')
+  validateNonNegative('MEASURE', '測定の操作時間')
 
   const firstMessage = Object.values(errors)[0] ?? null
   return { errors, firstMessage }
@@ -232,11 +233,11 @@ function parseCustomSnapshotTimes(value: string): {
 
   const parts = trimmed.split(',').map((part) => part.trim()).filter(Boolean)
   if (parts.length > 100) {
-    return { times: [], error: 'Use at most 100 custom snapshot times.' }
+    return { times: [], error: 'スナップショット時刻は最大 100 個まで指定できます。' }
   }
   const times = parts.map(Number)
   if (times.some((time) => !Number.isFinite(time) || time < 0)) {
-    return { times: [], error: 'Custom times must be finite, non-negative numbers.' }
+    return { times: [], error: 'カスタム時刻は 0 以上の有限な数値で入力してください。' }
   }
   return { times, error: null }
 }
@@ -246,13 +247,13 @@ function validateSnapshotOptions(
   durationUs: number,
 ): string | null {
   if (!Number.isInteger(options.uniform_count) || options.uniform_count < 0 || options.uniform_count > 100) {
-    return 'Uniform count must be an integer from 0 to 100.'
+    return '均等サンプル数は 0〜100 の整数で入力してください。'
   }
   if (options.uniform_count === 1) {
-    return 'Uniform count 1 is ambiguous; use 0 or at least 2.'
+    return '均等サンプル数 1 は指定できません。0 または 2 以上を使用してください。'
   }
   if (options.custom_times_us.some((time) => time > durationUs)) {
-    return 'Custom snapshot times must not exceed total simulation time.'
+    return 'カスタムスナップショット時刻は総シミュレーション時間を超えられません。'
   }
   return null
 }
@@ -260,11 +261,11 @@ function validateSnapshotOptions(
 function formatApiFailureMessage(status: number, detail: string | null) {
   if (status === 422) {
     const detailSuffix = detail ? `: ${detail}` : ''
-    return `HTTP 422: request validation failed${detailSuffix}. Keeping the previous result visible.`
+    return `HTTP 422: リクエストの検証に失敗しました${detailSuffix}。前回の結果を表示しています。`
   }
 
   const detailSuffix = detail ? `: ${detail}` : ''
-  return `HTTP ${status}${detailSuffix}. Keeping the previous result visible.`
+  return `HTTP ${status}${detailSuffix}。前回の結果を表示しています。`
 }
 
 function normalizeApiDetail(detail: unknown): string | null {
@@ -318,6 +319,7 @@ export function SimulatePage({
   onOpenCircuitStudio,
   onOpenStateExplorer,
   onOpenHelp,
+  onOpenPulseLab,
   onSuccessfulResponse,
 }: SimulatePageProps) {
   const { circuitState } = useCircuitContext()
@@ -583,11 +585,11 @@ export function SimulatePage({
         return
       }
 
-      let message = 'Run request failed. Keeping the previous result visible.'
+      let message = '実行リクエストに失敗しました。前回の結果を表示しています。'
       if (error instanceof Error) {
         message =
           error.name === 'AbortError'
-            ? `Run request timed out after ${timeoutMs} ms. Keeping the previous result visible.`
+            ? `${timeoutMs} ms で実行リクエストがタイムアウトしました。前回の結果を表示しています。`
             : error.message
       }
 
@@ -605,11 +607,18 @@ export function SimulatePage({
     }
   }
 
+  const loadExampleOnMount = useEffectEvent(() => {
+    void loadExampleFromApi()
+  })
+
   useEffect(() => {
     mountedRef.current = true
-    void loadExampleFromApi()
+    const frameId = window.requestAnimationFrame(() => {
+      loadExampleOnMount()
+    })
 
     return () => {
+      window.cancelAnimationFrame(frameId)
       mountedRef.current = false
       abortControllerRef.current?.abort()
     }
@@ -617,28 +626,28 @@ export function SimulatePage({
 
   const connectionLabel =
     loadStatus === 'loading'
-      ? 'Checking...'
+      ? '確認中...'
       : loadStatus === 'api'
-        ? 'Connected'
+        ? '接続済み'
         : loadStatus === 'error'
           ? requestErrorKind === 'validation'
-            ? 'Not sent'
-            : 'API unavailable'
-          : 'Not connected'
+            ? '未送信'
+            : 'API は利用できません'
+          : '未接続'
 
   const dataSourceLabel =
     loadStatus === 'loading'
-      ? `Loading ${activeRequestLabel || 'API request'}...`
+      ? `${activeRequestLabel || 'API リクエスト'} を読み込み中...`
       : loadStatus === 'api'
         ? latestSourceLabel
         : loadStatus === 'error'
           ? requestErrorKind === 'validation'
-            ? `Previous result retained (${latestSourceLabel})`
+            ? `前回の結果を保持中（${latestSourceLabel}）`
           : latestSourceLabel === 'Static fixture' ||
             latestSourceLabel === 'Static fixture fallback'
-            ? 'Static fixture fallback'
-            : `Previous result retained (${latestSourceLabel})`
-          : 'Static fixture'
+            ? '静的フィクスチャ（フォールバック）'
+            : `前回の結果を保持中（${latestSourceLabel}）`
+          : '静的フィクスチャ'
   const hasAlerts = response.warnings.length > 0 || response.issues.length > 0
   const circuitGateCount = circuitState.columns.reduce(
     (count, column) => count + column.gates.length,
@@ -657,31 +666,34 @@ export function SimulatePage({
       <header className="simulate-page__header">
         <div>
           <div className="simulate-page__eyebrow">QuantaScope</div>
-          <h1>Simulation workspace</h1>
+          <h1>シミュレーションワークスペース</h1>
           <p className="simulate-page__lede">
-            Static mock data for the current backend snapshot and simulation result.
+            現在のバックエンドとシミュレーション結果を確認できます。
           </p>
         </div>
         <div className="simulate-page__header-actions">
           <button className="simulate-page__back simulate-page__back--active" type="button">
-            Simulation Lab
+            シミュレーションラボ
           </button>
           <button className="simulate-page__back" type="button" onClick={onOpenCircuitStudio}>
-            Circuit Studio
+            回路スタジオ
           </button>
           <button className="simulate-page__back" type="button" onClick={onOpenStateExplorer}>
-            State Explorer
+            状態エクスプローラー
+          </button>
+          <button className="simulate-page__back" type="button" onClick={onOpenPulseLab}>
+            Pulse Lab
           </button>
           <button className="simulate-page__back" type="button" onClick={onOpenHelp}>
-            Help / Q&amp;A
+            ヘルプ / Q&amp;A
           </button>
           <button className="simulate-page__back" type="button" onClick={onBackToHome}>
-            Back to home
+            ホームに戻る
           </button>
         </div>
       </header>
 
-      <section className="simulate-page__status-grid" aria-label="Simulation status">
+      <section className="simulate-page__status-grid" aria-label="シミュレーションの状態">
         {statusItems.map((item) => (
           <article className="simulate-page__status-card" key={item.label}>
             <span className="simulate-page__status-label">{item.label}</span>
@@ -693,7 +705,7 @@ export function SimulatePage({
       <div className="simulate-page__core-stack">
         <CircuitSummaryCard
           circuit={circuitState}
-          actionLabel="Edit in Circuit Studio"
+          actionLabel="回路スタジオで編集"
           onAction={onOpenCircuitStudio}
         />
         <ParameterPanel
@@ -708,8 +720,8 @@ export function SimulatePage({
         <section className="simulate-page__snapshot-controls" aria-labelledby="snapshot-controls-title">
           <div className="simulate-page__snapshot-heading">
             <div>
-              <span className="simulate-page__section-eyebrow">Sampling</span>
-              <h2 id="snapshot-controls-title">Snapshot sampling</h2>
+              <span className="simulate-page__section-eyebrow">サンプリング</span>
+              <h2 id="snapshot-controls-title">スナップショットのサンプリング</h2>
             </div>
             <label className="simulate-page__snapshot-toggle">
               <input
@@ -722,15 +734,15 @@ export function SimulatePage({
                   }))
                 }
               />
-              Enabled
+              有効
             </label>
           </div>
           <p className="simulate-page__snapshot-help">
-            Choose bounded time samples while keeping event snapshots such as initial, column boundaries, and final.
+            初期状態・列の境界・最終状態などのイベントスナップショットを保持しながら、時刻サンプルを指定します。
           </p>
           <div className="simulate-page__snapshot-grid">
             <label>
-              Uniform count
+              均等サンプル数
               <input
                 type="number"
                 min={0}
@@ -746,7 +758,7 @@ export function SimulatePage({
               />
             </label>
             <label>
-              Custom times [us]
+              カスタム時刻 [us]
               <input
                 type="text"
                 value={customSnapshotTimesInput}
@@ -757,10 +769,10 @@ export function SimulatePage({
           </div>
           <div className="simulate-page__snapshot-checks">
             {([
-              ['include_initial', 'Initial'],
-              ['include_final', 'Final'],
-              ['include_column_boundaries', 'Column boundaries'],
-              ['include_after_circuit', 'After circuit'],
+              ['include_initial', '初期状態'],
+              ['include_final', '最終状態'],
+              ['include_column_boundaries', '列の境界'],
+              ['include_after_circuit', '回路の後'],
             ] as const).map(([key, label]) => (
               <label key={key}>
                 <input
@@ -815,15 +827,15 @@ export function SimulatePage({
         />
         {hasAlerts ? (
           <ResultDrawer
-            eyebrow="Alerts"
-            title="Warnings and issues"
+            eyebrow="アラート"
+            title="警告と問題"
             icon="warning"
-            description="Non-fatal notes surfaced by the latest response."
+            description="最新の応答で検出された注意事項です。"
             defaultOpen
           >
             {response.warnings.length > 0 ? (
               <div className="simulate-page__alert-block">
-                <div className="simulate-page__alert-heading">Warnings</div>
+                <div className="simulate-page__alert-heading">警告</div>
                 <ul className="simulate-page__warning-list">
                   {response.warnings.map((warning, index) => (
                     <li className="simulate-page__warning-item" key={`${warning}-${index}`}>
@@ -836,7 +848,7 @@ export function SimulatePage({
 
             {response.issues.length > 0 ? (
               <div className="simulate-page__alert-block">
-                <div className="simulate-page__alert-heading">Issues</div>
+                <div className="simulate-page__alert-heading">問題</div>
                 <div className="simulate-page__issue-list">
                   {response.issues.map((issue, index) => (
                     <article className="simulate-page__issue-card" key={`${issue.code}-${index}`}>

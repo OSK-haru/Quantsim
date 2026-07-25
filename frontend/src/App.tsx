@@ -9,15 +9,16 @@ import { HomePage } from './pages/HomePage'
 import { HelpPage } from './pages/HelpPage'
 import { SimulatePage } from './pages/SimulatePage'
 import { StateExplorerPage } from './pages/StateExplorerPage'
+import { PulseLabPage } from './pages/PulseLabPage'
 import { MODEL_IDS, modelStatusText } from './utils/modelLabels'
 import type { SimulationResponse } from './types/simulation'
 
 const statusItems = [
-  { label: 'Simulation model', value: modelStatusText(MODEL_IDS.simulationModel) },
-  { label: 'Evolution mode', value: modelStatusText(MODEL_IDS.evolutionMode) },
-  { label: 'Default backend', value: modelStatusText(MODEL_IDS.defaultBackend) },
-  { label: 'Preview backend', value: modelStatusText(MODEL_IDS.previewBackend) },
-  { label: 'Planned mode', value: modelStatusText(MODEL_IDS.plannedMode) },
+  { label: 'シミュレーションモデル', value: modelStatusText(MODEL_IDS.simulationModel) },
+  { label: '発展モード', value: modelStatusText(MODEL_IDS.evolutionMode) },
+  { label: 'デフォルトバックエンド', value: modelStatusText(MODEL_IDS.defaultBackend) },
+  { label: 'プレビューバックエンド', value: modelStatusText(MODEL_IDS.previewBackend) },
+  { label: '計画中のモード', value: modelStatusText(MODEL_IDS.plannedMode) },
 ]
 
 const mockDiagnostics: SimulationDiagnostics = {
@@ -54,7 +55,13 @@ const initialGateDurationDefaults: GateDurationDefaults = {
   MEASURE: 0.0,
 }
 
-type Screen = 'home' | 'simulate' | 'circuit-studio' | 'state-explorer' | 'help'
+type Screen =
+  | 'home'
+  | 'simulate'
+  | 'circuit-studio'
+  | 'state-explorer'
+  | 'pulse-lab'
+  | 'help'
 
 function screenFromPath(pathname: string): Screen {
   if (pathname === '/simulate') {
@@ -65,6 +72,9 @@ function screenFromPath(pathname: string): Screen {
   }
   if (pathname === '/state-explorer') {
     return 'state-explorer'
+  }
+  if (pathname === '/pulse-lab') {
+    return 'pulse-lab'
   }
   if (pathname === '/help') {
     return 'help'
@@ -81,6 +91,9 @@ function pathFromScreen(screen: Screen) {
   }
   if (screen === 'state-explorer') {
     return '/state-explorer'
+  }
+  if (screen === 'pulse-lab') {
+    return '/pulse-lab'
   }
   if (screen === 'help') {
     return '/help'
@@ -117,6 +130,7 @@ function App() {
       <HomePage
         onStartSimulation={() => navigate('simulate')}
         onOpenStateExplorer={() => navigate('state-explorer')}
+        onOpenPulseLab={() => navigate('pulse-lab')}
       />
     )
   }
@@ -147,6 +161,14 @@ function App() {
         />
       ) : null}
 
+      {screen === 'pulse-lab' ? (
+        <PulseLabPage
+          onBackToHome={() => navigate('home')}
+          onOpenSimulation={() => navigate('simulate')}
+          onOpenHelp={() => navigate('help')}
+        />
+      ) : null}
+
       {screen === 'simulate' ? (
         <SimulatePage
           diagnostics={mockDiagnostics}
@@ -158,6 +180,7 @@ function App() {
           onOpenCircuitStudio={() => navigate('circuit-studio')}
           onOpenStateExplorer={() => navigate('state-explorer')}
           onOpenHelp={() => navigate('help')}
+          onOpenPulseLab={() => navigate('pulse-lab')}
           onSuccessfulResponse={setLatestSimulationResponse}
         />
       ) : null}

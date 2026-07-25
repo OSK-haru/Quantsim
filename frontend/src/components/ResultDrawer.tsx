@@ -39,7 +39,7 @@ export function ResultDrawer({
           type="button"
           aria-controls={panelId}
           aria-expanded={isOpen}
-          aria-label={`${isOpen ? 'Hide' : 'Show'} ${title}`}
+          aria-label={`${isOpen ? 'Collapse' : 'Expand'}: ${title}`}
           onClick={() => setIsOpen((next) => !next)}
         >
           {isOpen ? 'Hide details' : 'Show details'}

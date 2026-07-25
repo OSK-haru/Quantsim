@@ -13,7 +13,7 @@ type CircuitConfigPreviewProps = {
 }
 
 const PREVIEW_NOTE =
-  'Preview only. Run simulation now uses the edited circuit shown in the editor.'
+  'プレビューのみです。シミュレーション実行時は、エディターに表示されている編集後の回路を使用します。'
 
 export function CircuitConfigPreview({
   circuit,
@@ -50,7 +50,7 @@ export function CircuitConfigPreview({
     anchor.click()
     anchor.remove()
     window.setTimeout(() => window.URL.revokeObjectURL(url), 0)
-    setTransferStatus('Exported JSON')
+    setTransferStatus('JSON をエクスポートしました')
   }
 
   function openFilePicker() {
@@ -68,16 +68,16 @@ export function CircuitConfigPreview({
       const message = await onImportCircuitConfig(file)
       setTransferStatus(message)
     } catch (error) {
-      setTransferStatus(error instanceof Error ? error.message : 'Import failed.')
+      setTransferStatus(error instanceof Error ? error.message : 'インポートに失敗しました。')
     }
   }
 
   return (
     <ResultDrawer
-      eyebrow="Editor"
-      title="CircuitConfig preview"
+      eyebrow="エディター"
+      title="CircuitConfig のプレビュー"
       icon="braces"
-      description="Converted circuit state shown as API-compatible JSON."
+      description="変換された回路状態を API 互換の JSON として表示します。"
       defaultOpen={defaultOpen}
     >
       <div className="circuit-config-preview">
@@ -90,20 +90,20 @@ export function CircuitConfigPreview({
               type="button"
               onClick={handleExportJson}
             >
-              Export JSON
+              JSON をエクスポート
             </button>
             <button
               className="circuit-config-preview__copy"
               type="button"
               onClick={handleCopyJson}
             >
-              Copy JSON
+              JSON をコピー
             </button>
             <button className="circuit-config-preview__copy" type="button" onClick={openFilePicker}>
-              Import JSON
+              JSON をインポート
             </button>
             <span className="circuit-config-preview__status" aria-live="polite">
-              {transferStatus || (visibleCopyStatus === 'copied' ? 'Copied' : visibleCopyStatus === 'failed' ? 'Copy failed' : ' ')}
+              {transferStatus || (visibleCopyStatus === 'copied' ? 'コピーしました' : visibleCopyStatus === 'failed' ? 'コピーに失敗しました' : ' ')}
             </span>
           </div>
         ) : (
@@ -113,10 +113,10 @@ export function CircuitConfigPreview({
               type="button"
               onClick={handleCopyJson}
             >
-              Copy JSON
+              JSON をコピー
             </button>
             <span className="circuit-config-preview__status" aria-live="polite">
-              {visibleCopyStatus === 'copied' ? 'Copied' : visibleCopyStatus === 'failed' ? 'Copy failed' : ' '}
+              {visibleCopyStatus === 'copied' ? 'コピーしました' : visibleCopyStatus === 'failed' ? 'コピーに失敗しました' : ' '}
             </span>
           </div>
         )}
@@ -127,12 +127,12 @@ export function CircuitConfigPreview({
             className="circuit-config-preview__file-input"
             type="file"
             accept=".json,.qscope.json,application/json"
-            aria-label="Import circuit configuration JSON"
+            aria-label="回路設定 JSON をインポート"
             onChange={handleFileChange}
           />
         ) : null}
 
-        <pre className="circuit-config-preview__json" aria-label="Circuit configuration JSON">
+        <pre className="circuit-config-preview__json" aria-label="回路設定 JSON">
           {previewJson}
         </pre>
       </div>

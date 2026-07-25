@@ -16,10 +16,10 @@ type EstimateSimulationCostInput = {
 }
 
 const COST_LABELS: Record<SimulationCostLevel, string> = {
-  low: 'Low cost',
-  medium: 'Medium cost',
-  high: 'High cost',
-  very_high: 'Very high cost',
+  low: '低コスト',
+  medium: '中コスト',
+  high: '高コスト',
+  very_high: '非常に高いコスト',
 }
 
 export function estimateSimulationCost({
@@ -74,15 +74,15 @@ function buildMessage(
   level: SimulationCostLevel,
 ) {
   const durationText = formatDuration(durationUs)
-  const prefix = `${logicalQubits}-qubit run, ${timeSteps} time steps, ${durationText} total simulation time`
+  const prefix = `量子ビット ${logicalQubits} 個、時間ステップ ${timeSteps}、総シミュレーション時間 ${durationText}`
   const suffix =
     level === 'low'
-      ? 'This should usually stay interactive.'
+      ? '通常は対話的に実行できます。'
       : level === 'medium'
-        ? 'This may take a little longer on python_dense.'
+        ? 'python_dense では少し時間がかかる場合があります。'
         : level === 'high'
-          ? 'This may take tens of seconds with python_dense.'
-          : 'This is likely to be slow or timeout on python_dense.'
+          ? 'python_dense では数十秒かかる場合があります。'
+          : 'python_dense では遅延またはタイムアウトの可能性があります。'
 
   return `${prefix}. ${suffix}`
 }
@@ -93,10 +93,10 @@ function buildSuggestion(logicalQubits: number, level: SimulationCostLevel): str
   }
 
   if (level === 'low' || level === 'medium') {
-    return 'Suggested interactive settings for 4 qubits: time_steps 11-31, duration_us 0.5-1.0.'
+    return '4量子ビットでの推奨設定: time_steps 11〜31、duration_us 0.5〜1.0。'
   }
 
-  return 'For interactive testing, try 11-31 time steps or a shorter duration.'
+  return '対話的に試す場合は、時間ステップを 11〜31 にするか、時間を短くしてください。'
 }
 
 function formatDuration(value: number) {

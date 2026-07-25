@@ -40,6 +40,14 @@
   letter-spacing: -0.05em;
 }
 
+.state-explorer-page__scope {
+  max-width: 660px;
+  margin: 10px 0 0;
+  color: #94a3b8;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
 .state-explorer-page__actions {
   display: flex;
   flex-wrap: wrap;
@@ -91,6 +99,33 @@
   max-height: min(66vh, 720px);
 }
 
+.state-explorer-page__explorers,
+.state-explorer-page__density-section {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.state-explorer-page__section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.state-explorer-page__section-heading h2 {
+  margin: 5px 0 0;
+  color: #f8fafc;
+  font-size: 1.5rem;
+}
+
+.state-explorer-page__section-heading p {
+  max-width: 620px;
+  margin: 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
 .state-explorer-page__empty,
 .state-explorer-page__unavailable {
   box-sizing: border-box;
@@ -133,5 +168,9 @@
 
   .state-explorer-page__workspace {
     padding: 14px;
+  }
+
+  .state-explorer-page__section-heading {
+    flex-direction: column;
   }
 }
