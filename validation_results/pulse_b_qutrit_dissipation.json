@@ -1,0 +1,233 @@
+{
+  "validation": "PULSE-B2-QUTRIT-DISSIPATION",
+  "model_id": "driven_transmon_qutrit_rwa_experimental_v1",
+  "contract_version": "pulse-extension-b-v1",
+  "capability_status": "contract_only",
+  "frame": "rotating",
+  "approximation": "RWA",
+  "basis_order": [
+    "0",
+    "1",
+    "2"
+  ],
+  "subsystem_dimensions": [
+    3
+  ],
+  "collapse_operator_convention": {
+    "gamma_10_down": "sqrt(gamma_10_down) |0><1|",
+    "gamma_01_up": "sqrt(gamma_01_up) |1><0|",
+    "gamma_21_down": "sqrt(gamma_21_down) |1><2|",
+    "gamma_12_up": "sqrt(gamma_12_up) |2><1|",
+    "pure_dephasing": "sqrt(2 gamma_phi_adjacent) n"
+  },
+  "physical_profile_convention": {
+    "gamma_21_zero_temperature": "2 * gamma_10_zero_temperature",
+    "meaning": "educational harmonic-matrix-element approximation"
+  },
+  "tolerances": {
+    "rate": 2e-14,
+    "population": 5e-07,
+    "coherence": 5e-07,
+    "mode_match": 1e-14,
+    "raw_physicality": 1e-10,
+    "minimum_visible_segment_effect": 0.0001
+  },
+  "cases": [
+    {
+      "name": "zero_temperature_and_detailed_balance",
+      "zero_temperature_rates": {
+        "input_mode": "physical",
+        "gamma_10_down_per_us": 0.025118864315095794,
+        "gamma_01_up_per_us": 0.0,
+        "gamma_21_down_per_us": 0.05023772863019159,
+        "gamma_12_up_per_us": 0.0,
+        "gamma_phi_adjacent_per_us": 0.030118864315095795,
+        "transition_01_frequency_ghz": 5.0,
+        "transition_12_frequency_ghz": 4.75,
+        "n_01": 0.0,
+        "n_12": 0.0,
+        "gamma_10_zero_temperature_per_us": 0.025118864315095794,
+        "gamma_21_zero_temperature_per_us": 0.05023772863019159,
+        "dephasing_model": "number_operator_adjacent_rate_v1"
+      },
+      "finite_temperature_rates": {
+        "input_mode": "physical",
+        "gamma_10_down_per_us": 0.02905184407278616,
+        "gamma_01_up_per_us": 0.003932979757690364,
+        "gamma_21_down_per_us": 0.05907634356700591,
+        "gamma_12_up_per_us": 0.00883861493681432,
+        "gamma_phi_adjacent_per_us": 0.030118864315095795,
+        "transition_01_frequency_ghz": 5.0,
+        "transition_12_frequency_ghz": 4.75,
+        "n_01": 0.15657474431782906,
+        "n_12": 0.1759357992053514,
+        "gamma_10_zero_temperature_per_us": 0.025118864315095794,
+        "gamma_21_zero_temperature_per_us": 0.05023772863019159,
+        "dephasing_model": "number_operator_adjacent_rate_v1"
+      },
+      "detailed_balance_ratio_01": 0.13537797283493336,
+      "detailed_balance_ratio_12": 0.14961343920666545,
+      "detailed_balance_error_01": 5.551115123125783e-17,
+      "detailed_balance_error_12": 0.0,
+      "gamma_21_harmonic_factor_error": 0.0,
+      "pass": true
+    },
+    {
+      "name": "zero_temperature_cascade",
+      "gamma_10_down_per_us": 0.3,
+      "gamma_21_down_per_us": 0.8,
+      "maximum_population_error": 3.2085445411667024e-14,
+      "physicality": {
+        "maximum_raw_trace_error": 2.220446049250313e-16,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": 4.796481551999998e-07,
+        "maximum_cleanup_correction_norm": 2.2890463418088597e-16,
+        "internal_step_count": 1520
+      },
+      "pass": true
+    },
+    {
+      "name": "pure_dephasing_one_one_four",
+      "gamma_phi_adjacent_per_us": 0.7,
+      "maximum_coherence_errors": {
+        "rho_01": 4.718447854656915e-16,
+        "rho_12": 7.216449660063518e-16,
+        "rho_02": 1.2170819907453279e-14
+      },
+      "physicality": {
+        "maximum_raw_trace_error": 2.220446049250313e-16,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": 2.1767606522971774e-07,
+        "maximum_cleanup_correction_norm": 1.6653348898680922e-16,
+        "internal_step_count": 500
+      },
+      "pass": true
+    },
+    {
+      "name": "population_outflow_coherence",
+      "predicted_decay_rate_per_us": 0.3,
+      "maximum_coherence_error": 3.885780586188048e-16,
+      "physicality": {
+        "maximum_raw_trace_error": 2.220446049250313e-16,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": 7.499187756107584e-05,
+        "maximum_cleanup_correction_norm": 2.2247786310271853e-16,
+        "internal_step_count": 700
+      },
+      "pass": true
+    },
+    {
+      "name": "three_level_gibbs",
+      "temperature_mk": 300.0,
+      "rates": {
+        "input_mode": "physical",
+        "gamma_10_down_per_us": 1.8161531834509201,
+        "gamma_01_up_per_us": 0.8161531834509201,
+        "gamma_21_down_per_us": 3.7574384034566553,
+        "gamma_12_up_per_us": 1.7574384034566555,
+        "gamma_phi_adjacent_per_us": 1.005,
+        "transition_01_frequency_ghz": 5.0,
+        "transition_12_frequency_ghz": 4.75,
+        "n_01": 0.8161531834509201,
+        "n_12": 0.8787192017283277,
+        "gamma_10_zero_temperature_per_us": 1.0,
+        "gamma_21_zero_temperature_per_us": 2.0,
+        "dephasing_model": "number_operator_adjacent_rate_v1"
+      },
+      "expected_populations": [
+        0.6025644817225485,
+        0.27078383281406815,
+        0.1266516854633834
+      ],
+      "final_populations": [
+        0.6025644812703558,
+        0.2707838330535883,
+        0.12665168567605595
+      ],
+      "maximum_population_error": 4.5219272770680163e-10,
+      "physicality": {
+        "maximum_raw_trace_error": 2.220446049250313e-16,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": 8.415255762637036e-05,
+        "maximum_cleanup_correction_norm": 1.594436429147036e-16,
+        "internal_step_count": 2402
+      },
+      "pass": true
+    },
+    {
+      "name": "dissipative_pulse_and_idle",
+      "pulse_state_change": 0.4599542919987928,
+      "idle_state_change": 0.17959649215146756,
+      "physicality": {
+        "maximum_raw_trace_error": 2.220446049250313e-16,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": 1.10225392639109e-08,
+        "maximum_cleanup_correction_norm": 2.8110299388636844e-16,
+        "internal_step_count": 1000
+      },
+      "pass": true
+    },
+    {
+      "name": "physical_direct_rate_equivalence",
+      "physical_rates": {
+        "input_mode": "physical",
+        "gamma_10_down_per_us": 0.027625985886320165,
+        "gamma_01_up_per_us": 0.0025071215712243727,
+        "gamma_21_down_per_us": 0.05596402276600953,
+        "gamma_12_up_per_us": 0.005726294135817937,
+        "gamma_phi_adjacent_per_us": 0.030118864315095795,
+        "transition_01_frequency_ghz": 5.0,
+        "transition_12_frequency_ghz": 4.75,
+        "n_01": 0.09981030749537737,
+        "n_12": 0.11398393780837815,
+        "gamma_10_zero_temperature_per_us": 0.025118864315095794,
+        "gamma_21_zero_temperature_per_us": 0.05023772863019159,
+        "dephasing_model": "number_operator_adjacent_rate_v1"
+      },
+      "direct_rates": {
+        "input_mode": "direct_rates",
+        "gamma_10_down_per_us": 0.027625985886320165,
+        "gamma_01_up_per_us": 0.0025071215712243727,
+        "gamma_21_down_per_us": 0.05596402276600953,
+        "gamma_12_up_per_us": 0.005726294135817937,
+        "gamma_phi_adjacent_per_us": 0.030118864315095795,
+        "transition_01_frequency_ghz": null,
+        "transition_12_frequency_ghz": null,
+        "n_01": null,
+        "n_12": null,
+        "gamma_10_zero_temperature_per_us": null,
+        "gamma_21_zero_temperature_per_us": null,
+        "dephasing_model": "number_operator_adjacent_rate_v1"
+      },
+      "pulse_end_max_element_error": 0.0,
+      "final_max_element_error": 0.0,
+      "pass": true
+    }
+  ],
+  "overall_pass": true,
+  "runtime_ms": 9423.400500003481,
+  "scope_and_limitations": {
+    "proves": [
+      "zero-temperature qutrit upward rates vanish",
+      "both adjacent transitions satisfy detailed balance",
+      "zero-temperature two-step cascade matches its analytic solution",
+      "number-operator dephasing gives adjacent rates gamma and 0-2 rate 4 gamma",
+      "population outflow gives the documented coherence decay",
+      "no-drive long-time populations approach the three-level Gibbs state",
+      "dissipation acts during both pulse and post-pulse idle",
+      "equivalent physical and direct rates produce the same trajectory",
+      "raw physicality is acceptable at the declared validation steps"
+    ],
+    "does_not_prove": [
+      "a production-safe qutrit step policy",
+      "strict finite-step CPTP behavior",
+      "DRAG behavior",
+      "QuTiP qutrit agreement",
+      "public qutrit API readiness",
+      "hardware-calibrated transition rates"
+    ]
+  },
+  "base_git_commit": "7ba959a050423d64805e6b64dcbcbf805df068a1",
+  "python_version": "3.14.4",
+  "numpy_version": "2.4.4"
+}

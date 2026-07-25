@@ -1,0 +1,475 @@
+{
+  "approximation": "RWA",
+  "basis_order": [
+    "0",
+    "1",
+    "2"
+  ],
+  "capability_status": "contract_only",
+  "cases": [
+    {
+      "cleanup_refinement_pass": true,
+      "convergence_pass": true,
+      "description": "Free phase evolution of a |0>+|2> coherence at alpha/(2pi) = -300 MHz.",
+      "input_summary": {
+        "anharmonicity_rad_per_us": -1884.9555921538758,
+        "detuning_rad_per_us": 0.0,
+        "envelope": {
+          "duration_us": 0.004,
+          "peak_amplitude_rad_per_us": 0.0,
+          "pulse_area_rad": 0.0,
+          "type": "SquarePulseEnvelope"
+        },
+        "rates": {
+          "dephasing_model": "number_operator_adjacent_rate_v1",
+          "gamma_01_up_per_us": 0.0,
+          "gamma_10_down_per_us": 0.0,
+          "gamma_10_zero_temperature_per_us": null,
+          "gamma_12_up_per_us": 0.0,
+          "gamma_21_down_per_us": 0.0,
+          "gamma_21_zero_temperature_per_us": null,
+          "gamma_phi_adjacent_per_us": 0.0,
+          "input_mode": "direct_rates",
+          "n_01": null,
+          "n_12": null,
+          "transition_01_frequency_ghz": null,
+          "transition_12_frequency_ghz": null
+        },
+        "total_simulation_time_us": 0.004
+      },
+      "name": "free_qutrit_phase_large_anharmonicity",
+      "observed_orders": [
+        4.000046097685132,
+        4.001815695633419,
+        4.087332538482607
+      ],
+      "pass": true,
+      "policy": {
+        "dissipation_scale_per_us": 0.0,
+        "dissipation_step_limit_us": null,
+        "drag_beta_us": 0.0,
+        "duration_step_limit_us": 0.004,
+        "envelope_step_limit_us": null,
+        "estimated_internal_step_count": 377,
+        "h_over_sigma": null,
+        "h_times_dissipation_scale": 0.0,
+        "h_times_hamiltonian_scale": 0.02,
+        "hamiltonian_scale_max_rad_per_us": 1884.9555921538758,
+        "hamiltonian_step_limit_us": 1.061032953945969e-05,
+        "maximum_drag_derivative_rad_per_us2": 0.0,
+        "maximum_drive_magnitude_rad_per_us": 0.0,
+        "maximum_internal_step_count": 25000,
+        "policy_id": "qutrit_fixed_rk4_v1",
+        "selected_internal_step_cap_us": 1.061032953945969e-05,
+        "step_limit_reason": "hamiltonian_spectral_diameter",
+        "within_work_budget": true
+      },
+      "policy_accuracy_pass": true,
+      "policy_physicality_pass": true,
+      "policy_step_leakage_error": 0.0,
+      "policy_step_matrix_error": 5.00652304797488e-09,
+      "policy_step_population_error": 0.0,
+      "reference_internal_steps": 1508,
+      "work_budget_pass": true
+    },
+    {
+      "cleanup_refinement_pass": true,
+      "convergence_pass": true,
+      "description": "Resonant Gaussian pi pulse with deliberately measurable transmon leakage.",
+      "input_summary": {
+        "anharmonicity_rad_per_us": -628.3185307179587,
+        "detuning_rad_per_us": 0.0,
+        "envelope": {
+          "duration_us": 0.012,
+          "peak_amplitude_rad_per_us": 835.5956869164836,
+          "pulse_area_rad": 3.141592653589793,
+          "sigma_us": 0.0015,
+          "truncation_sigma": 4.0,
+          "type": "GaussianPulseEnvelope"
+        },
+        "rates": {
+          "dephasing_model": "number_operator_adjacent_rate_v1",
+          "gamma_01_up_per_us": 0.0,
+          "gamma_10_down_per_us": 0.0,
+          "gamma_10_zero_temperature_per_us": null,
+          "gamma_12_up_per_us": 0.0,
+          "gamma_21_down_per_us": 0.0,
+          "gamma_21_zero_temperature_per_us": null,
+          "gamma_phi_adjacent_per_us": 0.0,
+          "input_mode": "direct_rates",
+          "n_01": null,
+          "n_12": null,
+          "transition_01_frequency_ghz": null,
+          "transition_12_frequency_ghz": null
+        },
+        "total_simulation_time_us": 0.012
+      },
+      "name": "closed_resonant_gaussian_leakage",
+      "observed_orders": [
+        3.992265376340615,
+        4.00242528110978,
+        4.10168151435047
+      ],
+      "pass": true,
+      "policy": {
+        "dissipation_scale_per_us": 0.0,
+        "dissipation_step_limit_us": null,
+        "drag_beta_us": 0.0,
+        "duration_step_limit_us": 0.012,
+        "envelope_step_limit_us": 4.6875e-05,
+        "estimated_internal_step_count": 971,
+        "h_over_sigma": 0.008239444880257967,
+        "h_times_dissipation_scale": 0.0,
+        "h_times_hamiltonian_scale": 0.02,
+        "hamiltonian_scale_max_rad_per_us": 1618.2319958569688,
+        "hamiltonian_step_limit_us": 1.2359167320386951e-05,
+        "maximum_drag_derivative_rad_per_us2": 0.0,
+        "maximum_drive_magnitude_rad_per_us": 835.5956869164836,
+        "maximum_internal_step_count": 25000,
+        "policy_id": "qutrit_fixed_rk4_v1",
+        "selected_internal_step_cap_us": 1.2359167320386951e-05,
+        "step_limit_reason": "hamiltonian_spectral_diameter",
+        "within_work_budget": true
+      },
+      "policy_accuracy_pass": true,
+      "policy_physicality_pass": true,
+      "policy_step_leakage_error": 6.756978310207273e-11,
+      "policy_step_matrix_error": 4.6473560579897464e-10,
+      "policy_step_population_error": 8.595429923374809e-11,
+      "reference_internal_steps": 3884,
+      "work_budget_pass": true
+    },
+    {
+      "cleanup_refinement_pass": true,
+      "convergence_pass": true,
+      "description": "Detuned Gaussian pi/2 pulse with the qutrit spectral span including detuning and anharmonicity.",
+      "input_summary": {
+        "anharmonicity_rad_per_us": -942.4777960769379,
+        "detuning_rad_per_us": 30.0,
+        "envelope": {
+          "duration_us": 0.012,
+          "peak_amplitude_rad_per_us": 417.7978434582418,
+          "pulse_area_rad": 1.5707963267948966,
+          "sigma_us": 0.0015,
+          "truncation_sigma": 4.0,
+          "type": "GaussianPulseEnvelope"
+        },
+        "rates": {
+          "dephasing_model": "number_operator_adjacent_rate_v1",
+          "gamma_01_up_per_us": 0.0,
+          "gamma_10_down_per_us": 0.0,
+          "gamma_10_zero_temperature_per_us": null,
+          "gamma_12_up_per_us": 0.0,
+          "gamma_21_down_per_us": 0.0,
+          "gamma_21_zero_temperature_per_us": null,
+          "gamma_phi_adjacent_per_us": 0.0,
+          "input_mode": "direct_rates",
+          "n_01": null,
+          "n_12": null,
+          "transition_01_frequency_ghz": null,
+          "transition_12_frequency_ghz": null
+        },
+        "total_simulation_time_us": 0.012
+      },
+      "name": "detuned_gaussian",
+      "observed_orders": [
+        3.9959549105951115,
+        4.002130819439447,
+        4.094998897546208
+      ],
+      "pass": true,
+      "policy": {
+        "dissipation_scale_per_us": 0.0,
+        "dissipation_step_limit_us": null,
+        "drag_beta_us": 0.0,
+        "duration_step_limit_us": 0.012,
+        "envelope_step_limit_us": 4.6875e-05,
+        "estimated_internal_step_count": 792,
+        "h_over_sigma": 0.010112539745993415,
+        "h_times_dissipation_scale": 0.0,
+        "h_times_hamiltonian_scale": 0.02,
+        "hamiltonian_scale_max_rad_per_us": 1318.4950238258393,
+        "hamiltonian_step_limit_us": 1.5168809618990122e-05,
+        "maximum_drag_derivative_rad_per_us2": 0.0,
+        "maximum_drive_magnitude_rad_per_us": 417.7978434582418,
+        "maximum_internal_step_count": 25000,
+        "policy_id": "qutrit_fixed_rk4_v1",
+        "selected_internal_step_cap_us": 1.5168809618990122e-05,
+        "step_limit_reason": "hamiltonian_spectral_diameter",
+        "within_work_budget": true
+      },
+      "policy_accuracy_pass": true,
+      "policy_physicality_pass": true,
+      "policy_step_leakage_error": 3.315513835699946e-11,
+      "policy_step_matrix_error": 3.466148538681273e-10,
+      "policy_step_population_error": 4.237621364922006e-11,
+      "reference_internal_steps": 3165,
+      "work_budget_pass": true
+    },
+    {
+      "cleanup_refinement_pass": true,
+      "convergence_pass": true,
+      "description": "Gaussian pi pulse with all adjacent transition channels and number-operator dephasing active.",
+      "input_summary": {
+        "anharmonicity_rad_per_us": -628.3185307179587,
+        "detuning_rad_per_us": 0.0,
+        "envelope": {
+          "duration_us": 0.012,
+          "peak_amplitude_rad_per_us": 835.5956869164836,
+          "pulse_area_rad": 3.141592653589793,
+          "sigma_us": 0.0015,
+          "truncation_sigma": 4.0,
+          "type": "GaussianPulseEnvelope"
+        },
+        "rates": {
+          "dephasing_model": "number_operator_adjacent_rate_v1",
+          "gamma_01_up_per_us": 0.2,
+          "gamma_10_down_per_us": 0.8,
+          "gamma_10_zero_temperature_per_us": null,
+          "gamma_12_up_per_us": 0.1,
+          "gamma_21_down_per_us": 1.4,
+          "gamma_21_zero_temperature_per_us": null,
+          "gamma_phi_adjacent_per_us": 0.5,
+          "input_mode": "direct_rates",
+          "n_01": null,
+          "n_12": null,
+          "transition_01_frequency_ghz": null,
+          "transition_12_frequency_ghz": null
+        },
+        "total_simulation_time_us": 0.012
+      },
+      "name": "dissipative_gaussian",
+      "observed_orders": [
+        3.992367908877038,
+        4.002480962779416,
+        4.101766598478803
+      ],
+      "pass": true,
+      "policy": {
+        "dissipation_scale_per_us": 4.5,
+        "dissipation_step_limit_us": 0.0044444444444444444,
+        "drag_beta_us": 0.0,
+        "duration_step_limit_us": 0.012,
+        "envelope_step_limit_us": 4.6875e-05,
+        "estimated_internal_step_count": 971,
+        "h_over_sigma": 0.008239444880257967,
+        "h_times_dissipation_scale": 5.561625294174128e-05,
+        "h_times_hamiltonian_scale": 0.02,
+        "hamiltonian_scale_max_rad_per_us": 1618.2319958569688,
+        "hamiltonian_step_limit_us": 1.2359167320386951e-05,
+        "maximum_drag_derivative_rad_per_us2": 0.0,
+        "maximum_drive_magnitude_rad_per_us": 835.5956869164836,
+        "maximum_internal_step_count": 25000,
+        "policy_id": "qutrit_fixed_rk4_v1",
+        "selected_internal_step_cap_us": 1.2359167320386951e-05,
+        "step_limit_reason": "hamiltonian_spectral_diameter",
+        "within_work_budget": true
+      },
+      "policy_accuracy_pass": true,
+      "policy_physicality_pass": true,
+      "policy_step_leakage_error": 6.539868646626701e-11,
+      "policy_step_matrix_error": 4.573899328050253e-10,
+      "policy_step_population_error": 8.284367636335332e-11,
+      "reference_internal_steps": 3884,
+      "work_budget_pass": true
+    },
+    {
+      "cleanup_refinement_pass": true,
+      "convergence_pass": true,
+      "description": "Dissipative Gaussian pi/2 pulse followed by free idle under the same Hamiltonian and collapse operators.",
+      "input_summary": {
+        "anharmonicity_rad_per_us": -628.3185307179587,
+        "detuning_rad_per_us": 15.0,
+        "envelope": {
+          "duration_us": 0.012,
+          "peak_amplitude_rad_per_us": 417.7978434582418,
+          "pulse_area_rad": 1.5707963267948966,
+          "sigma_us": 0.0015,
+          "truncation_sigma": 4.0,
+          "type": "GaussianPulseEnvelope"
+        },
+        "rates": {
+          "dephasing_model": "number_operator_adjacent_rate_v1",
+          "gamma_01_up_per_us": 0.1,
+          "gamma_10_down_per_us": 0.5,
+          "gamma_10_zero_temperature_per_us": null,
+          "gamma_12_up_per_us": 0.05,
+          "gamma_21_down_per_us": 0.9,
+          "gamma_21_zero_temperature_per_us": null,
+          "gamma_phi_adjacent_per_us": 0.25,
+          "input_mode": "direct_rates",
+          "n_01": null,
+          "n_12": null,
+          "transition_01_frequency_ghz": null,
+          "transition_12_frequency_ghz": null
+        },
+        "total_simulation_time_us": 0.02
+      },
+      "name": "pulse_then_idle",
+      "observed_orders": [
+        3.9967671660179365,
+        4.003918743324535,
+        4.086239474239261
+      ],
+      "pass": true,
+      "policy": {
+        "dissipation_scale_per_us": 2.55,
+        "dissipation_step_limit_us": 0.00784313725490196,
+        "drag_beta_us": 0.0,
+        "duration_step_limit_us": 0.012,
+        "envelope_step_limit_us": 4.6875e-05,
+        "estimated_internal_step_count": 1035,
+        "h_over_sigma": 0.012890775367438018,
+        "h_times_dissipation_scale": 4.9307215780450414e-05,
+        "h_times_hamiltonian_scale": 0.02,
+        "hamiltonian_scale_max_rad_per_us": 1034.3313690046305,
+        "hamiltonian_step_limit_us": 1.9336163051157028e-05,
+        "maximum_drag_derivative_rad_per_us2": 0.0,
+        "maximum_drive_magnitude_rad_per_us": 417.7978434582418,
+        "maximum_internal_step_count": 25000,
+        "policy_id": "qutrit_fixed_rk4_v1",
+        "selected_internal_step_cap_us": 1.9336163051157028e-05,
+        "step_limit_reason": "hamiltonian_spectral_diameter",
+        "within_work_budget": true
+      },
+      "policy_accuracy_pass": true,
+      "policy_physicality_pass": true,
+      "policy_step_leakage_error": 7.179329353235175e-11,
+      "policy_step_matrix_error": 4.6386318558601575e-10,
+      "policy_step_population_error": 7.835698756508691e-11,
+      "reference_internal_steps": 4138,
+      "work_budget_pass": true
+    },
+    {
+      "coarse_breakdown_detected": true,
+      "coarse_cleanup_correction_norm": 0.0,
+      "coarse_raw_minimum_eigenvalue": -12.708333333333334,
+      "description": "A one-step, strongly dissipative |2> decay compared with the qutrit policy limit.",
+      "input_summary": {
+        "anharmonicity_rad_per_us": -1.0,
+        "detuning_rad_per_us": 0.0,
+        "envelope": {
+          "duration_us": 0.05,
+          "peak_amplitude_rad_per_us": 0.0,
+          "pulse_area_rad": 0.0,
+          "type": "SquarePulseEnvelope"
+        },
+        "rates": {
+          "dephasing_model": "number_operator_adjacent_rate_v1",
+          "gamma_01_up_per_us": 0.0,
+          "gamma_10_down_per_us": 0.0,
+          "gamma_10_zero_temperature_per_us": null,
+          "gamma_12_up_per_us": 0.0,
+          "gamma_21_down_per_us": 100.0,
+          "gamma_21_zero_temperature_per_us": null,
+          "gamma_phi_adjacent_per_us": 0.0,
+          "input_mode": "direct_rates",
+          "n_01": null,
+          "n_12": null,
+          "transition_01_frequency_ghz": null,
+          "transition_12_frequency_ghz": null
+        },
+        "total_simulation_time_us": 0.05
+      },
+      "name": "deliberately_coarse_unsafe_guard",
+      "pass": true,
+      "policy": {
+        "dissipation_scale_per_us": 100.0,
+        "dissipation_step_limit_us": 0.0002,
+        "drag_beta_us": 0.0,
+        "duration_step_limit_us": 0.05,
+        "envelope_step_limit_us": null,
+        "estimated_internal_step_count": 250,
+        "h_over_sigma": null,
+        "h_times_dissipation_scale": 0.02,
+        "h_times_hamiltonian_scale": 0.0002,
+        "hamiltonian_scale_max_rad_per_us": 1.0,
+        "hamiltonian_step_limit_us": 0.02,
+        "maximum_drag_derivative_rad_per_us2": 0.0,
+        "maximum_drive_magnitude_rad_per_us": 0.0,
+        "maximum_internal_step_count": 25000,
+        "policy_id": "qutrit_fixed_rk4_v1",
+        "selected_internal_step_cap_us": 0.0002,
+        "step_limit_reason": "qutrit_dissipation",
+        "within_work_budget": true
+      },
+      "safe_cleanup_correction_norm": 2.2887833992611187e-16,
+      "safe_policy_pass": true,
+      "safe_raw_minimum_eigenvalue": 0.0
+    }
+  ],
+  "cleanup_policy": "raw metrics before cleanup; Hermiticity/trace cleanup after each complete RK4 step; no PSD projection",
+  "contract_version": "pulse-extension-b-v1",
+  "frame": "rotating",
+  "generated_at_utc": "2026-07-25T11:22:08.760552+00:00",
+  "git_commit": "7ba959a050423d64805e6b64dcbcbf805df068a1",
+  "hamiltonian_convention": "-Delta*n + alpha*n*(n-1)/2 + Omega_x*(a+a_dagger)/2 + Omega_y*(-i*(a-a_dagger))/2",
+  "internal_units": {
+    "anharmonicity": "rad/us",
+    "hamiltonian": "rad/us",
+    "rates": "1/us",
+    "time": "us"
+  },
+  "model_id": "driven_transmon_qutrit_rwa_experimental_v1",
+  "overall_pass": true,
+  "performance": {
+    "estimated_runtime_at_work_budget_ms": 22943.293520910996,
+    "measured_ms_per_internal_step": 0.9177317408364398,
+    "measured_total_internal_steps": 32381,
+    "measured_total_runtime_ms": 29717.07150002476,
+    "recommendation_scope": "preflight rejection for future public qutrit requests; not yet API-enabled",
+    "work_budget_recommendation": 25000
+  },
+  "policy": {
+    "cleanup_correction_tolerance": 1e-10,
+    "epsilon_d": 0.02,
+    "epsilon_h": 0.02,
+    "maximum_internal_step_count": 25000,
+    "policy_id": "qutrit_fixed_rk4_v1",
+    "raw_hermiticity_tolerance": 1e-10,
+    "raw_minimum_eigenvalue_tolerance": -1e-09,
+    "raw_trace_tolerance": 1e-10,
+    "reference_factor": 0.25,
+    "refinement_factors": [
+      4.0,
+      2.0,
+      1.0,
+      0.5
+    ],
+    "samples_per_sigma": 32,
+    "state_error_tolerance": 2e-07
+  },
+  "policy_step_summary": {
+    "maximum_cleanup_correction_norm": 2.819872915201818e-16,
+    "maximum_leakage_error": 7.179329353235175e-11,
+    "maximum_matrix_error": 5.00652304797488e-09,
+    "maximum_population_error": 8.595429923374809e-11,
+    "minimum_raw_eigenvalue": -3.8496584235997756e-10
+  },
+  "scope_and_limitations": {
+    "does_not_prove": [
+      "adaptive convergence",
+      "strict finite-step CPTP propagation",
+      "DRAG convergence",
+      "QuTiP qutrit agreement",
+      "public qutrit API readiness"
+    ],
+    "proves": [
+      "fixed-step refinement for the declared non-DRAG fixtures",
+      "anharmonicity is included in the Hamiltonian scale",
+      "qutrit transition and dephasing rates limit the step",
+      "coarse unsafe and policy-safe conditions are distinguishable",
+      "Baseline A policy remains a separate implementation path"
+    ]
+  },
+  "software_versions": {
+    "matplotlib": "3.10.9",
+    "numpy": "2.4.4",
+    "python": "3.14.4"
+  },
+  "solver": "fixed_step_rk4_with_post_step_cleanup",
+  "subsystem_dimensions": [
+    3
+  ],
+  "validation_id": "pulse_b3_qutrit_convergence_v1"
+}

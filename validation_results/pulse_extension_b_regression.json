@@ -1,0 +1,81 @@
+{
+  "validation": "PULSE-EXTENSION-B-REGRESSION",
+  "generated_at_utc": "2026-07-25T11:34:18.4050226Z",
+  "commands": [
+    {
+      "id": "gate_aware_v1_v7",
+      "command": "scripts/validate_zero_dissipation_unitary_limit.py through scripts/validate_qutip_comparison.py",
+      "pass": true,
+      "summary": "V1-V7 regenerated; every reported case passed"
+    },
+    {
+      "id": "pulse_baseline_a",
+      "command": "Pulse Baseline A analytic, phase/detuning, open-system, convergence, QuTiP, and freeze scripts",
+      "pass": true,
+      "summary": "Five numerical validations and baseline freeze audit passed"
+    },
+    {
+      "id": "pulse_extension_b_b1_b5",
+      "command": "Qutrit closed, dissipation, convergence, DRAG, and QuTiP scripts",
+      "pass": true,
+      "summary": "B-1 through B-5 regenerated; all reported overall pass"
+    },
+    {
+      "id": "python_full_regression",
+      "command": ".\\.venv\\Scripts\\python.exe -m unittest discover -s tests",
+      "pass": true,
+      "summary": "471 tests passed in 526.510 seconds"
+    },
+    {
+      "id": "api_smoke",
+      "command": ".\\.venv\\Scripts\\python.exe -m unittest tests.test_api_simulate_circuit_config tests.test_api_simulate_input_modes tests.test_api_simulate_qubit_counts tests.test_pulse_api_baseline_a tests.test_pulse_api_qutrit tests.test_run_simulation_api",
+      "pass": true,
+      "summary": "39 gate-aware and pulse API smoke tests passed in 9.496 seconds"
+    },
+    {
+      "id": "frontend_pulse_contract",
+      "command": "npm.cmd run validate:pulse-lab",
+      "pass": true,
+      "summary": "Payload, budget, DRAG waveform, and UI responsibility checks passed"
+    },
+    {
+      "id": "frontend_lint",
+      "command": "npm.cmd run lint",
+      "pass": true,
+      "summary": "ESLint passed"
+    },
+    {
+      "id": "frontend_build",
+      "command": "npm.cmd run build",
+      "pass": true,
+      "summary": "TypeScript and Vite production build passed; 102 modules transformed"
+    },
+    {
+      "id": "pulse_lab_route",
+      "command": "GET http://127.0.0.1:5173/pulse-lab",
+      "pass": true,
+      "summary": "Vite route returned HTTP 200"
+    },
+    {
+      "id": "markdown_links",
+      "command": ".\\.venv\\Scripts\\python.exe scripts\\audit_pulse_extension_b_markdown_links.py",
+      "pass": true,
+      "summary": "24 documents, 44 local links, 0 broken"
+    },
+    {
+      "id": "diff_check",
+      "command": "git diff --check",
+      "pass": true,
+      "summary": "No whitespace errors; line-ending conversion warnings only"
+    }
+  ],
+  "manual_ui_evidence": {
+    "status": "user-tested-with-follow-up-fix",
+    "notes": [
+      "The user identified ambiguous Pulse Lab links to gate-aware tools.",
+      "B-6 follow-up removed those links and added explicit scope labels.",
+      "Automated browser control was unavailable; production build and route probes passed."
+    ]
+  },
+  "overall_pass": true
+}

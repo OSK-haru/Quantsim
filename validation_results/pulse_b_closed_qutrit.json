@@ -1,0 +1,146 @@
+{
+  "validation": "PULSE-B1-CLOSED-QUTRIT",
+  "model_id": "driven_transmon_qutrit_rwa_experimental_v1",
+  "contract_version": "pulse-extension-b-v1",
+  "capability_status": "contract_only",
+  "frame": "rotating",
+  "approximation": "RWA",
+  "basis_order": [
+    "0",
+    "1",
+    "2"
+  ],
+  "subsystem_dimensions": [
+    3
+  ],
+  "solver": "fixed-step classical RK4 with post-step cleanup",
+  "tolerances": {
+    "coherence_max_element_error": 2e-07,
+    "weak_two_level_block_error": 0.002,
+    "weak_leakage": 2e-05,
+    "raw_physicality": 1e-10,
+    "population": 2e-07,
+    "minimum_demonstrated_leakage": 0.0001,
+    "minimum_idle_coherence_change": 0.0001
+  },
+  "cases": [
+    {
+      "name": "zero_drive_basis_2",
+      "maximum_population_error": 0.0,
+      "physicality": {
+        "maximum_raw_trace_error": 0.0,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": 0.0,
+        "maximum_cleanup_correction_norm": 0.0,
+        "maximum_population_sum_error": 0.0,
+        "internal_step_count": 1000
+      },
+      "pass": true
+    },
+    {
+      "name": "free_coherence_0_2",
+      "detuning_rad_per_us": 0.4,
+      "anharmonicity_mhz": -250.0,
+      "coherence_02_error": 1.3044631066429446e-12,
+      "maximum_population_error": 1.1102230246251565e-16,
+      "physicality": {
+        "maximum_raw_trace_error": 2.220446049250313e-16,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": -1.2204813156923243e-16,
+        "maximum_cleanup_correction_norm": 2.2204545195636298e-16,
+        "maximum_population_sum_error": 2.220446049250313e-16,
+        "internal_step_count": 1000
+      },
+      "pass": true
+    },
+    {
+      "name": "weak_selective_pi_over_2",
+      "anharmonicity_mhz": -250.0,
+      "sigma_us": 0.05,
+      "qutrit_to_two_level_block_error": 0.0014647467793956696,
+      "final_leakage_probability": 1.7871925768668364e-12,
+      "physicality": {
+        "maximum_raw_trace_error": 2.220446049250313e-16,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": -1.5273119419516184e-15,
+        "maximum_cleanup_correction_norm": 2.7755677264307837e-16,
+        "maximum_population_sum_error": 2.220446049250313e-16,
+        "internal_step_count": 20012
+      },
+      "pass": true
+    },
+    {
+      "name": "fixed_gaussian_anharmonicity_comparison",
+      "sigma_us": 0.002,
+      "target_rotation_angle_rad": 3.141592653589793,
+      "by_anharmonicity_mhz": {
+        "-100.0": {
+          "maximum_recorded_leakage_probability": 0.36485329070557226,
+          "leakage_at_pulse_end": 0.26063441789906816,
+          "physicality": {
+            "maximum_raw_trace_error": 2.220446049250313e-16,
+            "maximum_raw_hermiticity_error": 0.0,
+            "minimum_raw_eigenvalue": -1.0736347391370672e-13,
+            "maximum_cleanup_correction_norm": 2.819872915201818e-16,
+            "maximum_population_sum_error": 2.220446049250313e-16,
+            "internal_step_count": 8000
+          }
+        },
+        "-300.0": {
+          "maximum_recorded_leakage_probability": 0.041015975795483266,
+          "leakage_at_pulse_end": 3.2678194894665335e-05,
+          "physicality": {
+            "maximum_raw_trace_error": 2.220446049250313e-16,
+            "maximum_raw_hermiticity_error": 0.0,
+            "minimum_raw_eigenvalue": -1.7130808431876046e-13,
+            "maximum_cleanup_correction_norm": 2.839016875127829e-16,
+            "maximum_population_sum_error": 2.220446049250313e-16,
+            "internal_step_count": 8000
+          }
+        }
+      },
+      "observed_larger_abs_alpha_has_lower_recorded_leakage": true,
+      "pass": true
+    },
+    {
+      "name": "closed_pulse_then_free_idle",
+      "detuning_rad_per_us": 0.5,
+      "idle_duration_us": 0.003,
+      "maximum_population_change_during_idle": 0.0,
+      "coherence_01_change_during_idle": 0.0007499931775063061,
+      "physicality": {
+        "maximum_raw_trace_error": 2.220446049250313e-16,
+        "maximum_raw_hermiticity_error": 0.0,
+        "minimum_raw_eigenvalue": -3.809661813716899e-15,
+        "maximum_cleanup_correction_norm": 2.778170275525871e-16,
+        "maximum_population_sum_error": 2.220446049250313e-16,
+        "internal_step_count": 17500
+      },
+      "pass": true
+    }
+  ],
+  "runtime_ms": 25611.310100008268,
+  "overall_pass": true,
+  "scope_and_limitations": {
+    "proves": [
+      "the generic time-dependent solver accepts 3x3 density matrices",
+      "zero-drive qutrit populations and analytic free coherence evolution",
+      "a fixed weak selective pulse remains near the two-level result",
+      "nonzero leakage is represented by rho_22",
+      "a larger absolute anharmonicity lowers recorded leakage in one fixed case",
+      "closed free-idle evolution preserves populations",
+      "raw physicality is acceptable at the declared fine validation steps"
+    ],
+    "does_not_prove": [
+      "qutrit dissipation or finite-temperature behavior",
+      "a production-safe qutrit step policy",
+      "DRAG behavior",
+      "QuTiP qutrit agreement",
+      "hardware-calibrated leakage prediction",
+      "that checkpoint-sampled maximum leakage captures every between-checkpoint extremum"
+    ]
+  },
+  "base_git_commit": "7ba959a050423d64805e6b64dcbcbf805df068a1",
+  "python_version": "3.14.4",
+  "numpy_version": "2.4.4"
+}

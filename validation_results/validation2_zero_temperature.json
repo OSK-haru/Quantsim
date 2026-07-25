@@ -1,7 +1,7 @@
 {
   "validation": "VALIDATION-2",
   "description": "Zero-temperature thermal excitation limit and rate consistency",
-  "git_commit": "8b98eb4",
+  "git_commit": "7ba959a",
   "formula_convention": "ordinary frequency: n_th = 1 / (exp(h*f_q/(k_B*T)) - 1)",
   "unit_convention": {
     "temperature_input": "mK",

@@ -1,0 +1,611 @@
+{
+  "validation": "PULSE-EXTENSION-B-FREEZE",
+  "freeze_schema_version": 1,
+  "generated_at_utc": "2026-07-25T11:37:31.441471+00:00",
+  "decision": "PASS WITH RESTRICTIONS",
+  "overall_pass": true,
+  "frozen_contract": {
+    "model_id": "driven_transmon_qutrit_rwa_experimental_v1",
+    "contract_version": "pulse-extension-b-v1",
+    "capability_status": "available",
+    "frame": "rotating",
+    "approximation": "RWA",
+    "basis_order": [
+      "0",
+      "1",
+      "2"
+    ],
+    "subsystem_dimensions": [
+      3
+    ],
+    "time_unit": "us",
+    "hamiltonian_unit": "rad/us",
+    "rate_unit": "1/us",
+    "detuning_convention": "drive_minus_transition_01",
+    "anharmonicity_conversion": "alpha_rad_per_us = 2*pi*anharmonicity_mhz",
+    "leakage_definition": "population_2_without_renormalization",
+    "dephasing_model": "number_operator_adjacent_rate_v1",
+    "qutrit_core_work_ceiling": 25000,
+    "qutrit_api_work_ceiling": 4000
+  },
+  "baseline_a_compatibility": {
+    "model_id": "driven_two_level_rwa_experimental_v1",
+    "contract_version": "pulse-baseline-a-v1",
+    "maximum_internal_steps": 200000,
+    "smoke": {
+      "input_mode": "direct_rates",
+      "state_levels": 2,
+      "sample_count": 10,
+      "estimated_internal_steps": 96,
+      "final_population_1": 0.49989927014817787,
+      "minimum_cleaned_eigenvalue": 0.0
+    }
+  },
+  "qutrit_api_audit": {
+    "openapi_contract_sha256": "531ce1b5dd6e399fb21bb7f98b8ae6ab61e1dc5b068a1e85aa8a56f0e8b48c3f",
+    "direct_rates_smoke": {
+      "input_mode": "direct_rates",
+      "state_levels": 3,
+      "density_matrix_shape": [
+        3,
+        3
+      ],
+      "sample_count": 10,
+      "estimated_internal_steps": 896,
+      "final_population_sum": 1.0000000000000002,
+      "final_leakage": 0.007914285203979207,
+      "minimum_cleaned_eigenvalue": 0.0,
+      "api_runtime_ms": 1418.3951000013622
+    },
+    "physical_smoke": {
+      "input_mode": "physical",
+      "state_levels": 3,
+      "density_matrix_shape": [
+        3,
+        3
+      ],
+      "sample_count": 10,
+      "estimated_internal_steps": 896,
+      "final_population_sum": 1.0,
+      "final_leakage": 0.007769218843346921,
+      "minimum_cleaned_eigenvalue": 0.0,
+      "api_runtime_ms": 2351.8284000019776
+    },
+    "over_budget_smoke": {
+      "rejected": true,
+      "exception": "PulseExecutionLimitError",
+      "message": "Qutrit pulse request exceeds the internal-step limit: estimated 15874 steps, maximum 4000."
+    }
+  },
+  "source_revision": {
+    "base_git_commit": "7ba959a050423d64805e6b64dcbcbf805df068a1",
+    "working_tree_dirty": true,
+    "working_tree_change_count": 253,
+    "critical_source_tree_sha256": "bead552fcb64c15f9178d1a6d3b03c843f889e9002f4cb4fd1f8d12e7eb179d4",
+    "critical_source_files": [
+      {
+        "file": "core/pulse_qutrit_contract.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "69b4cdfebab24699cb971dcd657e41e46a16b1ad535d2171a5410a646971b842",
+        "size_bytes": 3917
+      },
+      {
+        "file": "core/pulse_qutrit.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "bd84b6fc9ede7d2fb1822b3fe7c2a9dbc50a5fd6e4ac816e003fa327f1d6d8b3",
+        "size_bytes": 9470
+      },
+      {
+        "file": "core/pulse_qutrit_open_system.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "bf29bb266f765371ce61d55bfd8c3cca8da4e309068976981cb2c28e87ca28f3",
+        "size_bytes": 16178
+      },
+      {
+        "file": "core/pulse_step_policy.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "3f1b6ebcea6684ff5a29c6846bf6a509521c9e644b46d8657ae43f06cd3d1ea8",
+        "size_bytes": 13109
+      },
+      {
+        "file": "api/pulse_models.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "31a2f5d6508974d21bd537b4236b1219a649a632729e4511a6ab7f2ad4f4d402",
+        "size_bytes": 22512
+      },
+      {
+        "file": "api/pulse_service.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "8620d25c6532805e65f9e55d0e12e4dcba56025800a649b3817e548c34e7cbcb",
+        "size_bytes": 17928
+      },
+      {
+        "file": "api/pulse_qutrit_service.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "3609b9eba87f8bff782522f601f42a1339b88041d94a0d01b584fc2ff4c140d5",
+        "size_bytes": 13719
+      },
+      {
+        "file": "api/main.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "1a98e944dec500e0b0d5d6074e954c627af639deb74f27fb9dc8e37d2681b929",
+        "size_bytes": 19099
+      },
+      {
+        "file": "frontend/src/types/pulse.ts",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "76c17a3aa90daba30d2d386b14efa95119dde007965e79472b702d5648b04472",
+        "size_bytes": 5279
+      },
+      {
+        "file": "frontend/src/utils/pulseLab.ts",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "ad3f41b269848af73dbae5b1e95cd3c721a24659f6f62525fd6b2010f216a2d1",
+        "size_bytes": 13425
+      },
+      {
+        "file": "frontend/src/pages/PulseLabPage.tsx",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "d872731ebd00a39f5c14b350e145175f2cff3a6086bb697fdf3342adedd6fed1",
+        "size_bytes": 12579
+      },
+      {
+        "file": "validation_pulse/extension_b_freeze.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "3cc4c9f5f327baa4fb14dc9b5cac170f561a2a552743c0d60c57b25f16f89e75",
+        "size_bytes": 17735
+      },
+      {
+        "file": "scripts/validate_pulse_extension_b_freeze.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "e203f3fe55b8e927cf3165d5e6d73c1cae286bd46cd87b23989f9c065e0e4d2e",
+        "size_bytes": 1333
+      },
+      {
+        "file": "scripts/audit_pulse_extension_b_markdown_links.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "b8256419bc11ad18492ee2e649544069e0eff6e14ea0ec6f3f0eea030e486051",
+        "size_bytes": 3024
+      },
+      {
+        "file": "scripts/validate_qutip_comparison.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "911d88c46fa1239bf392191e7b5c52c941dffa5d29ffb0243fb4b3896bca1e4d",
+        "size_bytes": 13078
+      },
+      {
+        "file": "tests/test_validation_qutip_csv_contract.py",
+        "exists": true,
+        "validation": null,
+        "pass": null,
+        "sha256": "bb445ecc4ddfc87c1e73060a0ea1a7352d98c34cf3108319ca2a41119df096c5",
+        "size_bytes": 635
+      }
+    ]
+  },
+  "environment": {
+    "python_version": "3.14.4",
+    "packages": {
+      "numpy": "2.4.4",
+      "scipy": "1.17.1",
+      "qutip": "5.2.3",
+      "fastapi": "0.138.1",
+      "pydantic": "2.13.4"
+    },
+    "node_version": "v24.15.0",
+    "npm_version": "11.12.1",
+    "frontend_declared_dependencies": {
+      "react": "^19.2.7",
+      "react-dom": "^19.2.7",
+      "@eslint/js": "^10.0.1",
+      "@types/node": "^24.13.2",
+      "@types/react": "^19.2.17",
+      "@types/react-dom": "^19.2.3",
+      "@vitejs/plugin-react": "^6.0.2",
+      "eslint": "^10.5.0",
+      "eslint-plugin-react-hooks": "^7.1.1",
+      "eslint-plugin-react-refresh": "^0.5.3",
+      "globals": "^17.6.0",
+      "typescript": "~6.0.2",
+      "typescript-eslint": "^8.61.0",
+      "vite": "^8.1.0"
+    }
+  },
+  "artifact_audit": [
+    {
+      "file": "validation_results/pulse_baseline_a_freeze.json",
+      "exists": true,
+      "validation": "PULSE-BASELINE-A-FREEZE",
+      "pass": true,
+      "sha256": "1db97888099c8d86e0dd39929db67d4406b8b2e052bd5bc7212c1d8d696b6ea3",
+      "size_bytes": 5667
+    },
+    {
+      "file": "validation_results/pulse_b_closed_qutrit.json",
+      "exists": true,
+      "validation": "PULSE-B1-CLOSED-QUTRIT",
+      "pass": true,
+      "sha256": "53ab5c825be871f0d20fd79472b5b0ff082258858bee18fb1a5b81825d020325",
+      "size_bytes": 5501
+    },
+    {
+      "file": "validation_results/pulse_b_closed_qutrit.csv",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "0b65b45c14720d848d4b2d9a5016c90abe193eed3e2b04e2405f83c5ae6a1069",
+      "size_bytes": 33904
+    },
+    {
+      "file": "validation_results/pulse_b_closed_qutrit_populations.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "b883bcabf52f91996d8379f1127f27dfc7bf0b04d2fff558c4631b99db5a7e9e",
+      "size_bytes": 66132
+    },
+    {
+      "file": "validation_results/pulse_b_closed_qutrit_leakage.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "05724f8be58916bf99860b8e182763de43eb0420c56148e168abb64ac7990e75",
+      "size_bytes": 58478
+    },
+    {
+      "file": "validation_results/pulse_b_qutrit_dissipation.json",
+      "exists": true,
+      "validation": "PULSE-B2-QUTRIT-DISSIPATION",
+      "pass": true,
+      "sha256": "943a4123498dba941ffaabf2dcdf73a980d057019c3ffdeecec2e19cf8113528",
+      "size_bytes": 8871
+    },
+    {
+      "file": "validation_results/pulse_b_qutrit_dissipation.csv",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "90c87736799232c4ba864977ca1656766bb159f72c656c2de6f5f9c60de335e1",
+      "size_bytes": 86169
+    },
+    {
+      "file": "validation_results/pulse_b_qutrit_thermal_equilibrium.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "f3fec08ad0b4359cc02d745764f8690cbfe4275cbbcd75551c6ce234fba7c6d1",
+      "size_bytes": 56010
+    },
+    {
+      "file": "validation_results/pulse_b_qutrit_coherence_decay.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "25c8d0e120521036e37eec89ae33e66ac2c1a2dc6621b441cca8356b3dcda095",
+      "size_bytes": 76185
+    },
+    {
+      "file": "validation_results/pulse_b_qutrit_convergence.json",
+      "exists": true,
+      "validation": "pulse_b3_qutrit_convergence_v1",
+      "pass": true,
+      "sha256": "17abc555b04e8dbe8de5428df42a48f2b741dc66449d409dcf2931c3d5ae071d",
+      "size_bytes": 18421
+    },
+    {
+      "file": "validation_results/pulse_b_qutrit_convergence.csv",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "ecc391f928b2a87b4faa7ec1e6481314a0f49594bdbf60871ec1fb7837aff1f6",
+      "size_bytes": 11105
+    },
+    {
+      "file": "validation_results/pulse_b_qutrit_convergence.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "7173aea7ced252dd6b99dd1b339cf59b42e88eba088c3a250e73724a751bd7a8",
+      "size_bytes": 118071
+    },
+    {
+      "file": "validation_results/pulse_b_drag.json",
+      "exists": true,
+      "validation": "pulse_b4_qutrit_drag_v1",
+      "pass": true,
+      "sha256": "38eccfb24ee4052471e529c3cc384d016a3cab2db3f40e74ca8d80cded567958",
+      "size_bytes": 10831
+    },
+    {
+      "file": "validation_results/pulse_b_drag.csv",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "d6eaca0bb154a9689fc3a7418fa9d5d4a812444d536eca39a2b80c7f2197c4b2",
+      "size_bytes": 9618
+    },
+    {
+      "file": "validation_results/pulse_b_drag_convergence.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "4f481b417df2318b4a721b7c0b781f9e9461f522211e586c7e628b946ea81056",
+      "size_bytes": 78425
+    },
+    {
+      "file": "validation_results/pulse_b_drag_fidelity_phase.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "97c65f2ba8742c51f0351f41158a19b053b404ac11bbfdfa91be55fd07ffeacc",
+      "size_bytes": 92413
+    },
+    {
+      "file": "validation_results/pulse_b_drag_leakage_sweep.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "fa44df3bc83766b9007a41e41d405406772cef836a8eed69d34e77221f95fbe8",
+      "size_bytes": 80458
+    },
+    {
+      "file": "validation_results/pulse_b_qutip_qutrit.json",
+      "exists": true,
+      "validation": "pulse_b_qutip_qutrit",
+      "pass": true,
+      "sha256": "bd4aeaf1d503e84d539d47b4f3d5709cedfd9e788e39a049c2639372ded8776b",
+      "size_bytes": 15462
+    },
+    {
+      "file": "validation_results/pulse_b_qutip_qutrit.csv",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "e1ff4e71780a8af0cae976f660b3a593d91fc1070a627688f21e8b3cb8840843",
+      "size_bytes": 53814
+    },
+    {
+      "file": "validation_results/pulse_b_qutip_qutrit_error.png",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "7661133e66f99c46157f805ada1d52fe77a9539114dfd5ec6eccd68e1ac09483",
+      "size_bytes": 104063
+    },
+    {
+      "file": "validation_results/pulse_extension_b_markdown_links.json",
+      "exists": true,
+      "validation": "PULSE-EXTENSION-B-MARKDOWN-LINKS",
+      "pass": true,
+      "sha256": "df4bff5055c88ffc5b07f73b01fcd6dbf4b7113226f5726d53e276fe4a192e17",
+      "size_bytes": 158
+    },
+    {
+      "file": "validation_results/pulse_extension_b_regression.json",
+      "exists": true,
+      "validation": "PULSE-EXTENSION-B-REGRESSION",
+      "pass": true,
+      "sha256": "74fa2d00a9930cb3269cba0da6f46fb2197c1cca575b617dc22d566531b0ae10",
+      "size_bytes": 2936
+    }
+  ],
+  "document_audit": [
+    {
+      "file": "docs/physics/pulse-extension-b-qutrit-contract.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "42150ed72aac7cd44277c5682d98ec5fe9f36ad0151aac515322f64f8c2de2e5",
+      "size_bytes": 8457
+    },
+    {
+      "file": "docs/physics/pulse-extension-b-qutrit-model.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "466477a3412e46aab6617781cf6b6fa3ac7f4193c3ccc20d4936dca0cb8746d3",
+      "size_bytes": 5347
+    },
+    {
+      "file": "docs/architecture/pulse-api-contract.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "8624e948add58ba9a3da301e66e3ce6de37bc62eff7cd5308e7ad3c3e4f616ad",
+      "size_bytes": 5745
+    },
+    {
+      "file": "docs/validation/pulse-extension-b-report.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "058566529930694049e1bebb2b0f27e86459d781774626973f709b220f5fa644",
+      "size_bytes": 6548
+    },
+    {
+      "file": "docs/validation/pulse-b-pulse-lab-ui.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "03f3b51b9e7e14b6dcc5fffbab5837aa183755559517bc161573edf377d326a6",
+      "size_bytes": 3394
+    },
+    {
+      "file": "docs/development/pulse-extension-b/README.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "26355cd09c5fe1b9c7d02b3dd53f7112af24427394ad5f47aad2ef099218209d",
+      "size_bytes": 6008
+    },
+    {
+      "file": "docs/development/pulse-extension-b/phase-b7-integration-and-freeze.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "c541487621b9cf89a1123dcd1f7f694a7558bf6312020ec6547fa18ef1ac016e",
+      "size_bytes": 4952
+    },
+    {
+      "file": "docs/README.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "36edfee54ec26dc1a82f1acec706fc8b34b9c9a86cd864411132599bdd5433ad",
+      "size_bytes": 6194
+    },
+    {
+      "file": "frontend/README.md",
+      "exists": true,
+      "validation": null,
+      "pass": null,
+      "sha256": "872cc011fdcab80aa42716993843e46b3dd96912b60efd17eb3c245d8f82b215",
+      "size_bytes": 2505
+    }
+  ],
+  "regression_evidence": {
+    "validation": "PULSE-EXTENSION-B-REGRESSION",
+    "generated_at_utc": "2026-07-25T11:34:18.4050226Z",
+    "commands": [
+      {
+        "id": "gate_aware_v1_v7",
+        "command": "scripts/validate_zero_dissipation_unitary_limit.py through scripts/validate_qutip_comparison.py",
+        "pass": true,
+        "summary": "V1-V7 regenerated; every reported case passed"
+      },
+      {
+        "id": "pulse_baseline_a",
+        "command": "Pulse Baseline A analytic, phase/detuning, open-system, convergence, QuTiP, and freeze scripts",
+        "pass": true,
+        "summary": "Five numerical validations and baseline freeze audit passed"
+      },
+      {
+        "id": "pulse_extension_b_b1_b5",
+        "command": "Qutrit closed, dissipation, convergence, DRAG, and QuTiP scripts",
+        "pass": true,
+        "summary": "B-1 through B-5 regenerated; all reported overall pass"
+      },
+      {
+        "id": "python_full_regression",
+        "command": ".\\.venv\\Scripts\\python.exe -m unittest discover -s tests",
+        "pass": true,
+        "summary": "471 tests passed in 526.510 seconds"
+      },
+      {
+        "id": "api_smoke",
+        "command": ".\\.venv\\Scripts\\python.exe -m unittest tests.test_api_simulate_circuit_config tests.test_api_simulate_input_modes tests.test_api_simulate_qubit_counts tests.test_pulse_api_baseline_a tests.test_pulse_api_qutrit tests.test_run_simulation_api",
+        "pass": true,
+        "summary": "39 gate-aware and pulse API smoke tests passed in 9.496 seconds"
+      },
+      {
+        "id": "frontend_pulse_contract",
+        "command": "npm.cmd run validate:pulse-lab",
+        "pass": true,
+        "summary": "Payload, budget, DRAG waveform, and UI responsibility checks passed"
+      },
+      {
+        "id": "frontend_lint",
+        "command": "npm.cmd run lint",
+        "pass": true,
+        "summary": "ESLint passed"
+      },
+      {
+        "id": "frontend_build",
+        "command": "npm.cmd run build",
+        "pass": true,
+        "summary": "TypeScript and Vite production build passed; 102 modules transformed"
+      },
+      {
+        "id": "pulse_lab_route",
+        "command": "GET http://127.0.0.1:5173/pulse-lab",
+        "pass": true,
+        "summary": "Vite route returned HTTP 200"
+      },
+      {
+        "id": "markdown_links",
+        "command": ".\\.venv\\Scripts\\python.exe scripts\\audit_pulse_extension_b_markdown_links.py",
+        "pass": true,
+        "summary": "24 documents, 44 local links, 0 broken"
+      },
+      {
+        "id": "diff_check",
+        "command": "git diff --check",
+        "pass": true,
+        "summary": "No whitespace errors; line-ending conversion warnings only"
+      }
+    ],
+    "manual_ui_evidence": {
+      "status": "user-tested-with-follow-up-fix",
+      "notes": [
+        "The user identified ambiguous Pulse Lab links to gate-aware tools.",
+        "B-6 follow-up removed those links and added explicit scope labels.",
+        "Automated browser control was unavailable; production build and route probes passed."
+      ]
+    },
+    "overall_pass": true
+  },
+  "performance_budget": {
+    "measured_qutrit": {
+      "estimated_runtime_at_work_budget_ms": 22943.293520910996,
+      "measured_ms_per_internal_step": 0.9177317408364398,
+      "measured_total_internal_steps": 32381,
+      "measured_total_runtime_ms": 29717.07150002476,
+      "recommendation_scope": "preflight rejection for future public qutrit requests; not yet API-enabled",
+      "work_budget_recommendation": 25000
+    },
+    "drag_validation_runtime_ms": 8153.351599990856,
+    "api_policy": {
+      "maximum_concurrent_requests": 2,
+      "wait_timeout_seconds": 15,
+      "qutrit_internal_step_ceiling": 4000,
+      "limit_decision": "retained after B-7; not raised to fit demonstrations"
+    }
+  },
+  "restrictions": [
+    "single qutrit and one control pulse only",
+    "three-level truncation only",
+    "rotating-frame RWA only",
+    "Markovian Lindblad environment only",
+    "fixed-step RK4 has no strict finite-step CPTP guarantee",
+    "no calibrated hardware prediction",
+    "no multi-qubit or entangling pulse control",
+    "no Rust time-dependent production backend",
+    "Pulse Lab does not consume Circuit Studio state"
+  ],
+  "handoff": [
+    "strict CPTP event or solver phase",
+    "Rust time-dependent backend phase",
+    "external observable validation V8",
+    "separately designed circuit-to-pulse compilation phase"
+  ]
+}

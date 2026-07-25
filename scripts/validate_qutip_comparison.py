@@ -21,13 +21,13 @@ from core.gates import initial_density_matrix, multi_qubit_physical_collapse_ope
 from core.physical_environment import compute_environment_rates
 from core.results import EnvironmentConfig
 from tests.test_validation_qutip_comparison import IDLE_TIMES_US, QUANTA_STEP_US, _gate_columns, _gate_segments, _quanta_constant, _quanta_piecewise
-from validation.qutip_adapter import DEFAULT_OPTIONS, QUTIP_AVAILABLE, compare_density_matrices, run_qutip_constant_segment, run_qutip_piecewise_segments
+from validation_pulse.qutip_adapter import DEFAULT_OPTIONS, QUTIP_AVAILABLE, compare_density_matrices, run_qutip_constant_segment, run_qutip_piecewise_segments
 
 
 CSV_FIELDS = [
     "case", "segment_index", "global_time_us", "requested_time_us", "actual_time_us", "matrix_dimension",
     "max_element_difference", "frobenius_difference", "trace_distance", "population_difference",
-    "coherence_difference", "quanta_trace_error", "qutip_trace_error", "quanta_hermiticity_error",
+    "coherence_difference", "purity_difference", "quanta_trace_error", "qutip_trace_error", "quanta_hermiticity_error",
     "qutip_hermiticity_error", "quanta_minimum_eigenvalue", "qutip_minimum_eigenvalue", "result",
 ]
 

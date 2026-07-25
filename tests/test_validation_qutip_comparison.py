@@ -23,7 +23,7 @@ from core.gates import (
 from core.physical_environment import compute_environment_rates
 from core.results import EnvironmentConfig
 from core.simulator import _KernelStats, _evolve_stable_with_substeps
-from validation.qutip_adapter import QUTIP_AVAILABLE, as_qutip_operator, compare_density_matrices, run_qutip_constant_segment, run_qutip_piecewise_segments
+from validation_pulse.qutip_adapter import QUTIP_AVAILABLE, as_qutip_operator, compare_density_matrices, run_qutip_constant_segment, run_qutip_piecewise_segments
 
 
 QUANTA_STEP_US = 0.03125

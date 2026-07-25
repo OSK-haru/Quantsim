@@ -1,0 +1,300 @@
+{
+  "approximation": "RWA",
+  "basis_order": [
+    "0",
+    "1",
+    "2"
+  ],
+  "boundary_rule": {
+    "cutoff": "hard truncated Gaussian; no smoothing added",
+    "inside_support": "analytic Gaussian and derivative on inclusive [0, T]",
+    "outside_support": "both drives are zero"
+  },
+  "capability_status": "contract_only",
+  "cases": [
+    {
+      "finite_difference_delta_us": 1e-08,
+      "maximum_absolute_error": 3.25713335769251e-06,
+      "maximum_relative_error": 8.579653971923647e-11,
+      "name": "analytic_gaussian_derivative",
+      "pass": true
+    },
+    {
+      "end_amplitude_rad_per_us": 0.10511667187387806,
+      "end_derivative_rad_per_us2": -210.23334374775612,
+      "name": "truncated_gaussian_boundary",
+      "pass": true,
+      "start_amplitude_rad_per_us": 0.10511667187387806,
+      "start_derivative_rad_per_us2": 210.23334374775612
+    },
+    {
+      "name": "positive_negative_beta_sign",
+      "negative_beta_omega_y_rad_per_us": -95.02770060721612,
+      "pass": true,
+      "positive_beta_omega_y_rad_per_us": 95.02770060721612
+    },
+    {
+      "diagnostics_equal": true,
+      "matrix_max_element_error": 0.0,
+      "name": "beta_zero_exact_compatibility",
+      "pass": true
+    },
+    {
+      "baseline_end_leakage": 0.046973325960790735,
+      "beta_values_us": [
+        -0.003,
+        -0.002,
+        -0.001,
+        0.0,
+        0.0005,
+        0.001,
+        0.0015,
+        0.002,
+        0.003
+      ],
+      "minimum_end_leakage": 0.0026858253351675744,
+      "minimum_end_leakage_beta_us": 0.0015,
+      "name": "positive_zero_negative_beta_sweep",
+      "negative_beta_end_leakage": 0.12810853481247025,
+      "pass": true,
+      "selected_beta_us": 0.001,
+      "selected_end_leakage": 0.007776871337701735
+    },
+    {
+      "anharmonicity_mhz": -100.0,
+      "baseline": {
+        "computational_population": 0.7393655820782578,
+        "conditional_computational_fidelity": 0.8759280458643065,
+        "drag_beta_us": 0.0,
+        "end_leakage": 0.26063441792174236,
+        "maximum_recorded_leakage": 0.36485329054418886,
+        "phase_error_rad": null,
+        "target_fidelity": 0.6476310494891339
+      },
+      "drag": {
+        "computational_population": 0.9773051248216276,
+        "conditional_computational_fidelity": 0.9580358226389478,
+        "drag_beta_us": 0.001,
+        "end_leakage": 0.022694875178372403,
+        "maximum_recorded_leakage": 0.17008310709976318,
+        "phase_error_rad": null,
+        "target_fidelity": 0.9362933192277475
+      },
+      "end_leakage_ratio": 0.08707551120584055,
+      "name": "fixed_pi_leakage_and_fidelity_improvement",
+      "pass": true,
+      "selected_beta_us": 0.001,
+      "sigma_us": 0.002
+    },
+    {
+      "baseline": {
+        "computational_population": 0.9530266740392093,
+        "conditional_computational_fidelity": 0.9916858472369181,
+        "drag_beta_us": 0.0,
+        "end_leakage": 0.046973325960790735,
+        "maximum_recorded_leakage": 0.05413818651254308,
+        "phase_error_rad": 0.14870654639190128,
+        "target_fidelity": 0.9451030646839554
+      },
+      "drag": {
+        "computational_population": 0.9922231286622982,
+        "conditional_computational_fidelity": 0.998800125247169,
+        "drag_beta_us": 0.001,
+        "end_leakage": 0.007776871337701735,
+        "maximum_recorded_leakage": 0.02264728227836259,
+        "phase_error_rad": 0.060432504923585206,
+        "target_fidelity": 0.9910325851810413
+      },
+      "name": "pi_over_two_fidelity_phase_guard",
+      "pass": true
+    },
+    {
+      "baseline": {
+        "computational_population": 0.9530407712878652,
+        "conditional_computational_fidelity": 0.9863802447112637,
+        "drag_beta_us": 0.0,
+        "end_leakage": 0.04695922871213481,
+        "maximum_recorded_leakage": 0.05419268340688623,
+        "phase_error_rad": 0.14779206816240276,
+        "target_fidelity": 0.940060589202736
+      },
+      "drag": {
+        "computational_population": 0.9917918187127621,
+        "conditional_computational_fidelity": 0.9934128885771444,
+        "drag_beta_us": 0.001,
+        "end_leakage": 0.008208181287237909,
+        "maximum_recorded_leakage": 0.022815969447135823,
+        "phase_error_rad": 0.05958832759460275,
+        "target_fidelity": 0.9852587754946245
+      },
+      "drag_physicality": {
+        "cleanup_correction_norm": 2.840924175897301e-16,
+        "raw_hermiticity_error": 0.0,
+        "raw_minimum_eigenvalue": 5.033215152638234e-12,
+        "raw_trace_error": 2.220446049250313e-16
+      },
+      "name": "dissipative_drag_compatibility",
+      "pass": true,
+      "rates": {
+        "dephasing_model": "number_operator_adjacent_rate_v1",
+        "gamma_01_up_per_us": 0.2,
+        "gamma_10_down_per_us": 0.8,
+        "gamma_10_zero_temperature_per_us": null,
+        "gamma_12_up_per_us": 0.1,
+        "gamma_21_down_per_us": 1.4,
+        "gamma_21_zero_temperature_per_us": null,
+        "gamma_phi_adjacent_per_us": 0.5,
+        "input_mode": "direct_rates",
+        "n_01": null,
+        "n_12": null,
+        "transition_01_frequency_ghz": null,
+        "transition_12_frequency_ghz": null
+      }
+    },
+    {
+      "hard_cutoff_note": "Endpoint amplitude and derivative are nonzero; asymptotic order is reported rather than assumed.",
+      "modes": [
+        {
+          "convergence_pass": true,
+          "drag_beta_us": 0.0,
+          "matrix_errors": [
+            6.781613204058981e-08,
+            4.261644816185163e-09,
+            2.8550504071866404e-10,
+            1.688732346771972e-11
+          ],
+          "mode": "drag_off",
+          "observed_orders": [
+            3.9921462383556583,
+            3.8998222353699,
+            4.079503623761769
+          ],
+          "policy": {
+            "dissipation_scale_per_us": 0.0,
+            "dissipation_step_limit_us": null,
+            "drag_beta_us": 0.0,
+            "duration_step_limit_us": 0.016,
+            "envelope_step_limit_us": 6.25e-05,
+            "estimated_internal_step_count": 714,
+            "h_over_sigma": 0.011217506921266324,
+            "h_times_dissipation_scale": 0.0,
+            "h_times_hamiltonian_scale": 0.02,
+            "hamiltonian_scale_max_rad_per_us": 891.4636799592114,
+            "hamiltonian_step_limit_us": 2.2435013842532648e-05,
+            "maximum_drag_derivative_rad_per_us2": 0.0,
+            "maximum_drive_magnitude_rad_per_us": 313.3483825936814,
+            "maximum_internal_step_count": 25000,
+            "policy_id": "qutrit_fixed_rk4_v1",
+            "selected_internal_step_cap_us": 2.2435013842532648e-05,
+            "step_limit_reason": "hamiltonian_spectral_diameter",
+            "within_work_budget": true
+          },
+          "policy_pass": true
+        },
+        {
+          "convergence_pass": true,
+          "drag_beta_us": 0.001,
+          "matrix_errors": [
+            2.7867320208699012e-08,
+            1.7508080739524807e-09,
+            1.1727139191557857e-10,
+            6.936375739842674e-12
+          ],
+          "mode": "drag_on",
+          "observed_orders": [
+            3.9924814286545813,
+            3.9000979228900756,
+            4.079525253236776
+          ],
+          "policy": {
+            "dissipation_scale_per_us": 0.0,
+            "dissipation_step_limit_us": null,
+            "drag_beta_us": 0.001,
+            "duration_step_limit_us": 0.016,
+            "envelope_step_limit_us": 6.25e-05,
+            "estimated_internal_step_count": 714,
+            "h_over_sigma": 0.011217506921266324,
+            "h_times_dissipation_scale": 0.0,
+            "h_times_hamiltonian_scale": 0.02,
+            "hamiltonian_scale_max_rad_per_us": 891.4636799592114,
+            "hamiltonian_step_limit_us": 2.2435013842532648e-05,
+            "maximum_drag_derivative_rad_per_us2": 95027.70060721612,
+            "maximum_drive_magnitude_rad_per_us": 313.3483825936814,
+            "maximum_internal_step_count": 25000,
+            "policy_id": "qutrit_fixed_rk4_v1",
+            "selected_internal_step_cap_us": 2.2435013842532648e-05,
+            "step_limit_reason": "hamiltonian_spectral_diameter",
+            "within_work_budget": true
+          },
+          "policy_pass": true
+        }
+      ],
+      "name": "drag_on_off_refinement",
+      "pass": true,
+      "reference_factor": 0.25,
+      "refinement_factors": [
+        4.0,
+        2.0,
+        1.0,
+        0.5
+      ]
+    }
+  ],
+  "cleanup_policy": "raw metrics before cleanup; no PSD projection",
+  "contract_version": "pulse-extension-b-v1",
+  "drag_convention": {
+    "drag_beta_unit": "us",
+    "omega_x": "Omega(t)",
+    "omega_y": "drag_beta_us * dOmega(t)/dt",
+    "phase_rotation": "in-phase axis rotated by phase_rad; positive quadrature is +90 degrees from that axis",
+    "selected_fixture_beta_us": 0.001
+  },
+  "frame": "rotating",
+  "generated_at_utc": "2026-07-25T11:22:18.530150+00:00",
+  "git_commit": "7ba959a050423d64805e6b64dcbcbf805df068a1",
+  "model_id": "driven_transmon_qutrit_rwa_experimental_v1",
+  "overall_pass": true,
+  "runtime_ms": 8153.351599990856,
+  "scope_and_limitations": {
+    "does_not_prove": [
+      "a universal optimal beta",
+      "hardware-calibrated DRAG performance",
+      "smooth-edge pulse behavior",
+      "strict finite-step CPTP propagation",
+      "QuTiP qutrit agreement",
+      "public qutrit API readiness"
+    ],
+    "proves": [
+      "analytic Gaussian derivative and DRAG sign convention",
+      "beta zero exactly preserves non-DRAG qutrit evolution",
+      "one fixed positive-beta pi pulse lowers leakage and raises target fidelity",
+      "one fixed pi/2 condition improves leakage without hiding fidelity or phase error",
+      "DRAG works with the existing qutrit dissipative path",
+      "DRAG on/off trajectories converge under the extended B-3 policy"
+    ]
+  },
+  "software_versions": {
+    "matplotlib": "3.10.9",
+    "numpy": "2.4.4",
+    "python": "3.14.4"
+  },
+  "solver": "fixed-step RK4 with B-3 qutrit step policy",
+  "subsystem_dimensions": [
+    3
+  ],
+  "tolerances": {
+    "cleanup_correction": 1e-10,
+    "derivative_absolute": 1e-05,
+    "derivative_relative": 1e-09,
+    "primary_max_end_leakage_ratio": 0.2,
+    "primary_min_target_fidelity": 0.9,
+    "raw_hermiticity": 1e-10,
+    "raw_minimum_eigenvalue": -1e-09,
+    "raw_trace": 1e-10,
+    "secondary_max_phase_error_rad": 0.08,
+    "secondary_min_computational_population": 0.99,
+    "secondary_min_target_fidelity": 0.98,
+    "state_error": 2e-07
+  },
+  "validation_id": "pulse_b4_qutrit_drag_v1"
+}

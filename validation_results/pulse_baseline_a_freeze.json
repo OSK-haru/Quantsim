@@ -1,0 +1,169 @@
+{
+  "validation": "PULSE-BASELINE-A-FREEZE",
+  "freeze_schema_version": 1,
+  "generated_at_utc": "2026-07-25T11:20:59.787232+00:00",
+  "base_git_commit": "7ba959a050423d64805e6b64dcbcbf805df068a1",
+  "environment": {
+    "python_version": "3.14.4",
+    "packages": {
+      "numpy": "2.4.4",
+      "scipy": "1.17.1",
+      "qutip": "5.2.3",
+      "fastapi": "0.138.1",
+      "pydantic": "2.13.4"
+    }
+  },
+  "frozen_contract": {
+    "model_id": "driven_two_level_rwa_experimental_v1",
+    "contract_version": "pulse-baseline-a-v1",
+    "frame": "rotating",
+    "approximation": "RWA",
+    "time_unit": "us",
+    "hamiltonian_unit": "rad/us",
+    "rate_unit": "1/us",
+    "detuning_convention": "drive_minus_qubit",
+    "dephasing_collapse_operator": "sqrt(gamma_phi / 2) sigma_z",
+    "step_policy": {
+      "policy_id": "pulse_baseline_a_step_policy_v1",
+      "epsilon_h": 0.05,
+      "epsilon_d": 0.05,
+      "samples_per_sigma": 20,
+      "maximum_internal_steps": 200000
+    }
+  },
+  "artifact_audit": [
+    {
+      "file": "validation1_zero_dissipation.json",
+      "exists": true,
+      "validation": "VALIDATION-1",
+      "pass": true,
+      "sha256": "bf7aa3c551f9afbf9ec0e96753506d9ea9accd83e1d3bb556292ae98f3e4a5c6"
+    },
+    {
+      "file": "validation2_zero_temperature.json",
+      "exists": true,
+      "validation": "VALIDATION-2",
+      "pass": true,
+      "sha256": "bfc79400d967e7e9bddcd56bf72a77ce4900149d7290adf4d6dedf4b5036c636"
+    },
+    {
+      "file": "validation3_excited_state_decay.json",
+      "exists": true,
+      "validation": "VALIDATION-3",
+      "pass": true,
+      "sha256": "73fc295a4dc2d6bc540429fab703f2a526410b820e5169cf197de634ec76a5cd"
+    },
+    {
+      "file": "validation4_pure_dephasing.json",
+      "exists": true,
+      "validation": "VALIDATION-4",
+      "pass": true,
+      "sha256": "a6fc07a4bd9b3dff2f7253ed532e310e7a19b3e518c1fe838f219059da7b1b4e"
+    },
+    {
+      "file": "validation5_finite_temperature_equilibrium.json",
+      "exists": true,
+      "validation": "VALIDATION-5",
+      "pass": true,
+      "sha256": "4479e20f225e256fcfe950d65a9f34342ef8399bf766cc43e3de36e87e1dea0c"
+    },
+    {
+      "file": "validation6_time_step_convergence.json",
+      "exists": true,
+      "validation": "VALIDATION-6",
+      "pass": true,
+      "sha256": "7eacf8480efde4610ab1e8de85a70c9341c6d2598510959c4b20eb54a2c1442e"
+    },
+    {
+      "file": "validation7_qutip_comparison.json",
+      "exists": true,
+      "validation": "VALIDATION-7",
+      "pass": true,
+      "sha256": "3532ca708e9e7b7f0b03ce8786f8bb308584c193083d274c28e2ccbc3359c0b1"
+    },
+    {
+      "file": "pulse_ba2_envelopes_analytic.json",
+      "exists": true,
+      "validation": "PULSE-BA2",
+      "pass": true,
+      "sha256": "54a3bdba497e9f2520a1cff6c6ef1794eca65f2dcf79da3b1b6c8d402bdcc099"
+    },
+    {
+      "file": "pulse_ba3_phase_detuning_gate_equivalence.json",
+      "exists": true,
+      "validation": "PULSE-BA3",
+      "pass": true,
+      "sha256": "7d0d523530f30ec2ba1fece37344e3f92995c60a890e7cc724589851f4dee24c"
+    },
+    {
+      "file": "pulse_ba4_open_system_idle.json",
+      "exists": true,
+      "validation": "PULSE-BA4",
+      "pass": true,
+      "sha256": "97cb85307409dd93cdbc0376194435bc8567e556661404ca69789834b4c91497"
+    },
+    {
+      "file": "pulse_convergence_2level.json",
+      "exists": true,
+      "validation": "PULSE-CONV-2LEVEL",
+      "pass": true,
+      "sha256": "dab47f10d138aa40f2289d31ec04b8a00e0005604ba85242767e72d2cfd32a27"
+    },
+    {
+      "file": "pulse_qutip_2level.json",
+      "exists": true,
+      "validation": "PULSE-QUTIP-2LEVEL",
+      "pass": true,
+      "sha256": "f56c26f38ce9d2d14d8a27667e9ae54a3f3dfa5ddae1b1d5167ee839cf180f01"
+    }
+  ],
+  "api_audit": {
+    "required_paths": {
+      "/api/simulate": true,
+      "/api/pulse/simulate": true
+    },
+    "pulse_contract_sha256": "492b9ce2e651a33722dbfa17a76ed661cf9ff3afcba4f82ccda3ac46766fa29d",
+    "pulse_contract_version": "pulse-baseline-a-v1",
+    "model_id": "driven_two_level_rwa_experimental_v1",
+    "direct_rates_smoke": {
+      "input_mode": "direct_rates",
+      "shape": "square",
+      "api_runtime_ms": 131.70359999639913,
+      "pulse_duration_us": 0.2,
+      "total_simulation_time_us": 0.6,
+      "sample_count": 12,
+      "estimated_internal_steps": 382,
+      "pulse_end_population_1": 0.9885959830550033,
+      "final_population_1": 0.9500752687059066,
+      "minimum_cleaned_eigenvalue": 0.0
+    },
+    "physical_smoke": {
+      "input_mode": "physical",
+      "shape": "gaussian",
+      "api_runtime_ms": 227.79639999498613,
+      "pulse_duration_us": 0.4,
+      "total_simulation_time_us": 0.8,
+      "sample_count": 11,
+      "estimated_internal_steps": 648,
+      "pulse_end_population_1": 0.4979093389641063,
+      "final_population_1": 0.4947627911858535,
+      "minimum_cleaned_eigenvalue": 0.0
+    }
+  },
+  "overall_pass": true,
+  "scope_and_limitations": {
+    "proves": [
+      "all recorded V1-V7 and BA2-BA5 artifacts report pass",
+      "the frozen pulse request executes in both input modes",
+      "the dedicated pulse and existing gate API paths coexist",
+      "the documented Pulse Baseline A OpenAPI shape is hashable"
+    ],
+    "does_not_prove": [
+      "agreement with calibrated quantum hardware",
+      "qutrit leakage or DRAG behavior",
+      "multi-qubit pulse control",
+      "CPTP evolution for arbitrary finite RK4 step sizes",
+      "that recorded artifacts were regenerated in this audit"
+    ]
+  }
+}
