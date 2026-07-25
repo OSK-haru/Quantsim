@@ -1,4 +1,9 @@
 
+> **Historical Streamlit-era implementation plan**
+>
+> Core config/result export helpers remain, and circuit JSON import/export is
+> implemented in React. Streamlit paths and launch commands below are obsolete.
+
 
 
 # Phase 7: Save / Load / Export に移行

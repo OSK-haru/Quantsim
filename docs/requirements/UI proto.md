@@ -1,4 +1,11 @@
 
+> **Historical UI concept document**
+>
+> This file preserves early screen and interaction ideas. It includes
+> Streamlit-era layouts and planned states that no longer describe the active
+> React UI. Use `docs/README.md`, `frontend/README.md`, and the components under
+> `frontend/src/` for current behavior.
+
 
 起動画面
 ├─ Start Tutorial

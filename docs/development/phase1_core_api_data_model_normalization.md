@@ -1,4 +1,10 @@
 
+> **Historical phase plan**
+>
+> The normalized core data model and public `run_simulation` boundary are
+> implemented. Use `docs/architecture/module_structure.md` for current
+> structure.
+
 
 
 phse1では、回路シュミレーターで中心となる機能が利用する

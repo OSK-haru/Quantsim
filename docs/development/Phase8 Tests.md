@@ -1,4 +1,11 @@
 
+> **Historical test-plan document**
+>
+> Phase 8 was executed and later extended by V1-V7, 3-4 qubit, snapshot,
+> dense-backend, and Pulse Baseline A validations. Streamlit commands and the
+> old `validation/` path below are obsolete. Use `docs/validation/`,
+> `validation_results/`, and `validation_pulse/`.
+
 
 
 ---

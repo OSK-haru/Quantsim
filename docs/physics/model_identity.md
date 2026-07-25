@@ -12,6 +12,8 @@ it does not change simulation physics.
 | `gate_aware_hamiltonian_lindblad_v1` | Gate-aware Hamiltonian Lindblad v1 | Current evolution mode |
 | `python_dense` | Python dense backend | Default backend |
 | `rust_dense_preview` | Rust dense preview | Preview backend |
+| `driven_two_level_rwa_experimental_v1` | Two-level pulse RWA experimental model | Implemented through the dedicated pulse API |
+| `driven_transmon_qutrit_rwa_experimental_v1` | Three-level transmon pulse RWA experimental model | Implemented through the bounded pulse API |
 | `gate_aware_cptp_kraus` | CPTP Kraus evolution | Planned mode, not implemented |
 
 ## Current Computation Path
@@ -27,7 +29,27 @@ mode is `gate_aware_hamiltonian_lindblad_v1`: each gate column is represented
 by an effective Hamiltonian while Lindblad noise acts during the operation.
 
 The default backend is `python_dense`. This is the reference backend for small
-dense density-matrix simulations.
+dense density-matrix simulations. When NumPy is available, the internal dense
+engine uses `numpy_dense_v1`.
+
+## Pulse Model
+
+Pulse Baseline A and Extension B are implemented separately from the
+gate-aware path:
+
+```text
+POST /api/pulse/simulate
+model_id: driven_two_level_rwa_experimental_v1
+contract_version: pulse-baseline-a-v1
+
+model_id: driven_transmon_qutrit_rwa_experimental_v1
+contract_version: pulse-extension-b-v1
+```
+
+Both are single-subsystem, rotating-frame RWA control-envelope models. The
+qutrit path exposes leakage and Gaussian DRAG but is still not a calibrated
+hardware pulse simulator. See `docs/physics/pulse-baseline-a-model.md` and
+`docs/physics/pulse-extension-b-qutrit-contract.md`.
 
 ## Preview Backend
 

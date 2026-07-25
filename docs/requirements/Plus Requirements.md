@@ -1,5 +1,11 @@
 # Plus Requirements
 
+> **Document status: non-binding backlog**
+>
+> Some items originally listed as future work have since been implemented.
+> This file is not a current feature matrix. Current implementation and
+> explicit non-features are listed in `docs/README.md`.
+
 ## 目的
 
 この文書は、QuantaScope の本開発必達範囲には含めないが、将来的な拡張候補として検討する機能を整理する。

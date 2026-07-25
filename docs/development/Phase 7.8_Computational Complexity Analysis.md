@@ -1,4 +1,10 @@
 
+> **Historical analysis plan**
+>
+> Current complexity documentation is
+> `docs/architecture/complexity.md`. Statements below about future 3-4 qubit
+> support predate the implemented 1-4 qubit core/API.
+
 ---
 
 # Phase 7.8: Computational Complexity Analysis

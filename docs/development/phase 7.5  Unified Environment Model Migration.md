@@ -1,3 +1,9 @@
+> **Implemented migration history**
+>
+> The unified physical environment and normalized compatibility path are now
+> implemented. This is the original migration plan, not a current task list.
+> Canonical rate conventions are in `docs/physics/rate-naming-convention.md`.
+
 
 # 新モデル統合プロセス計画
 

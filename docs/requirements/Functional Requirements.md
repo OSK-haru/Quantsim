@@ -4,6 +4,12 @@
 
 # MVPは完了済
 
+> **Document status: requirements baseline**
+>
+> This file contains original MVP and expansion requirements, not a live
+> implementation checklist. Current implementation status is maintained in
+> `docs/README.md`.
+
 ## MVP スコープ定義 (MVP Scope Definition)
 
 QuantaScope の開発において、MVPリリース時の必達範囲を以下のように定義する。これ以外の多量子ビット対応や複雑なゲートセットは、Phase 1 以降の拡張対象とする。

@@ -1,7 +1,10 @@
 # Computational Complexity
 
-QuantaScope currently uses dense density matrices and dense Python tuple
-matrices for the Lindblad simulator.
+QuantaScope uses dense density matrices. The public backend remains
+`python_dense`; when NumPy is installed, its active dense execution engine is
+`numpy_dense_v1`. A pure-Python tuple implementation remains available for
+regression comparison. `rust_dense_preview` is an optional preview request
+path and is not the default.
 
 ## Symbols
 
@@ -127,15 +130,14 @@ may improve even though the gate itself took longer.
 
 ## Practical Note
 
-The current implementation uses pure-Python tuple dense matrices. This is much
-slower and more memory-heavy than optimized array libraries or sparse matrix
-representations. The estimates are useful for scaling intuition, not precise
-wall-clock prediction.
+NumPy reduces the dense-operation constant factor but does not change the
+exponential memory and runtime scaling. The estimates are useful for scaling
+intuition, not precise wall-clock prediction.
 
 ## Recommendation
 
-- Keep default UI flows focused on 1-2 qubits.
-- Treat 3-4 qubits as experimental.
+- Keep default UI flows focused on 2 qubits.
+- Treat 3-4 qubit runs as bounded, potentially expensive experiments.
 - Treat 5-6 qubits as requiring optimization, reduced sampling, or a future
   backend change.
 - Avoid large parameter sweeps until runtime and memory budgets are measured

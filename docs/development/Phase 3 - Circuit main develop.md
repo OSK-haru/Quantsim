@@ -1,3 +1,9 @@
+> **Historical Streamlit-era implementation plan**
+>
+> The active circuit editor is the React Circuit Studio and the former
+> `app/` Streamlit tree has been removed. This document is retained only as
+> development history. See `docs/README.md` for current capabilities.
+
 
 # Phase 3: 回路エディタ本開発
 

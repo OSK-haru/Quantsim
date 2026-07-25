@@ -1,5 +1,13 @@
 # QuantaScope Circuit Editor Implementation Plan
 
+> **Status: Completed and retained as implementation history**
+>
+> UI-3A through UI-3G and arbitrary `circuit_config` submission are now
+> implemented. Circuit Studio supports 2-4 qubits, click and drag-and-drop
+> placement, CNOT, movement, deletion, Clear, Undo/Redo, and JSON
+> import/export. Statements below that describe a fixed Bell-only circuit or
+> future API integration are obsolete.
+
 ## 目的
 
 この文書は、QuantaScope に **Drag & Drop と基本ゲートパレットを備えた回路編集機能**を追加するための実装計画である。

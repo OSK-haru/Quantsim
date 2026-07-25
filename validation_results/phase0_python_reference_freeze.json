@@ -1,0 +1,85 @@
+{
+  "validation": "PHASE-0-PYTHON-REFERENCE-FREEZE",
+  "generated_at_utc": "2026-07-25T11:45:00Z",
+  "decision": "PASS",
+  "overall_pass": true,
+  "validation_pass": true,
+  "source_revision": {
+    "pre_phase0_base_commit": "7ba959a050423d64805e6b64dcbcbf805df068a1",
+    "python_reference_source_commit": "28b28a5aa82ddbcef1ae22c974846f7ea5ff2c0d",
+    "branch": "React-phase",
+    "working_tree_clean_after_release_commit": true,
+    "git_tag": "quantascope-python-reference-pulse-b-v1",
+    "pre_freeze_git_collapsed_change_count": 252,
+    "file_level_change_count_before_this_manifest": 280,
+    "file_level_change_summary_before_this_manifest": {
+      "modified": 80,
+      "deleted": 33,
+      "untracked": 167
+    },
+    "critical_source_tree_sha256": "ea6449ce1a07a3a9ccc7b70019617c8623078f061dace8db07a59434e96ce6cd"
+  },
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1",
+    "qutip": "5.2.3",
+    "fastapi": "0.138.1",
+    "pydantic": "2.13.4",
+    "node": "24.15.0",
+    "npm": "11.12.1"
+  },
+  "contracts": {
+    "pulse_openapi_sha256": "531ce1b5dd6e399fb21bb7f98b8ae6ab61e1dc5b068a1e85aa8a56f0e8b48c3f",
+    "pulse_extension_b_freeze": "validation_results/pulse_extension_b_freeze.json",
+    "inventory": "docs/development/physical-model-finalization/phase0-python-reference-freeze.md"
+  },
+  "validation_results": {
+    "gate_aware_v1_v7": {
+      "pass": true,
+      "freshly_regenerated": true
+    },
+    "pulse_baseline_a": {
+      "pass": true,
+      "freshly_regenerated": true
+    },
+    "pulse_extension_b": {
+      "pass": true,
+      "freshly_regenerated": true
+    },
+    "python_regression": {
+      "pass": true,
+      "tests": 471,
+      "seconds": 526.510
+    },
+    "api_smoke": {
+      "pass": true,
+      "tests": 39,
+      "seconds": 9.496
+    },
+    "frontend_pulse_contract": {
+      "pass": true
+    },
+    "frontend_lint": {
+      "pass": true
+    },
+    "frontend_build": {
+      "pass": true,
+      "modules_transformed": 102
+    },
+    "markdown_links": {
+      "pass": true,
+      "documents": 24,
+      "local_links": 44,
+      "broken": 0
+    },
+    "pulse_extension_b_freeze": {
+      "pass": true,
+      "decision": "PASS WITH RESTRICTIONS",
+      "validation_artifacts": 22,
+      "documents": 9
+    }
+  },
+  "blocking_conditions": [],
+  "phase1_go": true
+}

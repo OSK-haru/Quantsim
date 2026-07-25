@@ -1,4 +1,10 @@
 
+> **Historical Streamlit-era implementation plan**
+>
+> The active UI is React/Vite. Paths under `app/` and Streamlit launch
+> commands below are obsolete and must not be used as current instructions.
+> See `frontend/README.md`.
+
 
 
 ---

@@ -1,5 +1,14 @@
 # QuantaScope React Physical Input Specification
 
+> **Status: Implemented and retained as migration history**
+>
+> React now sends `input_mode: "physical"` with `circuit_config`,
+> `gate_duration_defaults`, and bounded `snapshot_options`. The API still
+> accepts normalized mode for compatibility. Circuit editing, drag-and-drop,
+> import/export, and arbitrary circuit submission described as future work in
+> this document are implemented. For current status, use `docs/README.md` and
+> the code-level schemas in `api/main.py`.
+
 ## 目的
 
 この文書は、QuantaScope の React 版 UI における入力仕様を、物理単位ベースの入力へ統一するための設計メモである。

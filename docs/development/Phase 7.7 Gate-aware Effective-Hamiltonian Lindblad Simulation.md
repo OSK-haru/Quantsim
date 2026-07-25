@@ -1,4 +1,10 @@
 
+> **Implemented model history**
+>
+> The gate-aware Hamiltonian Lindblad path is implemented and validated.
+> This file preserves the implementation plan. Use
+> `docs/physics/model_identity.md` and `docs/validation/` for current claims.
+
 
 
 ---

@@ -1,4 +1,11 @@
 
+> **Document status: requirements and historical design rationale**
+>
+> References to Streamlit, Godot, or a future FastAPI migration describe the
+> earlier architecture. The active stack is React/Vite + FastAPI + Python/NumPy.
+> Use `docs/README.md` and `docs/architecture/module_structure.md` for current
+> runtime structure.
+
 ## N01 性能・応答性
 
 ### 概要

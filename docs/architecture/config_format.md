@@ -18,12 +18,16 @@ Required top-level fields:
 
 `circuit` contains:
 
-- `logical_qubits`: currently 1 or 2
+- `logical_qubits`: 1 through 4 in the core config format
 - `initial_states`: one of `0`, `1`, `+`, `-` per qubit
 - `columns`: ordered gate columns with `step` and `gates`
 
 Supported gate types are `I`, `H`, `X`, `Z`, `Measure`, and `CNOT`.
 For basis labels, `q0` is the most significant bit.
+
+The React Circuit Studio import/export format is intentionally narrower:
+2-4 qubits and initial states `0` or `1`. The FastAPI `circuit_config`
+boundary accepts 1-4 qubits and initial states represented as `0` or `1`.
 
 ## Environment
 
@@ -46,6 +50,9 @@ Physical input contains:
 - `temperature_mk`
 - `flux_noise_phi0`
 - `qubit_frequency_ghz`
+- `t1_max_us`
+- `tphi_max_us`
+- `ideal_reference`
 
 Older `1.0` configs with `environment_model` values such as
 `normalized_phenomenological_v1` or `superconducting_qubit_profile_v1` are

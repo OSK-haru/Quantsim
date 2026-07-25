@@ -1,4 +1,9 @@
 
+> **Historical Streamlit-era implementation plan**
+>
+> This plan predates the React/FastAPI migration. Streamlit paths and
+> implementation-status statements below are historical, not current.
+
 
 Phase 5 の目的は、**同一回路に対して条件A/Bを適用し、環境条件の違いによる劣化差分を見える化すること**です。
 

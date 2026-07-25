@@ -1,171 +1,80 @@
+# Decisions And Open Questions
 
+## Status
 
-## 重要度: 高
+This file was updated after the React/FastAPI migration and the 1-4 qubit and
+Pulse Baseline A work. It contains only current decisions and genuinely open
+questions.
 
-### Q01 量子ビット数の本開発目標
+## Decided
 
-- MVP: 1量子ビット
-- 本開発: 6量子ビットまで
--
+### Application Stack
 
+- React/Vite is the active UI.
+- FastAPI is the active service boundary.
+- Python/NumPy is the reference computation path.
+- QuTiP is used for independent validation, not production execution.
+- Godot is not an active production target.
 
-### Q02 回路入力方式
+### Gate-Aware Circuit Scope
 
-決定済み。
+- Core and `POST /api/simulate` support 1-4 logical qubits.
+- Circuit Studio supports 2-4 logical qubits.
+- H, X, Z, CNOT, and MEASURE are editable in the current frontend.
+- Click placement, drag-and-drop, movement, deletion, Clear, Undo, Redo, and
+  circuit JSON import/export are implemented.
+- React submits arbitrary `circuit_config`; Bell preset compatibility remains
+  available at the API boundary.
 
-本開発では、ゲートパレットから回路グリッドへ基本ゲートをドラッグ&ドロップで配置できる方式を必須とする。
+### Environment Inputs
 
-回路は「論理量子ビット行 × 時間列」のグリッドとして扱う。利用者はゲートパレットからゲートをドラッグし、対象セルへドロップすることで回路を構成する。
+- React uses `input_mode: "physical"`.
+- API compatibility for `normalized` input remains.
+- Physical inputs are educational profile parameters, not hardware
+  calibration.
+- Finite-temperature population relaxation uses
+  `gamma_down + gamma_up`.
+- Pure dephasing uses `sqrt(gamma_phi / 2) sigma_z`.
 
-#### 必達範囲
+### Pulse Baseline A
 
-- ゲートパレット
-- 回路グリッド
-- ドラッグ&ドロップによる配置
-- 配置済みゲートの削除
-- 配置済みゲートの移動
-- Undo
-- Redo
-- Clear circuit
-- H / X / Z / CNOT / Measure
-- 1〜2論理量子ビット
-- JSON化可能な回路データ構造
-- 不正配置の検証
+- The frozen model is `driven_two_level_rwa_experimental_v1`.
+- The frozen API contract is `pulse-baseline-a-v1`.
+- Baseline A is one two-level qubit in the rotating frame under RWA.
+- Baseline A itself does not include qutrit leakage, DRAG, or multi-qubit
+  pulse control.
 
-#### Undo / Redo の扱い
+### Pulse Extension B
 
-Undo / Redo は、回路編集の安全装置として必須とする。
+- The implementation order is fixed by
+  `docs/development/pulse-extension-b/README.md`.
+- B-0 qutrit operators and contract are complete.
+- B-1 closed-system qutrit evolution and leakage are complete.
+- B-2 transition-specific qutrit dissipation is complete.
+- B-3 qutrit convergence and the non-DRAG safe-step policy are complete.
+- B-4 Gaussian DRAG control and convergence are complete.
+- QuTiP acceptance, public qutrit HTTP execution, and Pulse Lab UI remain
+  staged work.
 
-対象操作:
-- ゲート配置
-- ゲート削除
-- ゲート移動
-- ゲート上書き
-- 初期状態変更
-- 量子ビット数変更
-- Clear circuit
+## Open
 
-初期実装では、直近履歴をスタックで保持する方式でよい。
-履歴の永続保存やブランチ履歴は対象外とする。
+### Q2 Strict CPTP Production Path
 
-#### 後回し
+Decide whether the next production solver should use:
 
-- 列ドラッグ
-- 行ドラッグ
-- ゲート複製
-- ゲートリサイズ
-- 複雑なmulti-control gate
-- Undo履歴の永続保存
-- Quirk同等の高度編集機能
+- exact channel/Kraus composition,
+- matrix exponential Liouvillian propagation,
+- or another explicitly CPTP integrator.
 
-#### 注意
+The existing fixed-step RK4 paths must not be described as intrinsically CPTP.
 
-ドラッグ&ドロップとUndo/Redoは本開発必達だが、初期検証UIではクリック式やゲート列選択式を一時的に用いてよい。
-最終的な提出版では、ドラッグ&ドロップによる回路編集とUndo/Redoを提供する。
-### Q03 物理ビット/論理ビットの扱い
+### Q3 External Validity
 
-Q04は部分決定とする。
+Execute V8 using public hardware datasets or cloud-accessible devices after the
+relevant implementation freeze. No private laboratory connection is assumed.
 
-MVPおよび本開発初期では、温度・磁場・ノイズは正規化パラメータとして扱う。
+### Q4 Performance Boundary
 
-- 0.0 = 影響が小さい
-- 1.0 = 影響が大きい
-
-エキスパートモードでは、T1/T2、gamma、時間単位μsを表示する。
-温度K/mKや磁場T/mTなどの実単位表示は、profile機能として後段検討とする。
-
-実機値との厳密対応は本開発初期では非対象とする。
-
-### Q04 温度・磁場・ノイズの単位系
-Q04は部分決定とする。
-
-MVPおよび本開発初期では、温度・磁場・ノイズは正規化パラメータとして扱う。
-
-- 0.0 = 影響が小さい
-- 1.0 = 影響が大きい
-
-エキスパートモードでは、T1/T2、gamma、時間単位μsを表示する。
-温度K/mKや磁場T/mTなどの実単位表示は、profile機能として後段検討とする。
-
-実機値との厳密対応は本開発初期では非対象とする。
----
-
-## 重要度: 中
-
-### Q05 QuTiPの扱い
-
-Q05は決定済みとする。
-
-QuTiPは本体シミュレーションの主依存にはしない。
-自作軽量シミュレーションコアの検証・比較用として利用する。
-
-目的はQuTiPの再実装ではなく、環境条件と小規模量子回路の劣化をUI上で理解・比較できるようにすることである。
-### Q06 Godotの扱い
-
-Q06は決定済みとする。
-
-Godotは本体UIではなく、体験UI PoCとして扱う。
-数値計算はPythonコアで行い、Godot側ではシミュレーションを再実装しない。
-
-Godotは、入門者向けの直感的操作・アニメーション・デモ動画映えを目的として後段で検討する。
-### Q07 FastAPI導入時期
-
-- Q07は条件付き決定とする。
-
-FastAPIは、Streamlit版の入門モード・比較モード・Expertモードが安定し、run_simulation(config) とJSON形式が固まった後に導入する。
-
-導入目的はGodot PoCまたは外部UI連携であり、本開発初期の必達機能ではない。
-
-### Q08 保存/読込の実装時期
-
-保存/読込は段階的に実装する。
-
-- Phase 1: プリセット読込
-- Phase 2: .qscope.json 設定保存/読込
-- Phase 3: .qscope.result.json / CSV 結果出力
-- Phase 4: Markdownレポート出力
-
-U-22提出前には、少なくともプリセット読込・設定保存/読込・CSV結果出力を実装する。
-
----
-
-## 重要度: 低
-
-
-## Q09 Circuit QED inspired profile
-
-Q09は方針決定とする。
-
-Circuit QEDは厳密シミュレーション対象ではなく、将来の profile として扱う。
-名称は "Circuit QED inspired profile" とし、T1/T2やノイズ応答係数を切り替える設定として導入する。
-
-付録Aの内容は理論的背景・将来拡張として扱い、本開発初期では厳密なCircuit QEDシミュレータを実装しない。
-
-### Q10 測定トラジェクトリー
-
-Q10は方針決定とする。
-
-測定トラジェクトリーは本開発必達には含めない。
-まずはExpertモードのPoCとして、有効非エルミートハミルトニアン H_eff と no-jump発展を扱う。
-
-quantum jump trajectory や多数サンプル平均は上限目標または将来拡張とする。
-
----
-
-## 決定済み
-
-### D01 MVPは1量子ビットHゲートから始める
-
-決定済み。
-
-### D02 本体の計算コアはPythonで維持する
-
-決定済み。
-
-### D03 Godotで数値計算を再実装しない
-
-決定済み。
-
-### D04 QuTiPの再実装を目指さない
-
-決定済み。
+Re-profile before increasing beyond the current 4-qubit gate-aware scope or
+before adding qutrit/multi-qubit pulse simulation. Dense cost remains
+exponential in qubit count.

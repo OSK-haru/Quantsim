@@ -1,4 +1,11 @@
 
+> **Historical parameter-design note**
+>
+> This file records the rationale that led to the educational physical profile.
+> Phrases such as "should implement" are not current implementation status.
+> Canonical implemented rate definitions are in
+> `docs/physics/rate-naming-convention.md` and `core/physical_environment.py`.
+
 
 
 ---

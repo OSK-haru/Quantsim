@@ -1,4 +1,10 @@
 
+> **Historical Streamlit-era implementation plan**
+>
+> The former Streamlit Expert UI is no longer active. Current model and
+> diagnostic details are exposed through the React result drawers and State
+> Explorer. Treat all `app/` paths below as obsolete.
+
 
 
 

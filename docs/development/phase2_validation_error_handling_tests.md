@@ -1,4 +1,9 @@
 
+> **Historical phase plan**
+>
+> Validation, structured issues, and regression tests are implemented. This
+> document is retained as design history, not a pending task list.
+
 ## 目的
 
 Phase 2 の目的は、Phase 1 で整備した
