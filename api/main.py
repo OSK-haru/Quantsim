@@ -2,13 +2,26 @@
 
 from __future__ import annotations
 
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    TimeoutError as FuturesTimeoutError,
+)
 import math
+from threading import BoundedSemaphore
 from typing import Literal
 from time import perf_counter
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, root_validator, validator
 
+from api.pulse_models import (
+    PulseApiRequest,
+    PulseApiResponse,
+)
+from api.pulse_service import (
+    PulseExecutionLimitError,
+    run_pulse_api_request as run_pulse_request,
+)
 from core.circuit_model import CircuitConfig, GateColumn, GateOperation
 from core.physical_environment import INPUT_MODE_NORMALIZED, INPUT_MODE_PHYSICAL
 from core.results import EnvironmentConfig, SimulationConfig
@@ -17,6 +30,16 @@ from core.ui_response import simulation_result_to_ui_response
 
 
 app = FastAPI(title="QuantaScope API", version="0.1.0")
+
+PULSE_API_TIMEOUT_SECONDS = 15.0
+PULSE_API_MAX_CONCURRENT_REQUESTS = 2
+_PULSE_EXECUTOR = ThreadPoolExecutor(
+    max_workers=PULSE_API_MAX_CONCURRENT_REQUESTS,
+    thread_name_prefix="quantscope-pulse",
+)
+_PULSE_EXECUTION_SLOTS = BoundedSemaphore(
+    PULSE_API_MAX_CONCURRENT_REQUESTS
+)
 
 
 class GateDurationDefaultsRequest(BaseModel):
@@ -376,6 +399,67 @@ def health() -> dict[str, str]:
 def simulation_example() -> dict[str, object]:
     result = run_simulation(build_example_config())
     return simulation_result_to_ui_response(result)
+
+
+@app.post(
+    "/api/pulse/simulate",
+    response_model=PulseApiResponse,
+    responses={
+        422: {"description": "Invalid or over-budget pulse request."},
+        503: {"description": "Pulse execution capacity is busy."},
+        504: {"description": "Pulse execution exceeded the API timeout."},
+    },
+)
+def pulse_simulate(request: PulseApiRequest) -> dict[str, object]:
+    if not _PULSE_EXECUTION_SLOTS.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "Pulse execution capacity is busy.",
+                "maximum_concurrent_requests": (
+                    PULSE_API_MAX_CONCURRENT_REQUESTS
+                ),
+            },
+        )
+    try:
+        future = _PULSE_EXECUTOR.submit(run_pulse_request, request)
+    except Exception:
+        _PULSE_EXECUTION_SLOTS.release()
+        raise
+    future.add_done_callback(
+        lambda completed: _PULSE_EXECUTION_SLOTS.release()
+    )
+    try:
+        return future.result(timeout=PULSE_API_TIMEOUT_SECONDS)
+    except FuturesTimeoutError as exc:
+        future.cancel()
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "message": "Pulse simulation timed out.",
+                "timeout_seconds": PULSE_API_TIMEOUT_SECONDS,
+                "previous_results_preserved": True,
+            },
+        ) from exc
+    except PulseExecutionLimitError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "Pulse request exceeds execution limits.",
+                "error": str(exc),
+            },
+        ) from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Pulse simulation failed.",
+                "error_type": exc.__class__.__name__,
+                "error": str(exc),
+            },
+        ) from exc
 
 
 @app.post("/api/simulate")

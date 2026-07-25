@@ -1,2 +1,5 @@
-# Optional independent-solver validation dependency. Not required by production.
-qutip>=5.2,<6
+# Optional independent-solver validation dependencies. Not required at runtime.
+# Install this file together with requirements-runtime.txt.
+matplotlib==3.10.9
+qutip==5.2.3
+scipy==1.17.1
