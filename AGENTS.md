@@ -123,7 +123,6 @@ The agent must stop and request approval before:
 Approved stack only:
 - Python
 - QuTiP
-- Streamlit
 - NumPy
 - Plotly/matplotlib
 

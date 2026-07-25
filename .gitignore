@@ -7,4 +7,3 @@ __pycache__/
 *.key
 secrets/
 .DS_Store
-.streamlit/
