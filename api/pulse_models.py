@@ -195,6 +195,7 @@ class PulseSimulateRequest(StrictPulseModel):
     initial_state: Literal["0", "1"] = "0"
     pulse: PulseEnvelopeRequest
     total_simulation_time_us: float = Field(gt=0.0)
+    backend: Literal["python", "rust", "auto"] = "python"
     environment: PulseEnvironmentRequest
     snapshot_options: PulseSnapshotOptionsRequest = Field(
         default_factory=PulseSnapshotOptionsRequest
@@ -366,6 +367,7 @@ class QutritPulseSimulateRequest(StrictPulseModel):
     anharmonicity_mhz: float = Field(lt=0.0)
     pulse: QutritPulseEnvelopeRequest
     total_simulation_time_us: float = Field(gt=0.0)
+    backend: Literal["python", "rust", "auto"] = "python"
     environment: QutritPulseEnvironmentRequest
     snapshot_options: PulseSnapshotOptionsRequest = Field(
         default_factory=PulseSnapshotOptionsRequest
@@ -515,8 +517,15 @@ class PulseEvolutionDiagnosticsResponse(StrictPulseModel):
     actual_duration_us: float
 
 
+class PulseBackendDiagnosticsResponse(StrictPulseModel):
+    requested: Literal["python", "rust", "auto"]
+    resolved: Literal["python", "rust"]
+    fallback_used: bool
+
+
 class PulseDiagnosticsResponse(StrictPulseModel):
     api_runtime_ms: float
+    backend: PulseBackendDiagnosticsResponse
     open_pulse: PulseEvolutionDiagnosticsResponse
     open_idle: PulseEvolutionDiagnosticsResponse | None
     closed_pulse: PulseEvolutionDiagnosticsResponse
@@ -633,6 +642,7 @@ class QutritLeakageResponse(StrictPulseModel):
 
 class QutritPulseDiagnosticsResponse(StrictPulseModel):
     api_runtime_ms: float
+    backend: PulseBackendDiagnosticsResponse
     open_pulse: PulseEvolutionDiagnosticsResponse
     open_idle: PulseEvolutionDiagnosticsResponse | None
     maximum_cleaned_trace_error: float

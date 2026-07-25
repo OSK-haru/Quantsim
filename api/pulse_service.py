@@ -11,6 +11,7 @@ from api.pulse_models import (
     PulseSimulateRequest,
     PulseSimulateResponse,
 )
+from api.pulse_backend_logging import log_pulse_backend_selection
 from api.pulse_qutrit_service import run_qutrit_pulse_request
 from core.capabilities import DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL
 from core.gates import Matrix, initial_density_matrix, matmul, trace
@@ -30,6 +31,7 @@ from core.pulse_evolution import (
     PhysicalityMetrics,
     TimeDependentCheckpoint,
     physicality_metrics,
+    resolve_time_dependent_backend,
 )
 from core.pulse_open_system import (
     DIRECT_RATES_INPUT_MODE,
@@ -83,6 +85,12 @@ def run_pulse_request(request: PulseSimulateRequest) -> dict[str, object]:
     """Execute one bounded Baseline A request and return its frozen response."""
 
     started = perf_counter()
+    resolved_backend = resolve_time_dependent_backend(request.backend)
+    log_pulse_backend_selection(
+        model_id=DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL,
+        requested=request.backend,
+        resolved=resolved_backend,
+    )
     envelope = _build_envelope(request)
     rates = _build_rates(request)
     sample_times = _sample_times(
@@ -124,6 +132,7 @@ def run_pulse_request(request: PulseSimulateRequest) -> dict[str, object]:
         detuning_rad_per_us=request.pulse.detuning_rad_per_us,
         pulse_checkpoint_times_us=pulse_times,
         idle_checkpoint_times_us=idle_times,
+        backend=resolved_backend,
     )
     zero_rates = PulseDissipationRates(
         DIRECT_RATES_INPUT_MODE,
@@ -141,6 +150,7 @@ def run_pulse_request(request: PulseSimulateRequest) -> dict[str, object]:
         detuning_rad_per_us=request.pulse.detuning_rad_per_us,
         pulse_checkpoint_times_us=pulse_times,
         idle_checkpoint_times_us=idle_times,
+        backend=resolved_backend,
     )
 
     paired = _paired_checkpoints(open_result, closed_result)
@@ -232,6 +242,13 @@ def run_pulse_request(request: PulseSimulateRequest) -> dict[str, object]:
         "final": final,
         "diagnostics": {
             "api_runtime_ms": (perf_counter() - started) * 1000.0,
+            "backend": {
+                "requested": request.backend,
+                "resolved": resolved_backend,
+                "fallback_used": (
+                    request.backend == "auto" and resolved_backend == "python"
+                ),
+            },
             "open_pulse": open_result.pulse_result.diagnostics.to_dict(),
             "open_idle": (
                 None

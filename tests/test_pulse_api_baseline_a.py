@@ -18,6 +18,7 @@ from api.pulse_service import (
     PULSE_API_MAX_INTERNAL_STEPS,
     run_pulse_request,
 )
+from core.rust_dense_kernel import is_rust_kernel_available
 
 
 class PulseBaselineAApiTests(unittest.TestCase):
@@ -87,6 +88,86 @@ class PulseBaselineAApiTests(unittest.TestCase):
         self.assertAlmostEqual(parsed.final.time_us, 1.2)
         self.assertEqual(len(parsed.final.open_density_matrix), 2)
         self.assertEqual(len(parsed.final.open_density_matrix[0]), 2)
+        self.assertEqual(parsed.diagnostics.backend.requested, "python")
+        self.assertEqual(parsed.diagnostics.backend.resolved, "python")
+        self.assertFalse(parsed.diagnostics.backend.fallback_used)
+
+    @unittest.skipUnless(
+        is_rust_kernel_available(),
+        "quantascope_rust is not importable",
+    )
+    def test_rust_and_auto_backends_report_resolution_and_match_python(self) -> None:
+        python_payload = _direct_square_payload()
+        rust_payload = _direct_square_payload()
+        auto_payload = _direct_square_payload()
+        rust_payload["backend"] = "rust"
+        auto_payload["backend"] = "auto"
+
+        python_response = run_pulse_request(
+            PulseSimulateRequest.model_validate(python_payload)
+        )
+        rust_response = run_pulse_request(
+            PulseSimulateRequest.model_validate(rust_payload)
+        )
+        auto_response = run_pulse_request(
+            PulseSimulateRequest.model_validate(auto_payload)
+        )
+
+        self.assertEqual(rust_response["diagnostics"]["backend"], {
+            "requested": "rust",
+            "resolved": "rust",
+            "fallback_used": False,
+        })
+        self.assertEqual(auto_response["diagnostics"]["backend"], {
+            "requested": "auto",
+            "resolved": "rust",
+            "fallback_used": False,
+        })
+        for row_python, row_rust in zip(
+            python_response["final"]["open_density_matrix"],
+            rust_response["final"]["open_density_matrix"],
+        ):
+            for value_python, value_rust in zip(row_python, row_rust):
+                self.assertAlmostEqual(
+                    value_python["real"], value_rust["real"], places=12
+                )
+                self.assertAlmostEqual(
+                    value_python["imag"], value_rust["imag"], places=12
+                )
+
+    def test_auto_backend_falls_back_to_python_when_rust_is_unavailable(self) -> None:
+        payload = _direct_square_payload()
+        payload["backend"] = "auto"
+
+        with patch(
+            "core.pulse_evolution.is_rust_kernel_available",
+            return_value=False,
+        ):
+            response = run_pulse_request(
+                PulseSimulateRequest.model_validate(payload)
+            )
+
+        self.assertEqual(response["diagnostics"]["backend"], {
+            "requested": "auto",
+            "resolved": "python",
+            "fallback_used": True,
+        })
+
+    def test_backend_selection_is_written_to_structured_runtime_log(self) -> None:
+        payload = _direct_square_payload()
+        payload["backend"] = "auto"
+
+        with self.assertLogs("api.pulse_backend_logging", level="INFO") as captured:
+            run_pulse_request(PulseSimulateRequest.model_validate(payload))
+
+        self.assertEqual(len(captured.records), 1)
+        self.assertEqual(captured.records[0].message, "pulse_backend_selected")
+        self.assertEqual(captured.records[0].pulse_backend, {
+            "model_id": "driven_two_level_rwa_experimental_v1",
+            "requested": "auto",
+            "resolved": "rust" if is_rust_kernel_available() else "python",
+            "fallback_used": not is_rust_kernel_available(),
+        })
 
     def test_physical_gaussian_reports_derived_rates(self) -> None:
         request = PulseSimulateRequest.model_validate(

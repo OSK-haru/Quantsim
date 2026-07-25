@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 import numpy as np
 
@@ -18,9 +18,15 @@ from core.gates import (
     scale,
     trace,
 )
+from core.rust_dense_kernel import (
+    is_rust_kernel_available,
+    rust_rk4_time_dependent_step,
+)
 
 
 TIME_TOLERANCE_US = 1e-15
+TimeDependentEvolutionBackend = Literal["python", "rust", "auto"]
+ResolvedTimeDependentEvolutionBackend = Literal["python", "rust"]
 
 
 class TimeDependentHamiltonian(Protocol):
@@ -101,6 +107,7 @@ def evolve_time_dependent_segment(
     max_step_us: float,
     *,
     checkpoint_times_us: Sequence[float] = (),
+    backend: TimeDependentEvolutionBackend = "python",
 ) -> TimeDependentEvolutionResult:
     """Evolve one segment with RK4 stage-time Hamiltonian evaluation.
 
@@ -113,6 +120,7 @@ def evolve_time_dependent_segment(
     max_step = _positive_finite(max_step_us, "max_step_us")
     dimension = _validate_square_finite_matrix(state, "state")
     _validate_collapse_operators(collapse_ops, dimension)
+    resolved_backend = resolve_time_dependent_backend(backend)
     checkpoints = _normalize_checkpoint_times(
         checkpoint_times_us,
         duration,
@@ -161,6 +169,7 @@ def evolve_time_dependent_segment(
                 current_time,
                 step,
                 dimension,
+                resolved_backend,
             )
             metrics = physicality_metrics(raw_state)
             cleaned_state = clean_density_matrix(raw_state)
@@ -267,34 +276,43 @@ def _rk4_time_dependent_step(
     local_time_us: float,
     step_us: float,
     dimension: int,
+    backend: ResolvedTimeDependentEvolutionBackend,
 ) -> Matrix:
     half_time = local_time_us + 0.5 * step_us
     end_time = local_time_us + step_us
 
     h1 = _evaluate_hamiltonian(hamiltonian, local_time_us, dimension)
+    h2 = _evaluate_hamiltonian(hamiltonian, half_time, dimension)
+    h3 = _evaluate_hamiltonian(hamiltonian, half_time, dimension)
+    h4 = _evaluate_hamiltonian(hamiltonian, end_time, dimension)
+
+    if backend == "rust":
+        return rust_rk4_time_dependent_step(
+            state,
+            (h1, h2, h3, h4),
+            tuple(collapse_op.operator for collapse_op in collapse_ops),
+            step_us,
+        )
+
     k1 = lindblad_rhs_cached(state, h1, collapse_ops)
 
-    h2 = _evaluate_hamiltonian(hamiltonian, half_time, dimension)
     k2 = lindblad_rhs_cached(
         add(state, scale(0.5 * step_us, k1)),
         h2,
         collapse_ops,
     )
 
-    h3 = _evaluate_hamiltonian(hamiltonian, half_time, dimension)
     k3 = lindblad_rhs_cached(
         add(state, scale(0.5 * step_us, k2)),
         h3,
         collapse_ops,
     )
 
-    h4 = _evaluate_hamiltonian(hamiltonian, end_time, dimension)
     k4 = lindblad_rhs_cached(
         add(state, scale(step_us, k3)),
         h4,
         collapse_ops,
     )
-
     return add(
         state,
         scale(
@@ -302,6 +320,18 @@ def _rk4_time_dependent_step(
             add(k1, scale(2.0, k2), scale(2.0, k3), k4),
         ),
     )
+
+
+def resolve_time_dependent_backend(
+    backend: TimeDependentEvolutionBackend,
+) -> ResolvedTimeDependentEvolutionBackend:
+    if backend not in ("python", "rust", "auto"):
+        raise ValueError("backend must be 'python', 'rust', or 'auto'")
+    if backend == "auto":
+        return "rust" if is_rust_kernel_available() else "python"
+    if backend == "rust" and not is_rust_kernel_available():
+        raise RuntimeError("Rust time-dependent kernel is unavailable")
+    return backend
 
 
 def _evaluate_hamiltonian(

@@ -9,6 +9,7 @@ from api.pulse_models import (
     QutritPulseSimulateRequest,
     QutritPulseSimulateResponse,
 )
+from api.pulse_backend_logging import log_pulse_backend_selection
 from core.capabilities import DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL
 from core.gates import Matrix, matmul, trace
 from core.pulse_contract import (
@@ -27,6 +28,7 @@ from core.pulse_evolution import (
     PhysicalityMetrics,
     TimeDependentCheckpoint,
     physicality_metrics,
+    resolve_time_dependent_backend,
 )
 from core.pulse_qutrit import qutrit_initial_density_matrix
 from core.pulse_qutrit_contract import (
@@ -67,6 +69,12 @@ def run_qutrit_pulse_request(
     from api.pulse_service import PulseExecutionLimitError
 
     started = perf_counter()
+    resolved_backend = resolve_time_dependent_backend(request.backend)
+    log_pulse_backend_selection(
+        model_id=DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL,
+        requested=request.backend,
+        resolved=resolved_backend,
+    )
     envelope = _build_envelope(request)
     rates = _build_rates(request)
     alpha = transmon_anharmonicity_rad_per_us(
@@ -119,6 +127,7 @@ def run_qutrit_pulse_request(
         drag_beta_us=request.pulse.drag_beta_us,
         pulse_checkpoint_times_us=pulse_times,
         idle_checkpoint_times_us=idle_times,
+        backend=resolved_backend,
     )
     paired = _sequence_checkpoints(result, envelope.duration_us)
     trajectory = [
@@ -206,6 +215,13 @@ def run_qutrit_pulse_request(
         "final": final,
         "diagnostics": {
             "api_runtime_ms": (perf_counter() - started) * 1000.0,
+            "backend": {
+                "requested": request.backend,
+                "resolved": resolved_backend,
+                "fallback_used": (
+                    request.backend == "auto" and resolved_backend == "python"
+                ),
+            },
             "open_pulse": result.pulse_result.diagnostics.to_dict(),
             "open_idle": (
                 None

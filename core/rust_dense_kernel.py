@@ -69,6 +69,96 @@ def flatten_collapse_ops(
     return flat
 
 
+def rust_lindblad_rhs(
+    rho: Sequence[Sequence[complex]],
+    hamiltonian: Sequence[Sequence[complex]],
+    collapse_ops: Sequence[Sequence[Sequence[complex]]],
+) -> Matrix:
+    """Evaluate the raw Lindblad RHS through the optional Rust kernel."""
+
+    dimension = _validate_evolution_inputs(rho, hamiltonian, collapse_ops)
+    rust_module = _load_rust_module()
+    result = rust_module.lindblad_rhs_flat(
+        flatten_complex_matrix(rho),
+        flatten_complex_matrix(hamiltonian),
+        flatten_collapse_ops(collapse_ops),
+        len(collapse_ops),
+        dimension,
+    )
+    return unflatten_complex_matrix(result, dimension)
+
+
+def rust_rk4_time_dependent_stages(
+    rho: Sequence[Sequence[complex]],
+    hamiltonian_stages: Sequence[Sequence[Sequence[complex]]],
+    collapse_ops: Sequence[Sequence[Sequence[complex]]],
+    dt: float,
+) -> tuple[Matrix, Matrix, Matrix, Matrix]:
+    """Return raw RK4 derivatives for four explicitly supplied Hamiltonians."""
+
+    dimension = _validate_time_dependent_inputs(
+        rho,
+        hamiltonian_stages,
+        collapse_ops,
+        dt,
+    )
+    rust_module = _load_rust_module()
+    flat_stages = rust_module.rk4_time_dependent_stages_flat(
+        flatten_complex_matrix(rho),
+        *(flatten_complex_matrix(stage) for stage in hamiltonian_stages),
+        flatten_collapse_ops(collapse_ops),
+        len(collapse_ops),
+        dimension,
+        float(dt),
+    )
+    matrix_size = 2 * dimension * dimension
+    if len(flat_stages) != 4 * matrix_size:
+        raise RuntimeError(
+            "quantascope_rust returned an unexpected RK4 stage length"
+        )
+    return (
+        unflatten_complex_matrix(flat_stages[0:matrix_size], dimension),
+        unflatten_complex_matrix(
+            flat_stages[matrix_size:2 * matrix_size],
+            dimension,
+        ),
+        unflatten_complex_matrix(
+            flat_stages[2 * matrix_size:3 * matrix_size],
+            dimension,
+        ),
+        unflatten_complex_matrix(
+            flat_stages[3 * matrix_size:4 * matrix_size],
+            dimension,
+        ),
+    )
+
+
+def rust_rk4_time_dependent_step(
+    rho: Sequence[Sequence[complex]],
+    hamiltonian_stages: Sequence[Sequence[Sequence[complex]]],
+    collapse_ops: Sequence[Sequence[Sequence[complex]]],
+    dt: float,
+) -> Matrix:
+    """Advance one raw RK4 step from four explicitly supplied Hamiltonians."""
+
+    dimension = _validate_time_dependent_inputs(
+        rho,
+        hamiltonian_stages,
+        collapse_ops,
+        dt,
+    )
+    rust_module = _load_rust_module()
+    result = rust_module.rk4_time_dependent_step_flat(
+        flatten_complex_matrix(rho),
+        *(flatten_complex_matrix(stage) for stage in hamiltonian_stages),
+        flatten_collapse_ops(collapse_ops),
+        len(collapse_ops),
+        dimension,
+        float(dt),
+    )
+    return unflatten_complex_matrix(result, dimension)
+
+
 def rust_rk4_evolve_segment(
     rho: Sequence[Sequence[complex]],
     hamiltonian: Sequence[Sequence[complex]],
@@ -196,6 +286,48 @@ def _load_rust_module():
         return importlib.import_module("quantascope_rust")
     except Exception as exc:
         raise RuntimeError("quantascope_rust is not available") from exc
+
+
+def _validate_evolution_inputs(
+    rho: Sequence[Sequence[complex]],
+    hamiltonian: Sequence[Sequence[complex]],
+    collapse_ops: Sequence[Sequence[Sequence[complex]]],
+) -> int:
+    dimension = _validate_square_matrix(rho, "rho")
+    h_dimension = _validate_square_matrix(hamiltonian, "hamiltonian")
+    if h_dimension != dimension:
+        raise ValueError("rho and hamiltonian must have the same dimension")
+    for index, operator in enumerate(collapse_ops):
+        op_dimension = _validate_square_matrix(operator, f"collapse_ops[{index}]")
+        if op_dimension != dimension:
+            raise ValueError("collapse operators must match rho dimension")
+    return dimension
+
+
+def _validate_time_dependent_inputs(
+    rho: Sequence[Sequence[complex]],
+    hamiltonian_stages: Sequence[Sequence[Sequence[complex]]],
+    collapse_ops: Sequence[Sequence[Sequence[complex]]],
+    dt: float,
+) -> int:
+    if len(hamiltonian_stages) != 4:
+        raise ValueError("hamiltonian_stages must contain exactly four matrices")
+    dt = float(dt)
+    if not math.isfinite(dt):
+        raise ValueError("dt must be finite")
+    dimension = _validate_square_matrix(rho, "rho")
+    for index, hamiltonian in enumerate(hamiltonian_stages):
+        h_dimension = _validate_square_matrix(
+            hamiltonian,
+            f"hamiltonian_stages[{index}]",
+        )
+        if h_dimension != dimension:
+            raise ValueError("Hamiltonian stages must match rho dimension")
+    for index, operator in enumerate(collapse_ops):
+        op_dimension = _validate_square_matrix(operator, f"collapse_ops[{index}]")
+        if op_dimension != dimension:
+            raise ValueError("collapse operators must match rho dimension")
+    return dimension
 
 
 def _validate_dimension(d: int) -> int:

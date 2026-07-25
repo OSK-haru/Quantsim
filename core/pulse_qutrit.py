@@ -10,6 +10,7 @@ from core.gates import Matrix, density_from_ket
 from core.pulse_envelopes import GaussianPulseEnvelope, PulseEnvelope
 from core.pulse_evolution import (
     ConstantHamiltonian,
+    ResolvedTimeDependentEvolutionBackend,
     TimeDependentEvolutionResult,
     evolve_time_dependent_segment,
 )
@@ -147,6 +148,7 @@ def evolve_closed_qutrit_sequence(
     drag_beta_us: float = 0.0,
     pulse_checkpoint_times_us: Sequence[float] = (),
     idle_checkpoint_times_us: Sequence[float] = (),
+    backend: ResolvedTimeDependentEvolutionBackend = "python",
 ) -> ClosedQutritSequenceResult:
     """Run a closed qutrit pulse followed by rotating-frame free evolution."""
 
@@ -177,6 +179,7 @@ def evolve_closed_qutrit_sequence(
         duration_us=pulse_duration,
         max_step_us=max_step_us,
         checkpoint_times_us=pulse_checkpoint_times_us,
+        backend=backend,
     )
 
     idle_duration = total_duration - pulse_duration
@@ -195,6 +198,7 @@ def evolve_closed_qutrit_sequence(
             duration_us=idle_duration,
             max_step_us=max_step_us,
             checkpoint_times_us=idle_checkpoint_times_us,
+            backend=backend,
         )
 
     trajectory = _sequence_population_trajectory(

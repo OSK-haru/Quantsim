@@ -12,6 +12,7 @@ from api.pulse_qutrit_service import QUTRIT_API_MAX_INTERNAL_STEPS
 from core.capabilities import (
     DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL,
 )
+from core.rust_dense_kernel import is_rust_kernel_available
 
 
 class PulseQutritApiTests(unittest.TestCase):
@@ -40,6 +41,51 @@ class PulseQutritApiTests(unittest.TestCase):
             validated.step_policy.maximum_internal_step_count,
             QUTRIT_API_MAX_INTERNAL_STEPS,
         )
+        self.assertEqual(validated.diagnostics.backend.requested, "python")
+        self.assertEqual(validated.diagnostics.backend.resolved, "python")
+
+    @unittest.skipUnless(
+        is_rust_kernel_available(),
+        "quantascope_rust is not importable",
+    )
+    def test_rust_qutrit_backend_matches_python_and_auto_resolves_rust(self) -> None:
+        python_payload = _direct_payload()
+        rust_payload = _direct_payload()
+        auto_payload = _direct_payload()
+        rust_payload["backend"] = "rust"
+        auto_payload["backend"] = "auto"
+
+        python_response = pulse_simulate(
+            QutritPulseSimulateRequest.model_validate(python_payload)
+        )
+        rust_response = pulse_simulate(
+            QutritPulseSimulateRequest.model_validate(rust_payload)
+        )
+        auto_response = pulse_simulate(
+            QutritPulseSimulateRequest.model_validate(auto_payload)
+        )
+
+        self.assertEqual(rust_response["diagnostics"]["backend"], {
+            "requested": "rust",
+            "resolved": "rust",
+            "fallback_used": False,
+        })
+        self.assertEqual(auto_response["diagnostics"]["backend"], {
+            "requested": "auto",
+            "resolved": "rust",
+            "fallback_used": False,
+        })
+        for row_python, row_rust in zip(
+            python_response["final"]["density_matrix"],
+            rust_response["final"]["density_matrix"],
+        ):
+            for value_python, value_rust in zip(row_python, row_rust):
+                self.assertAlmostEqual(
+                    value_python["real"], value_rust["real"], places=12
+                )
+                self.assertAlmostEqual(
+                    value_python["imag"], value_rust["imag"], places=12
+                )
 
     def test_physical_environment_rates_are_returned(self) -> None:
         payload = _direct_payload()

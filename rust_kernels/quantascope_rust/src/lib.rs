@@ -1,5 +1,5 @@
-use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
 
 #[pyfunction]
 fn backend_name() -> &'static str {
@@ -77,15 +77,66 @@ fn rk4_evolve_flat(
         let k4 = lindblad_rhs_raw(&k4_state, &h, &collapse_ops, num_ops, d);
 
         for index in 0..element_count {
-            evolved[index] += dt / 6.0 * (
-                k1[index]
-                + 2.0 * k2[index]
-                + 2.0 * k3[index]
-                + k4[index]
-            );
+            evolved[index] +=
+                dt / 6.0 * (k1[index] + 2.0 * k2[index] + 2.0 * k3[index] + k4[index]);
         }
     }
 
+    Ok(evolved)
+}
+
+#[pyfunction]
+fn rk4_time_dependent_stages_flat(
+    rho: Vec<f64>,
+    h1: Vec<f64>,
+    h2: Vec<f64>,
+    h3: Vec<f64>,
+    h4: Vec<f64>,
+    collapse_ops: Vec<f64>,
+    num_ops: usize,
+    d: usize,
+    dt: f64,
+) -> PyResult<Vec<f64>> {
+    let element_count = validate_time_dependent_rk4_inputs(
+        &rho,
+        &h1,
+        &h2,
+        &h3,
+        &h4,
+        &collapse_ops,
+        num_ops,
+        d,
+        dt,
+    )?;
+    let (k1, k2, k3, k4) =
+        rk4_time_dependent_stages_raw(&rho, &h1, &h2, &h3, &h4, &collapse_ops, num_ops, d, dt);
+    let mut stages = Vec::with_capacity(4 * element_count);
+    stages.extend_from_slice(&k1);
+    stages.extend_from_slice(&k2);
+    stages.extend_from_slice(&k3);
+    stages.extend_from_slice(&k4);
+    Ok(stages)
+}
+
+#[pyfunction]
+fn rk4_time_dependent_step_flat(
+    rho: Vec<f64>,
+    h1: Vec<f64>,
+    h2: Vec<f64>,
+    h3: Vec<f64>,
+    h4: Vec<f64>,
+    collapse_ops: Vec<f64>,
+    num_ops: usize,
+    d: usize,
+    dt: f64,
+) -> PyResult<Vec<f64>> {
+    validate_time_dependent_rk4_inputs(&rho, &h1, &h2, &h3, &h4, &collapse_ops, num_ops, d, dt)?;
+    let (k1, k2, k3, k4) =
+        rk4_time_dependent_stages_raw(&rho, &h1, &h2, &h3, &h4, &collapse_ops, num_ops, d, dt);
+    let mut evolved = rho;
+    for index in 0..evolved.len() {
+        evolved[index] += dt / 6.0 * (k1[index] + 2.0 * k2[index] + 2.0 * k3[index] + k4[index]);
+    }
     Ok(evolved)
 }
 
@@ -221,14 +272,30 @@ fn rk4_step_raw(
 
     let mut evolved = rho.to_vec();
     for index in 0..element_count {
-        evolved[index] += dt / 6.0 * (
-            k1[index]
-            + 2.0 * k2[index]
-            + 2.0 * k3[index]
-            + k4[index]
-        );
+        evolved[index] += dt / 6.0 * (k1[index] + 2.0 * k2[index] + 2.0 * k3[index] + k4[index]);
     }
     evolved
+}
+
+fn rk4_time_dependent_stages_raw(
+    rho: &[f64],
+    h1: &[f64],
+    h2: &[f64],
+    h3: &[f64],
+    h4: &[f64],
+    collapse_ops: &[f64],
+    num_ops: usize,
+    d: usize,
+    dt: f64,
+) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
+    let k1 = lindblad_rhs_raw(rho, h1, collapse_ops, num_ops, d);
+    let k2_state = add_scaled_flat(rho, &k1, 0.5 * dt);
+    let k2 = lindblad_rhs_raw(&k2_state, h2, collapse_ops, num_ops, d);
+    let k3_state = add_scaled_flat(rho, &k2, 0.5 * dt);
+    let k3 = lindblad_rhs_raw(&k3_state, h3, collapse_ops, num_ops, d);
+    let k4_state = add_scaled_flat(rho, &k3, dt);
+    let k4 = lindblad_rhs_raw(&k4_state, h4, collapse_ops, num_ops, d);
+    (k1, k2, k3, k4)
 }
 
 fn clean_density_flat(rho: &mut Vec<f64>, d: usize) -> PyResult<()> {
@@ -276,10 +343,7 @@ fn validate_matrix_len(name: &str, actual: usize, expected: usize, d: usize) -> 
     if actual != expected {
         return Err(PyValueError::new_err(format!(
             "{} length must be 2 * d * d; received len({})={} for d={}",
-            name,
-            name,
-            actual,
-            d
+            name, name, actual, d
         )));
     }
     Ok(())
@@ -297,12 +361,34 @@ fn validate_collapse_ops_len(
     if actual != expected {
         return Err(PyValueError::new_err(format!(
             "collapse_ops length must be num_ops * 2 * d * d; received len(collapse_ops)={} for num_ops={} and d={}",
-            actual,
-            num_ops,
-            d
+            actual, num_ops, d
         )));
     }
     Ok(())
+}
+
+fn validate_time_dependent_rk4_inputs(
+    rho: &[f64],
+    h1: &[f64],
+    h2: &[f64],
+    h3: &[f64],
+    h4: &[f64],
+    collapse_ops: &[f64],
+    num_ops: usize,
+    d: usize,
+    dt: f64,
+) -> PyResult<usize> {
+    let element_count = matrix_element_count(d)?;
+    validate_matrix_len("rho", rho.len(), element_count, d)?;
+    validate_matrix_len("h1", h1.len(), element_count, d)?;
+    validate_matrix_len("h2", h2.len(), element_count, d)?;
+    validate_matrix_len("h3", h3.len(), element_count, d)?;
+    validate_matrix_len("h4", h4.len(), element_count, d)?;
+    validate_collapse_ops_len(collapse_ops.len(), num_ops, element_count, d)?;
+    if !dt.is_finite() {
+        return Err(PyValueError::new_err("dt must be finite"));
+    }
+    Ok(element_count)
 }
 
 fn matmul_flat(a: &[f64], b: &[f64], d: usize) -> Vec<f64> {
@@ -356,6 +442,8 @@ fn quantascope_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(matmul_complex_flat, m)?)?;
     m.add_function(wrap_pyfunction!(lindblad_rhs_flat, m)?)?;
     m.add_function(wrap_pyfunction!(rk4_evolve_flat, m)?)?;
+    m.add_function(wrap_pyfunction!(rk4_time_dependent_stages_flat, m)?)?;
+    m.add_function(wrap_pyfunction!(rk4_time_dependent_step_flat, m)?)?;
     m.add_function(wrap_pyfunction!(rk4_evolve_cleaned_flat, m)?)?;
     m.add_function(wrap_pyfunction!(rk4_evolve_cleaned_samples_flat, m)?)?;
     Ok(())

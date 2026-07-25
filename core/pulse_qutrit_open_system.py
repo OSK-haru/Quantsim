@@ -22,6 +22,7 @@ from core.physical_environment import (
 from core.pulse_envelopes import PulseEnvelope
 from core.pulse_evolution import (
     ConstantHamiltonian,
+    ResolvedTimeDependentEvolutionBackend,
     TimeDependentEvolutionResult,
     evolve_time_dependent_segment,
 )
@@ -350,6 +351,7 @@ def evolve_open_qutrit_sequence(
     drag_beta_us: float = 0.0,
     pulse_checkpoint_times_us: Sequence[float] = (),
     idle_checkpoint_times_us: Sequence[float] = (),
+    backend: ResolvedTimeDependentEvolutionBackend = "python",
 ) -> OpenQutritSequenceResult:
     """Run a dissipative qutrit pulse and optional free idle segment."""
 
@@ -380,6 +382,7 @@ def evolve_open_qutrit_sequence(
         duration_us=pulse_duration,
         max_step_us=max_step_us,
         checkpoint_times_us=pulse_checkpoint_times_us,
+        backend=backend,
     )
 
     idle_duration = total_duration - pulse_duration
@@ -398,6 +401,7 @@ def evolve_open_qutrit_sequence(
             duration_us=idle_duration,
             max_step_us=max_step_us,
             checkpoint_times_us=idle_checkpoint_times_us,
+            backend=backend,
         )
 
     trajectory = _population_trajectory(
