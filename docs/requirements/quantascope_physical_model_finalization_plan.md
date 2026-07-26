@@ -505,7 +505,7 @@ EvolutionMethod
 
 # Phase 2: CPTP 写像の正式・明示的構成
 
-**Current status:** PLANNED; Phase 1 RK4 parity required
+**Current status:** COMPLETE; C0 through C10 implemented
 
 ## 14. 目的
 

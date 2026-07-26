@@ -11,6 +11,7 @@ from api.pulse_models import (
 )
 from api.pulse_backend_logging import log_pulse_backend_selection
 from core.capabilities import DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL
+from core.cptp_evolution import EXPLICIT_CPTP_EVOLUTION_ID
 from core.gates import Matrix, matmul, trace
 from core.pulse_contract import (
     PULSE_ANGULAR_FREQUENCY_UNIT,
@@ -38,6 +39,7 @@ from core.pulse_qutrit_contract import (
 from core.pulse_qutrit_open_system import (
     QutritDissipationRates,
     evolve_open_qutrit_sequence,
+    evolve_cptp_open_qutrit_sequence,
     qutrit_dissipation_rates,
 )
 from core.pulse_step_policy import recommended_qutrit_step_policy
@@ -115,20 +117,40 @@ def run_qutrit_pulse_request(
             f"{QUTRIT_API_MAX_INTERNAL_STEPS}."
         )
 
-    result = evolve_open_qutrit_sequence(
-        qutrit_initial_density_matrix(request.initial_state),
-        envelope,
-        alpha,
-        rates,
-        request.total_simulation_time_us,
-        policy.selected_internal_step_cap_us,
-        phase_rad=request.pulse.phase_rad,
-        detuning_rad_per_us=request.pulse.detuning_rad_per_us,
-        drag_beta_us=request.pulse.drag_beta_us,
-        pulse_checkpoint_times_us=pulse_times,
-        idle_checkpoint_times_us=idle_times,
-        backend=resolved_backend,
-    )
+    if request.evolution_method == "explicit_cptp":
+        result, pulse_audit, idle_audit = (
+            evolve_cptp_open_qutrit_sequence(
+                qutrit_initial_density_matrix(request.initial_state),
+                envelope,
+                alpha,
+                rates,
+                request.total_simulation_time_us,
+                policy.selected_internal_step_cap_us,
+                phase_rad=request.pulse.phase_rad,
+                detuning_rad_per_us=request.pulse.detuning_rad_per_us,
+                drag_beta_us=request.pulse.drag_beta_us,
+                pulse_checkpoint_times_us=pulse_times,
+                idle_checkpoint_times_us=idle_times,
+                backend=resolved_backend,
+            )
+        )
+    else:
+        result = evolve_open_qutrit_sequence(
+            qutrit_initial_density_matrix(request.initial_state),
+            envelope,
+            alpha,
+            rates,
+            request.total_simulation_time_us,
+            policy.selected_internal_step_cap_us,
+            phase_rad=request.pulse.phase_rad,
+            detuning_rad_per_us=request.pulse.detuning_rad_per_us,
+            drag_beta_us=request.pulse.drag_beta_us,
+            pulse_checkpoint_times_us=pulse_times,
+            idle_checkpoint_times_us=idle_times,
+            backend=resolved_backend,
+        )
+        pulse_audit = None
+        idle_audit = None
     paired = _sequence_checkpoints(result, envelope.duration_us)
     trajectory = [
         _trajectory_point(time_us, segment, point)
@@ -222,6 +244,25 @@ def run_qutrit_pulse_request(
                     request.backend == "auto" and resolved_backend == "python"
                 ),
             },
+            "evolution": {
+                "requested": request.evolution_method,
+                "resolved": request.evolution_method,
+                "method_id": (
+                    EXPLICIT_CPTP_EVOLUTION_ID
+                    if request.evolution_method == "explicit_cptp"
+                    else "fixed_step_rk4_v1"
+                ),
+                "cptp_guaranteed_by_construction": (
+                    request.evolution_method == "explicit_cptp"
+                ),
+                "cleanup_applied": (
+                    request.evolution_method == "fixed_step_rk4"
+                ),
+                "open_pulse_audit": _audit_response(pulse_audit),
+                "open_idle_audit": _audit_response(idle_audit),
+                "closed_pulse_audit": None,
+                "closed_idle_audit": None,
+            },
             "open_pulse": result.pulse_result.diagnostics.to_dict(),
             "open_idle": (
                 None
@@ -239,7 +280,7 @@ def run_qutrit_pulse_request(
             ),
         },
         "warnings": _warnings(request),
-        "limitations": list(QUTRIT_MODEL_LIMITATIONS),
+        "limitations": _limitations(request.evolution_method),
     }
     return QutritPulseSimulateResponse.model_validate(response).model_dump()
 
@@ -390,7 +431,34 @@ def _warnings(request: QutritPulseSimulateRequest) -> list[str]:
             "ideal_reference disables environmental rates for the physical "
             "input profile."
         )
+    if request.evolution_method == "explicit_cptp":
+        warnings.append(
+            "Explicit CPTP mode uses a midpoint piecewise-constant "
+            "Hamiltonian approximation."
+        )
     return warnings
+
+
+def _audit_response(audit) -> dict[str, object] | None:
+    return None if audit is None else audit.to_dict()
+
+
+def _limitations(evolution_method: str) -> list[str]:
+    limitations = [
+        item
+        for item in QUTRIT_MODEL_LIMITATIONS
+        if "Fixed-step RK4" not in item
+    ]
+    if evolution_method == "fixed_step_rk4":
+        limitations.append(
+            "Fixed-step RK4 is not a strict finite-step CPTP integrator."
+        )
+    else:
+        limitations.append(
+            "Explicit CPTP evolution is CPTP for the frozen interval maps, "
+            "while time dependence is approximated at interval midpoints."
+        )
+    return limitations
 
 
 def _physicality_response(metrics: PhysicalityMetrics) -> dict[str, float]:

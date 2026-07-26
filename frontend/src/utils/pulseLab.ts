@@ -17,6 +17,7 @@ const QUTRIT_SAMPLES_PER_SIGMA = 32
 
 export const initialPulseLabForm: PulseLabForm = {
   modelId: QUTRIT_PULSE_MODEL,
+  evolutionMethod: 'fixed_step_rk4',
   shape: 'gaussian',
   amplitudeMode: 'target_rotation_angle',
   targetRotationAngleRad: Math.PI / 2,
@@ -211,6 +212,7 @@ export function buildPulsePayload(form: PulseLabForm): Record<string, unknown> {
       : {}),
     pulse,
     total_simulation_time_us: form.totalSimulationTimeUs,
+    evolution_method: form.evolutionMethod,
     environment,
     snapshot_options: {
       uniform_count: form.snapshotCount,

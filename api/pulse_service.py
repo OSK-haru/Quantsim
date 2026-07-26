@@ -14,6 +14,7 @@ from api.pulse_models import (
 from api.pulse_backend_logging import log_pulse_backend_selection
 from api.pulse_qutrit_service import run_qutrit_pulse_request
 from core.capabilities import DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL
+from core.cptp_evolution import EXPLICIT_CPTP_EVOLUTION_ID
 from core.gates import Matrix, initial_density_matrix, matmul, trace
 from core.pulse_contract import (
     PULSE_ANGULAR_FREQUENCY_UNIT,
@@ -38,6 +39,7 @@ from core.pulse_open_system import (
     OpenPulseSequenceResult,
     PulseDissipationRates,
     evolve_open_pulse_sequence,
+    evolve_cptp_open_pulse_sequence,
     pulse_dissipation_rates,
 )
 from core.pulse_step_policy import (
@@ -122,36 +124,70 @@ def run_pulse_request(request: PulseSimulateRequest) -> dict[str, object]:
         )
 
     initial = initial_density_matrix([request.initial_state])
-    open_result = evolve_open_pulse_sequence(
-        initial,
-        envelope,
-        rates,
-        request.total_simulation_time_us,
-        max_step_us,
-        phase_rad=request.pulse.phase_rad,
-        detuning_rad_per_us=request.pulse.detuning_rad_per_us,
-        pulse_checkpoint_times_us=pulse_times,
-        idle_checkpoint_times_us=idle_times,
-        backend=resolved_backend,
-    )
     zero_rates = PulseDissipationRates(
         DIRECT_RATES_INPUT_MODE,
         0.0,
         0.0,
         0.0,
     )
-    closed_result = evolve_open_pulse_sequence(
-        initial,
-        envelope,
-        zero_rates,
-        request.total_simulation_time_us,
-        max_step_us,
-        phase_rad=request.pulse.phase_rad,
-        detuning_rad_per_us=request.pulse.detuning_rad_per_us,
-        pulse_checkpoint_times_us=pulse_times,
-        idle_checkpoint_times_us=idle_times,
-        backend=resolved_backend,
-    )
+    if request.evolution_method == "explicit_cptp":
+        open_result, open_pulse_audit, open_idle_audit = (
+            evolve_cptp_open_pulse_sequence(
+                initial,
+                envelope,
+                rates,
+                request.total_simulation_time_us,
+                max_step_us,
+                phase_rad=request.pulse.phase_rad,
+                detuning_rad_per_us=request.pulse.detuning_rad_per_us,
+                pulse_checkpoint_times_us=pulse_times,
+                idle_checkpoint_times_us=idle_times,
+                backend=resolved_backend,
+            )
+        )
+        closed_result, closed_pulse_audit, closed_idle_audit = (
+            evolve_cptp_open_pulse_sequence(
+                initial,
+                envelope,
+                zero_rates,
+                request.total_simulation_time_us,
+                max_step_us,
+                phase_rad=request.pulse.phase_rad,
+                detuning_rad_per_us=request.pulse.detuning_rad_per_us,
+                pulse_checkpoint_times_us=pulse_times,
+                idle_checkpoint_times_us=idle_times,
+                backend=resolved_backend,
+            )
+        )
+    else:
+        open_result = evolve_open_pulse_sequence(
+            initial,
+            envelope,
+            rates,
+            request.total_simulation_time_us,
+            max_step_us,
+            phase_rad=request.pulse.phase_rad,
+            detuning_rad_per_us=request.pulse.detuning_rad_per_us,
+            pulse_checkpoint_times_us=pulse_times,
+            idle_checkpoint_times_us=idle_times,
+            backend=resolved_backend,
+        )
+        closed_result = evolve_open_pulse_sequence(
+            initial,
+            envelope,
+            zero_rates,
+            request.total_simulation_time_us,
+            max_step_us,
+            phase_rad=request.pulse.phase_rad,
+            detuning_rad_per_us=request.pulse.detuning_rad_per_us,
+            pulse_checkpoint_times_us=pulse_times,
+            idle_checkpoint_times_us=idle_times,
+            backend=resolved_backend,
+        )
+        open_pulse_audit = None
+        open_idle_audit = None
+        closed_pulse_audit = None
+        closed_idle_audit = None
 
     paired = _paired_checkpoints(open_result, closed_result)
     trajectory = [
@@ -249,6 +285,27 @@ def run_pulse_request(request: PulseSimulateRequest) -> dict[str, object]:
                     request.backend == "auto" and resolved_backend == "python"
                 ),
             },
+            "evolution": {
+                "requested": request.evolution_method,
+                "resolved": request.evolution_method,
+                "method_id": (
+                    EXPLICIT_CPTP_EVOLUTION_ID
+                    if request.evolution_method == "explicit_cptp"
+                    else "fixed_step_rk4_v1"
+                ),
+                "cptp_guaranteed_by_construction": (
+                    request.evolution_method == "explicit_cptp"
+                ),
+                "cleanup_applied": (
+                    request.evolution_method == "fixed_step_rk4"
+                ),
+                "open_pulse_audit": _audit_response(open_pulse_audit),
+                "open_idle_audit": _audit_response(open_idle_audit),
+                "closed_pulse_audit": _audit_response(
+                    closed_pulse_audit
+                ),
+                "closed_idle_audit": _audit_response(closed_idle_audit),
+            },
             "open_pulse": open_result.pulse_result.diagnostics.to_dict(),
             "open_idle": (
                 None
@@ -272,7 +329,7 @@ def run_pulse_request(request: PulseSimulateRequest) -> dict[str, object]:
             ),
         },
         "warnings": _warnings(request, open_result),
-        "limitations": list(PULSE_MODEL_LIMITATIONS),
+        "limitations": _limitations(request.evolution_method),
     }
     return PulseSimulateResponse.model_validate(response).model_dump()
 
@@ -519,6 +576,11 @@ def _warnings(
             "ideal_reference disables environmental rates for the physical "
             "input profile."
         )
+    if request.evolution_method == "explicit_cptp":
+        warnings.append(
+            "Explicit CPTP mode uses a midpoint piecewise-constant "
+            "Hamiltonian approximation."
+        )
     diagnostics = [result.pulse_result.diagnostics]
     if result.idle_result is not None:
         diagnostics.append(result.idle_result.diagnostics)
@@ -528,6 +590,29 @@ def _warnings(
             "physicality diagnostics."
         )
     return warnings
+
+
+def _audit_response(audit) -> dict[str, object] | None:
+    return None if audit is None else audit.to_dict()
+
+
+def _limitations(evolution_method: str) -> list[str]:
+    limitations = [
+        item
+        for item in PULSE_MODEL_LIMITATIONS
+        if "fixed-step RK4" not in item
+    ]
+    if evolution_method == "fixed_step_rk4":
+        limitations.append(
+            "The fixed-step RK4 path applies density-matrix cleanup after "
+            "each step."
+        )
+    else:
+        limitations.append(
+            "Explicit CPTP evolution is CPTP for the frozen interval maps, "
+            "while time dependence is approximated at interval midpoints."
+        )
+    return limitations
 
 
 def _state_overlap(state: Matrix, reference: Matrix) -> float:

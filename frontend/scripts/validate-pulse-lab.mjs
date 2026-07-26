@@ -54,6 +54,10 @@ const {
 } = require(path.join(temporarySource, 'utils', 'pulseLab.js'))
 
 const qutritPayload = buildPulsePayload(initialPulseLabForm)
+assert(
+  qutritPayload.evolution_method === 'fixed_step_rk4',
+  'Pulse Lab must preserve the RK4 API default',
+)
 assert(qutritPayload.anharmonicity_mhz === -100, 'qutrit anharmonicity missing')
 assert(qutritPayload.pulse.drag_beta_us === 0.001, 'qutrit DRAG missing')
 assert(!('gamma_down_per_us' in qutritPayload.environment), 'inactive two-level rate leaked')
@@ -70,6 +74,15 @@ assert(twoLevelPayload.pulse.drag_beta_us === 0, 'two-level DRAG must be zero')
 assert(!('sigma_us' in twoLevelPayload.pulse), 'inactive Gaussian field leaked')
 assert('gamma_down_per_us' in twoLevelPayload.environment, 'two-level direct rates missing')
 assert(!('gamma_10_down_per_us' in twoLevelPayload.environment), 'qutrit rate leaked')
+
+const cptpPayload = buildPulsePayload({
+  ...initialPulseLabForm,
+  evolutionMethod: 'explicit_cptp',
+})
+assert(
+  cptpPayload.evolution_method === 'explicit_cptp',
+  'explicit CPTP selection was not emitted',
+)
 
 const costly = estimatePulseCost({
   ...initialPulseLabForm,

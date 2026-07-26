@@ -68,7 +68,10 @@ export function PulseLabPage({
     const controller = new AbortController()
     abortRef.current = controller
     const payload = buildPulsePayload(form)
-    const timeoutId = window.setTimeout(() => controller.abort(), 16000)
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      form.evolutionMethod === 'explicit_cptp' ? 30000 : 16000,
+    )
     setStatus('loading')
     setErrorMessage(null)
     setLastRequestPayload(payload)
@@ -161,6 +164,14 @@ export function PulseLabPage({
           <span>TOTAL OBSERVATION</span>
           <strong>{form.totalSimulationTimeUs.toPrecision(4)} us</strong>
         </div>
+        <div>
+          <span>EVOLUTION</span>
+          <strong>
+            {form.evolutionMethod === 'explicit_cptp'
+              ? 'Explicit CPTP'
+              : 'Fixed-step RK4'}
+          </strong>
+        </div>
       </section>
 
       <div className="pulse-lab__workspace">
@@ -218,6 +229,14 @@ export function PulseLabPage({
               <div>
                 <span>COMPLETED</span>
                 <strong>{lastResponseAt ? new Date(lastResponseAt).toLocaleTimeString() : 'now'}</strong>
+              </div>
+              <div>
+                <span>EVOLUTION</span>
+                <strong>
+                  {result.diagnostics.evolution.resolved === 'explicit_cptp'
+                    ? 'Explicit CPTP'
+                    : 'Fixed-step RK4'}
+                </strong>
               </div>
             </section>
 

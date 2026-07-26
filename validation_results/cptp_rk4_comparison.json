@@ -1,0 +1,839 @@
+{
+  "schema_version": "cptp-rk4-comparison-v1",
+  "generated_at_utc": "2026-07-26T08:16:02.290782+00:00",
+  "environment": {
+    "python": "3.14.4",
+    "numpy": "2.4.4",
+    "rust_extension_available": true
+  },
+  "methodology": {
+    "rk4": "Fixed-step RK4 with stage-time Hamiltonian evaluation and the existing post-step cleanup.",
+    "cptp": "Midpoint piecewise-constant GKSL exponentials, interval and composed Choi audits, and state application without cleanup.",
+    "timing": "Median wall time. RK4 includes complete evolution. CPTP includes map construction, audits, and state application.",
+    "matched_grid": true,
+    "timing_repetitions": 5,
+    "physicality_tolerance": 1e-10,
+    "speed_is_acceptance_criterion": false
+  },
+  "cases": [
+    {
+      "case_id": "constant_qubit_open_system",
+      "description": "Constant qubit Hamiltonian with relaxation and dephasing.",
+      "duration_us": 0.8,
+      "step_sizes_us": [
+        0.2,
+        0.1,
+        0.05
+      ],
+      "parameters": {
+        "hamiltonian_x_coefficient_rad_per_us": 0.41,
+        "gamma_down_per_us": 0.17,
+        "gamma_phi_per_us": 0.06
+      },
+      "backends": [
+        {
+          "backend": "python",
+          "comparisons": [
+            {
+              "backend": "python",
+              "dimension": 2,
+              "duration_us": 0.8,
+              "max_step_us": 0.2,
+              "rk4_internal_step_count": 4,
+              "cptp_interval_count": 4,
+              "max_abs_difference": 3.817210333807918e-07,
+              "frobenius_difference": 5.614574421680816e-07,
+              "trace_distance": 3.970103647047044e-07,
+              "rk4_runtime_median_ms": 1.674700000876328,
+              "cptp_runtime_median_ms": 2.2393999970518053,
+              "rk4_to_cptp_runtime_ratio": 0.7478342426904925,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040177646327135
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040177646327135
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.014004909707615448,
+              "rk4_maximum_cleanup_correction_norm": 0.0,
+              "cptp_physicality": {
+                "trace_error": 1.1443916996305594e-16,
+                "hermiticity_error": 7.850462293418876e-17,
+                "minimum_eigenvalue": 0.050401745580468255
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0008046612605748834,
+              "cptp_trace_preservation_error": 2.0014830212433605e-16
+            },
+            {
+              "backend": "python",
+              "dimension": 2,
+              "duration_us": 0.8,
+              "max_step_us": 0.1,
+              "rk4_internal_step_count": 8,
+              "cptp_interval_count": 8,
+              "max_abs_difference": 2.398063024421317e-08,
+              "frobenius_difference": 3.46720215231641e-08,
+              "trace_distance": 2.4516821536475252e-08,
+              "rk4_runtime_median_ms": 3.205199998774333,
+              "cptp_runtime_median_ms": 3.839099998003803,
+              "rk4_to_cptp_runtime_ratio": 0.8348831758591659,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040174728961383
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040174728961383
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.007125664875595461,
+              "rk4_maximum_cleanup_correction_norm": 0.0,
+              "cptp_physicality": {
+                "trace_error": 1.1105699151271772e-15,
+                "hermiticity_error": 4.996003610813204e-16,
+                "minimum_eigenvalue": 0.05040174558046759
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0008046612605748739,
+              "cptp_trace_preservation_error": 1.851943855780944e-15
+            },
+            {
+              "backend": "python",
+              "dimension": 2,
+              "duration_us": 0.8,
+              "max_step_us": 0.05,
+              "rk4_internal_step_count": 16,
+              "cptp_interval_count": 16,
+              "max_abs_difference": 1.4997860328504288e-09,
+              "frobenius_difference": 2.1539704367362713e-09,
+              "trace_distance": 1.5230871022912798e-09,
+              "rk4_runtime_median_ms": 6.6490999997768085,
+              "cptp_runtime_median_ms": 7.9804000015428755,
+              "rk4_to_cptp_runtime_ratio": 0.8331787878416267,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040174568031544
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040174568031544
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.00359385388153885,
+              "rk4_maximum_cleanup_correction_norm": 2.220581570386223e-16,
+              "cptp_physicality": {
+                "trace_error": 1.776573666601473e-15,
+                "hermiticity_error": 7.249732973174092e-16,
+                "minimum_eigenvalue": 0.05040174558046892
+              },
+              "cptp_choi_minimum_eigenvalue": 0.00080466126057501,
+              "cptp_trace_preservation_error": 2.6651134375294657e-15
+            }
+          ],
+          "convergence_monotonic": true,
+          "physicality_pass": true,
+          "finest_trace_distance_limit": 1e-07,
+          "backend_pass": true
+        },
+        {
+          "backend": "rust",
+          "comparisons": [
+            {
+              "backend": "rust",
+              "dimension": 2,
+              "duration_us": 0.8,
+              "max_step_us": 0.2,
+              "rk4_internal_step_count": 4,
+              "cptp_interval_count": 4,
+              "max_abs_difference": 3.817210333808371e-07,
+              "frobenius_difference": 5.61457442165437e-07,
+              "trace_distance": 3.9701036470283435e-07,
+              "rk4_runtime_median_ms": 0.5917999988014344,
+              "cptp_runtime_median_ms": 1.6619999987597112,
+              "rk4_to_cptp_runtime_ratio": 0.3560770151883711,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040177646327135
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040177646327135
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.014004909707615448,
+              "rk4_maximum_cleanup_correction_norm": 0.0,
+              "cptp_physicality": {
+                "trace_error": 2.220446049250313e-16,
+                "hermiticity_error": 6.206335383118183e-17,
+                "minimum_eigenvalue": 0.05040174558046831
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0008046612605748193,
+              "cptp_trace_preservation_error": 2.603703785810335e-16
+            },
+            {
+              "backend": "rust",
+              "dimension": 2,
+              "duration_us": 0.8,
+              "max_step_us": 0.1,
+              "rk4_internal_step_count": 8,
+              "cptp_interval_count": 8,
+              "max_abs_difference": 2.3980630091468397e-08,
+              "frobenius_difference": 3.4672021129514545e-08,
+              "trace_distance": 2.4516821258122977e-08,
+              "rk4_runtime_median_ms": 1.3058999975328334,
+              "cptp_runtime_median_ms": 3.3162999970954843,
+              "rk4_to_cptp_runtime_ratio": 0.39378222678182917,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040174728961383
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040174728961383
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.007125664875595461,
+              "rk4_maximum_cleanup_correction_norm": 0.0,
+              "cptp_physicality": {
+                "trace_error": 1.5543122344752192e-15,
+                "hermiticity_error": 2.7894008272968645e-16,
+                "minimum_eigenvalue": 0.05040174558046753
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0008046612605748417,
+              "cptp_trace_preservation_error": 2.4043442600993574e-15
+            },
+            {
+              "backend": "rust",
+              "dimension": 2,
+              "duration_us": 0.8,
+              "max_step_us": 0.05,
+              "rk4_internal_step_count": 16,
+              "cptp_interval_count": 16,
+              "max_abs_difference": 1.4997860045639078e-09,
+              "frobenius_difference": 2.1539703868890312e-09,
+              "trace_distance": 1.523087067044192e-09,
+              "rk4_runtime_median_ms": 2.357600002142135,
+              "cptp_runtime_median_ms": 5.790899998828536,
+              "rk4_to_cptp_runtime_ratio": 0.4071215186964139,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040174568031544
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.05040174568031544
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.00359385388153885,
+              "rk4_maximum_cleanup_correction_norm": 2.220581570386223e-16,
+              "cptp_physicality": {
+                "trace_error": 2.3714374201337736e-16,
+                "hermiticity_error": 1.444357059649813e-15,
+                "minimum_eigenvalue": 0.050401745580467755
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0008046612605748598,
+              "cptp_trace_preservation_error": 1.1116099371267112e-15
+            }
+          ],
+          "convergence_monotonic": true,
+          "physicality_pass": true,
+          "finest_trace_distance_limit": 1e-07,
+          "backend_pass": true
+        }
+      ],
+      "case_pass": true
+    },
+    {
+      "case_id": "two_level_gaussian_open_system",
+      "description": "Gaussian qubit pulse with phase, detuning, and relaxation.",
+      "duration_us": 0.42000000000000004,
+      "step_sizes_us": [
+        0.04,
+        0.02,
+        0.01
+      ],
+      "parameters": {
+        "pulse_duration_us": 0.42000000000000004,
+        "sigma_us": 0.07,
+        "phase_rad": 0.27,
+        "detuning_rad_per_us": -0.19,
+        "gamma_down_per_us": 0.025,
+        "gamma_phi_per_us": 0.012
+      },
+      "backends": [
+        {
+          "backend": "python",
+          "comparisons": [
+            {
+              "backend": "python",
+              "dimension": 2,
+              "duration_us": 0.42000000000000004,
+              "max_step_us": 0.04,
+              "rk4_internal_step_count": 11,
+              "cptp_interval_count": 11,
+              "max_abs_difference": 0.00023737714571925306,
+              "frobenius_difference": 0.000381377902321012,
+              "trace_distance": 0.0002696749009258884,
+              "rk4_runtime_median_ms": 5.399500001658453,
+              "cptp_runtime_median_ms": 5.826699998578988,
+              "rk4_to_cptp_runtime_ratio": 0.9266823421448297,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0011461241014941725
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0011461241014941725
+              },
+              "rk4_minimum_observed_raw_eigenvalue": -3.656664548051347e-07,
+              "rk4_maximum_cleanup_correction_norm": 0.0,
+              "cptp_physicality": {
+                "trace_error": 1.4432909877758761e-15,
+                "hermiticity_error": 3.9592771477747256e-18,
+                "minimum_eigenvalue": 0.0011419145176526646
+              },
+              "cptp_choi_minimum_eigenvalue": 0.00046367389384047186,
+              "cptp_trace_preservation_error": 1.626491256479054e-15
+            },
+            {
+              "backend": "python",
+              "dimension": 2,
+              "duration_us": 0.42000000000000004,
+              "max_step_us": 0.02,
+              "rk4_internal_step_count": 21,
+              "cptp_interval_count": 21,
+              "max_abs_difference": 4.292512631154377e-05,
+              "frobenius_difference": 6.910961565303092e-05,
+              "trace_distance": 4.886787787345413e-05,
+              "rk4_runtime_median_ms": 9.612199999537552,
+              "cptp_runtime_median_ms": 10.758200001873774,
+              "rk4_to_cptp_runtime_ratio": 0.8934766036942405,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.00114465417019477
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.00114465417019477
+              },
+              "rk4_minimum_observed_raw_eigenvalue": -5.270641986357469e-10,
+              "rk4_maximum_cleanup_correction_norm": 2.3795449221434073e-16,
+              "cptp_physicality": {
+                "trace_error": 2.220456790374667e-16,
+                "hermiticity_error": 1.6711069443220836e-16,
+                "minimum_eigenvalue": 0.0011439073579565806
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0004663959159410854,
+              "cptp_trace_preservation_error": 1.0536159832333993e-15
+            },
+            {
+              "backend": "python",
+              "dimension": 2,
+              "duration_us": 0.42000000000000004,
+              "max_step_us": 0.01,
+              "rk4_internal_step_count": 42,
+              "cptp_interval_count": 42,
+              "max_abs_difference": 1.0741095543886914e-05,
+              "frobenius_difference": 1.7284975365171346e-05,
+              "trace_distance": 1.222232329335508e-05,
+              "rk4_runtime_median_ms": 20.08890000070096,
+              "cptp_runtime_median_ms": 20.738700000947574,
+              "rk4_to_cptp_runtime_ratio": 0.9686672742159863,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0011446044276706147
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0011446044276706147
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 5.703195936946607e-12,
+              "rk4_maximum_cleanup_correction_norm": 2.403703357979455e-16,
+              "cptp_physicality": {
+                "trace_error": 1.110223437287466e-15,
+                "hermiticity_error": 4.518280359883027e-16,
+                "minimum_eigenvalue": 0.001144429391821522
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0004670945121771689,
+              "cptp_trace_preservation_error": 1.5207425312535233e-15
+            }
+          ],
+          "convergence_monotonic": true,
+          "physicality_pass": true,
+          "finest_trace_distance_limit": 0.002,
+          "backend_pass": true
+        },
+        {
+          "backend": "rust",
+          "comparisons": [
+            {
+              "backend": "rust",
+              "dimension": 2,
+              "duration_us": 0.42000000000000004,
+              "max_step_us": 0.04,
+              "rk4_internal_step_count": 11,
+              "cptp_interval_count": 11,
+              "max_abs_difference": 0.0002373771457179208,
+              "frobenius_difference": 0.00038137790232040656,
+              "trace_distance": 0.00026967490092546023,
+              "rk4_runtime_median_ms": 2.072699997370364,
+              "cptp_runtime_median_ms": 4.183599998214049,
+              "rk4_to_cptp_runtime_ratio": 0.4954345535555947,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0011461241014942003
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0011461241014942003
+              },
+              "rk4_minimum_observed_raw_eigenvalue": -3.656664548051347e-07,
+              "rk4_maximum_cleanup_correction_norm": 0.0,
+              "cptp_physicality": {
+                "trace_error": 2.220599411328585e-16,
+                "hermiticity_error": 1.7554167342883506e-16,
+                "minimum_eigenvalue": 0.0011419145176528034
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0004636738938406564,
+              "cptp_trace_preservation_error": 2.8306657054654764e-16
+            },
+            {
+              "backend": "rust",
+              "dimension": 2,
+              "duration_us": 0.42000000000000004,
+              "max_step_us": 0.02,
+              "rk4_internal_step_count": 21,
+              "cptp_interval_count": 21,
+              "max_abs_difference": 4.292512631143275e-05,
+              "frobenius_difference": 6.910961565260234e-05,
+              "trace_distance": 4.886787787315107e-05,
+              "rk4_runtime_median_ms": 4.05010000031325,
+              "cptp_runtime_median_ms": 8.086899997579167,
+              "rk4_to_cptp_runtime_ratio": 0.5008223177639958,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0011446541701947421
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0011446541701947421
+              },
+              "rk4_minimum_observed_raw_eigenvalue": -5.270641986357469e-10,
+              "rk4_maximum_cleanup_correction_norm": 2.3795449221434073e-16,
+              "cptp_physicality": {
+                "trace_error": 1.1102230248796048e-15,
+                "hermiticity_error": 5.721958498152797e-17,
+                "minimum_eigenvalue": 0.0011439073579567471
+              },
+              "cptp_choi_minimum_eigenvalue": 0.00046639591594082637,
+              "cptp_trace_preservation_error": 1.2403366716032925e-15
+            },
+            {
+              "backend": "rust",
+              "dimension": 2,
+              "duration_us": 0.42000000000000004,
+              "max_step_us": 0.01,
+              "rk4_internal_step_count": 42,
+              "cptp_interval_count": 42,
+              "max_abs_difference": 1.0741095544997137e-05,
+              "frobenius_difference": 1.7284975365805605e-05,
+              "trace_distance": 1.2222323293803567e-05,
+              "rk4_runtime_median_ms": 7.652599997527432,
+              "cptp_runtime_median_ms": 15.61049999872921,
+              "rk4_to_cptp_runtime_ratio": 0.49022132527147755,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.001144604427670698
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.001144604427670698
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 5.703195936946607e-12,
+              "rk4_maximum_cleanup_correction_norm": 2.403703357979455e-16,
+              "cptp_physicality": {
+                "trace_error": 1.5543150978750693e-15,
+                "hermiticity_error": 5.721958498152797e-17,
+                "minimum_eigenvalue": 0.0011444293918213555
+              },
+              "cptp_choi_minimum_eigenvalue": 0.0004670945121769276,
+              "cptp_trace_preservation_error": 2.7224547479600544e-15
+            }
+          ],
+          "convergence_monotonic": true,
+          "physicality_pass": true,
+          "finest_trace_distance_limit": 0.002,
+          "backend_pass": true
+        }
+      ],
+      "case_pass": true
+    },
+    {
+      "case_id": "constant_qutrit_open_system",
+      "description": "Constant qutrit transmon Hamiltonian with thermal transitions and dephasing.",
+      "duration_us": 0.01,
+      "step_sizes_us": [
+        0.0002,
+        0.0001,
+        5e-05
+      ],
+      "parameters": {
+        "duration_us": 0.01,
+        "anharmonicity_mhz": -215.0,
+        "phase_rad": -0.23,
+        "detuning_rad_per_us": 0.17,
+        "drive_amplitude_rad_per_us": 1.0,
+        "rates": {
+          "gamma_10_down_per_us": 0.028,
+          "gamma_01_up_per_us": 0.004,
+          "gamma_21_down_per_us": 0.047,
+          "gamma_12_up_per_us": 0.006,
+          "gamma_phi_adjacent_per_us": 0.018
+        }
+      },
+      "backends": [
+        {
+          "backend": "python",
+          "comparisons": [
+            {
+              "backend": "python",
+              "dimension": 3,
+              "duration_us": 0.01,
+              "max_step_us": 0.0002,
+              "rk4_internal_step_count": 50,
+              "cptp_interval_count": 50,
+              "max_abs_difference": 6.90278141789203e-08,
+              "frobenius_difference": 1.1349839130457005e-07,
+              "trace_distance": 8.025548241549943e-08,
+              "rk4_runtime_median_ms": 77.27489999888348,
+              "cptp_runtime_median_ms": 50.290599996515084,
+              "rk4_to_cptp_runtime_ratio": 1.5365674699494198,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.09997219667824896
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.09997219667824896
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.09997219667824896,
+              "rk4_maximum_cleanup_correction_norm": 1.3311118315067764e-16,
+              "cptp_physicality": {
+                "trace_error": 2.6645352764068153e-15,
+                "hermiticity_error": 5.556237309256649e-17,
+                "minimum_eigenvalue": 0.0999721966621455
+              },
+              "cptp_choi_minimum_eigenvalue": 1.3355421041688618e-09,
+              "cptp_trace_preservation_error": 1.1734890229840219e-14
+            },
+            {
+              "backend": "python",
+              "dimension": 3,
+              "duration_us": 0.01,
+              "max_step_us": 0.0001,
+              "rk4_internal_step_count": 100,
+              "cptp_interval_count": 100,
+              "max_abs_difference": 4.3168111747490546e-09,
+              "frobenius_difference": 7.097917078883423e-09,
+              "trace_distance": 5.01899085903302e-09,
+              "rk4_runtime_median_ms": 157.88370000154828,
+              "cptp_runtime_median_ms": 322.2338999985368,
+              "rk4_to_cptp_runtime_ratio": 0.48996613951004286,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.09997219666265075
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.09997219666265075
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.09997219666265075,
+              "rk4_maximum_cleanup_correction_norm": 1.331114273806142e-16,
+              "cptp_physicality": {
+                "trace_error": 1.2101430988812385e-14,
+                "hermiticity_error": 1.471045523610086e-15,
+                "minimum_eigenvalue": 0.09997219666214524
+              },
+              "cptp_choi_minimum_eigenvalue": 1.3355421041447328e-09,
+              "cptp_trace_preservation_error": 2.974785286365111e-14
+            },
+            {
+              "backend": "python",
+              "dimension": 3,
+              "duration_us": 0.01,
+              "max_step_us": 5e-05,
+              "rk4_internal_step_count": 200,
+              "cptp_interval_count": 200,
+              "max_abs_difference": 2.6983646252122316e-10,
+              "frobenius_difference": 4.4367973849082463e-10,
+              "trace_distance": 3.137400077682168e-10,
+              "rk4_runtime_median_ms": 549.6261000007507,
+              "cptp_runtime_median_ms": 617.266599998402,
+              "rk4_to_cptp_runtime_ratio": 0.8904193099094843,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.09997219666216065
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.09997219666216065
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.09997219666216065,
+              "rk4_maximum_cleanup_correction_norm": 1.3311144574958494e-16,
+              "cptp_physicality": {
+                "trace_error": 4.551914401403268e-14,
+                "hermiticity_error": 2.776319786554118e-17,
+                "minimum_eigenvalue": 0.0999721966621452
+              },
+              "cptp_choi_minimum_eigenvalue": 1.3355421041517733e-09,
+              "cptp_trace_preservation_error": 7.777270686180329e-14
+            }
+          ],
+          "convergence_monotonic": true,
+          "physicality_pass": true,
+          "finest_trace_distance_limit": 1e-06,
+          "backend_pass": true
+        },
+        {
+          "backend": "rust",
+          "comparisons": [
+            {
+              "backend": "rust",
+              "dimension": 3,
+              "duration_us": 0.01,
+              "max_step_us": 0.0002,
+              "rk4_internal_step_count": 50,
+              "cptp_interval_count": 50,
+              "max_abs_difference": 6.902781417938174e-08,
+              "frobenius_difference": 1.13498391304972e-07,
+              "trace_distance": 8.025548337589151e-08,
+              "rk4_runtime_median_ms": 30.07679999791435,
+              "cptp_runtime_median_ms": 157.76980000009644,
+              "rk4_to_cptp_runtime_ratio": 0.1906372448839763,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0999721966782489
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0999721966782489
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.0999721966782489,
+              "rk4_maximum_cleanup_correction_norm": 1.3311118315067764e-16,
+              "cptp_physicality": {
+                "trace_error": 6.550315845653604e-15,
+                "hermiticity_error": 2.7769124835677133e-17,
+                "minimum_eigenvalue": 0.09997219666214435
+              },
+              "cptp_choi_minimum_eigenvalue": 1.335542104181362e-09,
+              "cptp_trace_preservation_error": 1.2548969852766748e-14
+            },
+            {
+              "backend": "rust",
+              "dimension": 3,
+              "duration_us": 0.01,
+              "max_step_us": 0.0001,
+              "rk4_internal_step_count": 100,
+              "cptp_interval_count": 100,
+              "max_abs_difference": 4.316811174615415e-09,
+              "frobenius_difference": 7.097917078271825e-09,
+              "trace_distance": 5.0189871111409335e-09,
+              "rk4_runtime_median_ms": 62.93790000199806,
+              "cptp_runtime_median_ms": 304.82970000230125,
+              "rk4_to_cptp_runtime_ratio": 0.20646905469356472,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0999721966626507
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0999721966626507
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.0999721966626507,
+              "rk4_maximum_cleanup_correction_norm": 1.331114273806142e-16,
+              "cptp_physicality": {
+                "trace_error": 7.771561193142195e-15,
+                "hermiticity_error": 1.1102251422055052e-16,
+                "minimum_eigenvalue": 0.09997219666214527
+              },
+              "cptp_choi_minimum_eigenvalue": 1.3355421041727062e-09,
+              "cptp_trace_preservation_error": 1.4414117596190274e-14
+            },
+            {
+              "backend": "rust",
+              "dimension": 3,
+              "duration_us": 0.01,
+              "max_step_us": 5e-05,
+              "rk4_internal_step_count": 200,
+              "cptp_interval_count": 200,
+              "max_abs_difference": 2.698364524984472e-10,
+              "frobenius_difference": 4.436797373814595e-10,
+              "trace_distance": 3.1373589034320446e-10,
+              "rk4_runtime_median_ms": 122.55020000156946,
+              "cptp_runtime_median_ms": 639.2966999992495,
+              "rk4_to_cptp_runtime_ratio": 0.19169534271288013,
+              "timing_repetitions": 5,
+              "rk4_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0999721966621607
+              },
+              "rk4_raw_final_physicality": {
+                "trace_error": 0.0,
+                "hermiticity_error": 0.0,
+                "minimum_eigenvalue": 0.0999721966621607
+              },
+              "rk4_minimum_observed_raw_eigenvalue": 0.0999721966621607,
+              "rk4_maximum_cleanup_correction_norm": 1.3311144574958494e-16,
+              "cptp_physicality": {
+                "trace_error": 1.2212453273039655e-14,
+                "hermiticity_error": 8.329495649315952e-17,
+                "minimum_eigenvalue": 0.09997219666214732
+              },
+              "cptp_choi_minimum_eigenvalue": 1.3355421041258172e-09,
+              "cptp_trace_preservation_error": 3.34809277984748e-14
+            }
+          ],
+          "convergence_monotonic": true,
+          "physicality_pass": true,
+          "finest_trace_distance_limit": 1e-06,
+          "backend_pass": true
+        }
+      ],
+      "case_pass": true
+    }
+  ],
+  "non_acceptance_stress_observation": {
+    "case_id": "qutrit_drag_intentionally_coarse_step",
+    "included_in_acceptance": false,
+    "purpose": "Expose the RK4 stability boundary; this step is far above the frozen qutrit step-policy limit for -215 MHz anharmonicity.",
+    "max_step_us": 0.006,
+    "anharmonicity_mhz": -215.0,
+    "comparisons": [
+      {
+        "backend": "python",
+        "dimension": 3,
+        "duration_us": 0.33,
+        "max_step_us": 0.006,
+        "rk4_internal_step_count": 55,
+        "cptp_interval_count": 55,
+        "max_abs_difference": 7.70089433570024e+19,
+        "frobenius_difference": 1.368949505017776e+20,
+        "trace_distance": 9.679934782379644e+19,
+        "rk4_runtime_median_ms": 156.88009999939823,
+        "cptp_runtime_median_ms": 167.2428999991098,
+        "rk4_to_cptp_runtime_ratio": 0.9380374293930163,
+        "timing_repetitions": 1,
+        "rk4_physicality": {
+          "trace_error": 0.0,
+          "hermiticity_error": 0.0,
+          "minimum_eigenvalue": -9.679934782379647e+19
+        },
+        "rk4_raw_final_physicality": {
+          "trace_error": 127.0,
+          "hermiticity_error": 0.0,
+          "minimum_eigenvalue": -1.7767217795095887e+22
+        },
+        "rk4_minimum_observed_raw_eigenvalue": -3.0210806182246523e+22,
+        "rk4_maximum_cleanup_correction_norm": 4.274863997386299e+22,
+        "cptp_physicality": {
+          "trace_error": 1.998515503463262e-15,
+          "hermiticity_error": 1.9898056409169974e-16,
+          "minimum_eigenvalue": 0.09911844846600519
+        },
+        "cptp_choi_minimum_eigenvalue": 8.503314829798032e-05,
+        "cptp_trace_preservation_error": 3.8032761467565105e-15
+      },
+      {
+        "backend": "rust",
+        "dimension": 3,
+        "duration_us": 0.33,
+        "max_step_us": 0.006,
+        "rk4_internal_step_count": 55,
+        "cptp_interval_count": 55,
+        "max_abs_difference": 2.3792384865394455e+20,
+        "frobenius_difference": 4.229453367991507e+20,
+        "trace_distance": 2.9906751576452124e+20,
+        "rk4_runtime_median_ms": 34.70480000032694,
+        "cptp_runtime_median_ms": 172.24399999759044,
+        "rk4_to_cptp_runtime_ratio": 0.20148626367718142,
+        "timing_repetitions": 1,
+        "rk4_physicality": {
+          "trace_error": 1.0,
+          "hermiticity_error": 0.0,
+          "minimum_eigenvalue": -2.9906751576452124e+20
+        },
+        "rk4_raw_final_physicality": {
+          "trace_error": 63.0,
+          "hermiticity_error": 0.0,
+          "minimum_eigenvalue": -1.0560821650434654e+22
+        },
+        "rk4_minimum_observed_raw_eigenvalue": -1.50511912962855e+23,
+        "rk4_maximum_cleanup_correction_norm": 2.1299510951948152e+23,
+        "cptp_physicality": {
+          "trace_error": 1.99888791773621e-15,
+          "hermiticity_error": 2.4276213934271013e-16,
+          "minimum_eigenvalue": 0.09911844846600514
+        },
+        "cptp_choi_minimum_eigenvalue": 8.503314829797939e-05,
+        "cptp_trace_preservation_error": 3.5301240416088833e-15
+      }
+    ],
+    "rk4_instability_observed": true,
+    "cptp_physicality_preserved": true
+  },
+  "summary": {
+    "all_cases_pass": true,
+    "maximum_trace_distance": 0.0002696749009258884,
+    "maximum_cptp_trace_error": 4.551914401403268e-14,
+    "minimum_cptp_state_eigenvalue": 0.0011419145176526646,
+    "minimum_cptp_choi_eigenvalue": 1.3355421041258172e-09,
+    "maximum_cptp_tp_error": 7.777270686180329e-14
+  }
+}

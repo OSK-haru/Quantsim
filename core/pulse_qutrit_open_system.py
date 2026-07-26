@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from core.constants import BOLTZMANN_CONSTANT, PLANCK_CONSTANT
+from core.cptp_evolution import CPTPSegmentAudit, evolve_cptp_segment
 from core.gates import (
     CachedCollapseOperator,
     Matrix,
@@ -428,6 +429,111 @@ def evolve_open_qutrit_sequence(
             leakage_at_pulse_end=pulse_end_leakage,
             leakage_at_final_time=final_leakage,
         ),
+    )
+
+
+def evolve_cptp_open_qutrit_sequence(
+    state: Matrix,
+    envelope: PulseEnvelope,
+    anharmonicity_rad_per_us: float,
+    rates: QutritDissipationRates,
+    total_simulation_time_us: float,
+    max_step_us: float,
+    *,
+    phase_rad: float = 0.0,
+    detuning_rad_per_us: float = 0.0,
+    drag_beta_us: float = 0.0,
+    pulse_checkpoint_times_us: Sequence[float] = (),
+    idle_checkpoint_times_us: Sequence[float] = (),
+    backend: ResolvedTimeDependentEvolutionBackend = "python",
+) -> tuple[
+    OpenQutritSequenceResult,
+    CPTPSegmentAudit,
+    CPTPSegmentAudit | None,
+]:
+    """Run the qutrit sequence through audited exponential CPTP maps."""
+
+    total_duration = _positive_finite(
+        total_simulation_time_us,
+        "total_simulation_time_us",
+    )
+    pulse_duration = _positive_finite(
+        envelope.duration_us,
+        "pulse_duration_us",
+    )
+    if pulse_duration > total_duration:
+        raise ValueError(
+            "pulse duration must not exceed total_simulation_time_us"
+        )
+    collapse_ops = prepared_qutrit_collapse_operators(rates)
+    pulse_cptp = evolve_cptp_segment(
+        state,
+        QutritPulseHamiltonian(
+            envelope=envelope,
+            anharmonicity_rad_per_us=anharmonicity_rad_per_us,
+            phase_rad=phase_rad,
+            detuning_rad_per_us=detuning_rad_per_us,
+            drag_beta_us=drag_beta_us,
+        ),
+        collapse_ops,
+        pulse_duration,
+        max_step_us,
+        checkpoint_times_us=pulse_checkpoint_times_us,
+        backend=backend,
+    )
+    idle_duration = total_duration - pulse_duration
+    idle_cptp = None
+    if idle_duration > 0.0:
+        idle_cptp = evolve_cptp_segment(
+            pulse_cptp.evolution.state,
+            ConstantHamiltonian(qutrit_rotating_frame_hamiltonian(
+                detuning_rad_per_us,
+                anharmonicity_rad_per_us,
+                0.0,
+                0.0,
+            )),
+            collapse_ops,
+            idle_duration,
+            max_step_us,
+            checkpoint_times_us=idle_checkpoint_times_us,
+            backend=backend,
+        )
+    idle_result = None if idle_cptp is None else idle_cptp.evolution
+    trajectory = _population_trajectory(
+        pulse_cptp.evolution,
+        idle_result,
+        pulse_duration,
+    )
+    pulse_end_leakage = float(
+        pulse_cptp.evolution.state[2][2].real
+    )
+    final_state = (
+        pulse_cptp.evolution.state
+        if idle_result is None
+        else idle_result.state
+    )
+    final_leakage = float(final_state[2][2].real)
+    recorded_leakage = [
+        point.leakage_probability for point in trajectory
+    ]
+    recorded_leakage.extend((pulse_end_leakage, final_leakage))
+    result = OpenQutritSequenceResult(
+        rates=rates,
+        pulse_result=pulse_cptp.evolution,
+        idle_result=idle_result,
+        pulse_duration_us=pulse_duration,
+        total_simulation_time_us=total_duration,
+        trajectory=trajectory,
+        leakage=QutritLeakageSummary(
+            maximum_recorded_leakage_probability=max(recorded_leakage),
+            leakage_at_pulse_end=pulse_end_leakage,
+            leakage_at_final_time=final_leakage,
+        ),
+    )
+    return (
+        result,
+        pulse_cptp.audit,
+        None if idle_cptp is None else idle_cptp.audit,
     )
 
 

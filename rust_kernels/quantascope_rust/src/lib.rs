@@ -46,6 +46,84 @@ fn lindblad_rhs_flat(
 }
 
 #[pyfunction]
+fn gksl_exponential_superoperator_flat(
+    h: Vec<f64>,
+    collapse_ops: Vec<f64>,
+    num_ops: usize,
+    d: usize,
+    duration_us: f64,
+) -> PyResult<Vec<f64>> {
+    let element_count = matrix_element_count(d)?;
+    validate_matrix_len("h", h.len(), element_count, d)?;
+    validate_collapse_ops_len(collapse_ops.len(), num_ops, element_count, d)?;
+    validate_finite_matrix("h", &h)?;
+    validate_finite_matrix("collapse_ops", &collapse_ops)?;
+    validate_hermitian(&h, d)?;
+    if !duration_us.is_finite() || duration_us < 0.0 {
+        return Err(PyValueError::new_err(
+            "duration_us must be finite and non-negative",
+        ));
+    }
+
+    let generator = gksl_liouvillian_superoperator_raw(&h, &collapse_ops, num_ops, d);
+    matrix_exponential_pade13(&scale_flat(&generator, duration_us), d * d)
+        .map_err(PyValueError::new_err)
+}
+
+#[pyfunction]
+fn gksl_piecewise_superoperator_flat(
+    hamiltonians: Vec<f64>,
+    interval_durations_us: Vec<f64>,
+    num_intervals: usize,
+    collapse_ops: Vec<f64>,
+    num_ops: usize,
+    d: usize,
+) -> PyResult<Vec<f64>> {
+    if num_intervals == 0 {
+        return Err(PyValueError::new_err(
+            "num_intervals must be greater than 0",
+        ));
+    }
+    if interval_durations_us.len() != num_intervals {
+        return Err(PyValueError::new_err(
+            "interval_durations_us length must equal num_intervals",
+        ));
+    }
+    let element_count = matrix_element_count(d)?;
+    let expected_hamiltonian_len = num_intervals
+        .checked_mul(element_count)
+        .ok_or_else(|| PyValueError::new_err("interval count is too large"))?;
+    if hamiltonians.len() != expected_hamiltonian_len {
+        return Err(PyValueError::new_err(
+            "hamiltonians length must equal num_intervals * 2 * d * d",
+        ));
+    }
+    validate_collapse_ops_len(collapse_ops.len(), num_ops, element_count, d)?;
+    validate_finite_matrix("hamiltonians", &hamiltonians)?;
+    validate_finite_matrix("collapse_ops", &collapse_ops)?;
+
+    let superoperator_dimension = d * d;
+    let mut composed = identity_flat(superoperator_dimension);
+    for (interval_index, duration) in interval_durations_us.iter().enumerate() {
+        if !duration.is_finite() || *duration <= 0.0 {
+            return Err(PyValueError::new_err(
+                "interval durations must be finite and positive",
+            ));
+        }
+        let start = interval_index * element_count;
+        let end = start + element_count;
+        let hamiltonian = &hamiltonians[start..end];
+        validate_hermitian(hamiltonian, d)?;
+        let generator = gksl_liouvillian_superoperator_raw(hamiltonian, &collapse_ops, num_ops, d);
+        let interval_map =
+            matrix_exponential_pade13(&scale_flat(&generator, *duration), superoperator_dimension)
+                .map_err(PyValueError::new_err)?;
+        composed = matmul_flat(&interval_map, &composed, superoperator_dimension);
+    }
+    Ok(composed)
+}
+
+#[pyfunction]
 fn rk4_evolve_flat(
     rho: Vec<f64>,
     h: Vec<f64>,
@@ -253,6 +331,291 @@ fn lindblad_rhs_raw(
     derivative
 }
 
+fn gksl_liouvillian_superoperator_raw(
+    h: &[f64],
+    collapse_ops: &[f64],
+    num_ops: usize,
+    d: usize,
+) -> Vec<f64> {
+    let superoperator_dimension = d * d;
+    let mut generator = vec![0.0_f64; 2 * superoperator_dimension * superoperator_dimension];
+
+    for input_column in 0..d {
+        for input_row in 0..d {
+            let vectorized_column = input_row + input_column * d;
+            let mut basis = vec![0.0_f64; 2 * d * d];
+            basis[2 * (input_row * d + input_column)] = 1.0;
+            let derivative = lindblad_rhs_raw(&basis, h, collapse_ops, num_ops, d);
+
+            for output_column in 0..d {
+                for output_row in 0..d {
+                    let vectorized_row = output_row + output_column * d;
+                    let source = 2 * (output_row * d + output_column);
+                    let target = 2 * (vectorized_row * superoperator_dimension + vectorized_column);
+                    generator[target] = derivative[source];
+                    generator[target + 1] = derivative[source + 1];
+                }
+            }
+        }
+    }
+    generator
+}
+
+const PADE13_THETA: f64 = 5.371_920_351_148_152;
+const PADE13_COEFFICIENTS: [f64; 14] = [
+    64_764_752_532_480_000.0,
+    32_382_376_266_240_000.0,
+    7_771_770_303_897_600.0,
+    1_187_353_796_428_800.0,
+    129_060_195_264_000.0,
+    10_559_470_521_600.0,
+    670_442_572_800.0,
+    33_522_128_640.0,
+    1_323_241_920.0,
+    40_840_800.0,
+    960_960.0,
+    16_380.0,
+    182.0,
+    1.0,
+];
+
+fn matrix_exponential_pade13(matrix: &[f64], d: usize) -> Result<Vec<f64>, String> {
+    let one_norm = matrix_one_norm(matrix, d);
+    if one_norm == 0.0 {
+        return Ok(identity_flat(d));
+    }
+    let scaling_steps = if one_norm <= PADE13_THETA {
+        0_u32
+    } else {
+        (one_norm / PADE13_THETA).log2().ceil() as u32
+    };
+    let scaled = scale_flat(matrix, 2.0_f64.powi(-(scaling_steps as i32)));
+    let mut approximation = pade13(&scaled, d)?;
+    for _ in 0..scaling_steps {
+        approximation = matmul_flat(&approximation, &approximation, d);
+    }
+    Ok(approximation)
+}
+
+fn pade13(matrix: &[f64], d: usize) -> Result<Vec<f64>, String> {
+    let identity = identity_flat(d);
+    let matrix_2 = matmul_flat(matrix, matrix, d);
+    let matrix_4 = matmul_flat(&matrix_2, &matrix_2, d);
+    let matrix_6 = matmul_flat(&matrix_4, &matrix_2, d);
+    let coefficients = PADE13_COEFFICIENTS;
+
+    let numerator_inner = linear_combination_flat(
+        &[
+            (&matrix_6, coefficients[13]),
+            (&matrix_4, coefficients[11]),
+            (&matrix_2, coefficients[9]),
+        ],
+        d,
+    );
+    let numerator_outer = linear_combination_flat(
+        &[
+            (&matmul_flat(&matrix_6, &numerator_inner, d), 1.0),
+            (&matrix_6, coefficients[7]),
+            (&matrix_4, coefficients[5]),
+            (&matrix_2, coefficients[3]),
+            (&identity, coefficients[1]),
+        ],
+        d,
+    );
+    let numerator = matmul_flat(matrix, &numerator_outer, d);
+
+    let denominator_inner = linear_combination_flat(
+        &[
+            (&matrix_6, coefficients[12]),
+            (&matrix_4, coefficients[10]),
+            (&matrix_2, coefficients[8]),
+        ],
+        d,
+    );
+    let denominator = linear_combination_flat(
+        &[
+            (&matmul_flat(&matrix_6, &denominator_inner, d), 1.0),
+            (&matrix_6, coefficients[6]),
+            (&matrix_4, coefficients[4]),
+            (&matrix_2, coefficients[2]),
+            (&identity, coefficients[0]),
+        ],
+        d,
+    );
+    solve_complex_matrix(
+        &subtract_flat(&denominator, &numerator),
+        &add_flat(&denominator, &numerator),
+        d,
+    )
+}
+
+fn solve_complex_matrix(a: &[f64], b: &[f64], d: usize) -> Result<Vec<f64>, String> {
+    let mut left = a.to_vec();
+    let mut right = b.to_vec();
+
+    for pivot_column in 0..d {
+        let mut pivot_row = pivot_column;
+        let mut pivot_norm = 0.0_f64;
+        for row in pivot_column..d {
+            let index = 2 * (row * d + pivot_column);
+            let norm = left[index] * left[index] + left[index + 1] * left[index + 1];
+            if norm > pivot_norm {
+                pivot_norm = norm;
+                pivot_row = row;
+            }
+        }
+        if pivot_norm <= f64::EPSILON {
+            return Err("Pade linear solve encountered a singular matrix".to_string());
+        }
+        if pivot_row != pivot_column {
+            swap_matrix_rows(&mut left, pivot_row, pivot_column, d);
+            swap_matrix_rows(&mut right, pivot_row, pivot_column, d);
+        }
+
+        let pivot_index = 2 * (pivot_column * d + pivot_column);
+        let pivot_real = left[pivot_index];
+        let pivot_imag = left[pivot_index + 1];
+        for column in 0..d {
+            let left_index = 2 * (pivot_column * d + column);
+            let (real, imag) = complex_divide(
+                left[left_index],
+                left[left_index + 1],
+                pivot_real,
+                pivot_imag,
+            );
+            left[left_index] = real;
+            left[left_index + 1] = imag;
+
+            let right_index = 2 * (pivot_column * d + column);
+            let (real, imag) = complex_divide(
+                right[right_index],
+                right[right_index + 1],
+                pivot_real,
+                pivot_imag,
+            );
+            right[right_index] = real;
+            right[right_index + 1] = imag;
+        }
+
+        for row in 0..d {
+            if row == pivot_column {
+                continue;
+            }
+            let factor_index = 2 * (row * d + pivot_column);
+            let factor_real = left[factor_index];
+            let factor_imag = left[factor_index + 1];
+            for column in 0..d {
+                let pivot_left = 2 * (pivot_column * d + column);
+                let target_left = 2 * (row * d + column);
+                let (product_real, product_imag) = complex_multiply(
+                    factor_real,
+                    factor_imag,
+                    left[pivot_left],
+                    left[pivot_left + 1],
+                );
+                left[target_left] -= product_real;
+                left[target_left + 1] -= product_imag;
+
+                let pivot_right = 2 * (pivot_column * d + column);
+                let target_right = 2 * (row * d + column);
+                let (product_real, product_imag) = complex_multiply(
+                    factor_real,
+                    factor_imag,
+                    right[pivot_right],
+                    right[pivot_right + 1],
+                );
+                right[target_right] -= product_real;
+                right[target_right + 1] -= product_imag;
+            }
+        }
+    }
+    Ok(right)
+}
+
+fn identity_flat(d: usize) -> Vec<f64> {
+    let mut identity = vec![0.0_f64; 2 * d * d];
+    for index in 0..d {
+        identity[2 * (index * d + index)] = 1.0;
+    }
+    identity
+}
+
+fn linear_combination_flat(terms: &[(&[f64], f64)], d: usize) -> Vec<f64> {
+    let mut result = vec![0.0_f64; 2 * d * d];
+    for (matrix, coefficient) in terms {
+        for index in 0..result.len() {
+            result[index] += coefficient * matrix[index];
+        }
+    }
+    result
+}
+
+fn add_flat(left: &[f64], right: &[f64]) -> Vec<f64> {
+    left.iter()
+        .zip(right.iter())
+        .map(|(left_value, right_value)| left_value + right_value)
+        .collect()
+}
+
+fn subtract_flat(left: &[f64], right: &[f64]) -> Vec<f64> {
+    left.iter()
+        .zip(right.iter())
+        .map(|(left_value, right_value)| left_value - right_value)
+        .collect()
+}
+
+fn scale_flat(matrix: &[f64], scale: f64) -> Vec<f64> {
+    matrix.iter().map(|value| scale * value).collect()
+}
+
+fn matrix_one_norm(matrix: &[f64], d: usize) -> f64 {
+    let mut maximum = 0.0_f64;
+    for column in 0..d {
+        let mut column_sum = 0.0_f64;
+        for row in 0..d {
+            let index = 2 * (row * d + column);
+            column_sum +=
+                (matrix[index] * matrix[index] + matrix[index + 1] * matrix[index + 1]).sqrt();
+        }
+        maximum = maximum.max(column_sum);
+    }
+    maximum
+}
+
+fn swap_matrix_rows(matrix: &mut [f64], first: usize, second: usize, d: usize) {
+    for column in 0..d {
+        let first_index = 2 * (first * d + column);
+        let second_index = 2 * (second * d + column);
+        matrix.swap(first_index, second_index);
+        matrix.swap(first_index + 1, second_index + 1);
+    }
+}
+
+fn complex_multiply(
+    left_real: f64,
+    left_imag: f64,
+    right_real: f64,
+    right_imag: f64,
+) -> (f64, f64) {
+    (
+        left_real * right_real - left_imag * right_imag,
+        left_real * right_imag + left_imag * right_real,
+    )
+}
+
+fn complex_divide(
+    numerator_real: f64,
+    numerator_imag: f64,
+    denominator_real: f64,
+    denominator_imag: f64,
+) -> (f64, f64) {
+    let denominator = denominator_real * denominator_real + denominator_imag * denominator_imag;
+    (
+        (numerator_real * denominator_real + numerator_imag * denominator_imag) / denominator,
+        (numerator_imag * denominator_real - numerator_real * denominator_imag) / denominator,
+    )
+}
+
 fn rk4_step_raw(
     rho: &[f64],
     h: &[f64],
@@ -367,6 +730,34 @@ fn validate_collapse_ops_len(
     Ok(())
 }
 
+fn validate_finite_matrix(name: &str, matrix: &[f64]) -> PyResult<()> {
+    if matrix.iter().any(|value| !value.is_finite()) {
+        return Err(PyValueError::new_err(format!(
+            "{} must contain finite values",
+            name
+        )));
+    }
+    Ok(())
+}
+
+fn validate_hermitian(matrix: &[f64], d: usize) -> PyResult<()> {
+    let mut maximum_error = 0.0_f64;
+    for row in 0..d {
+        for column in 0..d {
+            let value = 2 * (row * d + column);
+            let transposed = 2 * (column * d + row);
+            let real_error = matrix[value] - matrix[transposed];
+            let imag_error = matrix[value + 1] + matrix[transposed + 1];
+            maximum_error =
+                maximum_error.max((real_error * real_error + imag_error * imag_error).sqrt());
+        }
+    }
+    if maximum_error > 1e-12 {
+        return Err(PyValueError::new_err("hamiltonian must be Hermitian"));
+    }
+    Ok(())
+}
+
 fn validate_time_dependent_rk4_inputs(
     rho: &[f64],
     h1: &[f64],
@@ -441,6 +832,8 @@ fn quantascope_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(add_f64, m)?)?;
     m.add_function(wrap_pyfunction!(matmul_complex_flat, m)?)?;
     m.add_function(wrap_pyfunction!(lindblad_rhs_flat, m)?)?;
+    m.add_function(wrap_pyfunction!(gksl_exponential_superoperator_flat, m)?)?;
+    m.add_function(wrap_pyfunction!(gksl_piecewise_superoperator_flat, m)?)?;
     m.add_function(wrap_pyfunction!(rk4_evolve_flat, m)?)?;
     m.add_function(wrap_pyfunction!(rk4_time_dependent_stages_flat, m)?)?;
     m.add_function(wrap_pyfunction!(rk4_time_dependent_step_flat, m)?)?;

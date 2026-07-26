@@ -196,6 +196,9 @@ class PulseSimulateRequest(StrictPulseModel):
     pulse: PulseEnvelopeRequest
     total_simulation_time_us: float = Field(gt=0.0)
     backend: Literal["python", "rust", "auto"] = "python"
+    evolution_method: Literal["fixed_step_rk4", "explicit_cptp"] = (
+        "fixed_step_rk4"
+    )
     environment: PulseEnvironmentRequest
     snapshot_options: PulseSnapshotOptionsRequest = Field(
         default_factory=PulseSnapshotOptionsRequest
@@ -368,6 +371,9 @@ class QutritPulseSimulateRequest(StrictPulseModel):
     pulse: QutritPulseEnvelopeRequest
     total_simulation_time_us: float = Field(gt=0.0)
     backend: Literal["python", "rust", "auto"] = "python"
+    evolution_method: Literal["fixed_step_rk4", "explicit_cptp"] = (
+        "fixed_step_rk4"
+    )
     environment: QutritPulseEnvironmentRequest
     snapshot_options: PulseSnapshotOptionsRequest = Field(
         default_factory=PulseSnapshotOptionsRequest
@@ -523,9 +529,36 @@ class PulseBackendDiagnosticsResponse(StrictPulseModel):
     fallback_used: bool
 
 
+class PulseCPTPSegmentAuditResponse(StrictPulseModel):
+    map_count: int
+    interval_count: int
+    minimum_choi_eigenvalue: float
+    maximum_trace_preservation_frobenius_error: float
+    maximum_trace_preservation_max_abs_error: float
+    all_maps_cptp: bool
+    cleanup_applied: Literal[False]
+    sampling_id: Literal["midpoint_piecewise_constant_v1"]
+
+
+class PulseEvolutionMethodDiagnosticsResponse(StrictPulseModel):
+    requested: Literal["fixed_step_rk4", "explicit_cptp"]
+    resolved: Literal["fixed_step_rk4", "explicit_cptp"]
+    method_id: Literal[
+        "fixed_step_rk4_v1",
+        "explicit_cptp_midpoint_gksl_v1",
+    ]
+    cptp_guaranteed_by_construction: bool
+    cleanup_applied: bool
+    open_pulse_audit: PulseCPTPSegmentAuditResponse | None
+    open_idle_audit: PulseCPTPSegmentAuditResponse | None
+    closed_pulse_audit: PulseCPTPSegmentAuditResponse | None
+    closed_idle_audit: PulseCPTPSegmentAuditResponse | None
+
+
 class PulseDiagnosticsResponse(StrictPulseModel):
     api_runtime_ms: float
     backend: PulseBackendDiagnosticsResponse
+    evolution: PulseEvolutionMethodDiagnosticsResponse
     open_pulse: PulseEvolutionDiagnosticsResponse
     open_idle: PulseEvolutionDiagnosticsResponse | None
     closed_pulse: PulseEvolutionDiagnosticsResponse
@@ -643,6 +676,7 @@ class QutritLeakageResponse(StrictPulseModel):
 class QutritPulseDiagnosticsResponse(StrictPulseModel):
     api_runtime_ms: float
     backend: PulseBackendDiagnosticsResponse
+    evolution: PulseEvolutionMethodDiagnosticsResponse
     open_pulse: PulseEvolutionDiagnosticsResponse
     open_idle: PulseEvolutionDiagnosticsResponse | None
     maximum_cleaned_trace_error: float

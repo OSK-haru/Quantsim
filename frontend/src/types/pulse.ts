@@ -7,9 +7,11 @@ export type PulseModelId =
 export type PulseShape = 'square' | 'gaussian'
 export type PulseAmplitudeMode = 'target_rotation_angle' | 'peak_amplitude'
 export type PulseEnvironmentMode = 'physical' | 'direct_rates'
+export type PulseEvolutionMethod = 'fixed_step_rk4' | 'explicit_cptp'
 
 export type PulseLabForm = {
   modelId: PulseModelId
+  evolutionMethod: PulseEvolutionMethod
   shape: PulseShape
   amplitudeMode: PulseAmplitudeMode
   targetRotationAngleRad: number
@@ -167,6 +169,19 @@ type PulseUnits = {
 
 type PulseDiagnostics = {
   api_runtime_ms: number
+  evolution: {
+    requested: PulseEvolutionMethod
+    resolved: PulseEvolutionMethod
+    method_id:
+      | 'fixed_step_rk4_v1'
+      | 'explicit_cptp_midpoint_gksl_v1'
+    cptp_guaranteed_by_construction: boolean
+    cleanup_applied: boolean
+    open_pulse_audit: Record<string, unknown> | null
+    open_idle_audit: Record<string, unknown> | null
+    closed_pulse_audit: Record<string, unknown> | null
+    closed_idle_audit: Record<string, unknown> | null
+  }
   open_pulse: PulseEvolutionDiagnostics
   open_idle: PulseEvolutionDiagnostics | null
   maximum_cleaned_trace_error: number

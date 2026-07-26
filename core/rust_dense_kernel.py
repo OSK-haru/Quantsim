@@ -88,6 +88,95 @@ def rust_lindblad_rhs(
     return unflatten_complex_matrix(result, dimension)
 
 
+def rust_gksl_exponential_superoperator(
+    hamiltonian: Sequence[Sequence[complex]],
+    collapse_ops: Sequence[Sequence[Sequence[complex]]],
+    duration_us: float,
+) -> Matrix:
+    """Build one finite-time GKSL superoperator in the Rust kernel."""
+
+    dimension = _validate_square_matrix(hamiltonian, "hamiltonian")
+    for index, operator in enumerate(collapse_ops):
+        op_dimension = _validate_square_matrix(
+            operator,
+            f"collapse_ops[{index}]",
+        )
+        if op_dimension != dimension:
+            raise ValueError(
+                "collapse operators must match hamiltonian dimension"
+            )
+    duration = float(duration_us)
+    if not math.isfinite(duration) or duration < 0.0:
+        raise ValueError("duration_us must be finite and non-negative")
+
+    rust_module = _load_rust_module()
+    result = rust_module.gksl_exponential_superoperator_flat(
+        flatten_complex_matrix(hamiltonian),
+        flatten_collapse_ops(collapse_ops),
+        len(collapse_ops),
+        dimension,
+        duration,
+    )
+    return unflatten_complex_matrix(result, dimension * dimension)
+
+
+def rust_gksl_piecewise_superoperator(
+    hamiltonians: Sequence[Sequence[Sequence[complex]]],
+    interval_durations_us: Sequence[float],
+    collapse_ops: Sequence[Sequence[Sequence[complex]]],
+) -> Matrix:
+    """Build a time-ordered piecewise GKSL superoperator in Rust."""
+
+    if not hamiltonians:
+        raise ValueError("hamiltonians must be non-empty")
+    if len(interval_durations_us) != len(hamiltonians):
+        raise ValueError(
+            "interval_durations_us length must match hamiltonians"
+        )
+    dimension = _validate_square_matrix(
+        hamiltonians[0],
+        "hamiltonians[0]",
+    )
+    flat_hamiltonians: list[float] = []
+    durations: list[float] = []
+    for index, hamiltonian in enumerate(hamiltonians):
+        h_dimension = _validate_square_matrix(
+            hamiltonian,
+            f"hamiltonians[{index}]",
+        )
+        if h_dimension != dimension:
+            raise ValueError(
+                "hamiltonian dimension must remain constant"
+            )
+        flat_hamiltonians.extend(flatten_complex_matrix(hamiltonian))
+        duration = float(interval_durations_us[index])
+        if not math.isfinite(duration) or duration <= 0.0:
+            raise ValueError(
+                "interval durations must be finite and positive"
+            )
+        durations.append(duration)
+    for index, operator in enumerate(collapse_ops):
+        op_dimension = _validate_square_matrix(
+            operator,
+            f"collapse_ops[{index}]",
+        )
+        if op_dimension != dimension:
+            raise ValueError(
+                "collapse operators must match hamiltonian dimension"
+            )
+
+    rust_module = _load_rust_module()
+    result = rust_module.gksl_piecewise_superoperator_flat(
+        flat_hamiltonians,
+        durations,
+        len(hamiltonians),
+        flatten_collapse_ops(collapse_ops),
+        len(collapse_ops),
+        dimension,
+    )
+    return unflatten_complex_matrix(result, dimension * dimension)
+
+
 def rust_rk4_time_dependent_stages(
     rho: Sequence[Sequence[complex]],
     hamiltonian_stages: Sequence[Sequence[Sequence[complex]]],

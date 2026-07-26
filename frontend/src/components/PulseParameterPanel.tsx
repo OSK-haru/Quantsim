@@ -121,6 +121,31 @@ export function PulseParameterPanel({
             <option value="direct_rates">Direct rates / expert</option>
           </select>
         </label>
+        <label>
+          Evolution method
+          <select
+            value={form.evolutionMethod}
+            disabled={disabled}
+            onChange={(event) =>
+              onChange({
+                ...form,
+                evolutionMethod:
+                  event.target.value as PulseLabForm['evolutionMethod'],
+              })
+            }
+          >
+            <option value="fixed_step_rk4">
+              Fixed-step RK4 (reference)
+            </option>
+            <option value="explicit_cptp">
+              Explicit CPTP maps
+            </option>
+          </select>
+          <small>
+            CPTP maps avoid cleanup; time-dependent drives use midpoint
+            piecewise approximation.
+          </small>
+        </label>
       </div>
 
       <div className="pulse-parameters__grid">

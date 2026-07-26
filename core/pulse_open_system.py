@@ -13,6 +13,7 @@ from core.gates import (
     prepare_collapse_operators,
     zero_hamiltonian,
 )
+from core.cptp_evolution import CPTPSegmentAudit, evolve_cptp_segment
 from core.physical_environment import (
     INPUT_MODE_PHYSICAL,
     compute_environment_rates,
@@ -216,6 +217,84 @@ def evolve_open_pulse_sequence(
         idle_result=idle_result,
         pulse_duration_us=pulse_duration,
         total_simulation_time_us=total_duration,
+    )
+
+
+def evolve_cptp_open_pulse_sequence(
+    state: Matrix,
+    envelope: PulseEnvelope,
+    rates: PulseDissipationRates,
+    total_simulation_time_us: float,
+    max_step_us: float,
+    *,
+    phase_rad: float = 0.0,
+    detuning_rad_per_us: float = 0.0,
+    pulse_checkpoint_times_us: Sequence[float] = (),
+    idle_checkpoint_times_us: Sequence[float] = (),
+    backend: ResolvedTimeDependentEvolutionBackend = "python",
+) -> tuple[
+    OpenPulseSequenceResult,
+    CPTPSegmentAudit,
+    CPTPSegmentAudit | None,
+]:
+    """Run the Pulse sequence through audited exponential CPTP maps."""
+
+    total_duration = _positive_finite(
+        total_simulation_time_us,
+        "total_simulation_time_us",
+    )
+    pulse_duration = _positive_finite(
+        envelope.duration_us,
+        "pulse_duration_us",
+    )
+    if pulse_duration > total_duration:
+        raise ValueError(
+            "pulse duration must not exceed total_simulation_time_us"
+        )
+    collapse_ops = prepare_collapse_operators(
+        multi_qubit_physical_collapse_operators(
+            1,
+            rates.gamma_down_per_us,
+            rates.gamma_up_per_us,
+            rates.gamma_phi_per_us,
+        )
+    )
+    pulse_cptp = evolve_cptp_segment(
+        state,
+        TwoLevelPulseHamiltonian(
+            envelope=envelope,
+            phase_rad=phase_rad,
+            detuning_rad_per_us=detuning_rad_per_us,
+        ),
+        collapse_ops,
+        pulse_duration,
+        max_step_us,
+        checkpoint_times_us=pulse_checkpoint_times_us,
+        backend=backend,
+    )
+    idle_duration = total_duration - pulse_duration
+    idle_cptp = None
+    if idle_duration > 0.0:
+        idle_cptp = evolve_cptp_segment(
+            pulse_cptp.evolution.state,
+            ConstantHamiltonian(zero_hamiltonian(2)),
+            collapse_ops,
+            idle_duration,
+            max_step_us,
+            checkpoint_times_us=idle_checkpoint_times_us,
+            backend=backend,
+        )
+    result = OpenPulseSequenceResult(
+        rates=rates,
+        pulse_result=pulse_cptp.evolution,
+        idle_result=None if idle_cptp is None else idle_cptp.evolution,
+        pulse_duration_us=pulse_duration,
+        total_simulation_time_us=total_duration,
+    )
+    return (
+        result,
+        pulse_cptp.audit,
+        None if idle_cptp is None else idle_cptp.audit,
     )
 
 
