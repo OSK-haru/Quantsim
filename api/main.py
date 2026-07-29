@@ -175,6 +175,9 @@ class CircuitConfigRequest(BaseModel):
 class SimulateRequest(BaseModel):
     circuit_preset: Literal["bell"] | None = None
     simulation_backend: Literal["python_dense"]
+    evolution_method: Literal["fixed_step_rk4", "explicit_cptp"] = (
+        "fixed_step_rk4"
+    )
     input_mode: Literal["normalized", "physical"] = INPUT_MODE_NORMALIZED
     gate_duration_defaults: GateDurationDefaultsRequest = Field(
         default_factory=GateDurationDefaultsRequest
@@ -368,6 +371,7 @@ def build_config_from_simulate_request(request: SimulateRequest) -> SimulationCo
             "fidelity_threshold",
         ),
         simulation_backend=request.simulation_backend,
+        evolution_method=request.evolution_method,
         snapshot_options=(
             None
             if request.snapshot_options is None

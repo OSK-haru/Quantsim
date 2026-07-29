@@ -18,6 +18,7 @@ import { useCircuitContext } from '../context/useCircuitContext'
 import type {
   GateDurationDefaultErrors,
   GateDurationDefaults,
+  GateAwareEvolutionMethod,
   SimulateRequestParameterErrors,
   SimulateRequestParameters,
   SnapshotOptions,
@@ -47,6 +48,7 @@ type SimulatePageProps = {
 
 type SimulateRequestPayload = {
   simulation_backend: 'python_dense'
+  evolution_method: GateAwareEvolutionMethod
   input_mode: 'physical'
   circuit_config: ReturnType<typeof circuitEditorStateToConfig>
   gate_duration_defaults: GateDurationDefaults
@@ -337,6 +339,8 @@ export function SimulatePage({
   const [activeRequestLabel, setActiveRequestLabel] = useState<string>('')
   const [simulationParameters, setSimulationParameters] =
     useState<SimulateRequestParameters>(initialSimulationParameters)
+  const [evolutionMethod, setEvolutionMethod] =
+    useState<GateAwareEvolutionMethod>('fixed_step_rk4')
   const [parameterErrors, setParameterErrors] =
     useState<SimulateRequestParameterErrors>({})
   const [gateDurationErrors, setGateDurationErrors] =
@@ -459,6 +463,7 @@ export function SimulatePage({
     const timeoutMs = getRunRequestTimeoutMs(
       simulationParameters.time_steps,
       circuitState.logical_qubits,
+      evolutionMethod,
     )
     setFrontendRunStartedAt(frontendStartedAtIso)
     setFrontendRunFinishedAt('')
@@ -532,6 +537,7 @@ export function SimulatePage({
     try {
       const payload: SimulateRequestPayload = {
         simulation_backend: 'python_dense',
+        evolution_method: evolutionMethod,
         input_mode: 'physical',
         circuit_config: circuitConfig,
         gate_duration_defaults: gateDurationDefaults,
@@ -809,6 +815,8 @@ export function SimulatePage({
           frontendRunFinishedAt={frontendRunFinishedAt}
           frontendRunElapsedMs={frontendRunElapsedMs}
           frontendRunTimeoutMs={frontendRunTimeoutMs}
+          evolutionMethod={evolutionMethod}
+          onEvolutionMethodChange={setEvolutionMethod}
           onReloadApiExample={() => {
             void loadExampleFromApi()
           }}
@@ -885,7 +893,11 @@ export function SimulatePage({
   )
 }
 
-function getRunRequestTimeoutMs(timeSteps: number, logicalQubits: number): number {
+function getRunRequestTimeoutMs(
+  timeSteps: number,
+  logicalQubits: number,
+  evolutionMethod: GateAwareEvolutionMethod,
+): number {
   const stepBudget = Math.max(
     RUN_REQUEST_MIN_TIMEOUT_MS,
     timeSteps * RUN_REQUEST_TIMEOUT_PER_STEP_MS,
@@ -893,5 +905,6 @@ function getRunRequestTimeoutMs(timeSteps: number, logicalQubits: number): numbe
   // 3/4-qubit dense runs need a larger floor while we measure where time is spent.
   const qubitBudget =
     logicalQubits >= 4 ? 60000 : logicalQubits === 3 ? 30000 : RUN_REQUEST_MIN_TIMEOUT_MS
-  return Math.max(stepBudget, qubitBudget)
+  const evolutionBudget = evolutionMethod === 'explicit_cptp' ? 120000 : 0
+  return Math.max(stepBudget, qubitBudget, evolutionBudget)
 }

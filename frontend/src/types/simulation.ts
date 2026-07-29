@@ -3,6 +3,7 @@ import type { CircuitPreviewData } from './circuit'
 export type OutputProbabilities = Record<string, number>
 
 export type SimulationLoadStatus = 'fixture' | 'loading' | 'api' | 'error'
+export type GateAwareEvolutionMethod = 'fixed_step_rk4' | 'explicit_cptp'
 
 export type SimulationSummaryData = {
   final_fidelity: number | null

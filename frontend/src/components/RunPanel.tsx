@@ -2,7 +2,11 @@ import './RunPanel.css'
 import { ResultDrawer } from './ResultDrawer'
 import { SectionHeader } from './SectionHeader'
 import { RunCostNotice } from './RunCostNotice'
-import type { RunPanelData, SimulationLoadStatus } from '../types/simulation'
+import type {
+  GateAwareEvolutionMethod,
+  RunPanelData,
+  SimulationLoadStatus,
+} from '../types/simulation'
 import type { SimulationCostEstimate } from '../utils/simulationCost'
 
 type RunPanelProps = {
@@ -19,6 +23,8 @@ type RunPanelProps = {
   frontendRunFinishedAt: string
   frontendRunElapsedMs: number | null
   frontendRunTimeoutMs: number | null
+  evolutionMethod: GateAwareEvolutionMethod
+  onEvolutionMethodChange: (method: GateAwareEvolutionMethod) => void
   onReloadApiExample: () => void
   onRunSimulation: () => void
 }
@@ -44,6 +50,8 @@ export function RunPanel({
   frontendRunFinishedAt,
   frontendRunElapsedMs,
   frontendRunTimeoutMs,
+  evolutionMethod,
+  onEvolutionMethodChange,
   onReloadApiExample,
   onRunSimulation,
 }: RunPanelProps) {
@@ -67,6 +75,28 @@ export function RunPanel({
       </div>
 
       <div className="run-panel__rows">
+        <label className="run-panel__method">
+          <span>
+            <strong>Evolution method</strong>
+            <small>
+              Explicit CPTP audits each finite-time GKSL map and does not apply
+              density-matrix cleanup.
+            </small>
+          </span>
+          <select
+            value={evolutionMethod}
+            onChange={(event) => {
+              onEvolutionMethodChange(
+                event.target.value as GateAwareEvolutionMethod,
+              )
+            }}
+            disabled={isRequestPending}
+            aria-label="Gate-aware evolution method"
+          >
+            <option value="fixed_step_rk4">Fixed-step RK4</option>
+            <option value="explicit_cptp">Explicit CPTP maps</option>
+          </select>
+        </label>
         <div className="run-panel__row">
           <span className="run-panel__label">状態</span>
           <strong className="run-panel__value">{run.status}</strong>

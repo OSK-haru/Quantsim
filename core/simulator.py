@@ -40,6 +40,11 @@ from core.gates import (
     trace,
     zero_hamiltonian,
 )
+from core.evolution_methods import EXPLICIT_CPTP
+from core.gate_aware_cptp import (
+    GATE_AWARE_CPTP_EVOLUTION_ID,
+    GateAwareCPTPEvolver,
+)
 from core.internal_profiling import active_internal_profile
 from core.metrics import effective_time
 from core.physical_environment import (
@@ -440,6 +445,22 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
             "gate_duration_model": simulation_metadata["gate_duration_model"],
             "gate_aware_noise": 1.0,
             "post_circuit_degradation": 0.0,
+            "evolution_method_requested": simulation_metadata[
+                "evolution_method_requested"
+            ],
+            "evolution_method_resolved": simulation_metadata[
+                "evolution_method_resolved"
+            ],
+            "evolution_method_id": simulation_metadata["evolution_method_id"],
+            "cptp_guaranteed_by_construction": simulation_metadata[
+                "cptp_guaranteed_by_construction"
+            ],
+            "cleanup_applied": simulation_metadata["cleanup_applied"],
+            **{
+                key: value
+                for key, value in simulation_metadata.items()
+                if key.startswith("cptp_")
+            },
             "recorded_state_count": float(len(times)),
             "state_history_retained": 0.0,
             "state_history_storage_mode": "streaming_metrics_only",
@@ -847,6 +868,14 @@ def _simulate_circuit_gate_aware_hamiltonian(
     segment_start_noisy = noisy_state
     segment_start_ideal = ideal_state
     max_substeps = 1
+    uses_explicit_cptp = config.evolution_method == EXPLICIT_CPTP
+    cptp_evolver = GateAwareCPTPEvolver(
+        backend=(
+            "rust"
+            if config.simulation_backend == RUST_DENSE_PREVIEW_BACKEND
+            else "python"
+        )
+    )
     completion_time = 0.0 if not segments else None
     completion_noisy_state = noisy_state if not segments else None
     completion_ideal_state = ideal_state if not segments else None
@@ -861,11 +890,15 @@ def _simulate_circuit_gate_aware_hamiltonian(
                 and segments[segment_index]["duration_us"] == 0.0
             ):
                 unitary = segments[segment_index]["unitary"]
-                noisy_state = clean_density_matrix(
-                    apply_unitary_to_density(noisy_state, unitary)
+                noisy_state = _apply_zero_duration_unitary(
+                    noisy_state,
+                    unitary,
+                    cleanup=not uses_explicit_cptp,
                 )
-                ideal_state = clean_density_matrix(
-                    apply_unitary_to_density(ideal_state, unitary)
+                ideal_state = _apply_zero_duration_unitary(
+                    ideal_state,
+                    unitary,
+                    cleanup=not uses_explicit_cptp,
                 )
                 segment_index += 1
                 segment_elapsed = 0.0
@@ -890,19 +923,23 @@ def _simulate_circuit_gate_aware_hamiltonian(
             if segment_index >= len(segments):
                 idle_started_at = perf_counter()
                 try:
-                    sampled_batch = _try_rust_sampled_batch(
-                        noisy_state,
-                        zero_hamiltonian(len(noisy_state)),
-                        collapse_ops,
-                        current_time,
-                        times[target_index:],
-                        actual_duration,
-                        lambda interval: _substep_count(
-                            interval,
-                            max_environment_rate_per_us,
-                        ),
-                        kernel_stats,
-                        include_boundary=True,
+                    sampled_batch = (
+                        None
+                        if uses_explicit_cptp
+                        else _try_rust_sampled_batch(
+                            noisy_state,
+                            zero_hamiltonian(len(noisy_state)),
+                            collapse_ops,
+                            current_time,
+                            times[target_index:],
+                            actual_duration,
+                            lambda interval: _substep_count(
+                                interval,
+                                max_environment_rate_per_us,
+                            ),
+                            kernel_stats,
+                            include_boundary=True,
+                        )
                     )
                     if sampled_batch is not None:
                         sample_states, sample_times, sample_substeps = sampled_batch
@@ -932,17 +969,25 @@ def _simulate_circuit_gate_aware_hamiltonian(
                     if step_dt > 0.0:
                         substeps = _substep_count(step_dt, max_environment_rate_per_us)
                         max_substeps = max(max_substeps, substeps)
-                        noisy_state = _evolve_stable_with_substeps(
-                            noisy_state,
-                            zero_hamiltonian(len(noisy_state)),
-                            collapse_ops,
-                            step_dt,
-                            substeps,
-                            kernel_stats,
-                            profile,
-                            blocked_by_sampling=True,
-                            blocked_by_boundary=False,
-                        )
+                        if uses_explicit_cptp:
+                            noisy_state = cptp_evolver.evolve(
+                                noisy_state,
+                                zero_hamiltonian(len(noisy_state)),
+                                collapse_ops,
+                                step_dt,
+                            )
+                        else:
+                            noisy_state = _evolve_stable_with_substeps(
+                                noisy_state,
+                                zero_hamiltonian(len(noisy_state)),
+                                collapse_ops,
+                                step_dt,
+                                substeps,
+                                kernel_stats,
+                                profile,
+                                blocked_by_sampling=True,
+                                blocked_by_boundary=False,
+                            )
                         current_time = target_time
                         if is_planned_time(current_time, planned_idle_samples):
                             collector.capture(
@@ -980,7 +1025,7 @@ def _simulate_circuit_gate_aware_hamiltonian(
                         max_environment_rate_per_us + hamiltonian_scale,
                     )
                     max_substeps = max(max_substeps, substeps)
-                    if not completes_segment:
+                    if not completes_segment and not uses_explicit_cptp:
                         segment_stop_time = current_time + remaining
                         sample_targets = times[target_index:]
                         noisy_batch = _try_rust_sampled_batch(
@@ -1046,7 +1091,14 @@ def _simulate_circuit_gate_aware_hamiltonian(
                             samples_appended_in_batch = True
                             continue
 
-                    if collapse_ops or not completes_segment:
+                    if uses_explicit_cptp:
+                        noisy_state = cptp_evolver.evolve(
+                            noisy_state,
+                            hamiltonian,
+                            collapse_ops,
+                            step_dt,
+                        )
+                    elif collapse_ops or not completes_segment:
                         noisy_state = _evolve_stable_with_substeps(
                             noisy_state,
                             hamiltonian,
@@ -1063,7 +1115,15 @@ def _simulate_circuit_gate_aware_hamiltonian(
                             apply_unitary_to_density(segment_start_noisy, unitary)
                         )
 
-                    if completes_segment:
+                    if uses_explicit_cptp:
+                        ideal_state = apply_unitary_to_density(
+                            ideal_state,
+                            _partial_involution_unitary(
+                                unitary,
+                                step_dt / duration,
+                            ),
+                        )
+                    elif completes_segment:
                         ideal_state = clean_density_matrix(
                             apply_unitary_to_density(segment_start_ideal, unitary)
                         )
@@ -1110,11 +1170,15 @@ def _simulate_circuit_gate_aware_hamiltonian(
             and segments[segment_index]["duration_us"] == 0.0
         ):
             unitary = segments[segment_index]["unitary"]
-            noisy_state = clean_density_matrix(
-                apply_unitary_to_density(noisy_state, unitary)
+            noisy_state = _apply_zero_duration_unitary(
+                noisy_state,
+                unitary,
+                cleanup=not uses_explicit_cptp,
             )
-            ideal_state = clean_density_matrix(
-                apply_unitary_to_density(ideal_state, unitary)
+            ideal_state = _apply_zero_duration_unitary(
+                ideal_state,
+                unitary,
+                cleanup=not uses_explicit_cptp,
             )
             segment_index += 1
             segment_elapsed = 0.0
@@ -1175,6 +1239,9 @@ def _simulate_circuit_gate_aware_hamiltonian(
     profile.segments_count = int(segment_complexity["total_segment_count"])
     profile.total_rk4_substeps = int(segment_complexity["total_rk4_substeps"])
     profile.total_rhs_evaluations = int(segment_complexity["total_rhs_evaluations"])
+    if uses_explicit_cptp:
+        profile.total_rk4_substeps = 0
+        profile.total_rhs_evaluations = 0
     profile.total_gate_duration_us = total_gate_duration
     profile.total_idle_duration_us = idle_duration
     profile.total_segment_duration_us = actual_duration
@@ -1198,13 +1265,30 @@ def _simulate_circuit_gate_aware_hamiltonian(
         "actual_duration_us": actual_duration,
         "gate_duration_model": "default_gate_duration_us_with_params_override",
         "post_circuit_degradation": False,
-        "integration_substeps": float(max_substeps),
+        "integration_substeps": 0.0 if uses_explicit_cptp else float(max_substeps),
         "max_trace_error": max_trace_error,
+        "evolution_method_requested": config.evolution_method,
+        "evolution_method_resolved": config.evolution_method,
+        "evolution_method_id": (
+            GATE_AWARE_CPTP_EVOLUTION_ID
+            if uses_explicit_cptp
+            else "fixed_step_rk4_v1"
+        ),
+        "cptp_guaranteed_by_construction": uses_explicit_cptp,
+        "cleanup_applied": not uses_explicit_cptp,
         "state_history_retained": False,
         "state_history_storage_mode": "streaming_metrics_only",
         **snapshot_diagnostics.to_dict(),
         **segment_complexity,
+        **(cptp_evolver.diagnostics() if uses_explicit_cptp else {}),
     }
+    if uses_explicit_cptp:
+        metadata.update({
+            "total_rk4_substeps": 0.0,
+            "total_rhs_evaluations": 0.0,
+            "gate_rk4_substeps": 0.0,
+            "idle_rk4_substeps": 0.0,
+        })
     return _SimulationSeries(
         times=times,
         fidelity=fidelities,
@@ -1213,6 +1297,36 @@ def _simulate_circuit_gate_aware_hamiltonian(
         final_ideal_state=ideal_state,
         metadata=metadata,
         state_snapshots=state_snapshots,
+    )
+
+
+def _apply_zero_duration_unitary(
+    state: Matrix,
+    unitary: Matrix,
+    *,
+    cleanup: bool,
+) -> Matrix:
+    evolved = apply_unitary_to_density(state, unitary)
+    return clean_density_matrix(evolved) if cleanup else evolved
+
+
+def _partial_involution_unitary(
+    unitary: Matrix,
+    duration_fraction: float,
+) -> Matrix:
+    """Return the effective-involution unitary for part of one gate column."""
+
+    angle = 0.5 * math.pi * float(duration_fraction)
+    identity = identity_matrix(len(unitary))
+    cosine = math.cos(angle)
+    sine = math.sin(angle)
+    return tuple(
+        tuple(
+            cosine * identity[row][column]
+            + 1.0j * sine * unitary[row][column]
+            for column in range(len(unitary))
+        )
+        for row in range(len(unitary))
     )
 
 

@@ -10,6 +10,10 @@ from core.backend_boundary import PYTHON_DENSE_BACKEND
 from core.capabilities import DEFAULT_SIMULATION_MODEL
 from core.circuit_model import CircuitConfig
 from core.errors import ValidationIssue
+from core.evolution_methods import (
+    FIXED_STEP_RK4,
+    SUPPORTED_GATE_AWARE_EVOLUTION_METHODS,
+)
 from core.physical_environment import (
     INPUT_MODE_NORMALIZED,
     INPUT_MODE_PHYSICAL,
@@ -253,6 +257,7 @@ class SimulationConfig:
     fidelity_threshold: float = 0.9
     model: str = DEFAULT_SIMULATION_MODEL
     simulation_backend: str = PYTHON_DENSE_BACKEND
+    evolution_method: str = FIXED_STEP_RK4
     snapshot_options: SnapshotOptions | None = None
 
     def __post_init__(self) -> None:
@@ -273,6 +278,12 @@ class SimulationConfig:
         self.simulation_backend = str(self.simulation_backend)
         if not self.simulation_backend:
             raise ValueError("simulation_backend must not be empty")
+        self.evolution_method = str(self.evolution_method)
+        if self.evolution_method not in SUPPORTED_GATE_AWARE_EVOLUTION_METHODS:
+            raise ValueError(
+                "evolution_method must be one of "
+                f"{SUPPORTED_GATE_AWARE_EVOLUTION_METHODS}"
+            )
         if self.snapshot_options is not None and not isinstance(
             self.snapshot_options,
             SnapshotOptions,
@@ -294,6 +305,7 @@ class SimulationConfig:
             "fidelity_threshold": self.fidelity_threshold,
             "model": self.model,
             "simulation_backend": self.simulation_backend,
+            "evolution_method": self.evolution_method,
             "snapshot_options": (
                 None
                 if self.snapshot_options is None
@@ -312,6 +324,7 @@ class SimulationConfig:
             fidelity_threshold=data.get("fidelity_threshold", 0.9),
             model=data.get("model", DEFAULT_SIMULATION_MODEL),
             simulation_backend=data.get("simulation_backend", PYTHON_DENSE_BACKEND),
+            evolution_method=data.get("evolution_method", FIXED_STEP_RK4),
             snapshot_options=(
                 None
                 if data.get("snapshot_options") is None
