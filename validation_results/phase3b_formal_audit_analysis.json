@@ -345,9 +345,28 @@
     }
   ],
   "decision": "CANDIDATE_NOT_FORMAL",
+  "bootstrap": {
+    "replicates_requested": 200,
+    "t1_interval_us": {
+      "samples": 200,
+      "lower_95": 376.45988971573513,
+      "upper_95": 407.06143383403156
+    },
+    "t2_interval_us": {
+      "samples": 200,
+      "lower_95": 379.4589493341593,
+      "upper_95": 469.9556193764455
+    },
+    "t1_model_coverage": 0.14285714285714285,
+    "t2_model_coverage": 0.5714285714285714,
+    "t1_model_compatible": false,
+    "t2_model_compatible": false,
+    "decision": "CONDITIONAL_PASS",
+    "method": "deterministic binomial bootstrap including same-job readout calibration"
+  },
   "limitations": [
     "Protocol was not committed before execution, so the result cannot be promoted to formal holdout.",
-    "Confidence intervals and bootstrap coverage checks are not yet implemented in this analysis pass.",
+    "The bootstrap decision is statistical evidence only; formal promotion still requires protocol provenance.",
     "No model refit was performed."
   ]
 }

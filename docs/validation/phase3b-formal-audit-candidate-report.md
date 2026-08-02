@@ -49,6 +49,22 @@ frequency/T2 pair remains exploratory without bootstrap confidence intervals.
 Using the fitted T1, the exploratory relation
 `1/Tphi = 1/T2 - 1/(2*T1)` gives `Tphi = 989.2 us`.
 
+## Bootstrap analysis
+
+Using 200 deterministic binomial bootstrap replicates, including the same-job
+readout calibration:
+
+- T1 95% interval: `376.5..407.1 us`
+- T2 95% interval: `379.5..470.0 us`
+- T1 model-point coverage: `14.3%`
+- T2 model-point coverage: `57.1%`
+- T1 compatibility with the `303.33 us` reference: no
+- T2 compatibility with the `339.99 us` reference: no
+
+The statistical evidence is therefore `CONDITIONAL_PASS` at most, and does not
+support a full model pass. The outer audit decision remains
+`CANDIDATE_NOT_FORMAL` because the protocol was not committed before execution.
+
 ## Decision
 
 `CANDIDATE_NOT_FORMAL`
