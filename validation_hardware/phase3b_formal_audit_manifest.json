@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "manifest_id": "phase3b_formal_gate_aware_qpu_audit_v1",
+  "status": "PROTOCOL_FROZEN_NOT_EXECUTED",
+  "formal_holdout_eligible": false,
+  "protocol": "docs/validation/phase3b-formal-qpu-audit-protocol.md",
+  "source_revision": {
+    "freeze_tag": "quantascope-gate-aware-cptp-v1",
+    "freeze_commit": "f306fbf6eb2083d9098ab0ade079e2681920ac4e"
+  },
+  "provider": {
+    "name": "IBM Quantum",
+    "backend_id": "ibm_kingston",
+    "backend_version": "1.0.0",
+    "physical_qubit": 150,
+    "native_dt_seconds": 4e-09
+  },
+  "execution_policy": {
+    "jobs_max": 1,
+    "retry_max": 0,
+    "shots_per_circuit": 1024,
+    "formal_holdout": false,
+    "model_refit_after_run": false
+  },
+  "circuits": {
+    "readout_calibration": [
+      {"kind": "readout_zero", "delay_dt": 0},
+      {"kind": "readout_one", "delay_dt": 0}
+    ],
+    "t1": {
+      "kind": "X_delay_measure",
+      "delay_grid_us": [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400]
+    },
+    "t2_ramsey": {
+      "kind": "H_delay_H_measure",
+      "delay_grid_us": [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340, 360, 380, 400]
+    }
+  },
+  "analysis": {
+    "readout_correction": "same_job_affine_matrix",
+    "confidence_interval": "shot_bootstrap_95_percent",
+    "t2_model": "damped_single_tone_with_frequency_and_phase",
+    "decision": "PASS_CONDITIONAL_PASS_FAIL_predeclared"
+  }
+}
