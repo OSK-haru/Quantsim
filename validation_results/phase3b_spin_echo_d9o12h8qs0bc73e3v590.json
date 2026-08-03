@@ -1,0 +1,168 @@
+{
+  "analysis_id": "phase3b_spin_echo_analysis_v1",
+  "source_raw_result": "validation_hardware\\raw\\phase3b_spin_echo_followup_d9o12h8qs0bc73e3v590.json",
+  "job_id": "d9o12h8qs0bc73e3v590",
+  "backend": {
+    "backend": "ibm_kingston",
+    "backend_version": "1.0.0",
+    "dt_seconds": 4e-09,
+    "calibration_timestamp": "2026-08-03T12:17:17+09:00"
+  },
+  "readout_calibration": {
+    "p_observed_1_given_0": 0.01171875,
+    "p_observed_1_given_1": 0.99609375,
+    "assignment_span": 0.984375
+  },
+  "damped_oscillation_fit": {
+    "status": "fit",
+    "points": 21,
+    "model": "C(t)=A exp(-t/T2) cos(2 pi f t + phase)",
+    "frequency_cycles_per_us": 5e-05,
+    "t2_us": 374.0864664465479,
+    "amplitude": 3.2194881144609844,
+    "phase_rad": -1.2537336069527858,
+    "rmse": 0.03861300806081908,
+    "top_candidate_rmse": [
+      0.03861300806081908,
+      0.038613595815547797,
+      0.038614260172672166,
+      0.03861570774052926,
+      0.03861770283888645
+    ],
+    "identifiability_warning": "21 points improve identifiability, but this remains an exploratory single-tone fit; confidence intervals are not included."
+  },
+  "rows": [
+    {
+      "delay_us": 0.0,
+      "observed_p1": 0.0,
+      "readout_corrected_p1": 0.0,
+      "contrast": 1.0
+    },
+    {
+      "delay_us": 20.0,
+      "observed_p1": 0.03125,
+      "readout_corrected_p1": 0.01984126984126984,
+      "contrast": 0.9603174603174603
+    },
+    {
+      "delay_us": 40.0,
+      "observed_p1": 0.05859375,
+      "readout_corrected_p1": 0.047619047619047616,
+      "contrast": 0.9047619047619048
+    },
+    {
+      "delay_us": 60.0,
+      "observed_p1": 0.0546875,
+      "readout_corrected_p1": 0.04365079365079365,
+      "contrast": 0.9126984126984127
+    },
+    {
+      "delay_us": 80.0,
+      "observed_p1": 0.0390625,
+      "readout_corrected_p1": 0.027777777777777776,
+      "contrast": 0.9444444444444444
+    },
+    {
+      "delay_us": 100.0,
+      "observed_p1": 0.078125,
+      "readout_corrected_p1": 0.06746031746031746,
+      "contrast": 0.8650793650793651
+    },
+    {
+      "delay_us": 120.0,
+      "observed_p1": 0.1171875,
+      "readout_corrected_p1": 0.10714285714285714,
+      "contrast": 0.7857142857142857
+    },
+    {
+      "delay_us": 140.00000000000003,
+      "observed_p1": 0.109375,
+      "readout_corrected_p1": 0.0992063492063492,
+      "contrast": 0.8015873015873016
+    },
+    {
+      "delay_us": 160.0,
+      "observed_p1": 0.14453125,
+      "readout_corrected_p1": 0.1349206349206349,
+      "contrast": 0.7301587301587302
+    },
+    {
+      "delay_us": 180.0,
+      "observed_p1": 0.15234375,
+      "readout_corrected_p1": 0.14285714285714285,
+      "contrast": 0.7142857142857143
+    },
+    {
+      "delay_us": 200.0,
+      "observed_p1": 0.17578125,
+      "readout_corrected_p1": 0.16666666666666666,
+      "contrast": 0.6666666666666667
+    },
+    {
+      "delay_us": 220.0,
+      "observed_p1": 0.20703125,
+      "readout_corrected_p1": 0.1984126984126984,
+      "contrast": 0.6031746031746033
+    },
+    {
+      "delay_us": 240.0,
+      "observed_p1": 0.1640625,
+      "readout_corrected_p1": 0.15476190476190477,
+      "contrast": 0.6904761904761905
+    },
+    {
+      "delay_us": 260.00000000000006,
+      "observed_p1": 0.1640625,
+      "readout_corrected_p1": 0.15476190476190477,
+      "contrast": 0.6904761904761905
+    },
+    {
+      "delay_us": 280.00000000000006,
+      "observed_p1": 0.23828125,
+      "readout_corrected_p1": 0.23015873015873015,
+      "contrast": 0.5396825396825398
+    },
+    {
+      "delay_us": 300.0,
+      "observed_p1": 0.1953125,
+      "readout_corrected_p1": 0.1865079365079365,
+      "contrast": 0.626984126984127
+    },
+    {
+      "delay_us": 320.0,
+      "observed_p1": 0.25,
+      "readout_corrected_p1": 0.24206349206349206,
+      "contrast": 0.5158730158730158
+    },
+    {
+      "delay_us": 340.0,
+      "observed_p1": 0.22265625,
+      "readout_corrected_p1": 0.21428571428571427,
+      "contrast": 0.5714285714285714
+    },
+    {
+      "delay_us": 360.0,
+      "observed_p1": 0.24609375,
+      "readout_corrected_p1": 0.23809523809523808,
+      "contrast": 0.5238095238095238
+    },
+    {
+      "delay_us": 380.0,
+      "observed_p1": 0.27734375,
+      "readout_corrected_p1": 0.2698412698412698,
+      "contrast": 0.46031746031746035
+    },
+    {
+      "delay_us": 400.0,
+      "observed_p1": 0.265625,
+      "readout_corrected_p1": 0.25793650793650796,
+      "contrast": 0.4841269841269841
+    }
+  ],
+  "interpretation": "Exploratory spin-echo result. Compare its fitted frequency and contrast decay with the Ramsey result; do not promote parameters to the production model.",
+  "limitations": [
+    "The fit is exploratory and assumes one damped cosine with no offset.",
+    "The result is not formal holdout data.",
+    "No parameter was refit into the production model."
+  ]
+}

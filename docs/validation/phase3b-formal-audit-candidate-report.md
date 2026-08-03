@@ -65,6 +65,44 @@ The statistical evidence is therefore `CONDITIONAL_PASS` at most, and does not
 support a full model pass. The outer audit decision remains
 `CANDIDATE_NOT_FORMAL` because the protocol was not committed before execution.
 
+## Ramsey repeatability check
+
+An additional exploratory dense Ramsey measurement was performed after the
+formal-audit candidate. It used the same backend, physical qubit, 21-point
+`0..400 us` delay grid, and 256 shots per circuit. This was not a formal
+holdout and did not modify the frozen model.
+
+- Repeat job: `d9ntoj460llc73cagtgg`
+- Fitted frequency: `9.55 MHz`
+- Fitted T2: `443.9 us`
+- Fit RMSE: `0.0380`
+- Previous dense estimate: `6.80 MHz`, `390.4 us`, RMSE `0.0355`
+
+The Ramsey oscillation is qualitatively reproducible, but the fitted frequency
+changed by `2.75 MHz`. Therefore the local `6.7 MHz` detuning remains an
+explanatory diagnostic only; it is not a stable hardware parameter and has not
+been added to the production model. This repeatability result strengthens the
+case for a time-dependent or reference-dependent phase effect, but does not
+establish quantitative agreement with the frozen model.
+
+## Spin-echo separation check
+
+An exploratory spin-echo job was then executed with the sequence
+`H -> delay(t/2) -> X -> delay(t/2) -> H -> measure`, using the same 21-point
+grid and 256 shots per circuit.
+
+- Job: `d9o12h8qs0bc73e3v590`
+- Readout assignment span: `0.9844`
+- The Ramsey-scale `6.8` to `9.55 MHz` oscillation was not recovered as a
+  comparable spin-echo oscillation.
+- The unconstrained single-tone fit was ill-conditioned (amplitude `3.22`) and
+  is not interpreted as a physical frequency measurement.
+
+This is consistent with, but does not prove, cancellation of a quasi-static
+detuning or frame-offset contribution by the echo pulse. It does not justify
+adding a fixed detuning to the production model and remains exploratory, not
+formal holdout evidence.
+
 ## Decision
 
 `CANDIDATE_NOT_FORMAL`
@@ -78,4 +116,8 @@ and coverage checks. No production physical parameter was changed.
 
 - Raw result: `validation_hardware/raw/phase3b_formal_audit_d9nlh5ssfqic73ar6f30.json`
 - Analysis: `validation_results/phase3b_formal_audit_analysis.json`
+- Ramsey repeatability report: `docs/validation/phase3b-ramsey-repeatability-report.md`
+- Ramsey repeat analysis: `validation_results/phase3b_ramsey_dense_repeat_d9ntoj460llc73cagtgg.json`
+- Spin-echo report: `docs/validation/phase3b-spin-echo-report.md`
+- Spin-echo analysis: `validation_results/phase3b_spin_echo_d9o12h8qs0bc73e3v590.json`
 - Protocol: `docs/validation/phase3b-formal-qpu-audit-protocol.md`

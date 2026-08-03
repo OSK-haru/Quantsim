@@ -1,0 +1,367 @@
+{
+  "analysis_id": "phase3b_native_model_comparison_v1",
+  "source_job_id": "d9nlh5ssfqic73ar6f30",
+  "calibration_source": "validation_results\\phase3b_runtime_calibration.json",
+  "physical_qubit": 150,
+  "native_gate_duration_us": {
+    "sx": 0.032,
+    "rz": 0.0
+  },
+  "environment_rates": {
+    "t1_effective_us": 300.16135406153774,
+    "t2_effective_us": 315.2698909443579,
+    "tphi_effective_us": 663.9600218464855,
+    "gamma_down_per_us": 0.0033315410983105033,
+    "gamma_up_per_us": 3.7586269918051006e-10,
+    "gamma_phi_per_us": 0.0015061147766381791
+  },
+  "summaries": {
+    "t1": {
+      "points": 21,
+      "max_absolute_difference": 0.10771540311977718,
+      "mean_absolute_difference": 0.059054303080938994
+    },
+    "t2": {
+      "points": 21,
+      "max_absolute_difference": 0.7636674171835522,
+      "mean_absolute_difference": 0.2899021381711248
+    }
+  },
+  "detuning_scan": {
+    "zero_detuning_rmse": 0.374244377953252,
+    "best": {
+      "detuning_cycles_per_us": 0.0067,
+      "detuning_mhz": 6.7,
+      "rmse": 0.030025684683833962
+    },
+    "top_candidates": [
+      {
+        "detuning_cycles_per_us": 0.0067,
+        "detuning_mhz": 6.7,
+        "rmse": 0.030025684683833962
+      },
+      {
+        "detuning_cycles_per_us": 0.0066,
+        "detuning_mhz": 6.6,
+        "rmse": 0.03658320254392098
+      },
+      {
+        "detuning_cycles_per_us": 0.0068000000000000005,
+        "detuning_mhz": 6.800000000000001,
+        "rmse": 0.03934852998595264
+      },
+      {
+        "detuning_cycles_per_us": 0.006500000000000001,
+        "detuning_mhz": 6.500000000000001,
+        "rmse": 0.05307642288769482
+      },
+      {
+        "detuning_cycles_per_us": 0.006900000000000001,
+        "detuning_mhz": 6.9,
+        "rmse": 0.05732605238633063
+      }
+    ],
+    "interpretation": "local detuning-only diagnostic; not a production model change"
+  },
+  "rows": [
+    {
+      "kind": "t1",
+      "delay_us": 0.0,
+      "qpu_corrected_p1": 1.0069582504970178,
+      "native_model_p1": 0.9999479741945275,
+      "absolute_difference": 0.0070102763024902925
+    },
+    {
+      "kind": "t1",
+      "delay_us": 20.0,
+      "qpu_corrected_p1": 0.9333996023856859,
+      "native_model_p1": 0.9354918465911906,
+      "absolute_difference": 0.0020922442055046897
+    },
+    {
+      "kind": "t1",
+      "delay_us": 40.0,
+      "qpu_corrected_p1": 0.9234592445328031,
+      "native_model_p1": 0.8751905279994997,
+      "absolute_difference": 0.048268716533303446
+    },
+    {
+      "kind": "t1",
+      "delay_us": 60.0,
+      "qpu_corrected_p1": 0.8449304174950298,
+      "native_model_p1": 0.8187762015560301,
+      "absolute_difference": 0.026154215938999692
+    },
+    {
+      "kind": "t1",
+      "delay_us": 80.0,
+      "qpu_corrected_p1": 0.8111332007952287,
+      "native_model_p1": 0.7659983137353668,
+      "absolute_difference": 0.045134887059861906
+    },
+    {
+      "kind": "t1",
+      "delay_us": 100.0,
+      "qpu_corrected_p1": 0.7514910536779325,
+      "native_model_p1": 0.7166224615641673,
+      "absolute_difference": 0.03486859211376514
+    },
+    {
+      "kind": "t1",
+      "delay_us": 120.0,
+      "qpu_corrected_p1": 0.7147117296222664,
+      "native_model_p1": 0.6704293515648385,
+      "absolute_difference": 0.04428237805742785
+    },
+    {
+      "kind": "t1",
+      "delay_us": 140.00000000000003,
+      "qpu_corrected_p1": 0.6421471172962226,
+      "native_model_p1": 0.627213825805169,
+      "absolute_difference": 0.014933291491053602
+    },
+    {
+      "kind": "t1",
+      "delay_us": 160.0,
+      "qpu_corrected_p1": 0.647117296222664,
+      "native_model_p1": 0.5867839507283066,
+      "absolute_difference": 0.06033334549435743
+    },
+    {
+      "kind": "t1",
+      "delay_us": 180.0,
+      "qpu_corrected_p1": 0.595427435387674,
+      "native_model_p1": 0.5489601647162856,
+      "absolute_difference": 0.04646727067138834
+    },
+    {
+      "kind": "t1",
+      "delay_us": 200.0,
+      "qpu_corrected_p1": 0.5815109343936382,
+      "native_model_p1": 0.5135744806011772,
+      "absolute_difference": 0.06793645379246105
+    },
+    {
+      "kind": "t1",
+      "delay_us": 220.0,
+      "qpu_corrected_p1": 0.5546719681908548,
+      "native_model_p1": 0.4804697395819601,
+      "absolute_difference": 0.07420222860889475
+    },
+    {
+      "kind": "t1",
+      "delay_us": 240.0,
+      "qpu_corrected_p1": 0.5029821073558648,
+      "native_model_p1": 0.4494989132335296,
+      "absolute_difference": 0.05348319412233521
+    },
+    {
+      "kind": "t1",
+      "delay_us": 260.00000000000006,
+      "qpu_corrected_p1": 0.4960238568588469,
+      "native_model_p1": 0.4205244505078484,
+      "absolute_difference": 0.0754994063509985
+    },
+    {
+      "kind": "t1",
+      "delay_us": 280.00000000000006,
+      "qpu_corrected_p1": 0.4701789264413519,
+      "native_model_p1": 0.39341766682706936,
+      "absolute_difference": 0.07676125961428254
+    },
+    {
+      "kind": "t1",
+      "delay_us": 300.0,
+      "qpu_corrected_p1": 0.4602385685884692,
+      "native_model_p1": 0.36805817255540174,
+      "absolute_difference": 0.09218039603306744
+    },
+    {
+      "kind": "t1",
+      "delay_us": 320.0,
+      "qpu_corrected_p1": 0.426441351888668,
+      "native_model_p1": 0.34433333831139085,
+      "absolute_difference": 0.08210801357727715
+    },
+    {
+      "kind": "t1",
+      "delay_us": 340.0,
+      "qpu_corrected_p1": 0.426441351888668,
+      "native_model_p1": 0.32213779474589305,
+      "absolute_difference": 0.10430355714277495
+    },
+    {
+      "kind": "t1",
+      "delay_us": 360.0,
+      "qpu_corrected_p1": 0.37773359840954274,
+      "native_model_p1": 0.30137296456410684,
+      "absolute_difference": 0.0763606338454359
+    },
+    {
+      "kind": "t1",
+      "delay_us": 380.0,
+      "qpu_corrected_p1": 0.38966202783300197,
+      "native_model_p1": 0.2819466247132248,
+      "absolute_difference": 0.10771540311977718
+    },
+    {
+      "kind": "t1",
+      "delay_us": 400.0,
+      "qpu_corrected_p1": 0.36381709741550694,
+      "native_model_p1": 0.2637724967912451,
+      "absolute_difference": 0.10004460062426185
+    },
+    {
+      "kind": "t2",
+      "delay_us": 0.0,
+      "qpu_corrected_p1": 0.0019880715705765406,
+      "native_model_p1": 3.618158420390372e-05,
+      "absolute_difference": 0.0019518899863726368
+    },
+    {
+      "kind": "t2",
+      "delay_us": 20.0,
+      "qpu_corrected_p1": 0.19582504970178927,
+      "native_model_p1": 0.03076563499277832,
+      "absolute_difference": 0.16505941470901095
+    },
+    {
+      "kind": "t2",
+      "delay_us": 40.0,
+      "qpu_corrected_p1": 0.5705765407554672,
+      "native_model_p1": 0.059606227976864,
+      "absolute_difference": 0.5109703127786032
+    },
+    {
+      "kind": "t2",
+      "delay_us": 60.0,
+      "qpu_corrected_p1": 0.8429423459244533,
+      "native_model_p1": 0.08667406392659198,
+      "absolute_difference": 0.7562682819978613
+    },
+    {
+      "kind": "t2",
+      "delay_us": 80.0,
+      "qpu_corrected_p1": 0.8757455268389662,
+      "native_model_p1": 0.11207810965541404,
+      "absolute_difference": 0.7636674171835522
+    },
+    {
+      "kind": "t2",
+      "delay_us": 100.0,
+      "qpu_corrected_p1": 0.705765407554672,
+      "native_model_p1": 0.13592063406711072,
+      "absolute_difference": 0.5698447734875612
+    },
+    {
+      "kind": "t2",
+      "delay_us": 120.0,
+      "qpu_corrected_p1": 0.378727634194831,
+      "native_model_p1": 0.15829761985906923,
+      "absolute_difference": 0.2204300143357618
+    },
+    {
+      "kind": "t2",
+      "delay_us": 140.00000000000003,
+      "qpu_corrected_p1": 0.19284294234592445,
+      "native_model_p1": 0.17929914991921775,
+      "absolute_difference": 0.013543792426706697
+    },
+    {
+      "kind": "t2",
+      "delay_us": 160.0,
+      "qpu_corrected_p1": 0.19483101391650098,
+      "native_model_p1": 0.19900976997213649,
+      "absolute_difference": 0.004178756055635502
+    },
+    {
+      "kind": "t2",
+      "delay_us": 180.0,
+      "qpu_corrected_p1": 0.4085487077534791,
+      "native_model_p1": 0.21750882893424212,
+      "absolute_difference": 0.191039878819237
+    },
+    {
+      "kind": "t2",
+      "delay_us": 200.0,
+      "qpu_corrected_p1": 0.6719681908548708,
+      "native_model_p1": 0.2348707983482175,
+      "absolute_difference": 0.4370973925066533
+    },
+    {
+      "kind": "t2",
+      "delay_us": 220.0,
+      "qpu_corrected_p1": 0.7912524850894632,
+      "native_model_p1": 0.2511655721826266,
+      "absolute_difference": 0.5400869129068366
+    },
+    {
+      "kind": "t2",
+      "delay_us": 240.0,
+      "qpu_corrected_p1": 0.7196819085487077,
+      "native_model_p1": 0.266458748203619,
+      "absolute_difference": 0.45322316034508875
+    },
+    {
+      "kind": "t2",
+      "delay_us": 260.00000000000006,
+      "qpu_corrected_p1": 0.525844930417495,
+      "native_model_p1": 0.28081189205144014,
+      "absolute_difference": 0.2450330383660549
+    },
+    {
+      "kind": "t2",
+      "delay_us": 280.00000000000006,
+      "qpu_corrected_p1": 0.32007952286282304,
+      "native_model_p1": 0.2942827850848366,
+      "absolute_difference": 0.025796737777986467
+    },
+    {
+      "kind": "t2",
+      "delay_us": 300.0,
+      "qpu_corrected_p1": 0.27037773359840955,
+      "native_model_p1": 0.30692565699110413,
+      "absolute_difference": 0.03654792339269458
+    },
+    {
+      "kind": "t2",
+      "delay_us": 320.0,
+      "qpu_corrected_p1": 0.3379721669980119,
+      "native_model_p1": 0.31879140409819445,
+      "absolute_difference": 0.01918076289981746
+    },
+    {
+      "kind": "t2",
+      "delay_us": 340.0,
+      "qpu_corrected_p1": 0.5546719681908548,
+      "native_model_p1": 0.32992779426773833,
+      "absolute_difference": 0.22474417392311652
+    },
+    {
+      "kind": "t2",
+      "delay_us": 360.0,
+      "qpu_corrected_p1": 0.6858846918489065,
+      "native_model_p1": 0.34037965919382057,
+      "absolute_difference": 0.345505032655086
+    },
+    {
+      "kind": "t2",
+      "delay_us": 380.0,
+      "qpu_corrected_p1": 0.6968190854870775,
+      "native_model_p1": 0.3501890748816458,
+      "absolute_difference": 0.3466300106054317
+    },
+    {
+      "kind": "t2",
+      "delay_us": 400.0,
+      "qpu_corrected_p1": 0.5765407554671969,
+      "native_model_p1": 0.35939553103264393,
+      "absolute_difference": 0.21714522443455292
+    }
+  ],
+  "limitations": [
+    "SX is represented by RX(pi/2) up to global phase; pulse shape is not simulated.",
+    "RZ is treated as virtual zero-duration evolution.",
+    "Readout is corrected but native gate error channels are not independently inserted."
+  ]
+}

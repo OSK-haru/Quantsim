@@ -1,0 +1,159 @@
+{
+  "analysis_id": "phase3b_runtime_calibration_snapshot_v1",
+  "collected_at_utc": "2026-08-02T23:53:39.597800+00:00",
+  "source_raw_result": "validation_hardware\\raw\\phase3b_formal_audit_d9nlh5ssfqic73ar6f30.json",
+  "source_job_id": "d9nlh5ssfqic73ar6f30",
+  "backend": "ibm_kingston",
+  "backend_version": "1.0.0",
+  "dt_seconds": 4e-09,
+  "calibration_timestamp": "2026-08-03T08:28:25+09:00",
+  "physical_qubit": 150,
+  "qubit_properties": {
+    "T1": {
+      "value": 300.1614217896348,
+      "unit": "us"
+    },
+    "T2": {
+      "value": 315.2699283032744,
+      "unit": "us"
+    },
+    "readout_error": {
+      "value": 0.007080078125,
+      "unit": ""
+    },
+    "prob_meas0_prep1": {
+      "value": 0.007568359375,
+      "unit": ""
+    },
+    "prob_meas1_prep0": {
+      "value": 0.006591796875,
+      "unit": ""
+    },
+    "readout_length": {
+      "value": 2180.0,
+      "unit": "ns"
+    }
+  },
+  "single_qubit_gate_properties": [
+    {
+      "gate": "id",
+      "parameters": {
+        "gate_error": {
+          "value": 0.0003185462077798308,
+          "unit": ""
+        },
+        "gate_length": {
+          "value": 32.0,
+          "unit": "ns"
+        }
+      }
+    },
+    {
+      "gate": "rx",
+      "parameters": {
+        "gate_error": {
+          "value": 0.0003185462077798308,
+          "unit": ""
+        },
+        "gate_length": {
+          "value": 32.0,
+          "unit": "ns"
+        }
+      }
+    },
+    {
+      "gate": "rz",
+      "parameters": {
+        "gate_error": {
+          "value": 0.0,
+          "unit": ""
+        },
+        "gate_length": {
+          "value": 0.0,
+          "unit": "ns"
+        }
+      }
+    },
+    {
+      "gate": "sx",
+      "parameters": {
+        "gate_error": {
+          "value": 0.0003185462077798308,
+          "unit": ""
+        },
+        "gate_length": {
+          "value": 32.0,
+          "unit": "ns"
+        }
+      }
+    },
+    {
+      "gate": "x",
+      "parameters": {
+        "gate_error": {
+          "value": 0.0003185462077798308,
+          "unit": ""
+        },
+        "gate_length": {
+          "value": 32.0,
+          "unit": "ns"
+        }
+      }
+    },
+    {
+      "gate": "reset",
+      "parameters": {
+        "gate_length": {
+          "value": 2212.0,
+          "unit": "ns"
+        }
+      }
+    },
+    {
+      "gate": "measure",
+      "parameters": {
+        "gate_error": {
+          "value": 0.007080078125,
+          "unit": ""
+        },
+        "gate_length": {
+          "value": 2180.0,
+          "unit": "ns"
+        },
+        "threshold": {
+          "value": 7903450.411480177,
+          "unit": ""
+        }
+      }
+    },
+    {
+      "gate": "measure_2",
+      "parameters": {
+        "gate_error": {
+          "value": 0.002685546875,
+          "unit": ""
+        },
+        "gate_length": {
+          "value": 1380.0,
+          "unit": "ns"
+        },
+        "threshold": {
+          "value": 5228278.72435005,
+          "unit": ""
+        }
+      }
+    }
+  ],
+  "compiled_gate_counts_in_source_job": {
+    "measure": 44,
+    "x": 22,
+    "delay": 42,
+    "rz": 84,
+    "sx": 42
+  },
+  "interpretation": [
+    "Use this snapshot instead of the older 2026-07-30 CSV when comparing the formal candidate job.",
+    "RZ is virtual on this backend; its listed duration/error must not be treated as SX pulse duration.",
+    "The current gate-aware logical model does not reproduce every native pulse calibration parameter."
+  ]
+}

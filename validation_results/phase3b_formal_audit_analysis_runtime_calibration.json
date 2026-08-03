@@ -1,0 +1,372 @@
+{
+  "analysis_id": "phase3b_formal_audit_analysis_v1",
+  "source_raw_result": "validation_hardware\\raw\\phase3b_formal_audit_d9nlh5ssfqic73ar6f30.json",
+  "job_id": "d9nlh5ssfqic73ar6f30",
+  "backend": {
+    "backend": "ibm_kingston",
+    "backend_version": "1.0.0",
+    "dt_seconds": 4e-09,
+    "calibration_timestamp": "2026-08-02T23:17:55+09:00"
+  },
+  "formal_holdout_eligible": false,
+  "protocol_committed_before_execution": false,
+  "readout_calibration": {
+    "p_observed_1_given_0": 0.0048828125,
+    "p_observed_1_given_1": 0.9873046875,
+    "assignment_span": 0.982421875
+  },
+  "t1": {
+    "fit": {
+      "status": "fit",
+      "points": 21,
+      "transform": "corrected P1",
+      "decay_time_us": 392.40879839429806,
+      "initial_amplitude": 0.9753722222576281,
+      "log_rmse": 0.029271878207043838
+    },
+    "model_reference_us": 300.1614217896348
+  },
+  "t2_ramsey": {
+    "fit": {
+      "status": "fit",
+      "points": 21,
+      "model": "C(t)=A exp(-t/T2) cos(2 pi f t + phase)",
+      "frequency_cycles_per_us": 0.0067,
+      "t2_us": 437.61563631636443,
+      "amplitude": 0.9691205621882406,
+      "phase_rad": 0.0003114403288160054,
+      "rmse": 0.022887052304892356,
+      "top_candidate_rmse": [
+        0.022887052304892356,
+        0.022902677218871813,
+        0.02300607155000399,
+        0.02305745882355771,
+        0.023253008588401236
+      ],
+      "identifiability_warning": "21 points improve identifiability, but this remains an exploratory single-tone fit; confidence intervals are not included."
+    },
+    "model_reference_us": 315.2699283032744
+  },
+  "tphi_derived_us": 989.1892647835136,
+  "rows": [
+    {
+      "kind": "t1",
+      "delay_us": 0.0,
+      "observed_p1": 0.994140625,
+      "readout_corrected_p1": 1.0,
+      "model_p1": 1.0
+    },
+    {
+      "kind": "t1",
+      "delay_us": 20.0,
+      "observed_p1": 0.921875,
+      "readout_corrected_p1": 0.9333996023856859,
+      "model_p1": 0.9355405256329637
+    },
+    {
+      "kind": "t1",
+      "delay_us": 40.0,
+      "observed_p1": 0.912109375,
+      "readout_corrected_p1": 0.9234592445328031,
+      "model_p1": 0.8752360751016021
+    },
+    {
+      "kind": "t1",
+      "delay_us": 60.0,
+      "observed_p1": 0.8349609375,
+      "readout_corrected_p1": 0.8449304174950298,
+      "model_p1": 0.818818817753485
+    },
+    {
+      "kind": "t1",
+      "delay_us": 80.0,
+      "observed_p1": 0.8017578125,
+      "readout_corrected_p1": 0.8111332007952287,
+      "model_p1": 0.7660381871592573
+    },
+    {
+      "kind": "t1",
+      "delay_us": 100.0,
+      "observed_p1": 0.7431640625,
+      "readout_corrected_p1": 0.7514910536779325,
+      "model_p1": 0.7166597682698942
+    },
+    {
+      "kind": "t1",
+      "delay_us": 120.0,
+      "observed_p1": 0.70703125,
+      "readout_corrected_p1": 0.7147117296222664,
+      "model_p1": 0.6704642563072147
+    },
+    {
+      "kind": "t1",
+      "delay_us": 140.00000000000003,
+      "observed_p1": 0.6357421875,
+      "readout_corrected_p1": 0.6421471172962226,
+      "model_p1": 0.6272464827637658
+    },
+    {
+      "kind": "t1",
+      "delay_us": 160.0,
+      "observed_p1": 0.640625,
+      "readout_corrected_p1": 0.647117296222664,
+      "model_p1": 0.5868145041862413
+    },
+    {
+      "kind": "t1",
+      "delay_us": 180.0,
+      "observed_p1": 0.58984375,
+      "readout_corrected_p1": 0.595427435387674,
+      "model_p1": 0.5489887496954431
+    },
+    {
+      "kind": "t1",
+      "delay_us": 200.0,
+      "observed_p1": 0.576171875,
+      "readout_corrected_p1": 0.5815109343936382,
+      "model_p1": 0.5136012234566584
+    },
+    {
+      "kind": "t1",
+      "delay_us": 220.0,
+      "observed_p1": 0.5498046875,
+      "readout_corrected_p1": 0.5546719681908548,
+      "model_p1": 0.4804947585583755
+    },
+    {
+      "kind": "t1",
+      "delay_us": 240.0,
+      "observed_p1": 0.4990234375,
+      "readout_corrected_p1": 0.5029821073558648,
+      "model_p1": 0.4495223189855866
+    },
+    {
+      "kind": "t1",
+      "delay_us": 260.00000000000006,
+      "observed_p1": 0.4921875,
+      "readout_corrected_p1": 0.4960238568588469,
+      "model_p1": 0.42054634658752443
+    },
+    {
+      "kind": "t1",
+      "delay_us": 280.00000000000006,
+      "observed_p1": 0.466796875,
+      "readout_corrected_p1": 0.4701789264413519,
+      "model_p1": 0.3934381501395151
+    },
+    {
+      "kind": "t1",
+      "delay_us": 300.0,
+      "observed_p1": 0.45703125,
+      "readout_corrected_p1": 0.4602385685884692,
+      "model_p1": 0.368077333785583
+    },
+    {
+      "kind": "t1",
+      "delay_us": 320.0,
+      "observed_p1": 0.423828125,
+      "readout_corrected_p1": 0.426441351888668,
+      "model_p1": 0.3443512623233442
+    },
+    {
+      "kind": "t1",
+      "delay_us": 340.0,
+      "observed_p1": 0.423828125,
+      "readout_corrected_p1": 0.426441351888668,
+      "model_p1": 0.3221545609563559
+    },
+    {
+      "kind": "t1",
+      "delay_us": 360.0,
+      "observed_p1": 0.3759765625,
+      "readout_corrected_p1": 0.37773359840954274,
+      "model_p1": 0.3013886472921659
+    },
+    {
+      "kind": "t1",
+      "delay_us": 380.0,
+      "observed_p1": 0.3876953125,
+      "readout_corrected_p1": 0.38966202783300197,
+      "model_p1": 0.2819612935075208
+    },
+    {
+      "kind": "t1",
+      "delay_us": 400.0,
+      "observed_p1": 0.3623046875,
+      "readout_corrected_p1": 0.36381709741550694,
+      "model_p1": 0.26378621673617636
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 0.0,
+      "observed_p1": 0.0068359375,
+      "readout_corrected_p1": 0.0019880715705765406,
+      "contrast": 0.9960238568588469
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 20.0,
+      "observed_p1": 0.197265625,
+      "readout_corrected_p1": 0.19582504970178927,
+      "contrast": 0.6083499005964215
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 40.0,
+      "observed_p1": 0.5654296875,
+      "readout_corrected_p1": 0.5705765407554672,
+      "contrast": -0.1411530815109343
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 60.0,
+      "observed_p1": 0.8330078125,
+      "readout_corrected_p1": 0.8429423459244533,
+      "contrast": -0.6858846918489065
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 80.0,
+      "observed_p1": 0.865234375,
+      "readout_corrected_p1": 0.8757455268389662,
+      "contrast": -0.7514910536779325
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 100.0,
+      "observed_p1": 0.6982421875,
+      "readout_corrected_p1": 0.705765407554672,
+      "contrast": -0.411530815109344
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 120.0,
+      "observed_p1": 0.376953125,
+      "readout_corrected_p1": 0.378727634194831,
+      "contrast": 0.24254473161033796
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 140.00000000000003,
+      "observed_p1": 0.1943359375,
+      "readout_corrected_p1": 0.19284294234592445,
+      "contrast": 0.614314115308151
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 160.0,
+      "observed_p1": 0.1962890625,
+      "readout_corrected_p1": 0.19483101391650098,
+      "contrast": 0.610337972166998
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 180.0,
+      "observed_p1": 0.40625,
+      "readout_corrected_p1": 0.4085487077534791,
+      "contrast": 0.18290258449304175
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 200.0,
+      "observed_p1": 0.6650390625,
+      "readout_corrected_p1": 0.6719681908548708,
+      "contrast": -0.3439363817097416
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 220.0,
+      "observed_p1": 0.7822265625,
+      "readout_corrected_p1": 0.7912524850894632,
+      "contrast": -0.5825049701789264
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 240.0,
+      "observed_p1": 0.7119140625,
+      "readout_corrected_p1": 0.7196819085487077,
+      "contrast": -0.43936381709741545
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 260.00000000000006,
+      "observed_p1": 0.521484375,
+      "readout_corrected_p1": 0.525844930417495,
+      "contrast": -0.05168986083499005
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 280.00000000000006,
+      "observed_p1": 0.3193359375,
+      "readout_corrected_p1": 0.32007952286282304,
+      "contrast": 0.3598409542743539
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 300.0,
+      "observed_p1": 0.2705078125,
+      "readout_corrected_p1": 0.27037773359840955,
+      "contrast": 0.4592445328031809
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 320.0,
+      "observed_p1": 0.3369140625,
+      "readout_corrected_p1": 0.3379721669980119,
+      "contrast": 0.3240556660039762
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 340.0,
+      "observed_p1": 0.5498046875,
+      "readout_corrected_p1": 0.5546719681908548,
+      "contrast": -0.1093439363817097
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 360.0,
+      "observed_p1": 0.6787109375,
+      "readout_corrected_p1": 0.6858846918489065,
+      "contrast": -0.3717693836978131
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 380.0,
+      "observed_p1": 0.689453125,
+      "readout_corrected_p1": 0.6968190854870775,
+      "contrast": -0.393638170974155
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_us": 400.0,
+      "observed_p1": 0.5712890625,
+      "readout_corrected_p1": 0.5765407554671969,
+      "contrast": -0.1530815109343937
+    }
+  ],
+  "decision": "CANDIDATE_NOT_FORMAL",
+  "bootstrap": {
+    "replicates_requested": 200,
+    "t1_interval_us": {
+      "samples": 200,
+      "lower_95": 376.45988971573513,
+      "upper_95": 407.06143383403156
+    },
+    "t2_interval_us": {
+      "samples": 200,
+      "lower_95": 379.4589493341593,
+      "upper_95": 469.9556193764455
+    },
+    "t1_model_coverage": 0.14285714285714285,
+    "t2_model_coverage": 0.47619047619047616,
+    "t1_model_compatible": false,
+    "t2_model_compatible": false,
+    "decision": "CONDITIONAL_PASS",
+    "method": "deterministic binomial bootstrap including same-job readout calibration"
+  },
+  "limitations": [
+    "Protocol was not committed before execution, so the result cannot be promoted to formal holdout.",
+    "The bootstrap decision is statistical evidence only; formal promotion still requires protocol provenance.",
+    "No model refit was performed."
+  ]
+}

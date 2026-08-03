@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "manifest_id": "phase3b_gate_aware_pilot_manifest_v1",
+  "status": "PILOT_EXECUTED_RAW_ARCHIVED_FORMAL_HOLDOUT_FALSE",
+  "formal_holdout_eligible": false,
+  "dataset_id": "quantascope_hardware_audit_dataset_v1",
+  "source_revision": {
+    "freeze_tag": "quantascope-gate-aware-cptp-v1",
+    "freeze_commit": "f306fbf6eb2083d9098ab0ade079e2681920ac4e"
+  },
+  "provider": {
+    "name": "IBM Quantum",
+    "backend_id": "ibm_kingston",
+    "backend_version": "1.0.0",
+    "native_dt_seconds": 4e-09,
+    "calibration_snapshot_at_utc": "2026-08-02T12:26:03Z",
+    "candidate_physical_qubits": [150, 151],
+    "selection_status": "transpilation_preview_confirmed_submission_pending",
+    "transpilation_preview": {
+      "optimization_level": 0,
+      "logical_to_physical_mapping": {
+        "q0": 150,
+        "q1": 151
+      },
+      "depth": 8,
+      "gate_counts": {
+        "rz": 6,
+        "sx": 3,
+        "cz": 1,
+        "measure": 2
+      },
+      "swap_count": 0,
+      "logical_cnot_native_decomposition": "cz plus single-qubit rotations"
+    }
+  },
+  "execution_policy": {
+    "jobs_max": 1,
+    "retry_max": 0,
+    "circuits_per_job_max": 12,
+    "shots_per_circuit_max": 32,
+    "total_circuits_max": 12,
+    "total_shots_max": 384,
+    "timeout_minutes": 8,
+    "qpu_minutes_max": 8,
+    "provider_allowance_minutes": 10,
+    "safety_reserve_minutes": 2,
+    "model_refit_after_pilot": false
+  },
+  "conventions": {
+    "bit_order": "q0_msb_leftmost",
+    "delay_unit": "backend_dt",
+    "time_unit_for_model": "microseconds",
+    "measurement_basis": "computational_z",
+    "transpilation_policy": "record_compiled_circuit_and_mapping; no post-hoc optimization changes"
+  },
+  "execution": {
+    "job_id": "d9njjeoqs0bc73e3gss0",
+    "execution_started_at_utc": "2026-08-02T12:36:07.486740Z",
+    "execution_finished_at_utc": "2026-08-02T12:36:26.219841Z",
+    "raw_result": "validation_hardware/raw/phase3b_pilot_d9njjeoqs0bc73e3gss0.json",
+    "formal_holdout_eligible": false,
+    "model_refit_after_pilot": false
+  },
+  "required_raw_provenance_fields": [
+    "provider",
+    "device_id",
+    "job_id",
+    "execution_started_at_utc",
+    "execution_finished_at_utc",
+    "calibration_snapshot_at_utc",
+    "backend_properties",
+    "native_dt_seconds",
+    "compiled_circuit",
+    "qubit_mapping",
+    "bit_order",
+    "delay_grid_dt",
+    "shot_count",
+    "raw_counts",
+    "software_versions",
+    "quantascope_commit"
+  ],
+  "cases": [
+    {
+      "case_id": "readout_zero_calibration",
+      "purpose": "readout confusion calibration for prepared zero",
+      "initial_states": ["0"],
+      "delay_grid_dt": [0],
+      "shots": 32,
+      "formal_holdout_eligible": false,
+      "circuit": [{"type": "MEASURE", "targets": [0], "controls": []}]
+    },
+    {
+      "case_id": "readout_one_calibration",
+      "purpose": "readout confusion calibration for prepared one",
+      "initial_states": ["1"],
+      "delay_grid_dt": [0],
+      "shots": 32,
+      "formal_holdout_eligible": false,
+      "circuit": [{"type": "MEASURE", "targets": [0], "controls": []}]
+    },
+    {
+      "case_id": "t1_delay_pilot",
+      "purpose": "excited population decay",
+      "initial_states": ["1"],
+      "delay_grid_dt": [0, 5000, 20000, 50000, 100000],
+      "shots": 32,
+      "formal_holdout_eligible": false,
+      "circuit": [{"type": "DELAY", "targets": [0], "controls": []}, {"type": "MEASURE", "targets": [0], "controls": []}]
+    },
+    {
+      "case_id": "single_qubit_gate_idle_pilot",
+      "purpose": "gate-plus-idle fidelity proxy",
+      "initial_states": ["0"],
+      "delay_grid_dt": [0, 5000, 20000, 50000, 100000],
+      "shots": 32,
+      "formal_holdout_eligible": false,
+      "circuit": [{"type": "H", "targets": [0], "controls": []}, {"type": "DELAY", "targets": [0], "controls": []}, {"type": "MEASURE", "targets": [0], "controls": []}]
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "analysis_id": "phase3b_decomposed_followup_analysis_v1",
+  "created_at_utc": "2026-08-02T13:50:32.297020+00:00",
+  "source_raw_result": "validation_hardware\\raw\\phase3b_decomposed_followup_d9nki08qs0bc73e3ht8g.json",
+  "job_id": "d9nki08qs0bc73e3ht8g",
+  "backend": {
+    "backend": "ibm_kingston",
+    "backend_version": "1.0.0",
+    "dt_seconds": 4e-09,
+    "calibration_timestamp": "2026-08-02T21:55:24+09:00"
+  },
+  "readout_calibration": {
+    "p_observed_1_given_0": 0.0,
+    "p_observed_1_given_1": 0.9921875,
+    "assignment_span": 0.9921875
+  },
+  "x_preparation": {
+    "corrected_p1": 1.0,
+    "interpretation": "X preparation plus finite gate-time error; readout-corrected"
+  },
+  "t1": {
+    "fit": {
+      "status": "fit",
+      "points": 5,
+      "transform": "corrected P1",
+      "decay_time_us": 360.4858615205257,
+      "initial_amplitude": 0.9844462378947242,
+      "log_rmse": 0.020634271849632502
+    },
+    "calibration_reference_us": 303.33
+  },
+  "t2_ramsey": {
+    "fit": {
+      "status": "oscillatory_or_inadequate",
+      "points": 5,
+      "reason": "Ramsey contrast changes sign; a damped oscillation fit is required"
+    },
+    "calibration_reference_us": 339.99
+  },
+  "tphi_derived_us": null,
+  "t2_damped_oscillation_fit": {
+    "status": "fit",
+    "points": 5,
+    "model": "C(t)=A exp(-t/T2) cos(2 pi f t + phase)",
+    "frequency_cycles_per_us": 0.006083333333333334,
+    "t2_us": 347.43558552260146,
+    "amplitude": 0.9930211937785314,
+    "phase_rad": 0.013622117164455067,
+    "rmse": 0.008960239105959509,
+    "top_candidate_rmse": [
+      0.008960239105959509,
+      0.016807348654963312,
+      0.024981431431976023,
+      0.03319925731615508,
+      0.045826676152112215
+    ],
+    "identifiability_warning": "Five irregular points do not establish a unique frequency/T2 pair; use this as an exploratory fit only."
+  },
+  "rows": [
+    {
+      "kind": "x_prep",
+      "delay_dt": 0,
+      "delay_us": 0.0,
+      "observed_p1": 0.9921875,
+      "readout_corrected_p1": 1.0,
+      "model_p1_x_ideal": 1.0
+    },
+    {
+      "kind": "t1",
+      "delay_dt": 0,
+      "delay_us": 0.0,
+      "observed_p1": 0.99609375,
+      "readout_corrected_p1": 1.0,
+      "model_p1_t1_calibrated": 1.0
+    },
+    {
+      "kind": "t1",
+      "delay_dt": 5000,
+      "delay_us": 20.0,
+      "observed_p1": 0.9375,
+      "readout_corrected_p1": 0.9448818897637795,
+      "model_p1_t1_calibrated": 0.9361919109149012
+    },
+    {
+      "kind": "t1",
+      "delay_dt": 20000,
+      "delay_us": 80.0,
+      "observed_p1": 0.76953125,
+      "readout_corrected_p1": 0.7755905511811023,
+      "model_p1_t1_calibrated": 0.7681738824901733
+    },
+    {
+      "kind": "t1",
+      "delay_dt": 50000,
+      "delay_us": 200.0,
+      "observed_p1": 0.54296875,
+      "readout_corrected_p1": 0.547244094488189,
+      "model_p1_t1_calibrated": 0.5171884806166798
+    },
+    {
+      "kind": "t1",
+      "delay_dt": 100000,
+      "delay_us": 400.0,
+      "observed_p1": 0.328125,
+      "readout_corrected_p1": 0.33070866141732286,
+      "model_p1_t1_calibrated": 0.26748392448258973
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_dt": 0,
+      "delay_us": 0.0,
+      "observed_p1": 0.00390625,
+      "readout_corrected_p1": 0.003937007874015748,
+      "contrast": 0.9921259842519685,
+      "model_p1_t2_calibrated": 0.0
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_dt": 5000,
+      "delay_us": 20.0,
+      "observed_p1": 0.1640625,
+      "readout_corrected_p1": 0.16535433070866143,
+      "contrast": 0.6692913385826771,
+      "model_p1_t2_calibrated": 0.02856424373005434
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_dt": 20000,
+      "delay_us": 80.0,
+      "observed_p1": 0.8828125,
+      "readout_corrected_p1": 0.889763779527559,
+      "contrast": -0.7795275590551181,
+      "model_p1_t2_calibrated": 0.10483355331504335
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_dt": 50000,
+      "delay_us": 200.0,
+      "observed_p1": 0.44140625,
+      "readout_corrected_p1": 0.4448818897637795,
+      "contrast": 0.11023622047244097,
+      "model_p1_t2_calibrated": 0.22235161728710495
+    },
+    {
+      "kind": "t2_ramsey",
+      "delay_dt": 100000,
+      "delay_us": 400.0,
+      "observed_p1": 0.6484375,
+      "readout_corrected_p1": 0.6535433070866141,
+      "contrast": -0.30708661417322825,
+      "model_p1_t2_calibrated": 0.34582275115382755
+    }
+  ],
+  "limitations": [
+    "The simple fits use no thermal-equilibrium offset.",
+    "Finite native gate duration and gate infidelity remain in the amplitudes.",
+    "T2 Ramsey fitting uses absolute contrast and does not fit oscillation frequency.",
+    "This is not a formal holdout or a model refit."
+  ]
+}

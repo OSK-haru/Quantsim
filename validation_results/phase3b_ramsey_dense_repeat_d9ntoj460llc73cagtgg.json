@@ -1,0 +1,169 @@
+{
+  "analysis_id": "phase3b_ramsey_dense_analysis_v1",
+  "source_raw_result": "validation_hardware\\raw\\phase3b_ramsey_dense_followup_d9ntoj460llc73cagtgg.json",
+  "job_id": "d9ntoj460llc73cagtgg",
+  "backend": {
+    "backend": "ibm_kingston",
+    "backend_version": "1.0.0",
+    "dt_seconds": 4e-09,
+    "calibration_timestamp": "2026-08-03T08:48:56+09:00"
+  },
+  "readout_calibration": {
+    "p_observed_1_given_0": 0.01171875,
+    "p_observed_1_given_1": 0.9921875,
+    "assignment_span": 0.98046875
+  },
+  "t1_input_us": 360.4858615205257,
+  "damped_oscillation_fit": {
+    "status": "fit",
+    "points": 21,
+    "model": "C(t)=A exp(-t/T2) cos(2 pi f t + phase)",
+    "frequency_cycles_per_us": 0.009550000000000001,
+    "t2_us": 443.90050018699253,
+    "amplitude": 1.0056570376077678,
+    "phase_rad": 0.03600760645906522,
+    "rmse": 0.038036305914745966,
+    "top_candidate_rmse": [
+      0.038036305914745966,
+      0.03805317641301733,
+      0.03810383364356129,
+      0.03815136158912238,
+      0.03825833377611089
+    ],
+    "identifiability_warning": "21 points improve identifiability, but this remains an exploratory single-tone fit; confidence intervals are not included."
+  },
+  "tphi_derived_us": 1155.0810119576163,
+  "rows": [
+    {
+      "delay_us": 0.0,
+      "observed_p1": 0.0,
+      "readout_corrected_p1": 0.0,
+      "contrast": 1.0
+    },
+    {
+      "delay_us": 20.0,
+      "observed_p1": 0.33203125,
+      "readout_corrected_p1": 0.32669322709163345,
+      "contrast": 0.3466135458167331
+    },
+    {
+      "delay_us": 40.0,
+      "observed_p1": 0.83203125,
+      "readout_corrected_p1": 0.8366533864541833,
+      "contrast": -0.6733067729083666
+    },
+    {
+      "delay_us": 60.0,
+      "observed_p1": 0.86328125,
+      "readout_corrected_p1": 0.8685258964143426,
+      "contrast": -0.7370517928286853
+    },
+    {
+      "delay_us": 80.0,
+      "observed_p1": 0.4296875,
+      "readout_corrected_p1": 0.4262948207171315,
+      "contrast": 0.14741035856573703
+    },
+    {
+      "delay_us": 100.0,
+      "observed_p1": 0.11328125,
+      "readout_corrected_p1": 0.10358565737051793,
+      "contrast": 0.7928286852589641
+    },
+    {
+      "delay_us": 120.0,
+      "observed_p1": 0.24609375,
+      "readout_corrected_p1": 0.23904382470119523,
+      "contrast": 0.5219123505976095
+    },
+    {
+      "delay_us": 140.00000000000003,
+      "observed_p1": 0.6796875,
+      "readout_corrected_p1": 0.6812749003984063,
+      "contrast": -0.36254980079681265
+    },
+    {
+      "delay_us": 160.0,
+      "observed_p1": 0.8515625,
+      "readout_corrected_p1": 0.8565737051792829,
+      "contrast": -0.7131474103585658
+    },
+    {
+      "delay_us": 180.0,
+      "observed_p1": 0.53515625,
+      "readout_corrected_p1": 0.5338645418326693,
+      "contrast": -0.06772908366533859
+    },
+    {
+      "delay_us": 200.0,
+      "observed_p1": 0.23046875,
+      "readout_corrected_p1": 0.22310756972111553,
+      "contrast": 0.5537848605577689
+    },
+    {
+      "delay_us": 220.0,
+      "observed_p1": 0.28515625,
+      "readout_corrected_p1": 0.2788844621513944,
+      "contrast": 0.4422310756972112
+    },
+    {
+      "delay_us": 240.0,
+      "observed_p1": 0.5859375,
+      "readout_corrected_p1": 0.5856573705179283,
+      "contrast": -0.17131474103585664
+    },
+    {
+      "delay_us": 260.00000000000006,
+      "observed_p1": 0.78515625,
+      "readout_corrected_p1": 0.7888446215139442,
+      "contrast": -0.5776892430278884
+    },
+    {
+      "delay_us": 280.00000000000006,
+      "observed_p1": 0.59765625,
+      "readout_corrected_p1": 0.5976095617529881,
+      "contrast": -0.19521912350597614
+    },
+    {
+      "delay_us": 300.0,
+      "observed_p1": 0.296875,
+      "readout_corrected_p1": 0.2908366533864542,
+      "contrast": 0.4183266932270916
+    },
+    {
+      "delay_us": 320.0,
+      "observed_p1": 0.2578125,
+      "readout_corrected_p1": 0.250996015936255,
+      "contrast": 0.49800796812749004
+    },
+    {
+      "delay_us": 340.0,
+      "observed_p1": 0.515625,
+      "readout_corrected_p1": 0.5139442231075697,
+      "contrast": -0.027888446215139417
+    },
+    {
+      "delay_us": 360.0,
+      "observed_p1": 0.671875,
+      "readout_corrected_p1": 0.6733067729083665,
+      "contrast": -0.346613545816733
+    },
+    {
+      "delay_us": 380.0,
+      "observed_p1": 0.63671875,
+      "readout_corrected_p1": 0.6374501992031872,
+      "contrast": -0.2749003984063745
+    },
+    {
+      "delay_us": 400.0,
+      "observed_p1": 0.41796875,
+      "readout_corrected_p1": 0.41434262948207173,
+      "contrast": 0.17131474103585653
+    }
+  ],
+  "limitations": [
+    "The fit is exploratory and assumes one damped cosine with no offset.",
+    "Frequency, phase, and T2 are still model-dependent even with 21 points.",
+    "No parameter was refit into the production model."
+  ]
+}

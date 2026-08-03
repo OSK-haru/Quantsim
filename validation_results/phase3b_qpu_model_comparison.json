@@ -1,0 +1,328 @@
+{
+  "analysis_id": "phase3b_qpu_model_comparison_v1",
+  "created_at_utc": "2026-08-02T12:49:54.522242+00:00",
+  "source_raw_result": "validation_hardware\\raw\\phase3b_pilot_d9njjeoqs0bc73e3gss0.json",
+  "job_id": "d9njjeoqs0bc73e3gss0",
+  "backend": {
+    "backend": "ibm_kingston",
+    "backend_version": "1.0.0",
+    "dt_seconds": 4e-09,
+    "calibration_timestamp": "2026-08-02T21:26:03+09:00"
+  },
+  "comparison_parameters": {
+    "t1_us": 303.33,
+    "t2_us": 339.99,
+    "tphi_derived_us": 773.4590820114748,
+    "temperature_mk": 15.0,
+    "qubit_frequency_ghz": 5.0,
+    "logical_gate_duration_us": 0.02,
+    "model_input_mode": "physical",
+    "model_device_quality": 1.0,
+    "flux_noise_phi0": 0.0,
+    "model_refit": false
+  },
+  "rows": [
+    {
+      "case_id": "readout_zero_calibration",
+      "delay_dt": 0,
+      "delay_us": 0.0,
+      "shots": 32,
+      "measured_p1": 0.0,
+      "model_p1": 0.0,
+      "absolute_difference": 0.0,
+      "counts": {
+        "0": 32
+      },
+      "model_details": {
+        "not_simulated": true,
+        "reason": "readout calibration"
+      }
+    },
+    {
+      "case_id": "readout_one_calibration",
+      "delay_dt": 0,
+      "delay_us": 0.0,
+      "shots": 32,
+      "measured_p1": 0.96875,
+      "model_p1": 1.0,
+      "absolute_difference": 0.03125,
+      "counts": {
+        "1": 31,
+        "0": 1
+      },
+      "model_details": {
+        "not_simulated": true,
+        "reason": "readout calibration"
+      }
+    },
+    {
+      "case_id": "t1_delay_pilot",
+      "delay_dt": 0,
+      "delay_us": 0.0,
+      "shots": 32,
+      "measured_p1": 1.0,
+      "model_p1": 0.9999688105617281,
+      "absolute_difference": 3.118943827185028e-05,
+      "counts": {
+        "1": 32
+      },
+      "model_details": {
+        "duration_us": 0.02,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "t1_delay_pilot",
+      "delay_dt": 5000,
+      "delay_us": 20.0,
+      "shots": 32,
+      "measured_p1": 0.875,
+      "model_p1": 0.9362244326194424,
+      "absolute_difference": 0.06122443261944244,
+      "counts": {
+        "1": 28,
+        "0": 4
+      },
+      "model_details": {
+        "duration_us": 20.0,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "t1_delay_pilot",
+      "delay_dt": 20000,
+      "delay_us": 80.0,
+      "shots": 32,
+      "measured_p1": 0.71875,
+      "model_p1": 0.7682005534970551,
+      "absolute_difference": 0.04945055349705507,
+      "counts": {
+        "1": 23,
+        "0": 9
+      },
+      "model_details": {
+        "duration_us": 80.0,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "t1_delay_pilot",
+      "delay_dt": 50000,
+      "delay_us": 200.0,
+      "shots": 32,
+      "measured_p1": 0.53125,
+      "model_p1": 0.5172064281004458,
+      "absolute_difference": 0.014043571899554186,
+      "counts": {
+        "0": 15,
+        "1": 17
+      },
+      "model_details": {
+        "duration_us": 200.0,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "t1_delay_pilot",
+      "delay_dt": 100000,
+      "delay_us": 400.0,
+      "shots": 32,
+      "measured_p1": 0.3125,
+      "model_p1": 0.2674932213888054,
+      "absolute_difference": 0.04500677861119462,
+      "counts": {
+        "1": 10,
+        "0": 22
+      },
+      "model_details": {
+        "duration_us": 400.0,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "single_qubit_gate_idle_pilot",
+      "delay_dt": 0,
+      "delay_us": 0.0,
+      "shots": 32,
+      "measured_p1": 0.5625,
+      "model_p1": 0.4999839609606574,
+      "absolute_difference": 0.06251603903934261,
+      "counts": {
+        "0": 14,
+        "1": 18
+      },
+      "model_details": {
+        "duration_us": 0.02,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "single_qubit_gate_idle_pilot",
+      "delay_dt": 5000,
+      "delay_us": 20.0,
+      "shots": 32,
+      "measured_p1": 0.1875,
+      "model_p1": 0.46811180390923196,
+      "absolute_difference": 0.28061180390923196,
+      "counts": {
+        "0": 26,
+        "1": 6
+      },
+      "model_details": {
+        "duration_us": 20.0,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "single_qubit_gate_idle_pilot",
+      "delay_dt": 20000,
+      "delay_us": 80.0,
+      "shots": 32,
+      "measured_p1": 0.3125,
+      "model_p1": 0.38409994848525797,
+      "absolute_difference": 0.07159994848525797,
+      "counts": {
+        "1": 10,
+        "0": 22
+      },
+      "model_details": {
+        "duration_us": 80.0,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "single_qubit_gate_idle_pilot",
+      "delay_dt": 50000,
+      "delay_us": 200.0,
+      "shots": 32,
+      "measured_p1": 0.3125,
+      "model_p1": 0.2586030114711597,
+      "absolute_difference": 0.053896988528840284,
+      "counts": {
+        "0": 22,
+        "1": 10
+      },
+      "model_details": {
+        "duration_us": 200.0,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    },
+    {
+      "case_id": "single_qubit_gate_idle_pilot",
+      "delay_dt": 100000,
+      "delay_us": 400.0,
+      "shots": 32,
+      "measured_p1": 0.21875,
+      "model_p1": 0.13374653315813137,
+      "absolute_difference": 0.08500346684186863,
+      "counts": {
+        "0": 25,
+        "1": 7
+      },
+      "model_details": {
+        "duration_us": 400.0,
+        "evolution_method": "explicit_cptp",
+        "rates": {
+          "t1_effective_us": 303.32993155694834,
+          "t2_effective_us": 339.9899570066814,
+          "tphi_effective_us": 773.4590820114748,
+          "gamma_down_per_us": 0.003296739896546607,
+          "gamma_up_per_us": 3.7193644606109426e-10,
+          "gamma_phi_per_us": 0.0012928932160178115
+        }
+      }
+    }
+  ],
+  "group_summary": {
+    "readout_zero_calibration": {
+      "max_absolute_difference": 0.0
+    },
+    "readout_one_calibration": {
+      "max_absolute_difference": 0.03125
+    },
+    "t1_delay_pilot": {
+      "max_absolute_difference": 0.06122443261944244
+    },
+    "single_qubit_gate_idle_pilot": {
+      "max_absolute_difference": 0.28061180390923196
+    }
+  },
+  "limitations": [
+    "Readout assignment error is not part of the gate-aware core model.",
+    "The logical H/X duration is an explicit comparison assumption; the QPU used native SX/RZ decomposition.",
+    "Thirty-two shots per point are exploratory and do not support a formal pass/fail decision.",
+    "This analysis does not refit the model and does not make the dataset formal holdout eligible."
+  ]
+}
