@@ -11,7 +11,7 @@ QuantaScopeでは、ユーザーが設定した量子回路と、温度・磁束
 
 この方程式を **RK4による数値積分**、**明示的CPTP写像による時間発展**、または理想条件下での**状態ベクトル発展**のいずれかで計算し、密度行列、Fidelity、Purity、出力確率などを可視化します。
 
-![QuantaScopeの物理モデル概要](/img/quantascope-physics-model.png)
+![QuantaScopeの物理モデル概要](/img/quantascope-physics-model.webp)
 
 ## モデルの構成
 
