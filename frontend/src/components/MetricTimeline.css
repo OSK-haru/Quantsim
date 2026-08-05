@@ -1,10 +1,10 @@
 .metric-timeline {
   padding: 24px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(99, 173, 177, 0.2);
   border-radius: 18px;
-  background: rgba(15, 23, 42, 0.86);
+  background: rgba(9, 24, 32, 0.86);
   box-shadow: 0 18px 40px rgba(2, 6, 23, 0.35);
-  color: #e5e7eb;
+  color: #e9f6f3;
 }
 
 .metric-timeline__header {
@@ -20,7 +20,7 @@
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
-  color: #cbd5e1;
+  color: #c8dddb;
   font-size: 0.9rem;
 }
 
@@ -44,6 +44,18 @@
   background: #34d399;
 }
 
+.metric-timeline__swatch--ideal {
+  background: #f3c76b;
+}
+
+.metric-timeline__swatch--state-change {
+  background: #fb923c;
+}
+
+.metric-timeline__legend-item--ideal {
+  color: #f3c76b;
+}
+
 .metric-timeline__chart {
   width: 100%;
   height: auto;
@@ -52,7 +64,7 @@
 }
 
 .metric-timeline__axis {
-  stroke: rgba(148, 163, 184, 0.3);
+  stroke: rgba(140, 165, 169, 0.3);
   stroke-width: 1.2;
 }
 
@@ -71,8 +83,20 @@
   stroke: url(#purityGradient);
 }
 
+.metric-timeline__line--state-change {
+  stroke: #fb923c;
+  stroke-width: 2.4;
+}
+
+.metric-timeline__ideal-line {
+  stroke: #f3c76b;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+  opacity: 0.9;
+}
+
 .metric-timeline__dot {
-  stroke: #0f172a;
+  stroke: #091820;
   stroke-width: 2;
 }
 
@@ -84,8 +108,23 @@
   fill: #34d399;
 }
 
+.metric-timeline__dot--state-change {
+  fill: #fb923c;
+}
+
+.metric-timeline__interpretation {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border: 1px solid rgba(251, 146, 60, 0.2);
+  border-radius: 12px;
+  background: rgba(124, 45, 18, 0.14);
+  color: #d8e8e5;
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
 .metric-timeline__time-label {
-  fill: #94a3b8;
+  fill: #8ca5a9;
   font-size: 12px;
 }
 
@@ -102,21 +141,21 @@
   border: 1px dashed rgba(148, 163, 184, 0.22);
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.44);
-  color: #94a3b8;
+  color: #8ca5a9;
   line-height: 1.6;
 }
 
 .metric-timeline__value-card {
   padding: 14px 15px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(99, 173, 177, 0.16);
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.56);
+  background: rgba(9, 24, 32, 0.56);
 }
 
 .metric-timeline__label {
   display: block;
   margin-bottom: 8px;
-  color: #94a3b8;
+  color: #8ca5a9;
   font-size: 0.8rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -124,7 +163,7 @@
 
 .metric-timeline__value {
   display: block;
-  color: #f8fafc;
+  color: #e9f6f3;
   font-size: 1rem;
 }
 
@@ -137,3 +176,5 @@
     flex-direction: column;
   }
 }
+.metric-timeline__cursor line { stroke:#f8d477; stroke-width:2; }
+.metric-timeline__cursor circle { fill:#f8d477; }

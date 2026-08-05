@@ -1,11 +1,6 @@
 import './HelpPage.css'
 import { MODEL_IDS, getModelLabel } from '../utils/modelLabels'
 
-type HelpPageProps = {
-  onBackToSimulation: () => void
-  onOpenCircuitStudio: () => void
-}
-
 const currentEvolutionLabel = getModelLabel(MODEL_IDS.evolutionMode).label
 const plannedModeLabel = getModelLabel(MODEL_IDS.plannedMode).label
 
@@ -57,7 +52,7 @@ const helpItems = [
   },
 ]
 
-export function HelpPage({ onBackToSimulation, onOpenCircuitStudio }: HelpPageProps) {
+export function HelpPage() {
   return (
     <main className="help-page">
       <header className="help-page__header">
@@ -67,17 +62,6 @@ export function HelpPage({ onBackToSimulation, onOpenCircuitStudio }: HelpPagePr
           <p className="help-page__lede">
             シミュレーション画面の見方、指標の比較、結果が変化する理由を説明します。
           </p>
-        </div>
-        <div className="help-page__header-actions" aria-label="ナビゲーション">
-          <button className="help-page__back help-page__back--active" type="button">
-            ヘルプ
-          </button>
-          <button className="help-page__back" type="button" onClick={onOpenCircuitStudio}>
-            回路スタジオ
-          </button>
-          <button className="help-page__back" type="button" onClick={onBackToSimulation}>
-            シミュレーションラボ
-          </button>
         </div>
       </header>
 

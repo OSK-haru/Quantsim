@@ -21,6 +21,7 @@ const MODE_OPTIONS: Array<{ label: string; value: DensityMatrixMode }> = [
   { label: '絶対値', value: 'magnitude' },
   { label: '実部', value: 'real' },
   { label: '虚部', value: 'imaginary' },
+  { label: '位相', value: 'phase' },
 ]
 
 type DensityCellStyle = CSSProperties & {
@@ -232,6 +233,7 @@ export function DensityMatrixViewer({
                 <span>実部: {formatDensityValue(activeCell.real)}</span>
                 <span>虚部: {formatDensityValue(activeCell.imag)}</span>
                 <span>絶対値: {formatDensityValue(activeCell.magnitude)}</span>
+                <span>位相: {formatPhase(activeCell.phase)}</span>
               </>
             )}
           </div>
@@ -251,7 +253,15 @@ function cellTitle(cell: DensityMatrixCell): string {
     `実部: ${formatDensityValue(cell.real)}`,
     `虚部: ${formatDensityValue(cell.imag)}`,
     `絶対値: ${formatDensityValue(cell.magnitude)}`,
+    `位相: ${formatPhase(cell.phase)}`,
   ].join('\n')
+}
+
+function formatPhase(value: number): string {
+  if (!Number.isFinite(value) || Math.abs(value) < 0.0000005) {
+    return '0 rad'
+  }
+  return `${value.toFixed(4)} rad`
 }
 
 function formatCellValue(value: number): string {

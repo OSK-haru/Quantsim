@@ -1,17 +1,22 @@
 export const TWO_LEVEL_PULSE_MODEL = 'driven_two_level_rwa_experimental_v1' as const
 export const QUTRIT_PULSE_MODEL = 'driven_transmon_qutrit_rwa_experimental_v1' as const
+export const COUPLED_TRANSMON_PAIR_PULSE_MODEL = 'driven_coupled_transmon_pair_rwa_experimental_v1' as const
 
 export type PulseModelId =
   | typeof TWO_LEVEL_PULSE_MODEL
   | typeof QUTRIT_PULSE_MODEL
+  | typeof COUPLED_TRANSMON_PAIR_PULSE_MODEL
 export type PulseShape = 'square' | 'gaussian'
 export type PulseAmplitudeMode = 'target_rotation_angle' | 'peak_amplitude'
 export type PulseEnvironmentMode = 'physical' | 'direct_rates'
 export type PulseEvolutionMethod = 'fixed_step_rk4' | 'explicit_cptp'
+export type QuasiStaticQuadratureOrder = 3 | 5 | 7 | 9
+export type PulseBackend = 'python' | 'rust' | 'auto'
 
 export type PulseLabForm = {
   modelId: PulseModelId
   evolutionMethod: PulseEvolutionMethod
+  backend: PulseBackend
   shape: PulseShape
   amplitudeMode: PulseAmplitudeMode
   targetRotationAngleRad: number
@@ -23,6 +28,26 @@ export type PulseLabForm = {
   phaseRad: number
   detuningRadPerUs: number
   anharmonicityMhz: number
+  pairSecondAnharmonicityMhz: number
+  pairDetuningQ0RadPerUs: number
+  pairDetuningQ1RadPerUs: number
+  pairExchangeCouplingRadPerUs: number
+  pairDriveTarget: 0 | 1
+  pairQuasiStaticSigmaQ0RadPerUs: number
+  pairQuasiStaticSigmaQ1RadPerUs: number
+  pairQuasiStaticCorrelation: number
+  pairQuasiStaticQuadratureOrder: 3 | 5
+  pairSecondaryDriveEnabled: boolean
+  pairSecondaryShape: PulseShape
+  pairSecondaryAmplitudeMode: PulseAmplitudeMode
+  pairSecondaryTargetRotationAngleRad: number
+  pairSecondaryPeakAmplitudeRadPerUs: number
+  pairSecondaryPulseDurationUs: number
+  pairSecondarySigmaUs: number
+  pairSecondaryTruncationSigma: number
+  pairSecondaryPhaseRad: number
+  pairSecondaryDetuningRadPerUs: number
+  pairSecondaryDragBetaUs: number
   dragBetaUs: number
   environmentMode: PulseEnvironmentMode
   deviceQuality: number
@@ -39,6 +64,9 @@ export type PulseLabForm = {
   gamma21DownPerUs: number
   gamma12UpPerUs: number
   gammaPhiAdjacentPerUs: number
+  quasiStaticNoiseEnabled: boolean
+  quasiStaticDetuningSigmaRadPerUs: number
+  quasiStaticQuadratureOrder: QuasiStaticQuadratureOrder
   snapshotCount: number
 }
 
@@ -115,7 +143,7 @@ export type TwoLevelPulseResponse = {
 
 export type QutritPulsePoint = {
   time_us: number
-  segment: 'pulse' | 'idle'
+  segment: 'pulse' | 'idle' | 'virtual_z'
   population_0: number
   population_1: number
   population_2: number
@@ -127,6 +155,8 @@ export type QutritPulsePoint = {
   raw_physicality: PulsePhysicality
   cleaned_physicality: PulsePhysicality
   cleanup_correction_norm: number
+  sequence_step_index?: number
+  sequence_step_label?: string
 }
 
 export type QutritPulseResponse = {
@@ -161,6 +191,44 @@ export type QutritPulseResponse = {
   limitations: string[]
 }
 
+export type CoupledTransmonPairPoint = {
+  time_us: number
+  segment: 'pulse' | 'idle'
+  joint_populations: Record<string, number>
+  computational_population: number
+  leakage_probability: number
+  population_sum_error: number
+  purity: number
+  density_matrix: PulseComplexValue[][]
+  raw_physicality: PulsePhysicality
+  cleaned_physicality: PulsePhysicality
+  cleanup_correction_norm: number
+}
+
+export type CoupledTransmonPairResponse = {
+  contract_version: 'pulse-coupled-pair-v1'
+  model: Record<string, unknown> & {
+    model_id: typeof COUPLED_TRANSMON_PAIR_PULSE_MODEL
+    description: string
+    basis_order: string[]
+  }
+  input: Record<string, unknown>
+  rates: Array<Record<string, unknown>>
+  step_policy: Record<string, unknown>
+  sample_times_us: number[]
+  trajectory: CoupledTransmonPairPoint[]
+  leakage: {
+    maximum_recorded_leakage_probability: number
+    leakage_at_pulse_end: number
+    leakage_at_final_time: number
+  }
+  pulse_end: CoupledTransmonPairPoint
+  final: CoupledTransmonPairPoint
+  diagnostics: Record<string, unknown> & PulseDiagnostics
+  warnings: string[]
+  limitations: string[]
+}
+
 type PulseUnits = {
   time: 'us'
   angular_frequency: 'rad/us'
@@ -189,7 +257,7 @@ type PulseDiagnostics = {
   minimum_cleaned_eigenvalue: number
 } & Record<string, unknown>
 
-export type PulseResponse = TwoLevelPulseResponse | QutritPulseResponse
+export type PulseResponse = TwoLevelPulseResponse | QutritPulseResponse | CoupledTransmonPairResponse
 
 export type PulseWaveformPoint = {
   timeUs: number
@@ -209,4 +277,11 @@ export function isQutritPulseResponse(
   response: PulseResponse,
 ): response is QutritPulseResponse {
   return response.model.model_id === QUTRIT_PULSE_MODEL
+}
+
+
+export function isCoupledTransmonPairResponse(
+  response: PulseResponse,
+): response is CoupledTransmonPairResponse {
+  return response.model.model_id === COUPLED_TRANSMON_PAIR_PULSE_MODEL
 }

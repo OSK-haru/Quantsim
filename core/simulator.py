@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from bisect import bisect_right
 import math
+from random import Random
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from time import perf_counter
+
+import numpy as np
 
 from core.backend_boundary import (
     PYTHON_DENSE_BACKEND,
@@ -25,10 +29,11 @@ from core.errors import ValidationIssue
 from core.gates import (
     CachedCollapseOperator,
     Matrix,
+    apply_non_selective_computational_measurement,
     apply_unitary_to_density,
     clean_density_matrix,
     column_duration_us,
-    effective_hamiltonian_from_involution,
+    effective_hamiltonian_from_unitary,
     gate_unitary,
     identity_matrix,
     initial_density_matrix,
@@ -38,9 +43,16 @@ from core.gates import (
     prepare_collapse_operators,
     rk4_step_cached,
     trace,
+    unitary_from_hamiltonian,
     zero_hamiltonian,
 )
-from core.evolution_methods import EXPLICIT_CPTP
+from core.classical_branching import execute_classical_branches
+from core.execution_representation import (
+    representation_diagnostics,
+    select_execution_representation,
+)
+from core.gate_compiler import GateCompilationResult, compile_gate_aware_circuit
+from core.evolution_methods import EXPLICIT_CPTP, FIXED_STEP_RK4
 from core.gate_aware_cptp import (
     GATE_AWARE_CPTP_EVOLUTION_ID,
     GateAwareCPTPEvolver,
@@ -72,6 +84,8 @@ from core.state_snapshots import (
     idle_sample_times,
     is_planned_time,
 )
+from core.physical_timeline import build_physical_timeline
+from core.statevector import execute_statevector_branches, statevector_branch_purity
 from core.validation import (
     diagnose_simulation_result,
     has_blocking_issues,
@@ -344,12 +358,195 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
             )
         ])
 
-    result = runner(config)
+    representation = select_execution_representation(
+        logical_qubits=config.circuit.logical_qubits,
+        environment_is_ideal=_environment_is_ideal(config),
+        has_classical_conditions=_has_classical_conditions(config),
+        has_measurements=_has_measurements(config),
+        evolution_method=config.evolution_method,
+    )
+    try:
+        compilation = (
+            GateCompilationResult(
+                circuit=config.circuit,
+                diagnostics={"compilation_skipped_for_representation": representation},
+            )
+            if representation == "statevector"
+            else compile_gate_aware_circuit(
+                config.circuit,
+                config.compilation_mode,
+                config.native_gate_durations_us,
+            )
+        )
+    except ValueError as exc:
+        return _empty_result(config, [
+            _runtime_error(
+                "GATE_COMPILATION_FAILED",
+                "Gate-aware circuit compilation failed.",
+                str(exc),
+                "Use logical direct mode or correct the advanced gate operands.",
+            )
+        ])
+
+    execution_config = SimulationConfig.from_dict(config.to_dict())
+    execution_config.circuit = compilation.circuit
+    main_method_fallback = None
+    if (
+        config.evolution_method == EXPLICIT_CPTP
+        and config.circuit.logical_qubits > 4
+        and _has_classical_conditions(config)
+        and representation != "statevector"
+    ):
+        execution_config.evolution_method = FIXED_STEP_RK4
+        main_method_fallback = (
+            "5-qubit conditional circuits use RK4 for the main trajectory because "
+            "explicit CPTP Choi auditing is prohibitively large at dimension 32."
+        )
+    if representation == "statevector":
+        result = SimulationResult(
+            config=execution_config,
+            times=[0.0, float(config.duration_us)],
+            fidelity=[1.0, 1.0],
+            purity=[1.0, 1.0],
+            effective_operation_time_us=float(config.duration_us),
+            diagnostics={"statevector_timeline_mode": "endpoint_only_v1"},
+        )
+    else:
+        result = runner(execution_config)
+    if main_method_fallback is not None:
+        result.diagnostics["evolution_method_fallback"] = main_method_fallback
+    result.diagnostics.update(
+        representation_diagnostics(representation, config.circuit.logical_qubits)
+    )
+    if representation == "statevector":
+        try:
+            statevector = execute_statevector_branches(config.circuit)
+            result.output_probabilities = statevector.output_probabilities
+            result.purity[-1] = statevector_branch_purity(statevector)
+            result.measurement_counts = _sample_measurement_counts(
+                statevector.output_probabilities,
+                config.measurement_shots,
+                config.measurement_seed,
+            )
+            if _has_classical_conditions(config):
+                result.classical_branch_records = statevector.branches
+                result.classical_shot_preview = _sample_classical_shot_preview(
+                    statevector.branches,
+                    config.measurement_shots,
+                    config.measurement_seed,
+                )
+                result.diagnostics.update({
+                    "classical_branching_mode": "statevector_branching_v1",
+                    "classical_branch_count": len(statevector.branches),
+                    "classical_branching_noise_applied": False,
+                })
+        except ValueError as exc:
+            return _empty_result(config, [
+                _runtime_error(
+                    "STATEVECTOR_EXECUTION_FAILED",
+                    "Adaptive statevector execution failed.",
+                    str(exc),
+                    "Use a supported initial state and gate set.",
+                )
+            ])
+    if _has_classical_conditions(config) and representation != "statevector":
+        try:
+            branch_rates = compute_environment_rates(config.environment)
+            branch_evolution_method = config.evolution_method
+            branch_method_fallback = None
+            if (
+                config.evolution_method == EXPLICIT_CPTP
+                and config.circuit.logical_qubits > 4
+            ):
+                branch_evolution_method = FIXED_STEP_RK4
+                branch_method_fallback = (
+                    "5-qubit branch CPTP was bounded to RK4 because Choi audit "
+                    "scales as (2^n)^2; the requested main trajectory remains CPTP."
+                )
+            branching = execute_classical_branches(
+                config.circuit,
+                environment_rates=branch_rates,
+                evolution_method=branch_evolution_method,
+                simulation_backend=config.simulation_backend,
+            )
+            result.output_probabilities = branching.output_probabilities
+            result.measurement_counts = _sample_measurement_counts(
+                branching.output_probabilities,
+                config.measurement_shots,
+                config.measurement_seed,
+            )
+            result.classical_branch_records = branching.branches
+            result.classical_shot_preview = _sample_classical_shot_preview(
+                branching.branches,
+                config.measurement_shots,
+                config.measurement_seed,
+            )
+            result.diagnostics.update({
+                "classical_branching_mode": "gate_aware_noisy_branching_v1",
+                "classical_branch_count": len(branching.branches),
+                "classical_branching_noise_applied": True,
+                **branching.diagnostics,
+            })
+            if branch_method_fallback is not None:
+                result.diagnostics["classical_branching_method_fallback"] = branch_method_fallback
+        except ValueError as exc:
+            return _empty_result(config, [
+                _runtime_error(
+                    "CLASSICAL_BRANCHING_FAILED",
+                    "Classical branch execution failed.",
+                    str(exc),
+                    "Reduce mid-circuit measurement branching or use a circuit without conditions.",
+                )
+            ])
+    result.physical_timeline = build_physical_timeline(
+        execution_config.circuit,
+        sampled_times_us=result.times,
+        requested_duration_us=config.duration_us,
+        source_map=compilation.diagnostics.get("source_map", []),
+    )
+    result.config = config
+    result.diagnostics.update(compilation.diagnostics)
     _attach_backend_metadata(result, config)
     diagnostic_issues = diagnose_simulation_result(result)
     result.issues = diagnostic_issues
     result.warnings = _issue_warnings(diagnostic_issues)
+    if _has_classical_conditions(config):
+        if representation == "statevector":
+            result.warnings.append(
+                "Ideal conditional circuit executed with the O(2^n) statevector representation."
+            )
+        else:
+            result.warnings.append(
+                "Conditional gates used bounded Gate-aware branch evolution; "
+                "branch count is limited to protect runtime and memory."
+            )
+        if result.diagnostics.get("classical_branching_method_fallback"):
+            result.warnings.append(str(result.diagnostics["classical_branching_method_fallback"]))
     return result
+
+
+def _environment_is_ideal(config: SimulationConfig) -> bool:
+    rates = compute_environment_rates(config.environment)
+    return all(
+        abs(float(getattr(rates, name))) <= 1e-15
+        for name in ("gamma_down_per_us", "gamma_up_per_us", "gamma_phi_per_us")
+    )
+
+
+def _has_classical_conditions(config: SimulationConfig) -> bool:
+    return any(
+        gate.condition is not None
+        for column in config.circuit.columns
+        for gate in column.gates
+    )
+
+
+def _has_measurements(config: SimulationConfig) -> bool:
+    return any(
+        str(gate.type).upper() == "MEASURE"
+        for column in config.circuit.columns
+        for gate in column.gates
+    )
 
 
 def _run_weak_coupling_lindblad(config: SimulationConfig) -> SimulationResult:
@@ -405,6 +602,16 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
     fidelities = simulation.fidelity
     purities = simulation.purity
     simulation_metadata = simulation.metadata
+    # Explicit CPTP uses the Rust exponential kernel directly rather than the
+    # RK4 helpers that normally update _KernelStats. Record that path here so
+    # backend diagnostics do not report a false Python fallback.
+    if simulation_metadata.get("cptp_backend") == "rust":
+        kernel_stats.rust_kernel_used = True
+        kernel_stats.rust_kernel_mode = "cptp_exponential"
+        kernel_stats.rust_kernel_call_count = int(
+            simulation_metadata.get("cptp_map_construction_count", 0)
+        )
+        kernel_stats.rust_kernel_segment_count = kernel_stats.rust_kernel_call_count
     derived_parameters.update(simulation_metadata)
     effective_operation_time_us = effective_time(
         times,
@@ -486,6 +693,11 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
         purity=purities,
         effective_operation_time_us=effective_operation_time_us,
         output_probabilities=output_distribution,
+        measurement_counts=_sample_measurement_counts(
+            output_distribution,
+            config.measurement_shots,
+            config.measurement_seed,
+        ),
         derived_parameters=derived_parameters,
         diagnostics=diagnostics,
         warnings=[],
@@ -602,6 +814,11 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
         purity=purities,
         effective_operation_time_us=effective_operation_time_us,
         output_probabilities=output_distribution,
+        measurement_counts=_sample_measurement_counts(
+            output_distribution,
+            config.measurement_shots,
+            config.measurement_seed,
+        ),
         derived_parameters=derived_parameters,
         diagnostics=diagnostics,
         warnings=[],
@@ -667,12 +884,12 @@ def _runtime_issues(config: SimulationConfig) -> list[ValidationIssue]:
             f"Received model={config.environment.model!r}",
             f"Use {UNIFIED_ENVIRONMENT_MODEL!r}.",
         ))
-    if config.circuit.logical_qubits > 4:
+    if config.circuit.logical_qubits > 5 and not _environment_is_ideal(config):
         issues.append(_runtime_error(
             "UNSUPPORTED_QUBIT_COUNT",
-            "The current simulator supports up to 4 logical qubits.",
+            "Noisy density-matrix simulation currently supports up to 5 logical qubits.",
             f"Received logical_qubits={config.circuit.logical_qubits}",
-            "Use a circuit with 4 or fewer logical qubits.",
+            "Use an ideal statevector circuit or reduce the noisy circuit to 5 qubits.",
         ))
     return issues
 
@@ -889,7 +1106,8 @@ def _simulate_circuit_gate_aware_hamiltonian(
                 segment_index < len(segments)
                 and segments[segment_index]["duration_us"] == 0.0
             ):
-                unitary = segments[segment_index]["unitary"]
+                segment = segments[segment_index]
+                unitary = segment["unitary"]
                 noisy_state = _apply_zero_duration_unitary(
                     noisy_state,
                     unitary,
@@ -900,13 +1118,20 @@ def _simulate_circuit_gate_aware_hamiltonian(
                     unitary,
                     cleanup=not uses_explicit_cptp,
                 )
+                noisy_state, ideal_state = _apply_segment_measurements(
+                    noisy_state,
+                    ideal_state,
+                    segment,
+                    n_qubits,
+                    cleanup=not uses_explicit_cptp,
+                )
                 segment_index += 1
                 segment_elapsed = 0.0
                 segment_start_noisy = noisy_state
                 segment_start_ideal = ideal_state
                 collector.capture_event(
                     time_us=current_time,
-                    event_kind="column_boundary",
+                    event_kind=_segment_boundary_event_kind(segment),
                     column_index=int(segments[segment_index - 1]["column_index"]),
                     density_matrix=noisy_state,
                 )
@@ -1118,10 +1343,7 @@ def _simulate_circuit_gate_aware_hamiltonian(
                     if uses_explicit_cptp:
                         ideal_state = apply_unitary_to_density(
                             ideal_state,
-                            _partial_involution_unitary(
-                                unitary,
-                                step_dt / duration,
-                            ),
+                            unitary_from_hamiltonian(hamiltonian, step_dt),
                         )
                     elif completes_segment:
                         ideal_state = clean_density_matrix(
@@ -1145,13 +1367,20 @@ def _simulate_circuit_gate_aware_hamiltonian(
             current_time += step_dt
             segment_elapsed += step_dt
             if completes_segment:
+                noisy_state, ideal_state = _apply_segment_measurements(
+                    noisy_state,
+                    ideal_state,
+                    segment,
+                    n_qubits,
+                    cleanup=not uses_explicit_cptp,
+                )
                 segment_index += 1
                 segment_elapsed = 0.0
                 segment_start_noisy = noisy_state
                 segment_start_ideal = ideal_state
                 collector.capture_event(
                     time_us=current_time,
-                    event_kind="column_boundary",
+                    event_kind=_segment_boundary_event_kind(segment),
                     column_index=int(segment["column_index"]),
                     density_matrix=noisy_state,
                 )
@@ -1169,7 +1398,8 @@ def _simulate_circuit_gate_aware_hamiltonian(
             segment_index < len(segments)
             and segments[segment_index]["duration_us"] == 0.0
         ):
-            unitary = segments[segment_index]["unitary"]
+            segment = segments[segment_index]
+            unitary = segment["unitary"]
             noisy_state = _apply_zero_duration_unitary(
                 noisy_state,
                 unitary,
@@ -1180,13 +1410,20 @@ def _simulate_circuit_gate_aware_hamiltonian(
                 unitary,
                 cleanup=not uses_explicit_cptp,
             )
+            noisy_state, ideal_state = _apply_segment_measurements(
+                noisy_state,
+                ideal_state,
+                segment,
+                n_qubits,
+                cleanup=not uses_explicit_cptp,
+            )
             segment_index += 1
             segment_elapsed = 0.0
             segment_start_noisy = noisy_state
             segment_start_ideal = ideal_state
             collector.capture_event(
                 time_us=current_time,
-                event_kind="column_boundary",
+                event_kind=_segment_boundary_event_kind(segment),
                 column_index=int(segments[segment_index - 1]["column_index"]),
                 density_matrix=noisy_state,
             )
@@ -1253,7 +1490,8 @@ def _simulate_circuit_gate_aware_hamiltonian(
         "backend_name": PYTHON_DENSE_BACKEND_NAME,
         "simulation_mode": GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
         "gate_aware_noise": True,
-        "hamiltonian_mode": "effective_involution_generator",
+        "hamiltonian_mode": "effective_unitary_spectral_generator_v2",
+        "involution_compatibility_branch": True,
         "completion_time_us": completion_time,
         "completion_fidelity": _state_fidelity(
             completion_noisy_state,
@@ -1310,24 +1548,34 @@ def _apply_zero_duration_unitary(
     return clean_density_matrix(evolved) if cleanup else evolved
 
 
-def _partial_involution_unitary(
-    unitary: Matrix,
-    duration_fraction: float,
-) -> Matrix:
-    """Return the effective-involution unitary for part of one gate column."""
-
-    angle = 0.5 * math.pi * float(duration_fraction)
-    identity = identity_matrix(len(unitary))
-    cosine = math.cos(angle)
-    sine = math.sin(angle)
-    return tuple(
-        tuple(
-            cosine * identity[row][column]
-            + 1.0j * sine * unitary[row][column]
-            for column in range(len(unitary))
-        )
-        for row in range(len(unitary))
+def _apply_segment_measurements(
+    noisy_state: Matrix,
+    ideal_state: Matrix,
+    segment: Mapping[str, object],
+    n_qubits: int,
+    *,
+    cleanup: bool,
+) -> tuple[Matrix, Matrix]:
+    targets = tuple(int(target) for target in segment.get("measurement_targets", ()))
+    if not targets:
+        return noisy_state, ideal_state
+    measured_noisy = apply_non_selective_computational_measurement(
+        noisy_state,
+        targets,
+        n_qubits,
     )
+    measured_ideal = apply_non_selective_computational_measurement(
+        ideal_state,
+        targets,
+        n_qubits,
+    )
+    if cleanup:
+        return clean_density_matrix(measured_noisy), clean_density_matrix(measured_ideal)
+    return measured_noisy, measured_ideal
+
+
+def _segment_boundary_event_kind(segment: Mapping[str, object]) -> str:
+    return "measurement" if segment.get("measurement_targets") else "column_boundary"
 
 
 def _gate_aware_segments(
@@ -1351,6 +1599,7 @@ def _gate_aware_segments(
             "segment_type": "gate",
             "column_index": column_index,
             "unitary": unitary,
+            "measurement_targets": _column_measurement_targets(column),
             "duration_us": duration,
             "hamiltonian": hamiltonian,
             "hamiltonian_scale_per_us": hamiltonian_scale if duration > 0.0 else 0.0,
@@ -1455,6 +1704,15 @@ def _simulation_times(
     return deduped
 
 
+def _column_measurement_targets(column) -> tuple[int, ...]:
+    return tuple(
+        int(target)
+        for gate in column.gates
+        if str(gate.type).upper() == "MEASURE"
+        for target in gate.targets
+    )
+
+
 def _apply_circuit_operations(
     state: Matrix,
     config: SimulationConfig,
@@ -1469,6 +1727,13 @@ def _apply_circuit_operations(
                 _gate_unitary_cached(gate, n_qubits, caches),
             )
             state = clean_density_matrix(state)
+        measurement_targets = _column_measurement_targets(column)
+        if measurement_targets:
+            state = apply_non_selective_computational_measurement(
+                state,
+                measurement_targets,
+                n_qubits,
+            )
     return state
 
 
@@ -1504,7 +1769,7 @@ def _effective_hamiltonian_cached(
 ) -> Matrix:
     key = (float(duration_us), unitary)
     if key not in caches.hamiltonians:
-        caches.hamiltonians[key] = effective_hamiltonian_from_involution(
+        caches.hamiltonians[key] = effective_hamiltonian_from_unitary(
             unitary,
             duration_us,
         )
@@ -1517,6 +1782,12 @@ def _gate_unitary_cache_key(gate, n_qubits: int) -> tuple[object, ...]:
         str(gate.type).upper(),
         tuple(int(target) for target in gate.targets),
         tuple(int(control) for control in (gate.controls or [])),
+        tuple(
+            sorted(
+                (str(name), float(value))
+                for name, value in (gate.params or {}).items()
+            )
+        ),
     )
 
 
@@ -1544,11 +1815,97 @@ def _purity_series(states: Sequence[Matrix]) -> list[float]:
 
 
 def _state_fidelity(state: Matrix, ideal_state: Matrix) -> float:
-    return _as_probability(trace(matmul(state, ideal_state)).real)
+    ideal_purity = trace(matmul(ideal_state, ideal_state)).real
+    # Unitary reference trajectories can accumulate backend-dependent roundoff
+    # slightly above the stricter state-audit tolerance. Treat only that narrow
+    # numerical neighborhood as pure; projective measurement produces a much
+    # larger purity change and therefore takes the mixed-state Uhlmann branch.
+    if abs(ideal_purity - 1.0) <= 1e-8:
+        return _as_probability(trace(matmul(state, ideal_state)).real)
+
+    state_array = np.asarray(state, dtype=np.complex128)
+    ideal_array = np.asarray(ideal_state, dtype=np.complex128)
+    ideal_array = 0.5 * (ideal_array + ideal_array.conj().T)
+    ideal_eigenvalues, ideal_eigenvectors = np.linalg.eigh(ideal_array)
+    ideal_sqrt = (
+        ideal_eigenvectors
+        @ np.diag(np.sqrt(np.clip(ideal_eigenvalues, 0.0, None)))
+        @ ideal_eigenvectors.conj().T
+    )
+    sandwiched = ideal_sqrt @ state_array @ ideal_sqrt
+    sandwiched = 0.5 * (sandwiched + sandwiched.conj().T)
+    eigenvalues = np.linalg.eigvalsh(sandwiched)
+    fidelity = float(np.square(np.sum(np.sqrt(np.clip(eigenvalues, 0.0, None)))))
+    return _as_probability(fidelity)
 
 
 def _state_purity(state: Matrix) -> float:
     return _as_probability(trace(matmul(state, state)).real)
+
+
+def _sample_measurement_counts(
+    probabilities: Mapping[str, float],
+    shots: int,
+    seed: int,
+) -> dict[str, int]:
+    labels = list(probabilities)
+    weights = [max(0.0, float(probabilities[label])) for label in labels]
+    total = sum(weights)
+    if not labels or total <= 0.0:
+        return {}
+
+    cumulative: list[float] = []
+    running = 0.0
+    for weight in weights:
+        running += weight
+        cumulative.append(running)
+
+    counts = {label: 0 for label in labels}
+    random_source = Random(int(seed))
+    for _ in range(int(shots)):
+        sample = random_source.random() * total
+        index = min(bisect_right(cumulative, sample), len(labels) - 1)
+        counts[labels[index]] += 1
+    return counts
+
+
+def _sample_classical_shot_preview(
+    branches: Sequence[Mapping[str, object]],
+    shots: int,
+    seed: int,
+    *,
+    limit: int = 64,
+) -> list[dict[str, object]]:
+    """Return a bounded, seeded preview of branch-level shot trajectories."""
+
+    if not branches:
+        return []
+    weights = [max(0.0, float(branch.get("probability", 0.0))) for branch in branches]
+    total = sum(weights)
+    if total <= 0.0:
+        return []
+    cumulative: list[float] = []
+    running = 0.0
+    for weight in weights:
+        running += weight
+        cumulative.append(running)
+
+    random_source = Random(int(seed) + 1)
+    preview: list[dict[str, object]] = []
+    for shot_index in range(min(int(shots), int(limit))):
+        sample = random_source.random() * total
+        branch_index = min(
+            bisect_right(cumulative, sample),
+            len(branches) - 1,
+        )
+        branch = branches[branch_index]
+        preview.append({
+            "shot_index": shot_index,
+            "branch_index": branch_index,
+            "classical_bits": list(branch.get("classical_bits", [])),
+            "measurements": list(branch.get("measurements", [])),
+        })
+    return preview
 
 
 def _diagnostics(
@@ -1860,9 +2217,12 @@ def _trace_error(state: Matrix) -> float:
 
 
 def _as_probability(value: float) -> float:
-    if value < 0.0 and value > -1e-9:
+    # Five-qubit density evolution can accumulate a few ulps more roundoff
+    # than the one/two-qubit paths; keep diagnostics physical without masking
+    # meaningful (>1e-7) violations.
+    if value < 0.0 and value > -1e-7:
         return 0.0
-    if value > 1.0 and value < 1.0 + 1e-9:
+    if value > 1.0 and value < 1.0 + 1e-7:
         return 1.0
     return value
 

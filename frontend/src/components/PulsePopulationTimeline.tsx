@@ -1,5 +1,5 @@
 import type { PulseLabForm, PulseResponse } from '../types/pulse'
-import { isQutritPulseResponse } from '../types/pulse'
+import { isCoupledTransmonPairResponse, isQutritPulseResponse } from '../types/pulse'
 import { qutritTargetOverlap } from '../utils/pulseLab'
 import './PulsePopulationTimeline.css'
 
@@ -22,9 +22,11 @@ export function PulsePopulationTimeline({
   const x = (time: number) => PAD_X + (time / maximumTime) * (WIDTH - 2 * PAD_X)
   const y = (value: number) => HEIGHT - PAD_Y - value * (HEIGHT - 2 * PAD_Y)
   const qutrit = isQutritPulseResponse(response)
-  const series = isQutritPulseResponse(response)
-    ? qutritSeries(response, formAtRun)
-    : twoLevelSeries(response)
+  const series = isCoupledTransmonPairResponse(response)
+    ? pairSeries(response)
+    : isQutritPulseResponse(response)
+      ? qutritSeries(response, formAtRun)
+      : twoLevelSeries(response)
   const timeValues = points.map((point) => point.time_us)
   const availableSeries = series.filter((item) => item.values.some((value) => value !== null))
 
@@ -73,10 +75,33 @@ export function PulsePopulationTimeline({
   )
 }
 
+function pairSeries(
+  response: Extract<PulseResponse, { contract_version: 'pulse-coupled-pair-v1' }>,
+) {
+  return [
+    ...['00', '01', '10', '11'].map((label, index) => ({
+      label: `P${label}`,
+      color: ['#61d7c2', '#6da7ff', '#e7a9ee', '#d9c66c'][index],
+      values: response.trajectory.map((point) => point.joint_populations[label] ?? 0),
+    })),
+    {
+      label: 'Leakage',
+      color: '#ef8b66',
+      values: response.trajectory.map((point) => point.leakage_probability),
+    },
+    {
+      label: 'Purity',
+      color: '#f0d878',
+      values: response.trajectory.map((point) => point.purity),
+    },
+  ]
+}
+
 function qutritSeries(
   response: Extract<PulseResponse, { contract_version: 'pulse-extension-b-v1' }>,
   formAtRun: PulseLabForm,
 ) {
+  const isSequence = Number(response.input.sequence_length ?? 1) > 1
   return [
     { label: 'P0', color: '#61d7c2', values: response.trajectory.map((point) => point.population_0) },
     { label: 'P1', color: '#6da7ff', values: response.trajectory.map((point) => point.population_1) },
@@ -85,7 +110,9 @@ function qutritSeries(
     {
       label: 'Target overlap',
       color: '#e7a9ee',
-      values: response.trajectory.map((point) => qutritTargetOverlap(point, formAtRun)),
+      values: response.trajectory.map((point) => (
+        isSequence ? null : qutritTargetOverlap(point, formAtRun)
+      )),
     },
   ]
 }

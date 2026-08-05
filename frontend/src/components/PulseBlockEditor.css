@@ -1,0 +1,169 @@
+.pulse-block-editor {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid rgba(238, 156, 88, 0.34);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(25, 29, 31, 0.98), rgba(17, 24, 28, 0.98));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+}
+
+.pulse-block-editor__heading,
+.pulse-block-editor__actions,
+.pulse-block-editor__preview > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pulse-block-editor__heading span,
+.pulse-block-editor__preview span {
+  color: #ee9c58;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+.pulse-block-editor__heading h2 {
+  margin: 5px 0 4px;
+}
+
+.pulse-block-editor__heading p {
+  max-width: 680px;
+  margin: 0;
+  color: #8ca5a9;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.pulse-block-editor__close,
+.pulse-block-editor__actions button {
+  border: 1px solid rgba(93, 214, 192, 0.22);
+  border-radius: 9px;
+  background: rgba(8, 28, 35, 0.82);
+  color: #e9f6f3;
+  cursor: pointer;
+}
+
+.pulse-block-editor__close {
+  width: 38px;
+  height: 38px;
+  font-size: 1.25rem;
+}
+
+.pulse-block-editor__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 18px;
+}
+
+.pulse-block-editor__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pulse-block-editor__fields label {
+  display: grid;
+  gap: 6px;
+  color: #c8d9da;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.pulse-block-editor__fields input,
+.pulse-block-editor__fields select {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid rgba(121, 173, 177, 0.28);
+  border-radius: 9px;
+  outline: none;
+  background: #09151c;
+  color: #effcfa;
+}
+
+.pulse-block-editor__fields input:focus,
+.pulse-block-editor__fields select:focus {
+  border-color: #59cdb9;
+}
+
+.pulse-block-editor__preview {
+  padding: 15px;
+  border: 1px solid rgba(93, 214, 192, 0.16);
+  border-radius: 12px;
+  background: rgba(5, 18, 24, 0.7);
+}
+
+.pulse-block-editor__preview svg {
+  width: 100%;
+  margin-top: 16px;
+  overflow: visible;
+}
+
+.pulse-block-editor__preview svg line {
+  stroke: rgba(140, 165, 169, 0.34);
+}
+
+.pulse-block-editor__preview svg path {
+  fill: none;
+  stroke: #5dd6c0;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pulse-block-editor__preview dl {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+}
+
+.pulse-block-editor__preview dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pulse-block-editor__preview dt {
+  color: #8ca5a9;
+}
+
+.pulse-block-editor__preview dd {
+  margin: 0;
+}
+
+.pulse-block-editor__actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.pulse-block-editor__actions span {
+  margin-right: auto;
+  color: #f19a83;
+  font-size: 0.8rem;
+}
+
+.pulse-block-editor__actions button {
+  padding: 9px 13px;
+}
+
+.pulse-block-editor__actions .pulse-block-editor__save {
+  border-color: rgba(238, 156, 88, 0.5);
+  background: rgba(84, 48, 22, 0.66);
+  color: #ffd8b7;
+}
+
+.pulse-block-editor__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+@media (max-width: 760px) {
+  .pulse-block-editor__body,
+  .pulse-block-editor__fields {
+    grid-template-columns: 1fr;
+  }
+}

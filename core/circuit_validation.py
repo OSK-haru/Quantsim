@@ -15,6 +15,7 @@ def validate_circuit_config(config: CircuitConfig) -> list[ValidationIssue]:
 
     return _validate_circuit(
         logical_qubits=config.logical_qubits,
+        classical_bits=config.classical_bits,
         columns=config.columns,
     )
 
@@ -24,6 +25,7 @@ def validate_circuit_state(state: Any) -> list[ValidationIssue]:
 
     return _validate_circuit(
         logical_qubits=state.logical_qubits,
+        classical_bits=getattr(state, "classical_bits", 0),
         columns=state.columns,
     )
 
@@ -31,6 +33,7 @@ def validate_circuit_state(state: Any) -> list[ValidationIssue]:
 def validate_gate_for_circuit(
     logical_qubits: int,
     gate: GateOperation,
+    classical_bits: int = 0,
 ) -> list[ValidationIssue]:
     """Validate one gate without considering other gates in the same column."""
 
@@ -42,8 +45,48 @@ def validate_gate_for_circuit(
             "INVALID_GATE_TYPE",
             "Gate type is not supported by the circuit editor.",
             f"Received gate type={gate.type!r}.",
-            "Use one of I, H, X, Z, CNOT, or Measure.",
+            "Use one of I, H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX, SWAP, or Measure.",
         ))
+
+    if gate.classical_targets and gate_type != "MEASURE":
+        issues.append(_error(
+            "CLASSICAL_TARGET_REQUIRES_MEASURE",
+            "classical_targets are only valid for MEASURE gates.",
+            f"Received classical_targets={gate.classical_targets!r}.",
+            "Attach classical_targets only to MEASURE.",
+        ))
+    for classical_target in gate.classical_targets or []:
+        if classical_target >= classical_bits:
+            issues.append(_error(
+                "CLASSICAL_TARGET_OUT_OF_RANGE",
+                "Measurement classical target is outside the register.",
+                f"Received classical target={classical_target}; classical_bits={classical_bits}.",
+                "Increase classical_bits or choose an existing classical bit.",
+            ))
+    if gate_type == "MEASURE" and gate.classical_targets and len(
+        gate.classical_targets
+    ) != len(gate.targets):
+        issues.append(_error(
+            "MEASURE_CLASSICAL_TARGET_COUNT_MISMATCH",
+            "Measurement classical targets must match measured targets.",
+            "Provide one classical target per measured qubit.",
+            "Set classical_targets to the same length as targets.",
+        ))
+    if gate.condition is not None and gate.condition.bit >= classical_bits:
+        issues.append(_error(
+            "CLASSICAL_CONDITION_OUT_OF_RANGE",
+            "Classical condition bit is outside the register.",
+            f"Received condition bit={gate.condition.bit}; classical_bits={classical_bits}.",
+            "Increase classical_bits or choose an existing classical bit.",
+        ))
+    for condition in gate.conditions:
+        if condition.bit >= classical_bits:
+            issues.append(_error(
+                "CLASSICAL_CONDITION_OUT_OF_RANGE",
+                "Classical condition bit is outside the register.",
+                f"Received condition bit={condition.bit}; classical_bits={classical_bits}.",
+                "Increase classical_bits or choose an existing classical bit.",
+            ))
 
     if not gate.targets:
         issues.append(_error(
@@ -52,7 +95,7 @@ def validate_gate_for_circuit(
             f"Received targets={gate.targets!r}.",
             "Choose a target qubit for the gate.",
         ))
-    elif gate_type in {"I", "H", "X", "Z", "MEASURE"} and len(gate.targets) != 1:
+    elif gate_type in {"I", "H", "X", "Y", "Z", "S", "T", "RX", "RY", "RZ", "MEASURE", "MESSAGE"} and len(gate.targets) != 1:
         issues.append(_error(
             "GATE_REQUIRES_SINGLE_TARGET",
             f"{gate.type} requires exactly one target qubit.",
@@ -78,29 +121,74 @@ def validate_gate_for_circuit(
                 "Use control indices from 0 to logical_qubits - 1.",
             ))
 
-    if gate_type == "CNOT":
+    if gate_type in {"CNOT", "CZ", "CP"}:
         if len(gate.controls or []) != 1:
             issues.append(_error(
-                "CNOT_REQUIRES_CONTROL",
-                "CNOT requires exactly one control qubit.",
+                f"{gate_type}_REQUIRES_CONTROL",
+                f"{gate_type} requires exactly one control qubit.",
                 f"Received controls={gate.controls!r}.",
-                "Set exactly one control qubit for CNOT.",
+                f"Set exactly one control qubit for {gate_type}.",
             ))
         if len(gate.targets) != 1:
             issues.append(_error(
-                "CNOT_REQUIRES_TARGET",
-                "CNOT requires exactly one target qubit.",
+                f"{gate_type}_REQUIRES_TARGET",
+                f"{gate_type} requires exactly one target qubit.",
                 f"Received targets={gate.targets!r}.",
-                "Set exactly one target qubit for CNOT.",
+                f"Set exactly one target qubit for {gate_type}.",
             ))
         for control in gate.controls or []:
             if control in gate.targets:
                 issues.append(_error(
-                    "CNOT_CONTROL_EQUALS_TARGET",
-                    "CNOT control and target must be different qubits.",
+                    f"{gate_type}_CONTROL_EQUALS_TARGET",
+                    f"{gate_type} control and target must be different qubits.",
                     f"Received control={control}, targets={gate.targets!r}.",
-                    "Choose different qubits for CNOT control and target.",
+                    f"Choose different qubits for {gate_type} control and target.",
                 ))
+    elif gate_type == "CCX":
+        controls = list(gate.controls or [])
+        if len(controls) != 2:
+            issues.append(_error(
+                "CCX_REQUIRES_TWO_CONTROLS",
+                "CCX requires exactly two control qubits.",
+                f"Received controls={controls!r}.",
+                "Set exactly two control qubits for CCX.",
+            ))
+        if len(gate.targets) != 1:
+            issues.append(_error(
+                "CCX_REQUIRES_TARGET",
+                "CCX requires exactly one target qubit.",
+                f"Received targets={gate.targets!r}.",
+                "Set exactly one target qubit for CCX.",
+            ))
+        if len(controls) == 2 and len(gate.targets) == 1 and len({*controls, gate.targets[0]}) != 3:
+            issues.append(_error(
+                "CCX_QUBITS_MUST_DIFFER",
+                "CCX controls and target must be different qubits.",
+                f"Received controls={controls!r}, targets={gate.targets!r}.",
+                "Choose three different qubits for CCX.",
+            ))
+    elif gate_type == "SWAP":
+        if gate.controls:
+            issues.append(_error(
+                "SWAP_REJECTS_CONTROLS",
+                "SWAP does not accept control qubits.",
+                f"Received controls={gate.controls!r}.",
+                "Represent both SWAP operands as targets.",
+            ))
+        if len(gate.targets) != 2:
+            issues.append(_error(
+                "SWAP_REQUIRES_TWO_TARGETS",
+                "SWAP requires exactly two target qubits.",
+                f"Received targets={gate.targets!r}.",
+                "Choose exactly two target qubits for SWAP.",
+            ))
+        elif gate.targets[0] == gate.targets[1]:
+            issues.append(_error(
+                "SWAP_TARGETS_MUST_DIFFER",
+                "SWAP target qubits must be different.",
+                f"Received targets={gate.targets!r}.",
+                "Choose two different target qubits for SWAP.",
+            ))
 
     return issues
 
@@ -110,10 +198,11 @@ def validate_gate_placement(
     columns: Sequence[GateColumn],
     step: int,
     gate: GateOperation,
+    classical_bits: int = 0,
 ) -> list[ValidationIssue]:
     """Validate a gate placement against existing gates in one step."""
 
-    issues = validate_gate_for_circuit(logical_qubits, gate)
+    issues = validate_gate_for_circuit(logical_qubits, gate, classical_bits)
     candidate_qubits = _gate_qubits(gate)
 
     for column in columns:
@@ -137,6 +226,7 @@ def validate_gate_placement(
 
 def _validate_circuit(
     logical_qubits: int,
+    classical_bits: int,
     columns: Iterable[GateColumn],
 ) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
@@ -144,7 +234,7 @@ def _validate_circuit(
     for column in columns:
         occupied: dict[int, GateOperation] = {}
         for gate in column.gates:
-            issues.extend(validate_gate_for_circuit(logical_qubits, gate))
+            issues.extend(validate_gate_for_circuit(logical_qubits, gate, classical_bits))
             for qubit in _gate_qubits(gate):
                 if qubit in occupied:
                     issues.append(_error(

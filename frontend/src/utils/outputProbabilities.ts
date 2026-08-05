@@ -1,4 +1,4 @@
-import type { OutputProbabilities } from '../types/simulation'
+import type { OutputProbabilities, StateSnapshot } from '../types/simulation'
 
 export type OutputProbabilityRow = {
   state: string
@@ -75,6 +75,34 @@ export function buildOutputProbabilityRows(
     qubitCount: resolvedQubitCount,
     rows: [...rows, ...extraRows],
   }
+}
+
+export function probabilitiesFromSnapshot(
+  snapshot: StateSnapshot | null | undefined,
+  qubitCount: number,
+): OutputProbabilities | null {
+  const dimension = 2 ** qubitCount
+  const real = snapshot?.density_matrix?.real
+  if (
+    !Number.isInteger(qubitCount)
+    || qubitCount < 1
+    || !Array.isArray(real)
+    || real.length !== dimension
+    || real.some((row) => !Array.isArray(row) || row.length !== dimension)
+  ) {
+    return null
+  }
+
+  const probabilities: OutputProbabilities = {}
+  const labels = basisLabels(qubitCount)
+  for (let index = 0; index < dimension; index += 1) {
+    const diagonal = real[index][index]
+    if (!Number.isFinite(diagonal)) {
+      return null
+    }
+    probabilities[labels[index]] = normalizeProbability(diagonal)
+  }
+  return probabilities
 }
 
 function sanitizeLogicalQubitCount(value: number | null | undefined): number | null {

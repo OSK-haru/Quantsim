@@ -9,6 +9,28 @@ from typing import Any
 
 
 @dataclass
+class ClassicalCondition:
+    """A single classical-register predicate attached to a gate."""
+
+    bit: int
+    value: int
+
+    def __post_init__(self) -> None:
+        self.bit = _non_negative_int(self.bit, "classical condition bit")
+        self.value = _int(self.value, "classical condition value")
+        if self.value not in {0, 1}:
+            raise ValueError("classical condition value must be 0 or 1")
+
+    def to_dict(self) -> dict[str, int]:
+        return {"bit": self.bit, "value": self.value}
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ClassicalCondition":
+        data = _require_mapping(data, "classical condition")
+        return cls(bit=data["bit"], value=data["value"])
+
+
+@dataclass
 class GateOperation:
     """One logical gate operation in a circuit column."""
 
@@ -16,6 +38,9 @@ class GateOperation:
     targets: list[int]
     controls: list[int] | None = None
     params: dict[str, float] | None = None
+    classical_targets: list[int] | None = None
+    condition: ClassicalCondition | None = None
+    conditions: list[ClassicalCondition] | None = None
 
     def __post_init__(self) -> None:
         self.type = str(self.type)
@@ -32,6 +57,33 @@ class GateOperation:
             str(name): _finite_float(value, f"param {name}")
             for name, value in params.items()
         }
+        classical_targets = [] if self.classical_targets is None else self.classical_targets
+        self.classical_targets = [
+            _non_negative_int(target, "classical target")
+            for target in classical_targets
+        ]
+        if self.condition is not None and not isinstance(
+            self.condition,
+            ClassicalCondition,
+        ):
+            self.condition = ClassicalCondition.from_dict(self.condition)
+        raw_conditions = [] if self.conditions is None else self.conditions
+        self.conditions = [
+            item if isinstance(item, ClassicalCondition)
+            else ClassicalCondition.from_dict(item)
+            for item in raw_conditions
+        ]
+        if self.condition is not None:
+            self.conditions = [self.condition, *self.conditions]
+        deduplicated: list[ClassicalCondition] = []
+        seen: set[tuple[int, int]] = set()
+        for item in self.conditions:
+            key = (item.bit, item.value)
+            if key not in seen:
+                deduplicated.append(item)
+                seen.add(key)
+        self.conditions = deduplicated
+        self.condition = self.conditions[0] if self.conditions else None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -39,6 +91,11 @@ class GateOperation:
             "targets": list(self.targets),
             "controls": list(self.controls or []),
             "params": dict(self.params or {}),
+            "classical_targets": list(self.classical_targets or []),
+            "condition": (
+                None if self.condition is None else self.condition.to_dict()
+            ),
+            "conditions": [item.to_dict() for item in self.conditions],
         }
 
     @classmethod
@@ -49,6 +106,54 @@ class GateOperation:
             targets=list(data["targets"]),
             controls=list(data.get("controls") or []),
             params=dict(data.get("params") or {}),
+            classical_targets=list(data.get("classical_targets") or []),
+            condition=(
+                None
+                if data.get("condition") is None
+                else ClassicalCondition.from_dict(data["condition"])
+            ),
+            conditions=[
+                ClassicalCondition.from_dict(item)
+                for item in (data.get("conditions") or [])
+            ],
+        )
+
+
+@dataclass
+class CircuitAnnotation:
+    """A visual-only marker on a circuit (never applied as a quantum operation)."""
+
+    kind: str
+    column_index: int
+    qubits: list[int]
+    id: str | None = None
+    source_id: str | None = None
+
+    def __post_init__(self) -> None:
+        self.kind = str(self.kind).upper()
+        if self.kind not in {"MESSAGE", "RECEIVED"}:
+            raise ValueError("unsupported circuit annotation kind")
+        self.column_index = _non_negative_int(self.column_index, "annotation column")
+        self.qubits = [_non_negative_int(qubit, "annotation qubit") for qubit in self.qubits]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "column_index": self.column_index,
+            "qubits": list(self.qubits),
+            "id": self.id,
+            "source_id": self.source_id,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "CircuitAnnotation":
+        data = _require_mapping(data, "circuit annotation")
+        return cls(
+            kind=data["kind"],
+            column_index=data.get("column_index", data.get("column", 0)),
+            qubits=list(data.get("qubits") or []),
+            id=data.get("id"),
+            source_id=data.get("source_id", data.get("sourceId")),
         )
 
 
@@ -91,21 +196,33 @@ class CircuitConfig:
     logical_qubits: int = 1
     initial_states: list[str] = field(default_factory=lambda: ["0"])
     columns: list[GateColumn] = field(default_factory=list)
+    classical_bits: int = 0
+    annotations: list[CircuitAnnotation] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.logical_qubits = _int(self.logical_qubits, "logical_qubits")
         self.initial_states = [str(state) for state in self.initial_states]
+        self.classical_bits = _non_negative_int(
+            self.classical_bits,
+            "classical_bits",
+        )
 
         self.columns = [
             column if isinstance(column, GateColumn) else GateColumn.from_dict(column)
             for column in self.columns
+        ]
+        self.annotations = [
+            item if isinstance(item, CircuitAnnotation) else CircuitAnnotation.from_dict(item)
+            for item in self.annotations
         ]
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "logical_qubits": self.logical_qubits,
             "initial_states": list(self.initial_states),
+            "classical_bits": self.classical_bits,
             "columns": [column.to_dict() for column in self.columns],
+            "annotations": [annotation.to_dict() for annotation in self.annotations],
         }
 
     @classmethod
@@ -117,6 +234,11 @@ class CircuitConfig:
             columns=[
                 column if isinstance(column, GateColumn) else GateColumn.from_dict(column)
                 for column in data.get("columns", [])
+            ],
+            classical_bits=data.get("classical_bits", 0),
+            annotations=[
+                item if isinstance(item, CircuitAnnotation) else CircuitAnnotation.from_dict(item)
+                for item in (data.get("annotations") or [])
             ],
         )
 

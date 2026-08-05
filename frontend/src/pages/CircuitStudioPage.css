@@ -6,9 +6,11 @@
   gap: 16px;
   align-content: start;
   background:
-    radial-gradient(circle at top, rgba(148, 163, 184, 0.18), transparent 38%),
-    linear-gradient(180deg, #0b1020 0%, #0f172a 100%);
-  color: #e5e7eb;
+    radial-gradient(circle at 13% 0%, rgba(38, 156, 140, 0.18), transparent 28%),
+    radial-gradient(circle at 92% 16%, rgba(221, 132, 68, 0.12), transparent 25%),
+    repeating-linear-gradient(90deg, transparent 0 79px, rgba(137, 183, 184, 0.025) 79px 80px),
+    linear-gradient(145deg, #071118 0%, #0a1b22 48%, #071016 100%);
+  color: #e9f6f3;
 }
 
 .circuit-studio-page__header {
@@ -28,7 +30,7 @@
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.75);
-  color: #93c5fd;
+  color: #5dd6c0;
   font-size: 0.78rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -36,7 +38,9 @@
 
 .circuit-studio-page__header h1 {
   margin: 0;
-  color: #f8fafc;
+  color: #e9f6f3;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 500;
   font-size: clamp(1.85rem, 3vw, 2.55rem);
   line-height: 1;
   letter-spacing: -0.04em;
@@ -45,7 +49,7 @@
 .circuit-studio-page__lede {
   margin: 8px 0 0;
   max-width: 62ch;
-  color: #94a3b8;
+  color: #8ca5a9;
   line-height: 1.6;
 }
 
@@ -68,10 +72,10 @@
   align-items: center;
   min-height: 30px;
   padding: 5px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(99, 173, 177, 0.2);
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.72);
-  color: #cbd5e1;
+  background: rgba(9, 24, 32, 0.82);
+  color: #c8dddb;
   font-size: 0.84rem;
   white-space: nowrap;
 }

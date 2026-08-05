@@ -4,6 +4,7 @@ import type { CircuitEditorState, DragGatePayload, GateType } from '../types/cir
 export type PendingCnotControl = {
   columnIndex: number
   qubitIndex: number
+  additionalQubits?: number[]
 }
 
 export type CircuitContextValue = {
@@ -21,9 +22,11 @@ export type CircuitContextValue = {
   handleSelectGateType: (gateType: GateType | null) => void
   handleGateSelect: (gateId: string | null) => void
   handleResetCircuitToBell: () => void
+  handleLoadCircuitPreset: (preset: 'teleportation' | 'bit_flip_repetition') => void
   handleLogicalQubitsChange: (nextLogicalQubits: number) => void
   handleCircuitSlotClick: (columnIndex: number, qubitIndex: number) => void
   handleDeleteSelectedGate: () => void
+  handleUpdateSelectedGateTheta: (thetaRad: number) => void
   handleClearCircuit: () => void
   handleAddCircuitColumn: () => void
   handleRemoveLastCircuitColumn: () => void

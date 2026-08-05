@@ -6,6 +6,7 @@ import math
 from time import perf_counter
 
 from api.pulse_models import (
+    CoupledTransmonPairPulseSimulateRequest,
     PulseApiRequest,
     QutritPulseSimulateRequest,
     PulseSimulateRequest,
@@ -13,6 +14,7 @@ from api.pulse_models import (
 )
 from api.pulse_backend_logging import log_pulse_backend_selection
 from api.pulse_qutrit_service import run_qutrit_pulse_request
+from api.pulse_transmon_pair_service import run_coupled_transmon_pair_request
 from core.capabilities import DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL
 from core.cptp_evolution import EXPLICIT_CPTP_EVOLUTION_ID
 from core.gates import Matrix, initial_density_matrix, matmul, trace
@@ -80,6 +82,8 @@ def run_pulse_api_request(request: PulseApiRequest) -> dict[str, object]:
 
     if isinstance(request, QutritPulseSimulateRequest):
         return run_qutrit_pulse_request(request)
+    if isinstance(request, CoupledTransmonPairPulseSimulateRequest):
+        return run_coupled_transmon_pair_request(request)
     return run_pulse_request(request)
 
 

@@ -3,6 +3,9 @@ export type CircuitPreviewGate = {
   type: string
   qubits: number[]
   kind: 'single' | 'control' | 'target' | 'measure' | 'idle'
+  classical_targets?: number[]
+  condition?: { bit: number; value: 0 | 1 } | null
+  conditions?: Array<{ bit: number; value: 0 | 1 }>
 }
 
 export type CircuitPreviewColumn = {
@@ -14,14 +17,21 @@ export type CircuitPreviewColumn = {
 
 export type CircuitPreviewData = {
   qubit_count: number
+  classical_bit_count?: number
   columns: CircuitPreviewColumn[]
 }
 
-export type GateType = 'H' | 'X' | 'Z' | 'CNOT' | 'MEASURE'
+export type GateType = 'H' | 'X' | 'Y' | 'Z' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'CNOT' | 'CZ' | 'CP' | 'CCX' | 'SWAP' | 'MEASURE' | 'MESSAGE' | 'RECEIVED'
+export type AnnotationGateType = Extract<GateType, 'MESSAGE' | 'RECEIVED'>
 
-export type SingleQubitGateType = Exclude<GateType, 'CNOT'>
+export type ControlledGateType = Extract<GateType, 'CNOT' | 'CZ' | 'CP'>
+export type PairGateType = Extract<GateType, 'SWAP'>
+export type MultiControlledGateType = Extract<GateType, 'CCX'>
+export type TwoQubitGateType = ControlledGateType | PairGateType
+export type MultiQubitGateType = TwoQubitGateType | MultiControlledGateType
+export type SingleQubitGateType = Exclude<GateType, MultiQubitGateType>
 
-export type InitialQubitState = 0 | 1
+export type InitialQubitState = 0 | 1 | '+' | '-'
 
 export type CircuitGateParams = {
   duration_us?: number
@@ -34,6 +44,10 @@ export type CircuitGate = {
   targets: number[]
   controls?: number[]
   params?: CircuitGateParams
+  classical_targets?: number[]
+  condition?: { bit: number; value: 0 | 1 } | null
+  conditions?: Array<{ bit: number; value: 0 | 1 }>
+  source_id?: string | null
 }
 
 export type CircuitColumn = {
@@ -43,6 +57,7 @@ export type CircuitColumn = {
 
 export type CircuitEditorState = {
   logical_qubits: number
+  classical_bits?: number
   initial_states: InitialQubitState[]
   columns: CircuitColumn[]
 }

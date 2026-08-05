@@ -92,6 +92,7 @@
   line-height: 1.5;
 }
 
+
 .pulse-lab__scope-note strong {
   flex: 0 0 auto;
   color: #f0b27c;
@@ -270,6 +271,7 @@
     display: grid;
     gap: 3px;
   }
+
 
   .pulse-lab__identity {
     grid-template-columns: repeat(2, minmax(0, 1fr));

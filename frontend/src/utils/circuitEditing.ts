@@ -2,9 +2,40 @@ import type {
   CircuitColumn,
   CircuitEditorState,
   CircuitGate,
+  CircuitGateParams,
+  ControlledGateType,
   InitialQubitState,
+  GateType,
+  MultiControlledGateType,
+  PairGateType,
   SingleQubitGateType,
 } from '../types/circuit'
+
+export function isAnnotationGateType(gateType: GateType): gateType is 'RECEIVED' {
+  return gateType === 'RECEIVED'
+}
+
+export function isControlledGateType(gateType: GateType): gateType is ControlledGateType {
+  return gateType === 'CNOT' || gateType === 'CZ' || gateType === 'CP'
+}
+
+export function isPairGateType(gateType: GateType): gateType is PairGateType {
+  return gateType === 'SWAP'
+}
+
+export function isMultiControlledGateType(
+  gateType: GateType,
+): gateType is MultiControlledGateType {
+  return gateType === 'CCX'
+}
+
+export function isTwoQubitGateType(gateType: GateType) {
+  return isControlledGateType(gateType) || isPairGateType(gateType)
+}
+
+export function isMultiQubitGateType(gateType: GateType) {
+  return isTwoQubitGateType(gateType) || isMultiControlledGateType(gateType)
+}
 
 export const DEFAULT_EDITOR_COLUMN_COUNT = 4
 const MIN_SUPPORTED_LOGICAL_QUBITS = 2
@@ -72,11 +103,12 @@ function cloneGate(gate: CircuitGate): CircuitGate {
     targets: [...gate.targets],
     ...(gate.controls === undefined ? {} : { controls: [...gate.controls] }),
     ...(gate.params === undefined ? {} : { params: { ...gate.params } }),
+    ...(gate.source_id === undefined ? {} : { source_id: gate.source_id }),
   }
 }
 
 function isGateValidForLogicalQubits(gate: CircuitGate, logicalQubits: number) {
-  if (gate.type === 'CNOT') {
+  if (isControlledGateType(gate.type)) {
     const controls = gate.controls ?? []
     if (controls.length !== 1 || gate.targets.length !== 1) {
       return false
@@ -88,6 +120,26 @@ function isGateValidForLogicalQubits(gate: CircuitGate, logicalQubits: number) {
       isQubitIndexValid(control, logicalQubits) &&
       isQubitIndexValid(target, logicalQubits) &&
       control !== target
+    )
+  }
+
+  if (isPairGateType(gate.type)) {
+    return (
+      (gate.controls ?? []).length === 0 &&
+      gate.targets.length === 2 &&
+      gate.targets[0] !== gate.targets[1] &&
+      gate.targets.every((target) => isQubitIndexValid(target, logicalQubits))
+    )
+  }
+
+  if (isMultiControlledGateType(gate.type)) {
+    const controls = gate.controls ?? []
+    const qubits = [...controls, ...gate.targets]
+    return (
+      controls.length === 2 &&
+      gate.targets.length === 1 &&
+      new Set(qubits).size === 3 &&
+      qubits.every((qubit) => isQubitIndexValid(qubit, logicalQubits))
     )
   }
 
@@ -173,7 +225,16 @@ export function createPlacedGate(
     id: gateId,
     type: gateType,
     targets: [qubitIndex],
-    params: { duration_us: durationUs },
+      params: {
+      duration_us: durationUs,
+      ...(
+        gateType === 'RX' || gateType === 'RY' || gateType === 'RZ'
+          ? { theta_rad: Math.PI / 2 }
+          : gateType === 'MESSAGE'
+            ? { animation_parameter_t: 0 }
+            : {}
+      ),
+    },
   }
 }
 
@@ -182,11 +243,47 @@ export function createCnotGate(
   targetQubit: number,
   durationUs: number,
   gateId: string,
+  gateType: ControlledGateType = 'CNOT',
 ): CircuitGate {
   return {
     id: gateId,
-    type: 'CNOT',
+    type: gateType,
     controls: [controlQubit],
+    targets: [targetQubit],
+    params: {
+      duration_us: durationUs,
+      ...(gateType === 'CP' ? { theta_rad: Math.PI / 2 } : {}),
+    },
+  }
+}
+
+export function createPairGate(
+  firstQubit: number,
+  secondQubit: number,
+  durationUs: number,
+  gateId: string,
+  gateType: PairGateType = 'SWAP',
+): CircuitGate {
+  return {
+    id: gateId,
+    type: gateType,
+    targets: [firstQubit, secondQubit],
+    params: { duration_us: durationUs },
+  }
+}
+
+export function createCcxGate(
+  controlA: number,
+  controlB: number,
+  targetQubit: number,
+  durationUs: number,
+  gateId: string,
+  gateType: MultiControlledGateType = 'CCX',
+): CircuitGate {
+  return {
+    id: gateId,
+    type: gateType,
+    controls: [controlA, controlB],
     targets: [targetQubit],
     params: { duration_us: durationUs },
   }
@@ -223,7 +320,7 @@ function findGateLocationById(circuit: CircuitEditorState, gateId: string) {
 }
 
 export function getOccupiedQubits(gate: CircuitGate): number[] {
-  if (gate.type === 'CNOT') {
+  if (isControlledGateType(gate.type) || isMultiControlledGateType(gate.type)) {
     return [...(gate.controls ?? []), ...gate.targets]
   }
 
@@ -238,6 +335,9 @@ export function findColumnCollision(
   const occupiedQubits = new Set(getOccupiedQubits(candidate))
   return column.gates.find((gate) => {
     if (gate.id === ignoredGateId) {
+      return false
+    }
+    if (isAnnotationGateType(gate.type) || isAnnotationGateType(candidate.type)) {
       return false
     }
 
@@ -284,8 +384,8 @@ export function canPlaceGateInColumn(
 
 export function sortCircuitColumnGates(gates: CircuitGate[]) {
   return [...gates].sort((left, right) => {
-    const leftPriority = left.type === 'CNOT' ? 1 : 0
-    const rightPriority = right.type === 'CNOT' ? 1 : 0
+    const leftPriority = isMultiQubitGateType(left.type) ? 1 : 0
+    const rightPriority = isMultiQubitGateType(right.type) ? 1 : 0
     if (leftPriority !== rightPriority) {
       return leftPriority - rightPriority
     }
@@ -352,9 +452,9 @@ export function moveSingleGateInCircuit(
 
   const sourceGate = circuit.columns
     .flatMap((column) => column.gates)
-    .find((gate) => gate.id === gateId && gate.type !== 'CNOT')
+    .find((gate) => gate.id === gateId && !isMultiQubitGateType(gate.type))
 
-  if (!sourceGate || sourceGate.type === 'CNOT') {
+  if (!sourceGate || isMultiQubitGateType(sourceGate.type)) {
     return circuit
   }
 
@@ -408,6 +508,7 @@ export function placeCnotGateInCircuit(
   targetQubit: number,
   durationUs: number,
   gateId: string,
+  gateType: ControlledGateType = 'CNOT',
 ): CircuitEditorState {
   if (
     !isQubitIndexValid(controlQubit, circuit.logical_qubits) ||
@@ -422,7 +523,7 @@ export function placeCnotGateInCircuit(
     Math.max(columnCount, columnIndex + 1),
   )
 
-  const candidate = createCnotGate(controlQubit, targetQubit, durationUs, gateId)
+  const candidate = createCnotGate(controlQubit, targetQubit, durationUs, gateId, gateType)
   const placement = canPlaceGateInColumn(normalizedCircuit, columnIndex, candidate)
   if (!placement.valid) {
     return circuit
@@ -454,6 +555,7 @@ export function placeCnotGateFromDropInCircuit(
   qubitIndex: number,
   durationUs: number,
   gateId: string,
+  gateType: ControlledGateType = 'CNOT',
 ): CircuitEditorState {
   if (!isQubitIndexValid(qubitIndex, circuit.logical_qubits)) {
     return circuit
@@ -468,7 +570,250 @@ export function placeCnotGateFromDropInCircuit(
     placement.targetQubit,
     durationUs,
     gateId,
+    gateType,
   )
+}
+
+export function resolveCcxDropPlacement(qubitIndex: number, logicalQubits: number) {
+  if (logicalQubits < 3) {
+    return { controlA: 0, controlB: 0, targetQubit: 0 }
+  }
+  const start = Math.min(Math.max(0, qubitIndex), logicalQubits - 3)
+  return { controlA: start, controlB: start + 1, targetQubit: start + 2 }
+}
+
+export function placePairGateInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  columnIndex: number,
+  firstQubit: number,
+  secondQubit: number,
+  durationUs: number,
+  gateId: string,
+  gateType: PairGateType = 'SWAP',
+): CircuitEditorState {
+  if (
+    !isQubitIndexValid(firstQubit, circuit.logical_qubits) ||
+    !isQubitIndexValid(secondQubit, circuit.logical_qubits) ||
+    firstQubit === secondQubit
+  ) {
+    return circuit
+  }
+  const normalizedCircuit = ensureCircuitColumnCount(
+    circuit,
+    Math.max(columnCount, columnIndex + 1),
+  )
+  const candidate = createPairGate(firstQubit, secondQubit, durationUs, gateId, gateType)
+  if (!canPlaceGateInColumn(normalizedCircuit, columnIndex, candidate).valid) {
+    return circuit
+  }
+  return {
+    ...normalizedCircuit,
+    columns: normalizedCircuit.columns.map((column, index) =>
+      index === columnIndex
+        ? { ...column, gates: sortCircuitColumnGates([...column.gates, candidate]) }
+        : column,
+    ),
+  }
+}
+
+export function placePairGateFromDropInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  columnIndex: number,
+  qubitIndex: number,
+  durationUs: number,
+  gateId: string,
+  gateType: PairGateType = 'SWAP',
+): CircuitEditorState {
+  const placement = resolveCnotDropPlacement(qubitIndex, circuit.logical_qubits)
+  return placePairGateInCircuit(
+    circuit,
+    columnCount,
+    columnIndex,
+    placement.controlQubit,
+    placement.targetQubit,
+    durationUs,
+    gateId,
+    gateType,
+  )
+}
+
+export function movePairGateInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  gateId: string,
+  targetColumnIndex: number,
+  targetQubitIndex: number,
+): CircuitEditorState {
+  if (!isQubitIndexValid(targetQubitIndex, circuit.logical_qubits)) {
+    return circuit
+  }
+  const sourceLocation = findGateLocationById(circuit, gateId)
+  if (sourceLocation === null || !isPairGateType(sourceLocation.gate.type)) {
+    return circuit
+  }
+  const normalizedCircuit = ensureCircuitColumnCount(
+    circuit,
+    Math.max(columnCount, targetColumnIndex + 1),
+  )
+  const targetPlacement = resolveCnotDropPlacement(
+    targetQubitIndex,
+    normalizedCircuit.logical_qubits,
+  )
+  const movedGate: CircuitGate = {
+    ...sourceLocation.gate,
+    controls: [],
+    targets: [targetPlacement.controlQubit, targetPlacement.targetQubit],
+    params: sourceLocation.gate.params === undefined
+      ? undefined
+      : { ...sourceLocation.gate.params },
+  }
+  if (!canPlaceGateInColumn(
+    normalizedCircuit,
+    targetColumnIndex,
+    movedGate,
+    gateId,
+  ).valid) {
+    return circuit
+  }
+  if (
+    sourceLocation.columnIndex === targetColumnIndex &&
+    sourceLocation.gate.targets[0] === movedGate.targets[0] &&
+    sourceLocation.gate.targets[1] === movedGate.targets[1]
+  ) {
+    return circuit
+  }
+  return {
+    ...normalizedCircuit,
+    columns: normalizedCircuit.columns.map((column, index) => {
+      const gates = column.gates.filter((gate) => gate.id !== gateId)
+      if (index === targetColumnIndex) {
+        gates.push(movedGate)
+      }
+      return { ...column, gates: sortCircuitColumnGates(gates) }
+    }),
+  }
+}
+
+export function placeCcxGateInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  columnIndex: number,
+  controlA: number,
+  controlB: number,
+  targetQubit: number,
+  durationUs: number,
+  gateId: string,
+  gateType: MultiControlledGateType = 'CCX',
+): CircuitEditorState {
+  const qubits = [controlA, controlB, targetQubit]
+  if (
+    new Set(qubits).size !== 3 ||
+    qubits.some((qubit) => !isQubitIndexValid(qubit, circuit.logical_qubits))
+  ) {
+    return circuit
+  }
+  const normalizedCircuit = ensureCircuitColumnCount(
+    circuit,
+    Math.max(columnCount, columnIndex + 1),
+  )
+  const candidate = createCcxGate(
+    controlA, controlB, targetQubit, durationUs, gateId, gateType,
+  )
+  if (!canPlaceGateInColumn(normalizedCircuit, columnIndex, candidate).valid) {
+    return circuit
+  }
+  return {
+    ...normalizedCircuit,
+    columns: normalizedCircuit.columns.map((column, index) =>
+      index === columnIndex
+        ? { ...column, gates: sortCircuitColumnGates([...column.gates, candidate]) }
+        : column,
+    ),
+  }
+}
+
+export function placeCcxGateFromDropInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  columnIndex: number,
+  qubitIndex: number,
+  durationUs: number,
+  gateId: string,
+): CircuitEditorState {
+  const placement = resolveCcxDropPlacement(qubitIndex, circuit.logical_qubits)
+  return placeCcxGateInCircuit(
+    circuit,
+    columnCount,
+    columnIndex,
+    placement.controlA,
+    placement.controlB,
+    placement.targetQubit,
+    durationUs,
+    gateId,
+  )
+}
+
+export function moveCcxGateInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  gateId: string,
+  targetColumnIndex: number,
+  targetQubitIndex: number,
+): CircuitEditorState {
+  const sourceLocation = findGateLocationById(circuit, gateId)
+  if (sourceLocation === null || !isMultiControlledGateType(sourceLocation.gate.type)) {
+    return circuit
+  }
+  const normalizedCircuit = ensureCircuitColumnCount(
+    circuit,
+    Math.max(columnCount, targetColumnIndex + 1),
+  )
+  const placement = resolveCcxDropPlacement(
+    targetQubitIndex,
+    normalizedCircuit.logical_qubits,
+  )
+  if (new Set([placement.controlA, placement.controlB, placement.targetQubit]).size !== 3) {
+    return circuit
+  }
+  const movedGate: CircuitGate = {
+    ...sourceLocation.gate,
+    controls: [placement.controlA, placement.controlB],
+    targets: [placement.targetQubit],
+    params: sourceLocation.gate.params === undefined
+      ? undefined
+      : { ...sourceLocation.gate.params },
+  }
+  if (!canPlaceGateInColumn(
+    normalizedCircuit,
+    targetColumnIndex,
+    movedGate,
+    gateId,
+  ).valid) {
+    return circuit
+  }
+  const sourceQubits = [
+    ...(sourceLocation.gate.controls ?? []),
+    ...sourceLocation.gate.targets,
+  ]
+  const movedQubits = [...movedGate.controls ?? [], ...movedGate.targets]
+  if (
+    sourceLocation.columnIndex === targetColumnIndex &&
+    sourceQubits.every((qubit, index) => qubit === movedQubits[index])
+  ) {
+    return circuit
+  }
+  return {
+    ...normalizedCircuit,
+    columns: normalizedCircuit.columns.map((column, index) => {
+      const gates = column.gates.filter((gate) => gate.id !== gateId)
+      if (index === targetColumnIndex) {
+        gates.push(movedGate)
+      }
+      return { ...column, gates: sortCircuitColumnGates(gates) }
+    }),
+  }
 }
 
 export function moveCnotGateInCircuit(
@@ -483,7 +828,7 @@ export function moveCnotGateInCircuit(
   }
 
   const sourceLocation = findGateLocationById(circuit, gateId)
-  if (sourceLocation === null || sourceLocation.gate.type !== 'CNOT') {
+  if (sourceLocation === null || !isControlledGateType(sourceLocation.gate.type)) {
     return circuit
   }
 
@@ -567,6 +912,28 @@ export function removeGateById(
   }
 }
 
+export function updateGateParamsById(
+  circuit: CircuitEditorState,
+  gateId: string,
+  params: CircuitGateParams,
+): CircuitEditorState {
+  let changed = false
+  const columns = circuit.columns.map((column) => ({
+    ...column,
+    gates: column.gates.map((gate) => {
+      if (gate.id !== gateId) {
+        return gate
+      }
+      changed = true
+      return {
+        ...gate,
+        params: { ...(gate.params ?? {}), ...params },
+      }
+    }),
+  }))
+  return changed ? { ...circuit, columns } : circuit
+}
+
 export function clearCircuit(
   circuit: CircuitEditorState,
   columnCount = Math.max(1, circuit.columns.length),
@@ -592,14 +959,14 @@ export function getGateIdAtSlot(
   }
 
   const singleGate = column.gates.find(
-    (gate) => gate.type !== 'CNOT' && gate.targets.includes(qubitIndex),
+    (gate) => !isMultiQubitGateType(gate.type) && gate.targets.includes(qubitIndex),
   )
   if (singleGate) {
     return singleGate.id
   }
 
   const cnotGate = column.gates.find(
-    (gate) => gate.type === 'CNOT' && (gate.controls ?? []).concat(gate.targets).includes(qubitIndex),
+    (gate) => isMultiQubitGateType(gate.type) && (gate.controls ?? []).concat(gate.targets).includes(qubitIndex),
   )
   return cnotGate ? cnotGate.id : null
 }

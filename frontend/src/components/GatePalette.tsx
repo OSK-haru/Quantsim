@@ -11,8 +11,13 @@ type GatePaletteProps = {
   onGateDragEnd: () => void
 }
 
-const singleQubitGateTypes: GateType[] = ['H', 'X', 'Z']
-const draggableGateTypes = new Set<GateType>(['H', 'X', 'Z', 'MEASURE', 'CNOT'])
+const singleQubitGateTypes: GateType[] = [
+  'H', 'X', 'Y', 'Z', 'S', 'T', 'RX', 'RY', 'RZ',
+]
+const draggableGateTypes = new Set<GateType>([
+  'H', 'X', 'Y', 'Z', 'S', 'T', 'RX', 'RY', 'RZ', 'MEASURE',
+  'CNOT', 'CZ', 'CP', 'CCX', 'SWAP', 'MESSAGE', 'RECEIVED',
+])
 
 export function GatePalette({
   selectedGateType,
@@ -24,7 +29,8 @@ export function GatePalette({
 }: GatePaletteProps) {
   function renderGateButton(gateType: GateType) {
     const isSelected = selectedGateType === gateType
-    const isDraggable = draggableGateTypes.has(gateType)
+    const isUnavailable = gateType === 'CCX' && logicalQubits < 3
+    const isDraggable = draggableGateTypes.has(gateType) && !isUnavailable
     const label = gateType === 'MEASURE' ? 'M' : gateType
 
     return (
@@ -35,8 +41,9 @@ export function GatePalette({
           isSelected ? ' gate-palette__button--selected' : ''
         }${isDraggable ? ' gate-palette__button--draggable' : ''}`}
         aria-pressed={isSelected}
+        disabled={isUnavailable}
         draggable={isDraggable}
-        title={`${gateType} をクリックまたはドラッグ`}
+        title={isUnavailable ? 'CCXには3量子ビット以上が必要です' : `${gateType} をクリックまたはドラッグ`}
         onDragStart={(event) => {
           if (!isDraggable) {
             event.preventDefault()
@@ -93,7 +100,20 @@ export function GatePalette({
 
       <div className="gate-palette__group" role="toolbar" aria-label="制御ゲート">
         <span className="gate-palette__label">制御</span>
-        <div className="gate-palette__buttons">{renderGateButton('CNOT')}</div>
+        <div className="gate-palette__buttons">
+          {renderGateButton('CNOT')}
+          {renderGateButton('CZ')}
+          {renderGateButton('CP')}
+          {renderGateButton('CCX')}
+          {renderGateButton('SWAP')}
+        </div>
+      </div>
+      <div className="gate-palette__group" role="toolbar" aria-label="Teleportation display markers">
+        <span className="gate-palette__label">通信表示</span>
+        <div className="gate-palette__buttons">
+          {renderGateButton('MESSAGE')}
+          {renderGateButton('RECEIVED')}
+        </div>
       </div>
     </section>
   )

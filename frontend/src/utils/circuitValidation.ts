@@ -22,10 +22,10 @@ function hasDuplicateQubits(values: number[]) {
 }
 
 export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValidationResult {
-  if (!isFiniteInteger(config.logical_qubits) || config.logical_qubits < 2 || config.logical_qubits > 4) {
+  if (!isFiniteInteger(config.logical_qubits) || config.logical_qubits < 2 || config.logical_qubits > 5) {
     return {
       valid: false,
-      message: formatValidationFailure('Logical qubits must be between 2 and 4.'),
+      message: formatValidationFailure('Logical qubits must be between 2 and 5.'),
     }
   }
 
@@ -45,10 +45,10 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
 
   for (let index = 0; index < config.initial_states.length; index += 1) {
     const state = config.initial_states[index]
-    if (!isFiniteInteger(state) || (state !== 0 && state !== 1)) {
+    if (!(isFiniteInteger(state) && (state === 0 || state === 1)) && state !== '+' && state !== '-') {
       return {
         valid: false,
-        message: formatValidationFailure(`Initial state at q${index} must be 0 or 1.`),
+        message: formatValidationFailure(`Initial state at q${index} must be 0, 1, +, or -.`),
       }
     }
   }
@@ -81,9 +81,20 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
       if (
         gate.type !== 'H' &&
         gate.type !== 'X' &&
+        gate.type !== 'Y' &&
         gate.type !== 'Z' &&
+        gate.type !== 'S' &&
+        gate.type !== 'T' &&
+        gate.type !== 'RX' &&
+        gate.type !== 'RY' &&
+        gate.type !== 'RZ' &&
         gate.type !== 'CNOT' &&
+        gate.type !== 'CZ' &&
+        gate.type !== 'CP' &&
+        gate.type !== 'CCX' &&
+        gate.type !== 'SWAP' &&
         gate.type !== 'MEASURE'
+        && gate.type !== 'MESSAGE'
       ) {
         return {
           valid: false,
@@ -91,11 +102,28 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
         }
       }
 
-      if (gate.type === 'CNOT') {
+      if (gate.type === 'CCX') {
+        const controls = gate.controls ?? []
+        const qubits = [...controls, ...gate.targets]
+        if (controls.length !== 2 || gate.targets.length !== 1 || new Set(qubits).size !== 3) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`CCX in column ${columnIndex + 1} needs two controls and one different target.`),
+          }
+        }
+        if (qubits.some((qubit) =>
+          !isFiniteInteger(qubit) || qubit < 0 || qubit >= config.logical_qubits
+        )) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`CCX in column ${columnIndex + 1} uses an out-of-range qubit.`),
+          }
+        }
+      } else if (gate.type === 'CNOT' || gate.type === 'CZ' || gate.type === 'CP') {
         if (!Array.isArray(gate.controls) || gate.controls.length !== 1 || gate.targets.length !== 1) {
           return {
             valid: false,
-            message: formatValidationFailure(`CNOT in column ${columnIndex + 1} needs one control and one target.`),
+            message: formatValidationFailure(`${gate.type} in column ${columnIndex + 1} needs one control and one target.`),
           }
         }
 
@@ -111,14 +139,14 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
         ) {
           return {
             valid: false,
-            message: formatValidationFailure(`CNOT in column ${columnIndex + 1} uses an out-of-range qubit.`),
+            message: formatValidationFailure(`${gate.type} in column ${columnIndex + 1} uses an out-of-range qubit.`),
           }
         }
 
         if (control === target) {
           return {
             valid: false,
-            message: formatValidationFailure(`CNOT control and target must differ in column ${columnIndex + 1}.`),
+            message: formatValidationFailure(`${gate.type} control and target must differ in column ${columnIndex + 1}.`),
           }
         }
 
@@ -126,6 +154,25 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
           return {
             valid: false,
             message: formatValidationFailure(`A qubit has multiple operations in the same step.`),
+          }
+        }
+      } else if (gate.type === 'SWAP') {
+        if (
+          gate.targets.length !== 2 ||
+          gate.targets[0] === gate.targets[1] ||
+          (gate.controls?.length ?? 0) > 0
+        ) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`SWAP in column ${columnIndex + 1} needs two different targets and no controls.`),
+          }
+        }
+        if (gate.targets.some((target) =>
+          !isFiniteInteger(target) || target < 0 || target >= config.logical_qubits
+        )) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`SWAP in column ${columnIndex + 1} uses an out-of-range qubit.`),
           }
         }
       } else {
@@ -158,10 +205,16 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
           message: formatValidationFailure(`Gate durations must be a finite number greater than or equal to 0.`),
         }
       }
+      if (gate.params?.theta_rad !== undefined && !Number.isFinite(gate.params.theta_rad)) {
+        return {
+          valid: false,
+          message: formatValidationFailure(`Gate theta_rad must be finite.`),
+        }
+      }
     }
 
     const occupiedQubits = column.gates.flatMap((gate) =>
-      gate.type === 'CNOT'
+      gate.type === 'CNOT' || gate.type === 'CZ' || gate.type === 'CP' || gate.type === 'CCX'
         ? [...(gate.controls ?? []), ...gate.targets]
         : [...gate.targets],
     )

@@ -347,7 +347,7 @@ def _qutrit_physical_payload() -> dict[str, object]:
             "detuning_rad_per_us": 0.0,
             "drag_beta_us": 0.0,
         },
-        "total_simulation_time_us": 0.2,
+        "total_simulation_time_us": 0.5,
         "environment": {
             "input_mode": "physical",
             "device_quality": 0.8,
@@ -359,7 +359,7 @@ def _qutrit_physical_payload() -> dict[str, object]:
         },
         "snapshot_options": {
             "uniform_count": 21,
-            "custom_times_us": [0.16, 0.2],
+            "custom_times_us": [0.16, 0.5],
         },
     }
 

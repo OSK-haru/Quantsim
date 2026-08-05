@@ -3,7 +3,7 @@
 QuantaScope は、温度・磁場・ノイズなどの物理環境が小規模量子回路の状態と有効寿命に与える影響を、対話的に理解するためのシミュレーターです。
 
 現在の実装状況と文書の優先順位は
-[`docs/README.md`](docs/README.md)を参照してください。
+[`docs_for_develop/README.md`](docs_for_develop/README.md)を参照してください。
 
 ## 標準構成
 
@@ -71,6 +71,22 @@ Vite は `/api` を `127.0.0.1:8001` にプロキシします。接続確認は�
 ```powershell
 # Python テスト（標準ライブラリ unittest）
 .\.venv\Scripts\python.exe -m unittest discover -s tests
+
+変更箇所に応じた短いテストプロファイルは次で実行できます。`full-audit` は
+Pulse と凍結監査を含むため、リリース確認時だけ使用します。
+
+```powershell
+.\.venv\Scripts\python.exe scripts/run_tests.py fast
+.\.venv\Scripts\python.exe scripts/run_tests.py gate-aware
+.\.venv\Scripts\python.exe scripts/run_tests.py pulse
+.\.venv\Scripts\python.exe scripts/run_tests.py full-audit
+```
+
+測定フィードフォワードの監査用プリセットとして API は
+`bell`、`teleportation`、`bit_flip_repetition` を受け付けます。
+後者2つは古典レジスタと条件付き補正を含み、分岐ごとの Gate-aware ノイズも
+結果へ反映します。5量子ビットの Explicit CPTP は Choi 監査の計算量を抑えるため
+RK4へ明示的にフォールバックします。
 
 # Frontend
 cd frontend

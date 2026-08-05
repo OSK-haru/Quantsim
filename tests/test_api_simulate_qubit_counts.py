@@ -37,7 +37,10 @@ class ApiSimulateQubitCountsTest(unittest.TestCase):
             "diagnostics",
             "summary",
             "timeline",
+            "physical_timeline",
+            "circuit_probes",
             "output_probabilities",
+            "measurement",
             "run",
             "warnings",
             "issues",
@@ -168,7 +171,7 @@ class ApiSimulateQubitCountsTest(unittest.TestCase):
         self.assertFalse(body["issues"])
         self.assertFalse(body["warnings"])
 
-    def test_five_qubit_valid_circuit_is_rejected(self) -> None:
+    def test_five_qubit_valid_circuit_is_accepted_by_request_schema(self) -> None:
         payload = self._base_request()
         payload["circuit_config"] = {
             "logical_qubits": 5,
@@ -176,8 +179,8 @@ class ApiSimulateQubitCountsTest(unittest.TestCase):
             "columns": [],
         }
 
-        with self.assertRaises(ValidationError):
-            SimulateRequest(**payload)
+        request = SimulateRequest(**payload)
+        self.assertEqual(request.circuit_config.logical_qubits, 5)
 
     def test_invalid_three_qubit_initial_state_length_is_rejected(self) -> None:
         payload = self._base_request()

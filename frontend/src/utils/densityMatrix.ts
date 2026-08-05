@@ -1,6 +1,6 @@
 import type { StateSnapshot } from '../types/simulation'
 
-export type DensityMatrixMode = 'magnitude' | 'real' | 'imaginary'
+export type DensityMatrixMode = 'magnitude' | 'real' | 'imaginary' | 'phase'
 
 export type DensityMatrixCell = {
   row: number
@@ -10,6 +10,7 @@ export type DensityMatrixCell = {
   real: number
   imag: number
   magnitude: number
+  phase: number
   value: number
   intensity: number
   sign: 'positive' | 'negative' | 'zero'
@@ -91,6 +92,9 @@ export function snapshotKindLabel(snapshot: StateSnapshot | null | undefined): s
       ? '列の後'
       : `列 ${snapshot.column_index + 1} の後`
   }
+  if (snapshot.kind === 'measurement') {
+    return '測定直後'
+  }
   if (snapshot.kind === 'uniform_time') {
     return '均等時刻サンプル'
   }
@@ -149,6 +153,7 @@ export function validateDensityMatrixSnapshot(
     real: number
     imag: number
     magnitude: number
+    phase: number
     value: number
   }> = []
 
@@ -165,8 +170,15 @@ export function validateDensityMatrixSnapshot(
       }
 
       const magnitude = Math.hypot(realValue, imagValue)
+      const phase = magnitude < 1e-12 ? 0 : Math.atan2(imagValue, realValue)
       const value =
-        mode === 'magnitude' ? magnitude : mode === 'real' ? realValue : imagValue
+        mode === 'magnitude'
+          ? magnitude
+          : mode === 'real'
+            ? realValue
+            : mode === 'imaginary'
+              ? imagValue
+              : phase
       maxMagnitude = Math.max(maxMagnitude, magnitude)
       maxAbs = Math.max(maxAbs, Math.abs(value))
       rawValues.push({
@@ -175,6 +187,7 @@ export function validateDensityMatrixSnapshot(
         real: realValue,
         imag: imagValue,
         magnitude,
+        phase,
         value,
       })
     }
@@ -182,7 +195,9 @@ export function validateDensityMatrixSnapshot(
 
   const denominator = mode === 'magnitude' ? maxMagnitude : maxAbs
   const cells = rawValues.map((entry) => {
-    const intensity = denominator === 0 ? 0 : Math.min(Math.abs(entry.value) / denominator, 1)
+    const intensity = mode === 'phase'
+      ? (maxMagnitude === 0 ? 0 : Math.min(entry.magnitude / maxMagnitude, 1))
+      : (denominator === 0 ? 0 : Math.min(Math.abs(entry.value) / denominator, 1))
     const sign: DensityMatrixCell['sign'] =
       Math.abs(entry.value) < 0.000000000001
         ? 'zero'
@@ -209,7 +224,9 @@ export function validateDensityMatrixSnapshot(
       scaleLabel:
         mode === 'magnitude'
           ? `0 から ${formatDensityValue(maxMagnitude)}`
-          : `-${formatDensityValue(maxAbs)} から +${formatDensityValue(maxAbs)}`,
+          : mode === 'phase'
+            ? '-π から +π（濃さは絶対値）'
+            : `-${formatDensityValue(maxAbs)} から +${formatDensityValue(maxAbs)}`,
     },
   }
 }

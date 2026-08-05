@@ -1,0 +1,242 @@
+.state-probability-comparison {
+  width: min(1180px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 22px;
+  border: 1px solid rgba(99, 173, 177, 0.24);
+  border-radius: 20px;
+  background: rgba(9, 24, 32, 0.88);
+  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.3);
+}
+
+.state-probability-comparison__description {
+  margin: 10px 0 14px;
+  color: #91a9ac;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.state-probability-comparison__selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #bce9df;
+  font-size: 0.78rem;
+}
+
+.state-probability-comparison__selector select {
+  padding: 7px 10px;
+  border: 1px solid rgba(93, 214, 192, 0.3);
+  border-radius: 8px;
+  background: #0f2430;
+  color: #effbf8;
+}
+
+.state-probability-comparison__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  color: #a8c2c2;
+  font-size: 0.78rem;
+}
+
+.state-probability-comparison__legend span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.state-probability-comparison__legend strong { margin-left: auto; color: #effbf8; }
+.state-probability-comparison__swatch { width: 22px; height: 3px; border-radius: 999px; }
+.state-probability-comparison__swatch--ideal { background: #56d6a8; }
+.state-probability-comparison__swatch--noisy { background: #66a9f7; }
+
+.state-probability-comparison__chart-wrap {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+.state-probability-comparison__chart { display: block; width: 100%; min-width: 520px; height: 250px; }
+.state-probability-comparison__grid { stroke: rgba(148, 163, 184, 0.12); stroke-width: 1; }
+.state-probability-comparison__axis { stroke: rgba(148, 163, 184, 0.34); stroke-width: 1; }
+.state-probability-comparison__line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.state-probability-comparison__line--ideal { stroke: #56d6a8; }
+.state-probability-comparison__line--noisy { stroke: #66a9f7; }
+.state-probability-comparison__axis-label { fill: #829da0; font-size: 11px; }
+.state-probability-comparison__cursor line { stroke:#f8d477; stroke-width:2; }
+.state-probability-comparison__cursor circle { stroke:#091820; stroke-width:2; }
+.state-probability-comparison__cursor circle[data-series='noisy'] { fill:#66a9f7; }
+.state-probability-comparison__cursor circle[data-series='ideal'] { fill:#56d6a8; }
+.state-probability-comparison__footer { display: flex; flex-wrap: wrap; gap: 18px; color: #bce9df; font-size: 0.8rem; }
+.state-probability-comparison__empty { color: #91a9ac; }
+
+@media (max-width: 640px) {
+  .state-probability-comparison__heading { flex-direction: column; }
+  .state-probability-comparison__legend strong { margin-left: 0; }
+}
+
+.state-probability-comparison__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-right: 56px;
+  margin-bottom: 20px;
+}
+
+.state-probability-comparison__heading > div {
+  flex: 0 0 250px;
+  min-width: 0;
+}
+
+.state-probability-comparison__eyebrow {
+  color: #5dd6c0;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.state-probability-comparison__heading h2 {
+  margin: 5px 0 0;
+  color: #f2fbf9;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.55rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.state-probability-comparison__heading p {
+  min-width: 0;
+  max-width: 590px;
+  margin: 0;
+  color: #9ab0b3;
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.state-probability-comparison__scroll {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.state-probability-comparison__table {
+  min-width: 760px;
+}
+
+.state-probability-comparison__table-header,
+.state-probability-comparison__row {
+  display: grid;
+  grid-template-columns: 72px repeat(3, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: center;
+}
+
+.state-probability-comparison__table-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0 8px 12px;
+  background: #091820;
+  color: #81999d;
+  font-size: 0.78rem;
+}
+
+.state-probability-comparison__column-heading {
+  display: grid;
+  gap: 3px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(96, 165, 250, 0.7);
+}
+
+.state-probability-comparison__column-heading[data-kind='ideal'] {
+  border-left-color: #f3c76b;
+}
+
+.state-probability-comparison__column-heading[data-kind='completion'] {
+  border-left-color: #46d8ba;
+}
+
+.state-probability-comparison__column-heading strong {
+  color: #e9f6f3;
+  font-size: 0.88rem;
+}
+
+.state-probability-comparison__column-heading small {
+  color: #7f989c;
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.state-probability-comparison__row {
+  min-height: 42px;
+  padding: 5px 8px;
+  border-top: 1px solid rgba(137, 183, 184, 0.1);
+}
+
+.state-probability-comparison__row code {
+  color: #b8d6d5;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.9rem;
+}
+
+.state-probability-comparison__cell {
+  display: grid;
+  grid-template-columns: minmax(56px, 1fr) 68px;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.state-probability-comparison__cell strong {
+  color: #dbeae8;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  text-align: right;
+}
+
+.state-probability-comparison__bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(126, 151, 155, 0.15);
+}
+
+.state-probability-comparison__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5ea7ec, #7bb8ee);
+}
+
+.state-probability-comparison__cell[data-kind='ideal'] .state-probability-comparison__fill {
+  background: linear-gradient(90deg, #c9943b, #f3c76b);
+}
+
+.state-probability-comparison__cell[data-kind='completion'] .state-probability-comparison__fill {
+  background: linear-gradient(90deg, #27a98d, #46d8ba);
+}
+
+@media (max-width: 960px) {
+  .state-probability-comparison__heading {
+    display: grid;
+    justify-content: stretch;
+    gap: 10px;
+  }
+
+  .state-probability-comparison__heading > div,
+  .state-probability-comparison__heading p {
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .state-probability-comparison {
+    padding: 16px 14px;
+  }
+
+  .state-probability-comparison__heading {
+    padding-right: 50px;
+  }
+}

@@ -14,7 +14,7 @@ import type {
   GateType,
 } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
-import { getGateIdAtSlot } from '../utils/circuitEditing'
+import { getGateIdAtSlot, isMultiQubitGateType } from '../utils/circuitEditing'
 import {
   CIRCUIT_CELL_HEIGHT,
   CIRCUIT_CELL_WIDTH,
@@ -27,6 +27,7 @@ import { setCircuitDragPreview } from '../utils/dragPreview'
 type PendingCnotControl = {
   columnIndex: number
   qubitIndex: number
+  additionalQubits?: number[]
 }
 
 type CircuitPreviewProps = {
@@ -40,6 +41,7 @@ type CircuitPreviewProps = {
   scrollToEndToken?: number
   viewportRef?: RefObject<HTMLDivElement | null>
   highlightedColumnIndex?: number | null
+  highlightedGateSignatures?: string[]
   onViewportScroll?: () => void
   onSlotClick?: (columnIndex: number, qubitIndex: number) => void
   onGateSelect?: (gateId: string | null) => void
@@ -77,13 +79,13 @@ function getColumnSingleGate(
   qubitIndex: number,
 ) {
   return (
-    column.gates.find((gate) => gate.type !== 'CNOT' && gate.targets.includes(qubitIndex)) ??
+    column.gates.find((gate) => !isMultiQubitGateType(gate.type) && gate.targets.includes(qubitIndex)) ??
     null
   )
 }
 
 function getColumnCnotGates(column: CircuitEditorState['columns'][number]) {
-  return column.gates.filter((gate) => gate.type === 'CNOT')
+  return column.gates.filter((gate) => isMultiQubitGateType(gate.type))
 }
 
 function getCnotQubits(cnotGate: CircuitGate) {
@@ -105,6 +107,7 @@ export function CircuitPreview({
   scrollToEndToken = 0,
   viewportRef,
   highlightedColumnIndex = null,
+  highlightedGateSignatures = [],
   onViewportScroll,
   onSlotClick,
   onGateSelect,
@@ -124,6 +127,10 @@ export function CircuitPreview({
   const renderedHeight = height * zoom
   const yForQubit = (qubit: number) => CIRCUIT_TOP_PADDING + qubit * CIRCUIT_CELL_HEIGHT
   const isCircuitDragActive = dragPayload?.source === 'circuit'
+  const isHighlightedGate = (gate: CircuitGate) => {
+    const qubits = [...(gate.controls ?? []), ...gate.targets].sort((left, right) => left - right)
+    return highlightedGateSignatures.includes(`${gate.type}:${qubits.join(',')}`)
+  }
 
   useEffect(() => {
     const previousColumnCount = previousColumnCountRef.current
@@ -206,7 +213,7 @@ export function CircuitPreview({
 
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', `circuit:${gateId}`)
-    setCircuitDragPreview(event, gateType, gateType === 'CNOT' ? 'cnot' : 'gate')
+    setCircuitDragPreview(event, gateType, isMultiQubitGateType(gateType) ? 'cnot' : 'gate')
     onCircuitGateDragStart(gateId, gateType, columnIndex, qubitIndex)
   }
 
@@ -368,6 +375,65 @@ export function CircuitPreview({
                       ))}
                       {cnotGate.targets.map((target) => {
                         const y = yForQubit(target)
+                        if (cnotGate.type === 'CZ') {
+                          return (
+                            <circle
+                              key={`${cnotGate.id}-target-${target}`}
+                              cx={cnotX}
+                              cy={y}
+                              r="8"
+                              className={`circuit-preview__control-dot${
+                                isSelectedCnot ? ' circuit-preview__control-dot--selected' : ''
+                              }`}
+                            />
+                          )
+                        }
+                        if (cnotGate.type === 'CP') {
+                          return (
+                            <g key={`${cnotGate.id}-cp-${target}`}>
+                              <circle
+                                cx={cnotX}
+                                cy={y}
+                                r="16"
+                                className={`circuit-preview__target-ring${
+                                  isSelectedCnot ? ' circuit-preview__target-ring--selected' : ''
+                                }`}
+                              />
+                              <text
+                                x={cnotX}
+                                y={y + 5}
+                                textAnchor="middle"
+                                className="circuit-preview__gate-label"
+                              >
+                                P
+                              </text>
+                            </g>
+                          )
+                        }
+                        if (cnotGate.type === 'SWAP') {
+                          return (
+                            <g key={`${cnotGate.id}-swap-${target}`}>
+                              <line
+                                x1={cnotX - 9}
+                                y1={y - 9}
+                                x2={cnotX + 9}
+                                y2={y + 9}
+                                className={`circuit-preview__target-cross${
+                                  isSelectedCnot ? ' circuit-preview__target-cross--selected' : ''
+                                }`}
+                              />
+                              <line
+                                x1={cnotX + 9}
+                                y1={y - 9}
+                                x2={cnotX - 9}
+                                y2={y + 9}
+                                className={`circuit-preview__target-cross${
+                                  isSelectedCnot ? ' circuit-preview__target-cross--selected' : ''
+                                }`}
+                              />
+                            </g>
+                          )
+                        }
                         return (
                           <g key={`${cnotGate.id}-target-${target}`}>
                             <circle
@@ -432,11 +498,17 @@ export function CircuitPreview({
                   const hasCnotOccupancy = cnotGateAtSlot !== null
                   const isPendingControl =
                     pendingCnotControl?.columnIndex === columnIndex &&
-                    pendingCnotControl.qubitIndex === qubitIndex
+                    (
+                      pendingCnotControl.qubitIndex === qubitIndex ||
+                      (pendingCnotControl.additionalQubits ?? []).includes(qubitIndex)
+                    )
                   const isPendingTargetCandidate =
-                    selectedGateType === 'CNOT' &&
+                    selectedGateType !== undefined &&
+                    selectedGateType !== null &&
+                    isMultiQubitGateType(selectedGateType) &&
                     pendingCnotControl?.columnIndex === columnIndex &&
-                    pendingCnotControl.qubitIndex !== qubitIndex
+                    pendingCnotControl.qubitIndex !== qubitIndex &&
+                    !(pendingCnotControl.additionalQubits ?? []).includes(qubitIndex)
                   const isSelectedGate = selectedGateId === gateIdAtSlot
                   const isDraggedGate =
                     dragPayload?.source === 'circuit' && dragPayload.gateId === gateIdAtSlot
@@ -459,7 +531,7 @@ export function CircuitPreview({
                   const slotLabel = gate
                     ? `${gate.type} gate at q${qubitIndex}, column ${columnIndex}`
                     : hasCnotOccupancy
-                      ? `CNOT slot at q${qubitIndex}, column ${columnIndex}`
+                      ? `${cnotGateAtSlot?.type ?? 'controlled'} slot at q${qubitIndex}, column ${columnIndex}`
                       : `Empty slot at q${qubitIndex}, column ${columnIndex}`
                   const dragGate = gate ?? cnotGateAtSlot
 
@@ -572,8 +644,13 @@ export function CircuitPreview({
                           rx="8"
                           className={`circuit-preview__gate${
                             gate.type === 'MEASURE' ? ' circuit-preview__gate--measure' : ''
+                          }${
+                            gate.type === 'MESSAGE' || gate.type === 'RECEIVED'
+                              ? ' circuit-preview__gate--annotation'
+                              : ''
+                          }${isHighlightedGate(gate) ? ' circuit-preview__gate--active-operation' : ''
                           }${isDraggedGate ? ' circuit-preview__gate--dragging' : ''}`}
-                          {...(gate.type !== 'CNOT' ? { draggable: true } : {})}
+                          {...(!isMultiQubitGateType(gate.type) ? { draggable: true } : {})}
                           onDragStart={(event) =>
                             handleCircuitDragStart(
                               event,
@@ -600,8 +677,13 @@ export function CircuitPreview({
                             gate.type === 'MEASURE'
                               ? ' circuit-preview__gate-hit-area--measure'
                               : ''
+                          }${
+                            gate.type === 'MESSAGE' || gate.type === 'RECEIVED'
+                              ? ' circuit-preview__gate-hit-area--annotation'
+                              : ''
+                          }${isHighlightedGate(gate) ? ' circuit-preview__gate-hit-area--active-operation' : ''
                           }${isDraggedGate ? ' circuit-preview__gate-hit-area--dragging' : ''}`}
-                          {...(gate.type !== 'CNOT' ? { draggable: true } : {})}
+                          {...(!isMultiQubitGateType(gate.type) ? { draggable: true } : {})}
                           onDragStart={(event) =>
                             handleCircuitDragStart(
                               event,
@@ -630,7 +712,7 @@ export function CircuitPreview({
                             handleCircuitDragStart(
                               event,
                               cnotGateAtSlot.id,
-                              'CNOT',
+                              cnotGateAtSlot.type,
                               columnIndex,
                               qubitIndex,
                             )
@@ -654,7 +736,7 @@ export function CircuitPreview({
                             handleCircuitDragStart(
                               event,
                               cnotGateAtSlot.id,
-                              'CNOT',
+                              cnotGateAtSlot.type,
                               columnIndex,
                               qubitIndex,
                             )
@@ -680,7 +762,7 @@ export function CircuitPreview({
                             handleCircuitDragStart(
                               event,
                               cnotGateAtSlot.id,
-                              'CNOT',
+                              cnotGateAtSlot.type,
                               columnIndex,
                               qubitIndex,
                             )

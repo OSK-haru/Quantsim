@@ -13,7 +13,7 @@ function getGateCounts(circuit: CircuitEditorState) {
     (summary, column) => {
       for (const gate of column.gates) {
         summary.total += 1
-        if (gate.type === 'CNOT') {
+        if (gate.type === 'CNOT' || gate.type === 'CZ' || gate.type === 'CP' || gate.type === 'CCX' || gate.type === 'SWAP') {
           summary.cnot += 1
         }
       }
@@ -67,7 +67,7 @@ export function CircuitSummaryCard({
         <span>量子ビット {circuit.logical_qubits}</span>
         <span>列 {circuit.columns.length}</span>
         <span>ゲート {gateCounts.total}</span>
-        <span>CNOT {gateCounts.cnot}</span>
+        <span>2量子ビットゲート {gateCounts.cnot}</span>
       </div>
     </section>
   )

@@ -1,4 +1,6 @@
 .venv/
+.cache/
+validation_hardware/raw/
 __pycache__/
 *.pyc
 .env
@@ -7,3 +9,7 @@ __pycache__/
 *.key
 secrets/
 .DS_Store
+# Build outputs
+build/
+validation_hardware/processed/
+validation_results/

@@ -18,18 +18,32 @@ import {
   canPlaceGateInColumn,
   clearCircuit,
   createCnotGate,
+  createCcxGate,
+  createPairGate,
   createPlacedGate,
   getGateIdAtSlot,
   isCircuitEmpty,
   moveCnotGateInCircuit,
+  moveCcxGateInCircuit,
+  movePairGateInCircuit,
   moveSingleGateInCircuit,
   placeCnotGateFromDropInCircuit,
   placeCnotGateInCircuit,
+  placeCcxGateFromDropInCircuit,
+  placeCcxGateInCircuit,
+  placePairGateFromDropInCircuit,
+  placePairGateInCircuit,
   placeSingleGateInCircuit,
   removeGateById,
+  updateGateParamsById,
   removeLastEmptyColumn,
   resizeCircuitEditorState,
   resolveCnotDropPlacement,
+  resolveCcxDropPlacement,
+  isControlledGateType,
+  isPairGateType,
+  isMultiControlledGateType,
+  isMultiQubitGateType,
 } from '../utils/circuitEditing'
 import {
   canRedo,
@@ -85,8 +99,9 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
       return
     }
 
-    if (gateType === 'CNOT') {
-      setEditorHint('CNOT: 同じ列で制御ビット、続けて対象ビットをクリックしてください。')
+    if (isMultiQubitGateType(gateType)) {
+      const clickCount = isMultiControlledGateType(gateType) ? 3 : 2
+      setEditorHint(`${gateType}: 同じ列で${clickCount}つの量子ビットを順にクリックしてください。`)
       return
     }
 
@@ -127,28 +142,80 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
 
     const gateType = selectedGateType
 
-    if (gateType === 'CNOT') {
+    if (isMultiControlledGateType(gateType)) {
       if (pendingCnotControl === null || pendingCnotControl.columnIndex !== columnIndex) {
-        setPendingCnotControl({ columnIndex, qubitIndex })
-        setEditorHint(`CNOT: choose target in column ${columnIndex + 1}.`)
+        setPendingCnotControl({ columnIndex, qubitIndex, additionalQubits: [] })
+        setEditorHint('CCX: 2つ目の制御量子ビットを選択してください。')
         return
       }
-
-      if (pendingCnotControl.qubitIndex === qubitIndex) {
-        setEditorHint('CNOT: control and target must differ.')
-        return
-      }
-
-      const gateId = `cnot-${columnIndex}-${pendingCnotControl.qubitIndex}-${qubitIndex}-${gateIdCounterRef.current}`
-      const candidate = createCnotGate(
+      const selectedQubits = [
         pendingCnotControl.qubitIndex,
+        ...(pendingCnotControl.additionalQubits ?? []),
+      ]
+      if (selectedQubits.includes(qubitIndex)) {
+        setEditorHint('CCX: 制御と対象には異なる量子ビットを選択してください。')
+        return
+      }
+      if (selectedQubits.length === 1) {
+        setPendingCnotControl({
+          ...pendingCnotControl,
+          additionalQubits: [qubitIndex],
+        })
+        setEditorHint('CCX: 対象量子ビットを選択してください。')
+        return
+      }
+      const [controlA, controlB] = selectedQubits
+      const gateId = `ccx-${columnIndex}-${controlA}-${controlB}-${qubitIndex}-${gateIdCounterRef.current}`
+      const candidate = createCcxGate(
+        controlA,
+        controlB,
         qubitIndex,
-        gateDurationDefaults.CNOT,
+        gateDurationDefaults.CCX,
         gateId,
       )
       const placement = canPlaceGateInColumn(circuitState, columnIndex, candidate)
       if (!placement.valid) {
-        setEditorHint(placement.message ?? 'CNOT cannot be placed in that occupied slot.')
+        setEditorHint(placement.message ?? 'CCX cannot be placed in that occupied slot.')
+        return
+      }
+      gateIdCounterRef.current += 1
+      finalizeCircuitEdit(placeCcxGateInCircuit(
+        circuitState,
+        circuitState.columns.length,
+        columnIndex,
+        controlA,
+        controlB,
+        qubitIndex,
+        gateDurationDefaults.CCX,
+        gateId,
+      ))
+      setEditorHint('CCXを配置しました。')
+      return
+    }
+
+    if (isControlledGateType(gateType)) {
+      if (pendingCnotControl === null || pendingCnotControl.columnIndex !== columnIndex) {
+        setPendingCnotControl({ columnIndex, qubitIndex })
+        setEditorHint(`${gateType}: choose target in column ${columnIndex + 1}.`)
+        return
+      }
+
+      if (pendingCnotControl.qubitIndex === qubitIndex) {
+        setEditorHint(`${gateType}: control and target must differ.`)
+        return
+      }
+
+      const gateId = `${gateType.toLowerCase()}-${columnIndex}-${pendingCnotControl.qubitIndex}-${qubitIndex}-${gateIdCounterRef.current}`
+      const candidate = createCnotGate(
+        pendingCnotControl.qubitIndex,
+        qubitIndex,
+        gateDurationDefaults[gateType],
+        gateId,
+        gateType,
+      )
+      const placement = canPlaceGateInColumn(circuitState, columnIndex, candidate)
+      if (!placement.valid) {
+        setEditorHint(placement.message ?? `${gateType} cannot be placed in that occupied slot.`)
         return
       }
 
@@ -160,11 +227,50 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
           columnIndex,
           pendingCnotControl.qubitIndex,
           qubitIndex,
-          gateDurationDefaults.CNOT,
+          gateDurationDefaults[gateType],
           gateId,
+          gateType,
         ),
       )
-      setEditorHint('CNOT placed. Click control, then target in the same column.')
+      setEditorHint(`${gateType} placed. Click control, then target in the same column.`)
+      return
+    }
+
+    if (isPairGateType(gateType)) {
+      if (pendingCnotControl === null || pendingCnotControl.columnIndex !== columnIndex) {
+        setPendingCnotControl({ columnIndex, qubitIndex })
+        setEditorHint(`${gateType}: 列 ${columnIndex + 1} で2つ目の量子ビットを選択してください。`)
+        return
+      }
+      if (pendingCnotControl.qubitIndex === qubitIndex) {
+        setEditorHint(`${gateType}: 2つの量子ビットは異なる必要があります。`)
+        return
+      }
+      const gateId = `${gateType.toLowerCase()}-${columnIndex}-${pendingCnotControl.qubitIndex}-${qubitIndex}-${gateIdCounterRef.current}`
+      const candidate = createPairGate(
+        pendingCnotControl.qubitIndex,
+        qubitIndex,
+        gateDurationDefaults[gateType],
+        gateId,
+        gateType,
+      )
+      const placement = canPlaceGateInColumn(circuitState, columnIndex, candidate)
+      if (!placement.valid) {
+        setEditorHint(placement.message ?? `${gateType} cannot be placed in that occupied slot.`)
+        return
+      }
+      gateIdCounterRef.current += 1
+      finalizeCircuitEdit(placePairGateInCircuit(
+        circuitState,
+        circuitState.columns.length,
+        columnIndex,
+        pendingCnotControl.qubitIndex,
+        qubitIndex,
+        gateDurationDefaults[gateType],
+        gateId,
+        gateType,
+      ))
+      setEditorHint(`${gateType}を配置しました。`)
       return
     }
 
@@ -198,6 +304,73 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
 
     finalizeCircuitEdit(removeGateById(circuitState, selectedGateId))
     setEditorHint('Selected gate deleted.')
+  }
+
+  function handleLoadCircuitPreset(preset: 'teleportation' | 'bit_flip_repetition') {
+    const duration = (type: GateType) => gateDurationDefaults[type]
+    const gate = (
+      id: string,
+      type: GateType,
+      targets: number[],
+      controls: number[] = [],
+      extra: Partial<CircuitEditorState['columns'][number]['gates'][number]> = {},
+    ) => ({
+      id,
+      type,
+      targets,
+      controls,
+      params: { duration_us: duration(type) },
+      ...extra,
+    })
+    const columns = preset === 'teleportation'
+      ? [
+          { step: 0, gates: [gate('tele-h-q1', 'H', [1])] },
+          { step: 1, gates: [gate('tele-cnot-a', 'CNOT', [2], [1])] },
+          { step: 2, gates: [gate('tele-cnot-b', 'CNOT', [1], [0])] },
+          { step: 3, gates: [gate('tele-h-q0', 'H', [0])] },
+          { step: 4, gates: [gate('tele-m-q0', 'MEASURE', [0], [], { classical_targets: [0] })] },
+          { step: 5, gates: [gate('tele-m-q1', 'MEASURE', [1], [], { classical_targets: [1] })] },
+          { step: 6, gates: [gate('tele-x-q2', 'X', [2], [], { condition: { bit: 1, value: 1 }, conditions: [{ bit: 1, value: 1 }] })] },
+          { step: 7, gates: [gate('tele-z-q2', 'Z', [2], [], { condition: { bit: 0, value: 1 }, conditions: [{ bit: 0, value: 1 }] })] },
+        ]
+      : [
+          { step: 0, gates: [gate('flip-enc-1', 'CNOT', [1], [0])] },
+          { step: 1, gates: [gate('flip-enc-2', 'CNOT', [2], [0])] },
+          { step: 2, gates: [gate('flip-error', 'X', [1])] },
+          { step: 3, gates: [gate('flip-syndrome-a0', 'CNOT', [3], [0])] },
+          { step: 4, gates: [gate('flip-syndrome-a1', 'CNOT', [3], [1])] },
+          { step: 5, gates: [gate('flip-syndrome-b1', 'CNOT', [4], [1])] },
+          { step: 6, gates: [gate('flip-syndrome-b2', 'CNOT', [4], [2])] },
+          { step: 7, gates: [gate('flip-measure-a', 'MEASURE', [3], [], { classical_targets: [0] })] },
+          { step: 8, gates: [gate('flip-measure-b', 'MEASURE', [4], [], { classical_targets: [1] })] },
+          { step: 9, gates: [gate('flip-correct-q0', 'X', [0], [], { conditions: [{ bit: 0, value: 1 }, { bit: 1, value: 0 }] })] },
+          { step: 10, gates: [gate('flip-correct-q1', 'X', [1], [], { conditions: [{ bit: 0, value: 1 }, { bit: 1, value: 1 }] })] },
+          { step: 11, gates: [gate('flip-correct-q2', 'X', [2], [], { conditions: [{ bit: 0, value: 0 }, { bit: 1, value: 1 }] })] },
+        ]
+    const nextCircuit: CircuitEditorState = {
+      logical_qubits: preset === 'teleportation' ? 3 : 5,
+      classical_bits: 2,
+      initial_states: preset === 'teleportation' ? ['+', 0, 0] : [1, 0, 0, 0, 0],
+      columns,
+    }
+    finalizeCircuitEdit(nextCircuit)
+    setSelectedGateType(null)
+    setEditorHint(preset === 'teleportation'
+      ? '量子テレポーテーション回路を読み込みました。'
+      : '3量子ビット反復符号を読み込みました。X故障を注入済みです。')
+  }
+
+  function handleUpdateSelectedGateTheta(thetaRad: number) {
+    if (!selectedGateId || !Number.isFinite(thetaRad)) {
+      return
+    }
+    finalizeCircuitEdit(updateGateParamsById(
+      circuitState,
+      selectedGateId,
+      { theta_rad: thetaRad },
+    ))
+    setSelectedGateId(selectedGateId)
+    setEditorHint(`角度を ${thetaRad.toFixed(4)} rad に更新しました。`)
   }
 
   function handleClearCircuit() {
@@ -278,21 +451,41 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     }
 
     if (dragPayload.source === 'palette') {
-      const gateId =
-        dragPayload.gateType === 'CNOT'
-          ? `cnot-${columnIndex}-${qubitIndex}-${gateIdCounterRef.current}`
-          : `${dragPayload.gateType.toLowerCase()}-${columnIndex}-${qubitIndex}-${gateIdCounterRef.current}`
+      const gateId = `${dragPayload.gateType.toLowerCase()}-${columnIndex}-${qubitIndex}-${gateIdCounterRef.current}`
       const candidate =
-        dragPayload.gateType === 'CNOT'
+        isMultiControlledGateType(dragPayload.gateType)
+          ? (() => {
+              const placement = resolveCcxDropPlacement(qubitIndex, circuitState.logical_qubits)
+              return createCcxGate(
+                placement.controlA,
+                placement.controlB,
+                placement.targetQubit,
+                gateDurationDefaults.CCX,
+                gateId,
+              )
+            })()
+          : isControlledGateType(dragPayload.gateType)
           ? (() => {
               const placement = resolveCnotDropPlacement(qubitIndex, circuitState.logical_qubits)
               return createCnotGate(
                 placement.controlQubit,
                 placement.targetQubit,
-                gateDurationDefaults.CNOT,
+                gateDurationDefaults[dragPayload.gateType],
                 gateId,
+                dragPayload.gateType,
               )
             })()
+          : isPairGateType(dragPayload.gateType)
+            ? (() => {
+                const placement = resolveCnotDropPlacement(qubitIndex, circuitState.logical_qubits)
+                return createPairGate(
+                  placement.controlQubit,
+                  placement.targetQubit,
+                  gateDurationDefaults[dragPayload.gateType],
+                  gateId,
+                  dragPayload.gateType,
+                )
+              })()
           : createPlacedGate(
               dragPayload.gateType,
               qubitIndex,
@@ -311,15 +504,35 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
 
       gateIdCounterRef.current += 1
       const nextCircuit =
-        dragPayload.gateType === 'CNOT'
+        isMultiControlledGateType(dragPayload.gateType)
+          ? placeCcxGateFromDropInCircuit(
+              circuitState,
+              circuitState.columns.length,
+              columnIndex,
+              qubitIndex,
+              gateDurationDefaults.CCX,
+              gateId,
+            )
+          : isControlledGateType(dragPayload.gateType)
           ? placeCnotGateFromDropInCircuit(
               circuitState,
               circuitState.columns.length,
               columnIndex,
               qubitIndex,
-              gateDurationDefaults.CNOT,
+              gateDurationDefaults[dragPayload.gateType],
               gateId,
+              dragPayload.gateType,
             )
+          : isPairGateType(dragPayload.gateType)
+            ? placePairGateFromDropInCircuit(
+                circuitState,
+                circuitState.columns.length,
+                columnIndex,
+                qubitIndex,
+                gateDurationDefaults[dragPayload.gateType],
+                gateId,
+                dragPayload.gateType,
+              )
           : placeSingleGateInCircuit(
               circuitState,
               circuitState.columns.length,
@@ -350,7 +563,15 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     }
 
     const nextCircuit =
-      dragPayload.gateType === 'CNOT'
+      isMultiControlledGateType(dragPayload.gateType)
+        ? moveCcxGateInCircuit(
+            circuitState,
+            circuitState.columns.length,
+            dragPayload.gateId,
+            columnIndex,
+            qubitIndex,
+          )
+        : isControlledGateType(dragPayload.gateType)
         ? moveCnotGateInCircuit(
             circuitState,
             circuitState.columns.length,
@@ -358,6 +579,14 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
             columnIndex,
             qubitIndex,
           )
+        : isPairGateType(dragPayload.gateType)
+          ? movePairGateInCircuit(
+              circuitState,
+              circuitState.columns.length,
+              dragPayload.gateId,
+              columnIndex,
+              qubitIndex,
+            )
         : moveSingleGateInCircuit(
             circuitState,
             circuitState.columns.length,
@@ -436,9 +665,11 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     handleSelectGateType,
     handleGateSelect,
     handleResetCircuitToBell,
+    handleLoadCircuitPreset,
     handleLogicalQubitsChange,
     handleCircuitSlotClick,
     handleDeleteSelectedGate,
+    handleUpdateSelectedGateTheta,
     handleClearCircuit,
     handleAddCircuitColumn,
     handleRemoveLastCircuitColumn,

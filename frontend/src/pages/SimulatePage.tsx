@@ -1,17 +1,19 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './SimulatePage.css'
 import { CircuitSummaryCard } from '../components/CircuitSummaryCard'
 import { DensityMatrixSummaryCard } from '../components/DensityMatrixSummaryCard'
 import { DiagnosticsCard, type SimulationDiagnostics } from '../components/DiagnosticsCard'
 import { MetricTimeline } from '../components/MetricTimeline'
+import { MeasurementResults } from '../components/MeasurementResults'
 import { ModelInfoPanel } from '../components/ModelInfoPanel'
 import { OutputProbabilities } from '../components/OutputProbabilities'
 import { ParameterPanel } from '../components/ParameterPanel'
 import { RunPanel } from '../components/RunPanel'
 import { ResultDrawer } from '../components/ResultDrawer'
 import { SimulationSummary } from '../components/SimulationSummary'
+import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
 import { uiResponseExample } from '../mock/uiResponseExample'
-import { circuitEditorStateToConfig } from '../utils/circuitConfig'
+import { circuitEditorStateToConfig, type CircuitConfig } from '../utils/circuitConfig'
 import { validateCircuitConfigForRun } from '../utils/circuitValidation'
 import { estimateSimulationCost } from '../utils/simulationCost'
 import { useCircuitContext } from '../context/useCircuitContext'
@@ -19,6 +21,9 @@ import type {
   GateDurationDefaultErrors,
   GateDurationDefaults,
   GateAwareEvolutionMethod,
+  GateCompilationMode,
+  MeasurementOptions,
+  SimulationBackend,
   SimulateRequestParameterErrors,
   SimulateRequestParameters,
   SnapshotOptions,
@@ -27,36 +32,34 @@ import type {
   SimulationSummaryData,
 } from '../types/simulation'
 
-type StatusItem = {
-  label: string
-  value: string
-}
-
 type SimulatePageProps = {
   diagnostics: SimulationDiagnostics
   result: SimulationSummaryData
-  statusItems: StatusItem[]
   gateDurationDefaults: GateDurationDefaults
   onGateDurationDefaultsChange: (gateDurationDefaults: GateDurationDefaults) => void
-  onBackToHome: () => void
   onOpenCircuitStudio: () => void
   onOpenStateExplorer: () => void
-  onOpenHelp: () => void
-  onOpenPulseLab: () => void
-  onSuccessfulResponse: (response: SimulationResponse) => void
+  previousResponse: SimulationResponse | null
+  onSuccessfulResponse: (response: SimulationResponse, circuitConfig: CircuitConfig) => void
 }
 
 type SimulateRequestPayload = {
-  simulation_backend: 'python_dense'
+  simulation_backend: SimulationBackend
   evolution_method: GateAwareEvolutionMethod
+  compilation_mode: GateCompilationMode
   input_mode: 'physical'
   circuit_config: ReturnType<typeof circuitEditorStateToConfig>
   gate_duration_defaults: GateDurationDefaults
+  measurement_options: MeasurementOptions
   snapshot_options: SnapshotOptions
   parameters: SimulateRequestParameters
 }
 
 type RequestErrorKind = 'none' | 'api' | 'validation'
+type CompletionNotice = {
+  title: string
+  detail: string
+}
 const API_EXAMPLE_TIMEOUT_MS = 10000
 const RUN_REQUEST_MIN_TIMEOUT_MS = 15000
 const RUN_REQUEST_TIMEOUT_PER_STEP_MS = 25
@@ -83,6 +86,11 @@ const initialSnapshotOptions: SnapshotOptions = {
   include_after_circuit: true,
 }
 
+const initialMeasurementOptions: MeasurementOptions = {
+  shots: 1024,
+  seed: 0,
+}
+
 const requiredResponseKeys: Array<keyof SimulationResponse> = [
   'circuit',
   'parameters',
@@ -91,6 +99,7 @@ const requiredResponseKeys: Array<keyof SimulationResponse> = [
   'summary',
   'timeline',
   'output_probabilities',
+  'measurement',
   'run',
   'warnings',
   'issues',
@@ -119,6 +128,7 @@ function hasRequiredResponseKeys(value: unknown): value is SimulationResponse {
     isRecord(candidate.summary) &&
     isResponseArray(candidate.timeline) &&
     isRecord(candidate.output_probabilities) &&
+    isRecord(candidate.measurement) &&
     isRecord(candidate.run) &&
     isResponseArray(candidate.warnings) &&
     isResponseArray(candidate.issues)
@@ -220,6 +230,18 @@ function validateGateDurationDefaults(gateDurations: GateDurationDefaults): {
   validatePositive('CNOT', 'CNOT の操作時間')
   validateNonNegative('MEASURE', '測定の操作時間')
 
+  validatePositive('Y', 'Y gate duration')
+  validateNonNegative('S', 'S gate duration')
+  validateNonNegative('T', 'T gate duration')
+  validatePositive('RX', 'RX gate duration')
+  validatePositive('RY', 'RY gate duration')
+  validatePositive('CZ', 'CZ gate duration')
+  validatePositive('SWAP', 'SWAP gate duration')
+  validatePositive('RZ', 'RZ gate duration')
+  validatePositive('CP', 'CP gate duration')
+  validatePositive('CCX', 'CCX gate duration')
+  validatePositive('MESSAGE', 'MESSAGE gate duration')
+
   const firstMessage = Object.values(errors)[0] ?? null
   return { errors, firstMessage }
 }
@@ -314,19 +336,20 @@ function normalizeApiDetail(detail: unknown): string | null {
 }
 
 export function SimulatePage({
-  statusItems,
   gateDurationDefaults,
   onGateDurationDefaultsChange,
-  onBackToHome,
   onOpenCircuitStudio,
   onOpenStateExplorer,
-  onOpenHelp,
-  onOpenPulseLab,
+  previousResponse,
   onSuccessfulResponse,
 }: SimulatePageProps) {
-  const { circuitState } = useCircuitContext()
-  const [response, setResponse] = useState<SimulationResponse>(uiResponseExample)
-  const [loadStatus, setLoadStatus] = useState<SimulationLoadStatus>('fixture')
+  const { circuitState, handleLoadCircuitPreset } = useCircuitContext()
+  const [response, setResponse] = useState<SimulationResponse>(
+    () => previousResponse ?? uiResponseExample,
+  )
+  const [loadStatus, setLoadStatus] = useState<SimulationLoadStatus>(
+    previousResponse === null ? 'fixture' : 'api',
+  )
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [lastFetchUrl, setLastFetchUrl] = useState<string>('')
   const [lastFetchStartedAt, setLastFetchStartedAt] = useState<string>('')
@@ -334,21 +357,33 @@ export function SimulatePage({
   const [frontendRunFinishedAt, setFrontendRunFinishedAt] = useState<string>('')
   const [frontendRunElapsedMs, setFrontendRunElapsedMs] = useState<number | null>(null)
   const [frontendRunTimeoutMs, setFrontendRunTimeoutMs] = useState<number | null>(null)
-  const [lastFetchResult, setLastFetchResult] = useState<string>('idle')
-  const [latestSourceLabel, setLatestSourceLabel] = useState<string>('Static fixture')
+  const [lastFetchResult, setLastFetchResult] = useState<string>(
+    previousResponse === null ? 'idle' : 'success',
+  )
+  const [latestSourceLabel, setLatestSourceLabel] = useState<string>(
+    previousResponse === null ? 'Static fixture' : 'Previous simulation',
+  )
   const [activeRequestLabel, setActiveRequestLabel] = useState<string>('')
   const [simulationParameters, setSimulationParameters] =
     useState<SimulateRequestParameters>(initialSimulationParameters)
   const [evolutionMethod, setEvolutionMethod] =
     useState<GateAwareEvolutionMethod>('fixed_step_rk4')
+  const [compilationMode, setCompilationMode] =
+    useState<GateCompilationMode>('logical_direct')
+  const [simulationBackend, setSimulationBackend] =
+    useState<SimulationBackend>('python_dense')
   const [parameterErrors, setParameterErrors] =
     useState<SimulateRequestParameterErrors>({})
   const [gateDurationErrors, setGateDurationErrors] =
     useState<GateDurationDefaultErrors>({})
   const [snapshotOptions, setSnapshotOptions] = useState<SnapshotOptions>(initialSnapshotOptions)
+  const [measurementOptions, setMeasurementOptions] = useState<MeasurementOptions>(
+    initialMeasurementOptions,
+  )
   const [customSnapshotTimesInput, setCustomSnapshotTimesInput] = useState('')
   const [snapshotOptionsError, setSnapshotOptionsError] = useState<string | null>(null)
   const [requestErrorKind, setRequestErrorKind] = useState<RequestErrorKind>('none')
+  const [completionNotice, setCompletionNotice] = useState<CompletionNotice | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const requestIdRef = useRef(0)
   const mountedRef = useRef(true)
@@ -424,7 +459,6 @@ export function SimulatePage({
       }
 
       setResponse(parsed as SimulationResponse)
-      onSuccessfulResponse(parsed as SimulationResponse)
       setLoadStatus('api')
       setLatestSourceLabel('API example')
       setLastFetchResult('success')
@@ -536,11 +570,13 @@ export function SimulatePage({
 
     try {
       const payload: SimulateRequestPayload = {
-        simulation_backend: 'python_dense',
+        simulation_backend: simulationBackend,
         evolution_method: evolutionMethod,
+        compilation_mode: compilationMode,
         input_mode: 'physical',
         circuit_config: circuitConfig,
         gate_duration_defaults: gateDurationDefaults,
+        measurement_options: measurementOptions,
         snapshot_options: requestedSnapshotOptions,
         parameters: simulationParameters,
       }
@@ -578,7 +614,7 @@ export function SimulatePage({
       }
 
       setResponse(parsed as SimulationResponse)
-      onSuccessfulResponse(parsed as SimulationResponse)
+      onSuccessfulResponse(parsed as SimulationResponse, circuitConfig)
       setLoadStatus('api')
       setLatestSourceLabel('POST /api/simulate')
       setLastFetchResult('success')
@@ -586,6 +622,10 @@ export function SimulatePage({
       setRequestErrorKind('none')
       setFrontendRunFinishedAt(new Date().toISOString())
       setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
+      setCompletionNotice({
+        title: 'シミュレーションが完了しました',
+        detail: `${parsed.run.selected_backend} / ${evolutionMethod}`,
+      })
     } catch (error) {
       if (!mountedRef.current || requestId !== requestIdRef.current) {
         return
@@ -613,18 +653,10 @@ export function SimulatePage({
     }
   }
 
-  const loadExampleOnMount = useEffectEvent(() => {
-    void loadExampleFromApi()
-  })
-
   useEffect(() => {
     mountedRef.current = true
-    const frameId = window.requestAnimationFrame(() => {
-      loadExampleOnMount()
-    })
 
     return () => {
-      window.cancelAnimationFrame(frameId)
       mountedRef.current = false
       abortControllerRef.current?.abort()
     }
@@ -677,36 +709,7 @@ export function SimulatePage({
             現在のバックエンドとシミュレーション結果を確認できます。
           </p>
         </div>
-        <div className="simulate-page__header-actions">
-          <button className="simulate-page__back simulate-page__back--active" type="button">
-            シミュレーションラボ
-          </button>
-          <button className="simulate-page__back" type="button" onClick={onOpenCircuitStudio}>
-            回路スタジオ
-          </button>
-          <button className="simulate-page__back" type="button" onClick={onOpenStateExplorer}>
-            状態エクスプローラー
-          </button>
-          <button className="simulate-page__back" type="button" onClick={onOpenPulseLab}>
-            Pulse Lab
-          </button>
-          <button className="simulate-page__back" type="button" onClick={onOpenHelp}>
-            ヘルプ / Q&amp;A
-          </button>
-          <button className="simulate-page__back" type="button" onClick={onBackToHome}>
-            ホームに戻る
-          </button>
-        </div>
       </header>
-
-      <section className="simulate-page__status-grid" aria-label="シミュレーションの状態">
-        {statusItems.map((item) => (
-          <article className="simulate-page__status-card" key={item.label}>
-            <span className="simulate-page__status-label">{item.label}</span>
-            <strong className="simulate-page__status-value">{item.value}</strong>
-          </article>
-        ))}
-      </section>
 
       <div className="simulate-page__core-stack">
         <CircuitSummaryCard
@@ -714,6 +717,34 @@ export function SimulatePage({
           actionLabel="回路スタジオで編集"
           onAction={onOpenCircuitStudio}
         />
+        <section className="simulate-page__snapshot-controls" aria-labelledby="algorithm-presets-title">
+          <div className="simulate-page__snapshot-heading">
+            <div>
+              <span className="simulate-page__section-eyebrow">アルゴリズム</span>
+              <h2 id="algorithm-presets-title">量子誤り訂正を試す</h2>
+            </div>
+          </div>
+          <p className="simulate-page__snapshot-help">
+            3量子ビット反復符号は q1 に X故障を注入し、2ビットのシンドロームから補正します。
+            回路を読み込んだ後、「シミュレーションを実行」で結果を確認できます。
+          </p>
+          <div className="simulate-page__snapshot-grid">
+            <button
+              type="button"
+              className="simulate-page__preset-button"
+              onClick={() => handleLoadCircuitPreset('bit_flip_repetition')}
+            >
+              反復符号を読み込む
+            </button>
+            <button
+              type="button"
+              className="simulate-page__preset-button"
+              onClick={() => handleLoadCircuitPreset('teleportation')}
+            >
+              テレポーテーションを読み込む
+            </button>
+          </div>
+        </section>
         <ParameterPanel
           parameters={response.parameters}
           editableParameters={simulationParameters}
@@ -723,6 +754,48 @@ export function SimulatePage({
           onEditableParametersChange={handleSimulationParametersChange}
           onGateDurationDefaultsChange={handleGateDurationDefaultsChange}
         />
+        <section className="simulate-page__snapshot-controls" aria-labelledby="measurement-controls-title">
+          <div className="simulate-page__snapshot-heading">
+            <div>
+              <span className="simulate-page__section-eyebrow">測定</span>
+              <h2 id="measurement-controls-title">最終読み出しのshots</h2>
+            </div>
+          </div>
+          <p className="simulate-page__snapshot-help">
+            最終状態を計算基底で有限回測定します。同じseedでは同じカウントを再現できます。
+            回路中のMゲートは、結果を保存しない非選択測定として密度行列へ作用します。
+          </p>
+          <div className="simulate-page__snapshot-grid">
+            <label>
+              shots
+              <input
+                type="number"
+                min={1}
+                max={100000}
+                step={1}
+                value={measurementOptions.shots}
+                onChange={(event) => setMeasurementOptions((current) => ({
+                  ...current,
+                  shots: clampInteger(event.currentTarget.valueAsNumber, 1, 100000),
+                }))}
+              />
+            </label>
+            <label>
+              seed
+              <input
+                type="number"
+                min={0}
+                max={4294967295}
+                step={1}
+                value={measurementOptions.seed}
+                onChange={(event) => setMeasurementOptions((current) => ({
+                  ...current,
+                  seed: clampInteger(event.currentTarget.valueAsNumber, 0, 4294967295),
+                }))}
+              />
+            </label>
+          </div>
+        </section>
         <section className="simulate-page__snapshot-controls" aria-labelledby="snapshot-controls-title">
           <div className="simulate-page__snapshot-heading">
             <div>
@@ -816,7 +889,11 @@ export function SimulatePage({
           frontendRunElapsedMs={frontendRunElapsedMs}
           frontendRunTimeoutMs={frontendRunTimeoutMs}
           evolutionMethod={evolutionMethod}
+          compilationMode={compilationMode}
+          simulationBackend={simulationBackend}
           onEvolutionMethodChange={setEvolutionMethod}
+          onCompilationModeChange={setCompilationMode}
+          onSimulationBackendChange={setSimulationBackend}
           onReloadApiExample={() => {
             void loadExampleFromApi()
           }}
@@ -825,7 +902,7 @@ export function SimulatePage({
           }}
         />
         <SimulationSummary summary={response.summary} />
-        <MetricTimeline timeline={response.timeline} />
+        <MetricTimeline timeline={response.timeline} stateSnapshots={response.state_snapshots} />
       </div>
 
       <div className="simulate-page__drawer-stack">
@@ -883,14 +960,33 @@ export function SimulatePage({
           outputProbabilities={response.output_probabilities}
           qubitCount={response.circuit.qubit_count}
         />
+        <MeasurementResults
+          measurement={response.measurement}
+          qubitCount={response.circuit.qubit_count}
+        />
         <DensityMatrixSummaryCard
           response={response}
           onOpenStateExplorer={onOpenStateExplorer}
         />
         <DiagnosticsCard diagnostics={response.diagnostics} rates={response.rates} />
       </div>
+      {completionNotice ? (
+        <SimulationCompletionPopup
+          mode="gate-aware"
+          title={completionNotice.title}
+          detail={completionNotice.detail}
+          onDismiss={() => setCompletionNotice(null)}
+        />
+      ) : null}
     </main>
   )
+}
+
+function clampInteger(value: number, minimum: number, maximum: number): number {
+  if (!Number.isFinite(value)) {
+    return minimum
+  }
+  return Math.min(maximum, Math.max(minimum, Math.round(value)))
 }
 
 function getRunRequestTimeoutMs(

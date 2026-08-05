@@ -6,6 +6,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from math import pi, sqrt
 
+import numpy as np
+
 from core.capabilities import normalize_gate_type
 from core.circuit_model import GateOperation
 from core.internal_profiling import active_internal_profile, elapsed_ms, timer_start
@@ -36,9 +38,21 @@ X: Matrix = (
     (0.0 + 0.0j, 1.0 + 0.0j),
     (1.0 + 0.0j, 0.0 + 0.0j),
 )
+Y: Matrix = (
+    (0.0 + 0.0j, 0.0 - 1.0j),
+    (0.0 + 1.0j, 0.0 + 0.0j),
+)
 Z: Matrix = (
     (1.0 + 0.0j, 0.0 + 0.0j),
     (0.0 + 0.0j, -1.0 + 0.0j),
+)
+S: Matrix = (
+    (1.0 + 0.0j, 0.0 + 0.0j),
+    (0.0 + 0.0j, 0.0 + 1.0j),
+)
+T: Matrix = (
+    (1.0 + 0.0j, 0.0 + 0.0j),
+    (0.0 + 0.0j, complex(sqrt(0.5), sqrt(0.5))),
 )
 SIGMA_MINUS: Matrix = (
     (0.0 + 0.0j, 1.0 + 0.0j),
@@ -53,9 +67,20 @@ DEFAULT_GATE_DURATIONS_US = {
     "I": 0.0,
     "H": 0.02,
     "X": 0.02,
+    "Y": 0.02,
     "Z": 0.0,
+    "S": 0.0,
+    "T": 0.0,
+    "RX": 0.02,
+    "RY": 0.02,
+    "RZ": 0.02,
     "CNOT": 0.20,
+    "CZ": 0.20,
+    "SWAP": 0.20,
+    "CP": 0.20,
+    "CCX": 0.40,
     "MEASURE": 0.0,
+    "MESSAGE": 0.04,
 }
 INVOLUTION_TOLERANCE = 1e-9
 
@@ -90,6 +115,143 @@ def expand_cnot(control: int, target: int, n_qubits: int) -> Matrix:
     return _freeze(rows)
 
 
+def expand_cz(control: int, target: int, n_qubits: int) -> Matrix:
+    """Return a controlled-Z matrix with q0 as the most significant bit."""
+
+    _require_qubit_index(control, n_qubits)
+    _require_qubit_index(target, n_qubits)
+    if control == target:
+        raise ValueError("CZ control and target must be different")
+    dimension = 2 ** n_qubits
+    rows = [[0.0 + 0.0j for _ in range(dimension)] for _ in range(dimension)]
+    for index in range(dimension):
+        bits = _index_to_bits(index, n_qubits)
+        rows[index][index] = (
+            -1.0 + 0.0j
+            if bits[control] == "1" and bits[target] == "1"
+            else 1.0 + 0.0j
+        )
+    return _freeze(rows)
+
+
+def expand_swap(first: int, second: int, n_qubits: int) -> Matrix:
+    """Return a SWAP matrix with q0 as the most significant bit."""
+
+    _require_qubit_index(first, n_qubits)
+    _require_qubit_index(second, n_qubits)
+    if first == second:
+        raise ValueError("SWAP targets must be different")
+    dimension = 2 ** n_qubits
+    rows = [[0.0 + 0.0j for _ in range(dimension)] for _ in range(dimension)]
+    for index in range(dimension):
+        bits = list(_index_to_bits(index, n_qubits))
+        bits[first], bits[second] = bits[second], bits[first]
+        destination = int("".join(bits), 2)
+        rows[destination][index] = 1.0 + 0.0j
+    return _freeze(rows)
+
+
+def rz_matrix(theta_rad: float) -> Matrix:
+    """Return RZ(theta)=exp(-i theta Z / 2)."""
+
+    theta = float(theta_rad)
+    if not np.isfinite(theta):
+        raise ValueError("theta_rad must be finite")
+    return (
+        (complex(np.exp(-0.5j * theta)), 0.0 + 0.0j),
+        (0.0 + 0.0j, complex(np.exp(0.5j * theta))),
+    )
+
+
+def rx_matrix(theta_rad: float) -> Matrix:
+    """Return RX(theta)=exp(-i theta X / 2)."""
+
+    theta = float(theta_rad)
+    if not np.isfinite(theta):
+        raise ValueError("theta_rad must be finite")
+    cosine = float(np.cos(theta / 2.0))
+    sine = float(np.sin(theta / 2.0))
+    return (
+        (cosine + 0.0j, complex(0.0, -sine)),
+        (complex(0.0, -sine), cosine + 0.0j),
+    )
+
+
+def ry_matrix(theta_rad: float) -> Matrix:
+    """Return RY(theta)=exp(-i theta Y / 2)."""
+
+    theta = float(theta_rad)
+    if not np.isfinite(theta):
+        raise ValueError("theta_rad must be finite")
+    cosine = float(np.cos(theta / 2.0))
+    sine = float(np.sin(theta / 2.0))
+    return (
+        (cosine + 0.0j, -sine + 0.0j),
+        (sine + 0.0j, cosine + 0.0j),
+    )
+
+
+def message_matrix(animation_parameter_t: float) -> Matrix:
+    """Ordered Message(t): exp(-iYt), then X^t (global phase omitted)."""
+
+    t = float(animation_parameter_t)
+    if not np.isfinite(t):
+        raise ValueError("animation_parameter_t must be finite")
+    # RY(theta)=exp(-i theta Y / 2); X^t is RX(pi*t) up to global phase.
+    return matmul(rx_matrix(pi * t), ry_matrix(2.0 * t))
+
+
+def expand_controlled_phase(
+    control: int,
+    target: int,
+    n_qubits: int,
+    theta_rad: float,
+) -> Matrix:
+    """Return diag(1, 1, 1, exp(i theta)) on the selected qubits."""
+
+    _require_qubit_index(control, n_qubits)
+    _require_qubit_index(target, n_qubits)
+    if control == target:
+        raise ValueError("CP control and target must be different")
+    theta = float(theta_rad)
+    if not np.isfinite(theta):
+        raise ValueError("theta_rad must be finite")
+    dimension = 2 ** n_qubits
+    phase = complex(np.exp(1.0j * theta))
+    rows = [[0.0 + 0.0j for _ in range(dimension)] for _ in range(dimension)]
+    for index in range(dimension):
+        bits = _index_to_bits(index, n_qubits)
+        rows[index][index] = (
+            phase
+            if bits[control] == "1" and bits[target] == "1"
+            else 1.0 + 0.0j
+        )
+    return _freeze(rows)
+
+
+def expand_ccx(
+    control_a: int,
+    control_b: int,
+    target: int,
+    n_qubits: int,
+) -> Matrix:
+    """Return a doubly-controlled X (Toffoli) matrix."""
+
+    for qubit in (control_a, control_b, target):
+        _require_qubit_index(qubit, n_qubits)
+    if len({control_a, control_b, target}) != 3:
+        raise ValueError("CCX controls and target must be different")
+    dimension = 2 ** n_qubits
+    rows = [[0.0 + 0.0j for _ in range(dimension)] for _ in range(dimension)]
+    for index in range(dimension):
+        bits = list(_index_to_bits(index, n_qubits))
+        if bits[control_a] == "1" and bits[control_b] == "1":
+            bits[target] = "0" if bits[target] == "1" else "1"
+        destination = int("".join(bits), 2)
+        rows[destination][index] = 1.0 + 0.0j
+    return _freeze(rows)
+
+
 def initial_density_matrix(initial_states: list[str]) -> Matrix:
     """Build a tensor-product density matrix for 0, 1, +, and - states."""
 
@@ -105,9 +267,117 @@ def apply_unitary_to_density(rho: Matrix, u: Matrix) -> Matrix:
     return matmul(matmul(u, rho), adjoint(u))
 
 
+def reduced_density_matrix(rho: Matrix, n_qubits: int, target_qubit: int) -> Matrix:
+    """Return the target qubit's reduced density matrix (q0 is MSB)."""
+
+    _require_qubit_index(target_qubit, n_qubits)
+    dimension = 2 ** n_qubits
+    if len(rho) != dimension or any(len(row) != dimension for row in rho):
+        raise ValueError("rho dimension must match n_qubits")
+    reduced = [[0.0 + 0.0j for _ in range(2)] for _ in range(2)]
+    for row in range(dimension):
+        row_bits = _index_to_bits(row, n_qubits)
+        for column in range(dimension):
+            column_bits = _index_to_bits(column, n_qubits)
+            if all(row_bits[q] == column_bits[q] for q in range(n_qubits) if q != target_qubit):
+                reduced[int(row_bits[target_qubit])][int(column_bits[target_qubit])] += rho[row][column]
+    return _freeze(reduced)
+
+
+def apply_non_selective_computational_measurement(
+    rho: Matrix,
+    targets: Sequence[int],
+    n_qubits: int,
+) -> Matrix:
+    """Apply sum_m P_m rho P_m while discarding measurement outcomes."""
+
+    measured_targets = tuple(dict.fromkeys(int(target) for target in targets))
+    for target in measured_targets:
+        _require_qubit_index(target, n_qubits)
+    dimension = 2 ** n_qubits
+    if len(rho) != dimension or any(len(row) != dimension for row in rho):
+        raise ValueError("rho dimension must match n_qubits")
+    if not measured_targets:
+        return tuple(tuple(complex(value) for value in row) for row in rho)
+
+    rows: list[list[complex]] = []
+    for row_index, row in enumerate(rho):
+        row_bits = _index_to_bits(row_index, n_qubits)
+        measured_row: list[complex] = []
+        for column_index, value in enumerate(row):
+            column_bits = _index_to_bits(column_index, n_qubits)
+            keeps_coherence = all(
+                row_bits[target] == column_bits[target]
+                for target in measured_targets
+            )
+            measured_row.append(complex(value) if keeps_coherence else 0.0 + 0.0j)
+        rows.append(measured_row)
+    return _freeze(rows)
+
+
+def computational_measurement_outcomes(
+    rho: Matrix,
+    targets: Sequence[int],
+    n_qubits: int,
+) -> dict[str, tuple[float, Matrix]]:
+    """Return normalized conditional states for every computational outcome.
+
+    This is the instrument counterpart to
+    :func:`apply_non_selective_computational_measurement`. Outcomes with zero
+    probability are retained with a zero probability and the original matrix
+    as a harmless placeholder, so callers can build a stable classical
+    register schema without special-casing basis labels.
+    """
+
+    measured_targets = tuple(dict.fromkeys(int(target) for target in targets))
+    for target in measured_targets:
+        _require_qubit_index(target, n_qubits)
+    dimension = 2 ** n_qubits
+    if len(rho) != dimension or any(len(row) != dimension for row in rho):
+        raise ValueError("rho dimension must match n_qubits")
+    if not measured_targets:
+        return {"": (1.0, _freeze(rho))}
+
+    outcomes: dict[str, tuple[float, Matrix]] = {}
+    for outcome_index in range(2 ** len(measured_targets)):
+        outcome = format(outcome_index, f"0{len(measured_targets)}b")
+        selected = set()
+        for basis_index in range(dimension):
+            bits = _index_to_bits(basis_index, n_qubits)
+            if all(bits[target] == outcome[position]
+                   for position, target in enumerate(measured_targets)):
+                selected.add(basis_index)
+        projected = _freeze(tuple(
+            tuple(
+                complex(rho[row][column])
+                if row in selected and column in selected
+                else 0.0 + 0.0j
+                for column in range(dimension)
+            )
+            for row in range(dimension)
+        ))
+        probability = max(0.0, float(trace(projected).real))
+        if probability > 1e-15:
+            normalized = _freeze(tuple(
+                tuple(value / probability for value in row)
+                for row in projected
+            ))
+        else:
+            normalized = _freeze(rho)
+            probability = 0.0
+        outcomes[outcome] = (probability, normalized)
+    return outcomes
+
+
 def apply_gate_operation(rho: Matrix, gate: GateOperation, n_qubits: int) -> Matrix:
     """Apply one supported circuit operation to a density matrix."""
 
+    if normalize_gate_type(gate.type) == "MEASURE":
+        return apply_non_selective_computational_measurement(
+            rho,
+            gate.targets,
+            n_qubits,
+        )
     return apply_unitary_to_density(rho, gate_unitary(gate, n_qubits))
 
 
@@ -146,18 +416,75 @@ def gate_unitary(gate: GateOperation, n_qubits: int) -> Matrix:
         if len(gate.controls or []) != 1 or len(gate.targets) != 1:
             raise ValueError("CNOT requires exactly one control and one target")
         return expand_cnot(gate.controls[0], gate.targets[0], n_qubits)
+    if gate_type == "CZ":
+        if len(gate.controls or []) != 1 or len(gate.targets) != 1:
+            raise ValueError("CZ requires exactly one control and one target")
+        return expand_cz(gate.controls[0], gate.targets[0], n_qubits)
+    if gate_type == "CP":
+        if len(gate.controls or []) != 1 or len(gate.targets) != 1:
+            raise ValueError("CP requires exactly one control and one target")
+        return expand_controlled_phase(
+            gate.controls[0],
+            gate.targets[0],
+            n_qubits,
+            _gate_angle_rad(gate),
+        )
+    if gate_type == "CCX":
+        if len(gate.controls or []) != 2 or len(gate.targets) != 1:
+            raise ValueError("CCX requires exactly two controls and one target")
+        return expand_ccx(
+            gate.controls[0], gate.controls[1], gate.targets[0], n_qubits
+        )
+    if gate_type == "SWAP":
+        if gate.controls or len(gate.targets) != 2:
+            raise ValueError("SWAP requires exactly two targets and no controls")
+        return expand_swap(gate.targets[0], gate.targets[1], n_qubits)
+    if gate_type in {"RX", "RY", "RZ"}:
+        if len(gate.targets) != 1 or gate.controls:
+            raise ValueError(
+                f"{gate_type} requires exactly one target and no controls"
+            )
+        rotation = {
+            "RX": rx_matrix,
+            "RY": ry_matrix,
+            "RZ": rz_matrix,
+        }[gate_type](_gate_angle_rad(gate))
+        return expand_single_qubit_gate(
+            rotation,
+            gate.targets[0],
+            n_qubits,
+        )
+    if gate_type == "MESSAGE":
+        if len(gate.targets) != 1 or gate.controls:
+            raise ValueError("MESSAGE requires exactly one target and no controls")
+        t = float((gate.params or {}).get("animation_parameter_t", 0.0)) % 1.0
+        return expand_single_qubit_gate(
+            message_matrix(t),
+            gate.targets[0],
+            n_qubits,
+        )
 
     one_qubit_gate = {
         "I": I,
         "H": H,
         "X": X,
+        "Y": Y,
         "Z": Z,
+        "S": S,
+        "T": T,
     }.get(gate_type)
     if one_qubit_gate is None:
         raise ValueError(f"unsupported gate type: {gate.type}")
     if len(gate.targets) != 1:
         raise ValueError(f"{gate.type} requires exactly one target")
     return expand_single_qubit_gate(one_qubit_gate, gate.targets[0], n_qubits)
+
+
+def _gate_angle_rad(gate: GateOperation) -> float:
+    theta = float((gate.params or {}).get("theta_rad", pi / 2.0))
+    if not np.isfinite(theta):
+        raise ValueError(f"{gate.type} theta_rad must be finite")
+    return theta
 
 
 def column_unitary(column, n_qubits: int) -> Matrix:
@@ -185,6 +512,82 @@ def effective_hamiltonian_from_involution(
     if _max_abs_difference(matmul(unitary, unitary), identity) > INVOLUTION_TOLERANCE:
         raise ValueError("column unitary must satisfy U^2 = I for effective Hamiltonian mode")
     return scale(pi / (2.0 * duration_us), subtract(identity, unitary))
+
+
+def effective_hamiltonian_from_unitary(
+    unitary: Matrix,
+    duration_us: float,
+) -> Matrix:
+    """Return a Hermitian generator for any small unitary gate column.
+
+    Existing Hermitian involutions retain their original generator and hence
+    their established within-gate trajectory.  Other unitary matrices use the
+    principal eigenphase logarithm: if ``U v = exp(i theta) v``, then
+    ``H v = -theta / duration * v`` so ``exp(-i H duration) = U``.
+    """
+
+    duration = float(duration_us)
+    if duration <= 0.0 or not np.isfinite(duration):
+        raise ValueError("duration_us must be finite and positive")
+    array = np.asarray(unitary, dtype=np.complex128)
+    if array.ndim != 2 or array.shape[0] == 0 or array.shape[0] != array.shape[1]:
+        raise ValueError("unitary must be a non-empty square matrix")
+    if not np.all(np.isfinite(array.real)) or not np.all(np.isfinite(array.imag)):
+        raise ValueError("unitary must contain finite values")
+
+    identity = np.eye(array.shape[0], dtype=np.complex128)
+    if np.max(np.abs(array.conj().T @ array - identity)) > INVOLUTION_TOLERANCE:
+        raise ValueError("matrix must be unitary to build an effective Hamiltonian")
+
+    if (
+        np.max(np.abs(array.conj().T - array)) <= INVOLUTION_TOLERANCE
+        and np.max(np.abs(array @ array - identity)) <= INVOLUTION_TOLERANCE
+    ):
+        return effective_hamiltonian_from_involution(unitary, duration)
+
+    eigenvalues, eigenvectors = np.linalg.eig(array)
+    if np.linalg.cond(eigenvectors) > 1.0 / INVOLUTION_TOLERANCE:
+        raise ValueError("unitary eigensystem is too ill-conditioned")
+    eigenphases = np.angle(eigenvalues)
+    generator = (
+        eigenvectors
+        @ np.diag(-eigenphases / duration)
+        @ np.linalg.inv(eigenvectors)
+    )
+    generator = 0.5 * (generator + generator.conj().T)
+    reconstructed = _unitary_array_from_hermitian(generator, duration)
+    if np.max(np.abs(reconstructed - array)) > 5.0 * INVOLUTION_TOLERANCE:
+        raise ValueError("failed to reconstruct unitary from effective Hamiltonian")
+    return _freeze(generator.tolist())
+
+
+def unitary_from_hamiltonian(
+    hamiltonian: Matrix,
+    duration_us: float,
+) -> Matrix:
+    """Return ``exp(-i H duration)`` for a small Hermitian Hamiltonian."""
+
+    duration = float(duration_us)
+    if duration < 0.0 or not np.isfinite(duration):
+        raise ValueError("duration_us must be finite and non-negative")
+    array = np.asarray(hamiltonian, dtype=np.complex128)
+    if array.ndim != 2 or array.shape[0] == 0 or array.shape[0] != array.shape[1]:
+        raise ValueError("hamiltonian must be a non-empty square matrix")
+    if np.max(np.abs(array - array.conj().T)) > INVOLUTION_TOLERANCE:
+        raise ValueError("hamiltonian must be Hermitian")
+    return _freeze(_unitary_array_from_hermitian(array, duration).tolist())
+
+
+def _unitary_array_from_hermitian(
+    hamiltonian: np.ndarray,
+    duration_us: float,
+) -> np.ndarray:
+    eigenvalues, eigenvectors = np.linalg.eigh(hamiltonian)
+    return (
+        eigenvectors
+        @ np.diag(np.exp(-1.0j * eigenvalues * duration_us))
+        @ eigenvectors.conj().T
+    )
 
 
 def output_probabilities(rho: Matrix, n_qubits: int) -> dict[str, float]:

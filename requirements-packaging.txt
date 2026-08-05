@@ -1,0 +1,2 @@
+# Build-time dependency only. End users do not need this package.
+pyinstaller==6.18.0

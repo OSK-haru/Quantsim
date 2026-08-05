@@ -101,8 +101,34 @@
   color: #e2f3f0;
 }
 
+.pulse-parameters__model-note {
+  margin: 8px 0 0;
+  color: #8fa8aa;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
 .pulse-parameters__environment .pulse-parameters__grid {
   margin-top: 15px;
+}
+
+.pulse-parameters__device-profile {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.8fr) minmax(0, 2fr);
+  gap: 18px;
+  align-items: end;
+  margin-top: 15px;
+}
+
+.pulse-parameters__device-profile p {
+  margin: 0 0 10px;
+  color: #8fa8aa;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.pulse-parameters__device-profile strong {
+  color: #e1b776;
 }
 
 .pulse-parameters__expert {
@@ -134,7 +160,8 @@
 
   .pulse-parameters__heading,
   .pulse-parameters__selectors,
-  .pulse-parameters__grid {
+  .pulse-parameters__grid,
+  .pulse-parameters__device-profile {
     grid-template-columns: 1fr;
   }
 }

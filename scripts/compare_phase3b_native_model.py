@@ -174,7 +174,9 @@ def main() -> int:
             residuals.append((predicted - measured_p1) ** 2)
         detuning_scan.append({
             "detuning_cycles_per_us": detuning,
-            "detuning_mhz": detuning * 1000.0,
+            # cycles/us is numerically identical to MHz, so the kHz value is
+            # the cycles/us value scaled by 1000.
+            "detuning_khz": detuning * 1000.0,
             "rmse": math.sqrt(sum(residuals) / len(residuals)),
         })
     detuning_scan.sort(key=lambda item: item["rmse"])

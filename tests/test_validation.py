@@ -92,7 +92,7 @@ class ValidationTest(unittest.TestCase):
                         step=0,
                         gates=[
                             GateOperation(
-                                type="T",
+                                type="TOFFOLI",
                                 targets=[0],
                                 controls=[],
                                 params={},
@@ -122,12 +122,12 @@ class ValidationTest(unittest.TestCase):
         self.assertNotIn("TOO_MANY_LOGICAL_QUBITS", {issue.code for issue in issues})
         self.assertFalse(has_blocking_issues(issues))
 
-    def test_five_logical_qubits_is_rejected(self) -> None:
+    def test_nineteen_logical_qubits_is_rejected(self) -> None:
         issues = validate_simulation_config(
             SimulationConfig(
                 circuit=CircuitConfig(
-                    logical_qubits=5,
-                    initial_states=["0", "0", "0", "0", "0"],
+                    logical_qubits=19,
+                    initial_states=["0"] * 19,
                     columns=[],
                 )
             )

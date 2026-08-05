@@ -46,14 +46,23 @@ It should not drift toward:
 
 ## Current development stage
 
-We are building a 1-week MVP first.
+The original 1-week MVP (1 qubit, single H gate, no CNOT, no persistence —
+recorded historically in `SPEC_MVP.md`) is complete. The product has since
+expanded well beyond that scope: React/FastAPI, 1-18 logical qubits (noisy
+density-matrix evolution up to 5, statevector path above that), a 2-4 qubit
+Circuit Studio with CNOT and other multi-qubit gates, circuit JSON
+import/export, Pulse Baseline A, and the qutrit and coupled transmon-pair
+pulse extensions. See `docs_for_develop/README.md` for current implementation
+status; do not treat the original MVP non-goals as current scope limits.
 
-The MVP exists to validate:
+The MVP validated:
 1. whether the internal model is understandable,
 2. whether environmental parameters visibly affect the result,
 3. whether the UI can communicate “effective circuit lifetime” intuitively.
 
-The remaining full development period is about 4+ months, but current work should stay strictly within MVP scope unless explicitly expanded.
+Current work should still respect the project's core design philosophy below
+(understanding over raw computational power) even though the MVP's specific
+scope limits no longer apply.
 
 ## Core design philosophy
 
@@ -120,10 +129,14 @@ The agent must stop and request approval before:
 - modifying files outside the workspace
 
 ## Dependency policy
-Approved stack only:
-- Python
-- QuTiP
-- NumPy
-- Plotly/matplotlib
+Approved stack (see `docs_for_develop/README.md` and `requirements-runtime.txt`
+/ `frontend/package.json` for the exact pinned versions):
+- Python, NumPy — simulation core
+- FastAPI, Pydantic, Uvicorn — API layer
+- React, TypeScript, Vite — web UI
+- QuTiP, SciPy, Matplotlib — independent validation only, not production
+  computation
+- Rust, PyO3, maturin — optional `rust_dense_preview` acceleration, not
+  required for the standard Python path
 
 Do not add new top-level dependencies without approval.

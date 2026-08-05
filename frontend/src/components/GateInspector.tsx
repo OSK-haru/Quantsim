@@ -8,6 +8,7 @@ type GateInspectorProps = {
   gateDurationDefaults: GateDurationDefaults
   onDeleteSelected: () => void
   onReveal: () => void
+  onThetaChange: (thetaRad: number) => void
 }
 
 type GateLocation = {
@@ -48,12 +49,20 @@ export function GateInspector({
   gateDurationDefaults,
   onDeleteSelected,
   onReveal,
+  onThetaChange,
 }: GateInspectorProps) {
   const location = findGateLocation(circuit, selectedGateId)
 
   if (!location) {
     return null
   }
+  const supportsTheta = (
+    location.gate.type === 'RX'
+    || location.gate.type === 'RY'
+    || location.gate.type === 'RZ'
+    || location.gate.type === 'CP'
+  )
+  const thetaRad = location.gate.params?.theta_rad ?? Math.PI / 2
 
   return (
     <aside className="gate-inspector" aria-label="選択中のゲートインスペクター">
@@ -79,6 +88,33 @@ export function GateInspector({
           <dt>操作時間</dt>
           <dd>{getGateDuration(location.gate, gateDurationDefaults).toFixed(3)} us</dd>
         </div>
+        {supportsTheta ? (
+          <div>
+            <dt>角度 θ</dt>
+            <dd>
+              <input
+                key={location.gate.id}
+                className="gate-inspector__angle-input"
+                type="number"
+                step="0.01"
+                defaultValue={thetaRad}
+                aria-label={`${location.gate.type} angle in radians`}
+                onBlur={(event) => {
+                  const value = event.currentTarget.valueAsNumber
+                  if (Number.isFinite(value)) {
+                    onThetaChange(value)
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.currentTarget.blur()
+                  }
+                }}
+              />{' '}
+              rad
+            </dd>
+          </div>
+        ) : null}
         <div className="gate-inspector__debug">
           <dt>エディター ID</dt>
           <dd>{location.gate.id}</dd>

@@ -10,8 +10,6 @@ import { validateCircuitConfigForRun } from '../utils/circuitValidation'
 type CircuitStudioPageProps = {
   gateDurationDefaults: GateDurationDefaults
   onOpenSimulation: () => void
-  onOpenStateExplorer: () => void
-  onOpenHelp: () => void
 }
 
 function getCircuitCounts(circuit: CircuitEditorState) {
@@ -19,7 +17,7 @@ function getCircuitCounts(circuit: CircuitEditorState) {
     (summary, column) => {
       for (const gate of column.gates) {
         summary.gates += 1
-        if (gate.type === 'CNOT') {
+        if (gate.type === 'CNOT' || gate.type === 'CZ' || gate.type === 'CP' || gate.type === 'CCX' || gate.type === 'SWAP') {
           summary.cnots += 1
         }
       }
@@ -45,8 +43,6 @@ function formatStudioValidationMessage(message: string | null) {
 export function CircuitStudioPage({
   gateDurationDefaults,
   onOpenSimulation,
-  onOpenStateExplorer,
-  onOpenHelp,
 }: CircuitStudioPageProps) {
   const circuit = useCircuitContext()
   const [validationStatus, setValidationStatus] = useState<string | null>(null)
@@ -79,15 +75,7 @@ export function CircuitStudioPage({
             <span>量子ビット {circuit.circuitState.logical_qubits}</span>
             <span>列 {circuit.circuitState.columns.length}</span>
             <span>ゲート {counts.gates}</span>
-            <span>CNOT {counts.cnots}</span>
-          </div>
-          <div className="circuit-studio-page__header-actions" aria-label="ナビゲーション">
-            <button className="circuit-studio-page__nav" type="button" onClick={onOpenStateExplorer}>
-              Gate-aware 状態エクスプローラー
-            </button>
-            <button className="circuit-studio-page__nav" type="button" onClick={onOpenHelp}>
-              ヘルプ
-            </button>
+          <span>2量子ビットゲート {counts.cnots}</span>
           </div>
         </div>
       </header>
@@ -112,6 +100,7 @@ export function CircuitStudioPage({
           onUndo={circuit.handleUndoCircuit}
           onRedo={circuit.handleRedoCircuit}
           onDeleteSelected={circuit.handleDeleteSelectedGate}
+          onUpdateSelectedGateTheta={circuit.handleUpdateSelectedGateTheta}
           onClearCircuit={circuit.handleClearCircuit}
           onAddColumn={circuit.handleAddCircuitColumn}
           onRemoveLastColumn={circuit.handleRemoveLastCircuitColumn}

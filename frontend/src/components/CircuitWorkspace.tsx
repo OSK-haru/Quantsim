@@ -10,10 +10,17 @@ import type { CircuitEditorState, CircuitGate, DragGatePayload, GateType } from 
 import type { GateDurationDefaults } from '../types/simulation'
 import { useCircuitViewport } from '../hooks/useCircuitViewport'
 import { exportCircuitConfigBundleJson } from '../utils/circuitConfigTransfer'
+import {
+  isControlledGateType,
+  isMultiControlledGateType,
+  isMultiQubitGateType,
+  isPairGateType,
+} from '../utils/circuitEditing'
 
 type PendingCnotControl = {
   columnIndex: number
   qubitIndex: number
+  additionalQubits?: number[]
 }
 
 type CircuitWorkspaceProps = {
@@ -35,6 +42,7 @@ type CircuitWorkspaceProps = {
   onUndo: () => void
   onRedo: () => void
   onDeleteSelected: () => void
+  onUpdateSelectedGateTheta: (thetaRad: number) => void
   onClearCircuit: () => void
   onAddColumn: () => void
   onRemoveLastColumn: () => void
@@ -80,8 +88,11 @@ function formatGateLocation(gate: CircuitGate) {
   const targetLabel = gate.targets.map((target) => `q${target}`).join(', ')
   const controlLabel = gate.controls?.map((control) => `q${control}`).join(', ')
 
-  if (gate.type === 'CNOT' && controlLabel) {
+  if ((isControlledGateType(gate.type) || isMultiControlledGateType(gate.type)) && controlLabel) {
     return `${controlLabel} -> ${targetLabel}`
+  }
+  if (isPairGateType(gate.type)) {
+    return targetLabel
   }
 
   return targetLabel
@@ -120,8 +131,12 @@ function getWorkspaceStatus({
       : `パレットから ${dragPayload.gateType} をドラッグ中`
   }
 
-  if (selectedGateType === 'CNOT' && pendingCnotControl) {
-    return `q${pendingCnotControl.qubitIndex} の CNOT 対象を選択してください`
+  if (selectedGateType && isMultiQubitGateType(selectedGateType) && pendingCnotControl) {
+    const selectedQubits = [
+      pendingCnotControl.qubitIndex,
+      ...(pendingCnotControl.additionalQubits ?? []),
+    ].map((qubit) => `q${qubit}`).join(', ')
+    return `${selectedQubits} に続く ${selectedGateType} の量子ビットを選択してください`
   }
 
   const selectedGate = getSelectedGateInfo(circuit, selectedGateId)
@@ -156,6 +171,7 @@ export function CircuitWorkspace({
   onUndo,
   onRedo,
   onDeleteSelected,
+  onUpdateSelectedGateTheta,
   onClearCircuit,
   onAddColumn,
   onRemoveLastColumn,
@@ -374,6 +390,7 @@ export function CircuitWorkspace({
           selectedGateId={selectedGateId}
           gateDurationDefaults={gateDurationDefaults}
           onDeleteSelected={onDeleteSelected}
+          onThetaChange={onUpdateSelectedGateTheta}
           onReveal={viewport.revealSelectedColumn}
         />
       ) : null}

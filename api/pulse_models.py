@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from core.capabilities import (
+    DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL,
 )
@@ -360,6 +361,41 @@ class QutritPulseEnvelopeRequest(StrictPulseModel):
         return 2.0 * self.sigma_us * self.truncation_sigma
 
 
+class PulseComplexInputValue(StrictPulseModel):
+    real: float
+    imag: float
+
+    @field_validator("real", "imag")
+    @classmethod
+    def validate_finite_complex_part(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("density-matrix values must be finite")
+        return value
+
+
+class QuasiStaticDetuningNoiseRequest(StrictPulseModel):
+    """Shot-to-shot Gaussian detuning that stays fixed within each shot."""
+
+    enabled: bool = False
+    sigma_detuning_rad_per_us: float = Field(default=0.0, ge=0.0)
+    quadrature_order: Literal[3, 5, 7, 9] = 5
+
+    @field_validator("sigma_detuning_rad_per_us")
+    @classmethod
+    def validate_finite_sigma(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("quasi-static detuning sigma must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def validate_enabled_sigma(self) -> "QuasiStaticDetuningNoiseRequest":
+        if self.enabled and self.sigma_detuning_rad_per_us <= 0.0:
+            raise ValueError(
+                "enabled quasi-static noise requires a positive detuning sigma"
+            )
+        return self
+
+
 class QutritPulseSimulateRequest(StrictPulseModel):
     """Validated request contract for the experimental qutrit path."""
 
@@ -367,6 +403,7 @@ class QutritPulseSimulateRequest(StrictPulseModel):
         DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL
     )
     initial_state: Literal["0", "1", "2"] = "0"
+    initial_density_matrix: list[list[PulseComplexInputValue]] | None = None
     anharmonicity_mhz: float = Field(lt=0.0)
     pulse: QutritPulseEnvelopeRequest
     total_simulation_time_us: float = Field(gt=0.0)
@@ -375,6 +412,9 @@ class QutritPulseSimulateRequest(StrictPulseModel):
         "fixed_step_rk4"
     )
     environment: QutritPulseEnvironmentRequest
+    quasi_static_noise: QuasiStaticDetuningNoiseRequest = Field(
+        default_factory=QuasiStaticDetuningNoiseRequest
+    )
     snapshot_options: PulseSnapshotOptionsRequest = Field(
         default_factory=PulseSnapshotOptionsRequest
     )
@@ -411,11 +451,128 @@ class QutritPulseSimulateRequest(StrictPulseModel):
                 self.environment.qubit_frequency_ghz,
                 self.anharmonicity_mhz,
             )
+        if self.initial_density_matrix is not None:
+            matrix = self.initial_density_matrix
+            if len(matrix) != 3 or any(len(row) != 3 for row in matrix):
+                raise ValueError("initial_density_matrix must be a 3x3 matrix")
+            trace_real = sum(matrix[index][index].real for index in range(3))
+            trace_imag = sum(matrix[index][index].imag for index in range(3))
+            if abs(trace_real - 1.0) > 1e-7 or abs(trace_imag) > 1e-7:
+                raise ValueError("initial_density_matrix must have unit trace")
+            for row in range(3):
+                for column in range(3):
+                    left = matrix[row][column]
+                    right = matrix[column][row]
+                    if (
+                        abs(left.real - right.real) > 1e-7
+                        or abs(left.imag + right.imag) > 1e-7
+                    ):
+                        raise ValueError("initial_density_matrix must be Hermitian")
+        return self
+
+
+class CoupledTransmonPairPulseSimulateRequest(StrictPulseModel):
+    """Bounded two-transmon request using a 3x3 local truncation."""
+
+    model_id: Literal[
+        "driven_coupled_transmon_pair_rwa_experimental_v1"
+    ] = DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL
+    initial_state: Literal["00", "01", "10", "11"] = "00"
+    anharmonicities_mhz: list[float] = Field(min_length=2, max_length=2)
+    detunings_rad_per_us: list[float] = Field(min_length=2, max_length=2)
+    exchange_coupling_rad_per_us: float = Field(ge=0.0)
+    drive_target: Literal[0, 1] = 0
+    pulse: QutritPulseEnvelopeRequest
+    secondary_pulse: QutritPulseEnvelopeRequest | None = None
+    quasi_static_detuning_sigmas_rad_per_us: list[float] = Field(
+        default_factory=lambda: [0.0, 0.0],
+        min_length=2,
+        max_length=2,
+    )
+    quasi_static_detuning_correlation: float = Field(
+        default=0.0,
+        ge=-1.0,
+        le=1.0,
+    )
+    quasi_static_quadrature_order: Literal[3, 5] = 3
+    total_simulation_time_us: float = Field(gt=0.0)
+    backend: Literal["python", "rust", "auto"] = "auto"
+    evolution_method: Literal["fixed_step_rk4", "explicit_cptp"] = (
+        "fixed_step_rk4"
+    )
+    environment: QutritPulseEnvironmentRequest
+    snapshot_options: PulseSnapshotOptionsRequest = Field(
+        default_factory=PulseSnapshotOptionsRequest
+    )
+
+    @field_validator(
+        "anharmonicities_mhz",
+        "detunings_rad_per_us",
+        "quasi_static_detuning_sigmas_rad_per_us",
+    )
+    @classmethod
+    def validate_pair_values(cls, values: list[float]) -> list[float]:
+        if any(not math.isfinite(value) for value in values):
+            raise ValueError("pair transmon values must be finite")
+        return values
+
+    @field_validator("quasi_static_detuning_sigmas_rad_per_us")
+    @classmethod
+    def validate_pair_noise_sigmas(cls, values: list[float]) -> list[float]:
+        if any(value < 0.0 for value in values):
+            raise ValueError("pair quasi-static sigmas must be non-negative")
+        return values
+
+    @field_validator("anharmonicities_mhz")
+    @classmethod
+    def validate_pair_anharmonicities(cls, values: list[float]) -> list[float]:
+        if any(value >= 0.0 for value in values):
+            raise ValueError("pair anharmonicities must be negative")
+        return values
+
+    @field_validator("exchange_coupling_rad_per_us")
+    @classmethod
+    def validate_pair_coupling(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("exchange coupling must be finite")
+        return value
+
+    @field_validator("quasi_static_detuning_correlation")
+    @classmethod
+    def validate_pair_noise_correlation(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("pair quasi-static correlation must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def validate_pair_timing(self) -> "CoupledTransmonPairPulseSimulateRequest":
+        if not math.isfinite(self.total_simulation_time_us):
+            raise ValueError("total_simulation_time_us must be finite")
+        pulse_duration = max(
+            self.pulse.derived_pulse_duration_us,
+            self.secondary_pulse.derived_pulse_duration_us
+            if self.secondary_pulse is not None else 0.0,
+        )
+        if pulse_duration > self.total_simulation_time_us:
+            raise ValueError("pulse duration must not exceed total time")
+        if any(
+            time_us > self.total_simulation_time_us
+            for time_us in self.snapshot_options.custom_times_us
+        ):
+            raise ValueError("snapshot times must not exceed total time")
+        if isinstance(self.environment, QutritPulsePhysicalEnvironmentRequest):
+            for anharmonicity in self.anharmonicities_mhz:
+                transition_12_frequency_ghz(
+                    self.environment.qubit_frequency_ghz,
+                    anharmonicity,
+                )
         return self
 
 
 PulseApiRequest = Annotated[
-    PulseSimulateRequest | QutritPulseSimulateRequest,
+    PulseSimulateRequest
+    | QutritPulseSimulateRequest
+    | CoupledTransmonPairPulseSimulateRequest,
     Field(discriminator="model_id"),
 ]
 
@@ -599,6 +756,7 @@ class QutritPulseModelIdentityResponse(StrictPulseModel):
 
 class QutritPulseInputSummaryResponse(StrictPulseModel):
     initial_state: Literal["0", "1", "2"]
+    initial_state_source: Literal["basis_state", "density_matrix"]
     anharmonicity_mhz: float
     shape: Literal["square", "gaussian"]
     amplitude_mode: Literal["target_rotation_angle", "peak_amplitude"]
@@ -611,6 +769,9 @@ class QutritPulseInputSummaryResponse(StrictPulseModel):
     phase_rad: float
     detuning_rad_per_us: float
     drag_beta_us: float
+    quasi_static_noise_enabled: bool
+    quasi_static_detuning_sigma_rad_per_us: float
+    quasi_static_quadrature_order: int
     sample_count: int
 
 
@@ -682,6 +843,7 @@ class QutritPulseDiagnosticsResponse(StrictPulseModel):
     maximum_cleaned_trace_error: float
     maximum_cleaned_hermiticity_error: float
     minimum_cleaned_eigenvalue: float
+    quasi_static_noise: dict[str, object]
 
 
 class QutritPulseSimulateResponse(StrictPulseModel):
@@ -700,4 +862,38 @@ class QutritPulseSimulateResponse(StrictPulseModel):
     limitations: list[str]
 
 
-PulseApiResponse = PulseSimulateResponse | QutritPulseSimulateResponse
+class CoupledTransmonPairTrajectoryPointResponse(StrictPulseModel):
+    time_us: float
+    segment: Literal["pulse", "idle"]
+    joint_populations: dict[str, float]
+    computational_population: float
+    leakage_probability: float
+    population_sum_error: float
+    purity: float
+    density_matrix: list[list[PulseComplexValue]]
+    raw_physicality: PulsePhysicalityResponse
+    cleaned_physicality: PulsePhysicalityResponse
+    cleanup_correction_norm: float
+
+
+class CoupledTransmonPairPulseSimulateResponse(StrictPulseModel):
+    contract_version: Literal["pulse-coupled-pair-v1"]
+    model: dict[str, object]
+    input: dict[str, object]
+    rates: list[QutritPulseRatesResponse]
+    step_policy: dict[str, object]
+    sample_times_us: list[float]
+    trajectory: list[CoupledTransmonPairTrajectoryPointResponse]
+    leakage: QutritLeakageResponse
+    pulse_end: CoupledTransmonPairTrajectoryPointResponse
+    final: CoupledTransmonPairTrajectoryPointResponse
+    diagnostics: dict[str, object]
+    warnings: list[str]
+    limitations: list[str]
+
+
+PulseApiResponse = (
+    PulseSimulateResponse
+    | QutritPulseSimulateResponse
+    | CoupledTransmonPairPulseSimulateResponse
+)

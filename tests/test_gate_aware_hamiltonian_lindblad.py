@@ -156,7 +156,7 @@ class GateAwareHamiltonianLindbladTest(unittest.TestCase):
         )
         self.assertEqual(
             result.diagnostics["hamiltonian_mode"],
-            "effective_involution_generator",
+            "effective_unitary_spectral_generator_v2",
         )
         self.assertIn("total_gate_duration_us", result.diagnostics)
         self.assertIn("idle_duration_us", result.diagnostics)

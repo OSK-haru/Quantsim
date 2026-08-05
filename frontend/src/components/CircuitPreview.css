@@ -322,6 +322,27 @@
   fill: rgba(30, 41, 59, 0.96);
 }
 
+.circuit-preview__gate--annotation {
+  fill: rgba(91, 207, 190, 0.2);
+  stroke: #5bcfbe;
+  stroke-dasharray: 3 2;
+}
+
+.circuit-preview__gate-hit-area--annotation {
+  fill: rgba(91, 207, 190, 0.08);
+}
+
+.circuit-preview__gate--active-operation {
+  fill: rgba(96, 165, 250, 0.42);
+  stroke: #93c5fd;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 7px rgba(94, 234, 212, 0.75));
+}
+
+.circuit-preview__gate-hit-area--active-operation {
+  fill: rgba(94, 234, 212, 0.12);
+}
+
 .circuit-preview__gate-label {
   fill: #f8fafc;
   font-size: 14px;

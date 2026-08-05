@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "registry_id": "phase3b_hardware_dataset_registry_v1",
+  "selection_date": "2026-07-29",
+  "status": "DATASET_CONTRACT_FROZEN_COLLECTION_NOT_STARTED",
+  "decision": "PRIMARY_FIRST_PARTY_COLLECTION_WITH_EXTERNAL_STRESS_EVIDENCE",
+  "selection_policy": {
+    "required": [
+      "real superconducting-qubit hardware observations",
+      "traceable primary publication or provider documentation",
+      "persistent identifier or provider job identifier",
+      "raw observations rather than figure-only values",
+      "documented circuits or pulse sequences",
+      "documented units and basis conventions",
+      "calibration and holdout separation",
+      "checksums for frozen files",
+      "rights review before redistribution",
+      "failed and excluded observations remain auditable"
+    ],
+    "disqualifiers_for_formal_holdout": [
+      "simulated-only data",
+      "figure digitization without source values",
+      "missing circuit or timing semantics",
+      "calibration and validation reuse without disclosure",
+      "unknown device provenance",
+      "post-hoc threshold selection",
+      "raw data modified without a transformation log"
+    ]
+  },
+  "primary_dataset": {
+    "dataset_id": "quantascope_hardware_audit_dataset_v1",
+    "short_name": "QHAD-v1",
+    "dataset_type": "first_party_preregistered_hardware_collection",
+    "provider": "IBM Quantum",
+    "status": "selected_collection_not_started",
+    "purpose": "Formal Phase 3B holdout validation of the gate-aware model",
+    "provider_documentation": [
+      {
+        "title": "IBM Quantum plans overview",
+        "url": "https://quantum.cloud.ibm.com/docs/en/guides/plans-overview"
+      },
+      {
+        "title": "IBMBackend properties",
+        "url": "https://quantum.cloud.ibm.com/docs/en/api/qiskit-ibm-runtime/0.33/ibm-backend"
+      },
+      {
+        "title": "Retrieve and save job results",
+        "url": "https://quantum.cloud.ibm.com/docs/en/guides/save-jobs"
+      },
+      {
+        "title": "Monitoring, calibrations, and benchmarking",
+        "url": "https://quantum.cloud.ibm.com/docs/en/guides/calibration-jobs"
+      }
+    ],
+    "access_policy": {
+      "account": "user-owned IBM Quantum account",
+      "secrets": "environment or local provider store only",
+      "repository_secret_storage": "prohibited",
+      "network_execution": "requires separate explicit approval",
+      "cost_limit": "must be fixed before pilot submission",
+      "retry_limit": "must be finite and fixed before pilot submission"
+    },
+    "publication_policy": {
+      "target_repository": "Zenodo or equivalent DOI-issuing repository",
+      "publish_after": "formal audit and rights review",
+      "required_publication_files": [
+        "README",
+        "LICENSE or rights statement",
+        "machine-readable manifest",
+        "raw counts or bit arrays",
+        "calibration snapshots",
+        "compiled circuits",
+        "analysis code",
+        "checksums",
+        "data dictionary",
+        "known limitations"
+      ]
+    },
+    "required_provenance_fields": [
+      "provider",
+      "device_id",
+      "job_id",
+      "execution_started_at_utc",
+      "execution_finished_at_utc",
+      "calibration_snapshot_at_utc",
+      "backend_properties",
+      "compiled_circuit",
+      "qubit_mapping",
+      "shot_count",
+      "raw_counts",
+      "software_versions",
+      "quantascope_commit"
+    ],
+    "required_observable_families": [
+      "readout_confusion",
+      "t1_relaxation",
+      "ramsey_xy",
+      "idle_population",
+      "idle_coherence",
+      "single_qubit_gate_with_idle",
+      "bell_distribution"
+    ],
+    "data_splits": {
+      "split_freeze_time": "before pilot hardware results are inspected",
+      "pilot_reusable_as_formal_holdout": false,
+      "calibration_case_ids": [
+        "readout_confusion_calibration",
+        "t1_parameter_subset",
+        "ramsey_parameter_subset"
+      ],
+      "holdout_case_ids": [
+        "t1_delay_holdout",
+        "ramsey_delay_holdout",
+        "idle_initial_state_holdout",
+        "single_qubit_sequence_holdout",
+        "bell_distribution_holdout"
+      ],
+      "minimum_session_policy": "pilot and formal holdout must use separate jobs; multiple formal sessions are preferred",
+      "parameter_refit_after_holdout": "prohibited for formal PASS"
+    },
+    "documentation_fields": [
+      "one_sentence_dataset_identity",
+      "why_the_dataset_is_trusted",
+      "what_was_used_for_calibration",
+      "what_was held out",
+      "primary_metric_and_uncertainty",
+      "result_against_ideal_baseline",
+      "result_against_simple_noise_baseline",
+      "known_failure_cases",
+      "hardware_and_time_scope",
+      "claims_allowed",
+      "claims_prohibited",
+      "citation"
+    ]
+  },
+  "external_evidence_datasets": [
+    {
+      "dataset_id": "npl_non_markovian_driven_qubit_zenodo_8363718_v1",
+      "role": "model_discrepancy_stress_dataset",
+      "status": "selected_metadata_frozen_download_pending",
+      "title": "Modelling non-Markovian noise in driven superconducting qubits dataset",
+      "publisher": "Zenodo",
+      "authors": [
+        "Abhishek Agarwal",
+        "Lachlan P. Lindoy",
+        "Deep Lall",
+        "Francois Jamet",
+        "Ivan Rungger"
+      ],
+      "doi": "10.5281/zenodo.8363718",
+      "record_url": "https://zenodo.org/records/8363718",
+      "associated_paper": {
+        "title": "Modelling non-Markovian noise in driven superconducting qubits",
+        "doi": "10.1088/2058-9565/ad3d7e",
+        "arxiv": "2306.13021"
+      },
+      "source_files": [
+        {
+          "name": "modelling_non_markovian_noise_in_driven_superconducting_qubits_experiment_results.csv",
+          "size_display_at_selection": "832.5 kB",
+          "checksum_type": "md5",
+          "checksum": "442e5b6ac866909d42d62a1610568995"
+        },
+        {
+          "name": "README.md",
+          "size_display_at_selection": "1.1 kB",
+          "checksum_type": "md5",
+          "checksum": "b92d7a514ec78bb260e51375ef4fdea4"
+        }
+      ],
+      "why_selected": [
+        "real superconducting-qubit observations",
+        "immutable DOI and file checksums",
+        "small machine-readable CSV plus README",
+        "associated peer-reviewed publication",
+        "contains idle and driven behavior",
+        "explicitly exposes a known Markov-model limitation"
+      ],
+      "formal_use": "stress-test and limitation audit, not primary PASS dataset",
+      "rights": {
+        "license_id": null,
+        "license_status": "not clearly stated on the inspected record",
+        "redistribution_allowed": false,
+        "policy": "do not commit or republish raw files until rights are confirmed"
+      }
+    },
+    {
+      "dataset_id": "aalto_single_shot_readout_zenodo_7773981_v1",
+      "role": "t1_ramsey_spam_auxiliary_dataset",
+      "status": "selected_metadata_frozen_download_deferred",
+      "title": "Data for Single-Shot Readout of a Superconducting Qubit Using a Thermal Detector",
+      "publisher": "Zenodo",
+      "authors": [
+        "Andras Marton Gunyho",
+        "Suman Kundu",
+        "Jian Ma",
+        "Wei Liu",
+        "Sakari Niemela",
+        "Giacomo Catto",
+        "Vasilii Vadimov",
+        "Visa Vesterinen",
+        "Priyank Singh",
+        "Qiming Chen",
+        "Mikko Mottonen"
+      ],
+      "doi": "10.5281/zenodo.7773981",
+      "record_url": "https://zenodo.org/records/7773981",
+      "associated_paper": {
+        "title": "Single-shot readout of a superconducting qubit using a thermal detector",
+        "doi": "10.1038/s41928-024-01147-7",
+        "arxiv": "2303.03668"
+      },
+      "source_files": [
+        {
+          "name": "data-for-single-shot-readout-of-a-superconducting-qubit-using-a-thermal-detector.zip",
+          "size_display_at_selection": "873.3 MB",
+          "checksum_type": "md5",
+          "checksum": "6939d3ddc7d47e73f42f12cdc3ef0c60"
+        }
+      ],
+      "why_selected": [
+        "real transmon T1 and Ramsey characterization",
+        "single-shot readout distributions useful for SPAM policy",
+        "immutable DOI and archive checksum",
+        "associated peer-reviewed publication",
+        "paper documents averaging counts and thermal-cycle caveats"
+      ],
+      "formal_use": "auxiliary T1, Ramsey, and SPAM methodology evidence",
+      "limitations": [
+        "specialized thermal-detector readout",
+        "large archive",
+        "reported thermal cycle separates some characterization data",
+        "not a matched Bell-circuit holdout dataset"
+      ],
+      "rights": {
+        "license_id": null,
+        "license_status": "not clearly stated on the inspected record",
+        "redistribution_allowed": false,
+        "policy": "do not commit or republish raw files until rights are confirmed"
+      }
+    }
+  ],
+  "rejected_or_deferred_candidates": [
+    {
+      "name": "QDataSet",
+      "decision": "rejected_for_phase3b_hardware_validation",
+      "reason": "simulation-derived rather than real-hardware observations",
+      "reference": "https://doi.org/10.1038/s41597-022-01639-1"
+    },
+    {
+      "name": "Decoherence benchmarking of superconducting qubits",
+      "decision": "deferred",
+      "reason": "underlying data and code are available only on request",
+      "reference": "https://doi.org/10.1038/s41534-019-0168-5"
+    },
+    {
+      "name": "Demonstrating real-time and low-latency quantum error correction",
+      "decision": "deferred_for_primary_validation",
+      "reason": "excellent raw QEC provenance but circuit scope is not matched to the gate-aware primary endpoints",
+      "reference": "https://zenodo.org/records/15364358"
+    }
+  ],
+  "next_actions": [
+    "resolve the gate-aware explicit-CPTP versus validated-RK4 execution-method gate",
+    "freeze pilot cost, job, shot, timeout, and retry budgets",
+    "freeze exact circuits, delay grids, bit order, and transpilation policy",
+    "create a provider-neutral raw-data schema and manifest",
+    "run a low-cost pilot that is permanently excluded from formal holdout",
+    "review pilot data quality and freeze numerical acceptance thresholds",
+    "run formal calibration and holdout jobs in separate sessions",
+    "publish QHAD-v1 with DOI after rights and secret review"
+  ]
+}

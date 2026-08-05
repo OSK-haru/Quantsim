@@ -18,6 +18,9 @@ DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL = (
 DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL = (
     "driven_transmon_qutrit_rwa_experimental_v1"
 )
+DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL = (
+    "driven_coupled_transmon_pair_rwa_experimental_v1"
+)
 SUPPORTED_SIMULATION_MODELS = frozenset({
     DEFAULT_SIMULATION_MODEL,
     POST_CIRCUIT_DEGRADATION_MODEL,
@@ -27,17 +30,25 @@ SUPPORTED_SIMULATION_MODELS = frozenset({
 SUPPORTED_PULSE_MODELS = frozenset({
     DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL,
+    DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL,
 })
 DECLARED_PULSE_MODELS = frozenset({
     DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL,
+    DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL,
 })
 PULSE_MODEL_STATUSES = {
     DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL: "available",
     DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL: "available",
+    DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL: "experimental",
 }
-SUPPORTED_GATES = frozenset({"I", "H", "X", "Z", "CNOT", "MEASURE"})
-MAX_LOGICAL_QUBITS = 4
+SUPPORTED_GATES = frozenset({
+    "I", "H", "X", "Y", "Z", "S", "T", "RX", "RY", "RZ",
+    "CNOT", "CZ", "CP", "CCX", "SWAP", "MEASURE", "MESSAGE",
+})
+MAX_LOGICAL_QUBITS = 18
+MAX_DENSITY_MATRIX_QUBITS = 5
+MAX_STATEVECTOR_QUBITS = 18
 
 
 def normalize_gate_type(gate_type: str) -> str:
@@ -58,4 +69,6 @@ def core_capabilities() -> dict[str, object]:
         "pulse_model_statuses": dict(PULSE_MODEL_STATUSES),
         "supported_gates": sorted(SUPPORTED_GATES),
         "max_logical_qubits": MAX_LOGICAL_QUBITS,
+        "max_density_matrix_qubits": MAX_DENSITY_MATRIX_QUBITS,
+        "max_statevector_qubits": MAX_STATEVECTOR_QUBITS,
     }

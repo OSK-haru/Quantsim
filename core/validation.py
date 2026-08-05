@@ -79,6 +79,14 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
             "Provide exactly one initial state per logical qubit.",
         ))
 
+    if circuit.classical_bits < 0 or circuit.classical_bits > 32:
+        issues.append(_error(
+            "INVALID_CLASSICAL_BITS",
+            "classical_bits must be between 0 and 32.",
+            f"Received classical_bits={circuit.classical_bits!r}",
+            "Set classical_bits to the number of available classical register bits.",
+        ))
+
     for column in circuit.columns:
         for gate in column.gates:
             gate_type = normalize_gate_type(gate.type)
@@ -87,9 +95,9 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                     "UNSUPPORTED_GATE",
                     "Gate type is not supported.",
                     f"Received gate type={gate.type!r} at step {column.step}.",
-                    "Use one of I, H, X, Z, CNOT, or Measure.",
+                    "Use one of I, H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX, SWAP, or Measure.",
                 ))
-            elif gate_type in {"I", "H", "X", "Z", "MEASURE"} and len(gate.targets) != 1:
+            elif gate_type in {"I", "H", "X", "Y", "Z", "S", "T", "RX", "RY", "RZ", "MEASURE"} and len(gate.targets) != 1:
                 issues.append(_error(
                     "GATE_REQUIRES_SINGLE_TARGET",
                     f"{gate.type} requires exactly one target qubit.",
@@ -124,38 +132,124 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                         "Set controls to qubit indices from 0 to logical_qubits - 1.",
                     ))
 
-            if gate_type == "CNOT":
+            if gate_type in {"CNOT", "CZ", "CP"}:
                 if len(gate.controls or []) != 1:
                     issues.append(_error(
-                        "CNOT_REQUIRES_CONTROL",
-                        "CNOT requires exactly one control qubit.",
+                        f"{gate_type}_REQUIRES_CONTROL",
+                        f"{gate_type} requires exactly one control qubit.",
                         (
-                            f"Gate CNOT at step {column.step} has controls "
+                            f"Gate {gate_type} at step {column.step} has controls "
                             f"{gate.controls!r}."
                         ),
-                        "Set exactly one control qubit for CNOT.",
+                        f"Set exactly one control qubit for {gate_type}.",
                     ))
                 if len(gate.targets) != 1:
                     issues.append(_error(
-                        "CNOT_REQUIRES_TARGET",
-                        "CNOT requires exactly one target qubit.",
+                        f"{gate_type}_REQUIRES_TARGET",
+                        f"{gate_type} requires exactly one target qubit.",
                         (
-                            f"Gate CNOT at step {column.step} has targets "
+                            f"Gate {gate_type} at step {column.step} has targets "
                             f"{gate.targets!r}."
                         ),
-                        "Set exactly one target qubit for CNOT.",
+                        f"Set exactly one target qubit for {gate_type}.",
                     ))
                 for control in gate.controls or []:
                     if control in gate.targets:
                         issues.append(_error(
-                            "CNOT_CONTROL_EQUALS_TARGET",
-                            "CNOT control and target must be different qubits.",
+                            f"{gate_type}_CONTROL_EQUALS_TARGET",
+                            f"{gate_type} control and target must be different qubits.",
                             (
-                                f"Gate CNOT at step {column.step} uses qubit "
+                                f"Gate {gate_type} at step {column.step} uses qubit "
                                 f"{control} as both control and target."
                             ),
-                            "Choose different qubit indices for CNOT control and target.",
+                            f"Choose different qubit indices for {gate_type} control and target.",
                         ))
+            elif gate_type == "CCX":
+                controls = list(gate.controls or [])
+                if len(controls) != 2:
+                    issues.append(_error(
+                        "CCX_REQUIRES_TWO_CONTROLS",
+                        "CCX requires exactly two control qubits.",
+                        f"Gate CCX at step {column.step} has controls {controls!r}.",
+                        "Set two different control qubits for CCX.",
+                    ))
+                if len(gate.targets) != 1:
+                    issues.append(_error(
+                        "CCX_REQUIRES_TARGET",
+                        "CCX requires exactly one target qubit.",
+                        f"Gate CCX at step {column.step} has targets {gate.targets!r}.",
+                        "Set one target qubit for CCX.",
+                    ))
+                if len(controls) == 2 and len(gate.targets) == 1 and len({*controls, gate.targets[0]}) != 3:
+                    issues.append(_error(
+                        "CCX_QUBITS_MUST_DIFFER",
+                        "CCX controls and target must be different qubits.",
+                        f"Gate CCX at step {column.step} uses controls={controls!r}, targets={gate.targets!r}.",
+                        "Choose three different qubit indices for CCX.",
+                    ))
+            elif gate_type == "SWAP":
+                if gate.controls:
+                    issues.append(_error(
+                        "SWAP_REJECTS_CONTROLS",
+                        "SWAP does not accept control qubits.",
+                        f"Gate SWAP at step {column.step} has controls {gate.controls!r}.",
+                        "Represent both SWAP operands as targets.",
+                    ))
+                if len(gate.targets) != 2:
+                    issues.append(_error(
+                        "SWAP_REQUIRES_TWO_TARGETS",
+                        "SWAP requires exactly two target qubits.",
+                        f"Gate SWAP at step {column.step} has targets {gate.targets!r}.",
+                        "Set two different target qubits for SWAP.",
+                    ))
+                elif gate.targets[0] == gate.targets[1]:
+                    issues.append(_error(
+                        "SWAP_TARGETS_MUST_DIFFER",
+                        "SWAP target qubits must be different.",
+                        f"Gate SWAP at step {column.step} has targets {gate.targets!r}.",
+                        "Choose two different target qubits for SWAP.",
+                    ))
+
+            for classical_target in gate.classical_targets or []:
+                if classical_target >= circuit.classical_bits:
+                    issues.append(_error(
+                        "CLASSICAL_TARGET_OUT_OF_RANGE",
+                        "Measurement classical target is outside the register.",
+                        (
+                            f"Gate {gate.type} at step {column.step} targets classical "
+                            f"bit {classical_target}; classical_bits={circuit.classical_bits}."
+                        ),
+                        "Increase classical_bits or choose an existing classical bit.",
+                    ))
+            if gate.classical_targets and gate_type != "MEASURE":
+                issues.append(_error(
+                    "CLASSICAL_TARGET_REQUIRES_MEASURE",
+                    "classical_targets are only valid for MEASURE gates.",
+                    f"Gate {gate.type} at step {column.step} has classical_targets.",
+                    "Attach classical_targets only to MEASURE.",
+                ))
+            if gate_type == "MEASURE" and gate.classical_targets and len(
+                gate.classical_targets
+            ) != len(gate.targets):
+                issues.append(_error(
+                    "MEASURE_CLASSICAL_TARGET_COUNT_MISMATCH",
+                    "Measurement classical targets must match measured targets.",
+                    (
+                        f"MEASURE at step {column.step} has {len(gate.targets)} "
+                        f"quantum targets and {len(gate.classical_targets)} classical targets."
+                    ),
+                    "Provide one classical target per measured qubit.",
+                ))
+            if gate.condition is not None and gate.condition.bit >= circuit.classical_bits:
+                issues.append(_error(
+                    "CLASSICAL_CONDITION_OUT_OF_RANGE",
+                    "Classical condition bit is outside the register.",
+                    (
+                        f"Gate {gate.type} at step {column.step} reads classical bit "
+                        f"{gate.condition.bit}; classical_bits={circuit.classical_bits}."
+                    ),
+                    "Increase classical_bits or choose an existing classical bit.",
+                ))
 
     for index, initial_state in enumerate(circuit.initial_states):
         if initial_state not in {"0", "1", "+", "-"}:

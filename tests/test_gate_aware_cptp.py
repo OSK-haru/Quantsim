@@ -93,6 +93,20 @@ class GateAwareCPTPApiTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             SimulateRequest(**payload)
 
+    def test_api_accepts_rust_dense_preview_backend(self) -> None:
+        payload = _physical_payload("fixed_step_rk4")
+        payload["simulation_backend"] = "rust_dense_preview"
+        request = SimulateRequest(**payload)
+        config = build_config_from_simulate_request(request)
+
+        self.assertEqual(config.simulation_backend, "rust_dense_preview")
+
+    def test_api_rejects_unknown_backend(self) -> None:
+        payload = _physical_payload("fixed_step_rk4")
+        payload["simulation_backend"] = "cuda_dense"
+        with self.assertRaises(ValidationError):
+            SimulateRequest(**payload)
+
 
 @unittest.skipUnless(QUTIP_AVAILABLE, "QuTiP is a validation-only dependency")
 class GateAwareCPTPQuTiPTests(unittest.TestCase):

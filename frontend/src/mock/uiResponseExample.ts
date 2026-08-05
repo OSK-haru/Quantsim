@@ -3,6 +3,7 @@ import type { SimulationResponse } from '../types/simulation'
 export const uiResponseExample: SimulationResponse = {
   circuit: {
     qubit_count: 2,
+    classical_bit_count: 0,
     columns: [
       {
         id: 'col-1',
@@ -93,12 +94,51 @@ export const uiResponseExample: SimulationResponse = {
     '10': 0.01,
     '11': 0.49,
   },
+  measurement: {
+    mode: 'final_computational_basis_shots_v1',
+    shots: 1024,
+    seed: 0,
+    counts: {
+      '00': 501,
+      '01': 11,
+      '10': 10,
+      '11': 502,
+    },
+    frequencies: {
+      '00': 501 / 1024,
+      '01': 11 / 1024,
+      '10': 10 / 1024,
+      '11': 502 / 1024,
+    },
+    explicit_measurement_mode: 'non_selective_computational_basis_v1',
+    explicit_measurement_count: 2,
+    explicit_measurement_targets: [0, 1],
+    explicit_measurement_bindings: [],
+    classical_register_bits: 0,
+    classical_register_mode: 'schema_only_v2',
+    classical_conditioning_supported: false,
+    classical_branch_count: 0,
+    classical_branching_noise_applied: false,
+    classical_branches: [],
+    classical_shot_preview: [],
+  },
   state_snapshots: [],
   run: {
     status: 'Mock result loaded',
     selected_backend: 'rust_dense_preview',
     last_run_label: 'Static preview',
     can_run: true,
+    comparison: {
+      ideal_timeline: [
+        { time_us: 0, fidelity: 1, purity: 1 },
+        { time_us: 1, fidelity: 1, purity: 1 },
+        { time_us: 2, fidelity: 1, purity: 1 },
+        { time_us: 3, fidelity: 1, purity: 1 },
+        { time_us: 4, fidelity: 1, purity: 1 },
+        { time_us: 5, fidelity: 1, purity: 1 },
+      ],
+      ideal_state_snapshots: [],
+    },
   },
   warnings: [],
   issues: [],

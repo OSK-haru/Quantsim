@@ -28,7 +28,7 @@ class GateExecutionTest(unittest.TestCase):
         self.assertAlmostEqual(result.output_probabilities["0"], 0.5, delta=1e-4)
         self.assertAlmostEqual(result.output_probabilities["1"], 0.5, delta=1e-4)
 
-    def test_measure_is_noop_for_evolution(self) -> None:
+    def test_measure_preserves_computational_basis_state(self) -> None:
         result = run_simulation(_config_for_gate("Measure"))
 
         self.assertEqual(result.issues, [])

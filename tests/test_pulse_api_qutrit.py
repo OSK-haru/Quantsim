@@ -13,9 +13,25 @@ from core.capabilities import (
     DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL,
 )
 from core.rust_dense_kernel import is_rust_kernel_available
+from core.quasi_static_noise import gaussian_quasi_static_detuning_samples
 
 
 class PulseQutritApiTests(unittest.TestCase):
+    def test_gauss_hermite_samples_reproduce_gaussian_moments(self) -> None:
+        sigma = 2.5
+        samples = gaussian_quasi_static_detuning_samples(sigma, 5)
+        self.assertAlmostEqual(sum(weight for _, weight in samples), 1.0, places=14)
+        self.assertAlmostEqual(
+            sum(offset * weight for offset, weight in samples),
+            0.0,
+            places=14,
+        )
+        self.assertAlmostEqual(
+            sum(offset * offset * weight for offset, weight in samples),
+            sigma * sigma,
+            places=12,
+        )
+
     def test_direct_rate_qutrit_response_exposes_three_level_state(self) -> None:
         request = QutritPulseSimulateRequest.model_validate(
             _direct_payload()
@@ -117,11 +133,88 @@ class PulseQutritApiTests(unittest.TestCase):
             QUTRIT_API_MAX_INTERNAL_STEPS,
         )
 
+    def test_quasi_static_detuning_returns_ensemble_density_matrix(self) -> None:
+        payload = _direct_payload()
+        payload["quasi_static_noise"] = {
+            "enabled": True,
+            "sigma_detuning_rad_per_us": 20.0,
+            "quadrature_order": 3,
+        }
+        response = pulse_simulate(
+            QutritPulseSimulateRequest.model_validate(payload)
+        )
+
+        self.assertTrue(response["input"]["quasi_static_noise_enabled"])
+        self.assertEqual(response["input"]["quasi_static_quadrature_order"], 3)
+        diagnostics = response["diagnostics"]["quasi_static_noise"]
+        self.assertEqual(diagnostics["quadrature_method"], "Gauss-Hermite")
+        self.assertEqual(len(diagnostics["samples"]), 3)
+        self.assertAlmostEqual(
+            sum(
+                response["final"][f"population_{index}"]
+                for index in range(3)
+            ),
+            1.0,
+            places=10,
+        )
+        self.assertLessEqual(
+            response["step_policy"]["estimated_internal_step_count"],
+            QUTRIT_API_MAX_INTERNAL_STEPS,
+        )
+
+    def test_quasi_static_detuning_supports_explicit_cptp(self) -> None:
+        payload = _direct_payload()
+        payload["evolution_method"] = "explicit_cptp"
+        payload["snapshot_options"] = {
+            "uniform_count": 3,
+            "custom_times_us": [0.016],
+        }
+        payload["quasi_static_noise"] = {
+            "enabled": True,
+            "sigma_detuning_rad_per_us": 1.0,
+            "quadrature_order": 3,
+        }
+        response = pulse_simulate(
+            QutritPulseSimulateRequest.model_validate(payload)
+        )
+
+        audit = response["diagnostics"]["evolution"]["open_pulse_audit"]
+        self.assertIsNotNone(audit)
+        self.assertTrue(audit["all_maps_cptp"])
+        self.assertGreater(audit["map_count"], 0)
+
+    def test_density_matrix_can_be_handed_to_the_next_pulse(self) -> None:
+        first_payload = _direct_payload()
+        first_response = pulse_simulate(
+            QutritPulseSimulateRequest.model_validate(first_payload)
+        )
+
+        second_payload = _direct_payload()
+        second_payload["initial_density_matrix"] = first_response["final"][
+            "density_matrix"
+        ]
+        second_response = pulse_simulate(
+            QutritPulseSimulateRequest.model_validate(second_payload)
+        )
+
+        self.assertEqual(
+            second_response["input"]["initial_state_source"],
+            "density_matrix",
+        )
+        self.assertAlmostEqual(
+            sum(
+                second_response["final"]["density_matrix"][index][index]["real"]
+                for index in range(3)
+            ),
+            1.0,
+            places=10,
+        )
+
     def test_heavy_qutrit_request_is_rejected_before_execution(self) -> None:
         payload = _direct_payload()
         payload["anharmonicity_mhz"] = -250.0
         payload["pulse"]["sigma_us"] = 0.02
-        payload["total_simulation_time_us"] = 0.2
+        payload["total_simulation_time_us"] = 0.5
         with self.assertRaises(HTTPException) as context:
             pulse_simulate(
                 QutritPulseSimulateRequest.model_validate(payload)

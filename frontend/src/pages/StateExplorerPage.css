@@ -6,15 +6,18 @@
   align-content: start;
   gap: 20px;
   background:
-    radial-gradient(circle at top, rgba(96, 165, 250, 0.16), transparent 34%),
-    linear-gradient(180deg, #0b1020 0%, #0f172a 100%);
-  color: #e5e7eb;
+    radial-gradient(circle at 13% 0%, rgba(38, 156, 140, 0.18), transparent 28%),
+    radial-gradient(circle at 92% 16%, rgba(221, 132, 68, 0.12), transparent 25%),
+    repeating-linear-gradient(90deg, transparent 0 79px, rgba(137, 183, 184, 0.025) 79px 80px),
+    linear-gradient(145deg, #071118 0%, #0a1b22 48%, #071016 100%);
+  color: #e9f6f3;
 }
 
 .state-explorer-page__header,
 .state-explorer-page__summary,
 .state-explorer-page__workspace,
-.state-explorer-page__empty {
+.state-explorer-page__empty,
+.state-explorer-page > .metric-timeline {
   width: min(1180px, 100%);
   margin: 0 auto;
 }
@@ -27,7 +30,7 @@
 }
 
 .state-explorer-page__eyebrow {
-  color: #93c5fd;
+  color: #5dd6c0;
   font-size: 0.74rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -35,7 +38,9 @@
 
 .state-explorer-page h1 {
   margin: 8px 0 0;
-  color: #f8fafc;
+  color: #e9f6f3;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 500;
   font-size: clamp(2rem, 5vw, 3.3rem);
   letter-spacing: -0.05em;
 }
@@ -43,7 +48,7 @@
 .state-explorer-page__scope {
   max-width: 660px;
   margin: 10px 0 0;
-  color: #94a3b8;
+  color: #8ca5a9;
   font-size: 0.88rem;
   line-height: 1.55;
 }
@@ -88,9 +93,9 @@
 .state-explorer-page__workspace {
   min-width: 0;
   padding: 22px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  border: 1px solid rgba(99, 173, 177, 0.2);
   border-radius: 20px;
-  background: rgba(15, 23, 42, 0.78);
+  background: rgba(9, 24, 32, 0.86);
   box-shadow: 0 20px 48px rgba(2, 6, 23, 0.35);
 }
 
@@ -104,6 +109,106 @@
   display: grid;
   gap: 24px;
   min-width: 0;
+}
+
+.state-explorer-page__panel-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(113, 162, 214, 0.25);
+  border-radius: 14px;
+  background: rgba(14, 28, 48, 0.72);
+}
+
+.state-explorer-page__panel-toolbar > span {
+  color: #9bb7d8;
+  font-size: 0.8rem;
+  margin-right: 4px;
+}
+
+.state-explorer-page__panel-toolbar button {
+  border: 1px solid rgba(121, 163, 211, 0.32);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #b8cbe4;
+  background: rgba(20, 40, 66, 0.7);
+  cursor: pointer;
+}
+
+.state-explorer-page__panel-toolbar button.is-active {
+  color: #071321;
+  background: #61d7c1;
+  border-color: #61d7c1;
+}
+
+.state-explorer-panel {
+  margin: 12px 0;
+  border: 1px solid rgba(113, 162, 214, 0.24);
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(8, 21, 37, 0.5);
+}
+
+.state-explorer-panel__toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 15px;
+  border: 0;
+  color: #d9e8fb;
+  background: rgba(20, 43, 69, 0.75);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.state-explorer-panel__toggle:hover {
+  background: rgba(35, 68, 103, 0.85);
+}
+
+.state-explorer-panel__body {
+  padding: 4px 10px 12px;
+}
+
+.state-explorer-panel--collapsed {
+  background: rgba(8, 21, 37, 0.3);
+}
+
+.state-explorer-page__comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 16px;
+  min-width: 0;
+}
+
+.state-explorer-page__comparison-panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(99, 173, 177, 0.18);
+  border-radius: 16px;
+  background: rgba(5, 18, 25, 0.42);
+}
+
+.state-explorer-page__comparison-panel--ideal {
+  border-color: rgba(243, 199, 107, 0.28);
+  background: rgba(37, 30, 19, 0.24);
+}
+
+.state-explorer-page__comparison-panel h2,
+.state-explorer-page__comparison-panel h3 {
+  margin: 0 0 12px;
+  color: #e9f6f3;
+  font-size: 1.05rem;
+}
+
+.state-explorer-page__comparison-panel--ideal h2,
+.state-explorer-page__comparison-panel--ideal h3 {
+  color: #f3c76b;
 }
 
 .state-explorer-page__section-heading {

@@ -10,10 +10,15 @@ class ResultDiagnosticsTest(unittest.TestCase):
         result = SimulationResult(
             config=SimulationConfig(),
             times=[0.0, 1.0],
-            fidelity=[1.0, math.nan],
-            purity=[1.0, math.inf],
+            fidelity=[1.0, 1.0],
+            purity=[1.0, 1.0],
             effective_operation_time_us=1.0,
         )
+        # SimulationResult enforces finite values at its public boundary. The
+        # diagnostic layer must still handle corruption introduced after that
+        # boundary (for example by an external backend adapter).
+        result.fidelity[1] = math.nan
+        result.purity[1] = math.inf
 
         issues = diagnose_simulation_result(result)
 

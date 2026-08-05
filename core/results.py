@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+import math
 from typing import Any
 
 from core.backend_boundary import PYTHON_DENSE_BACKEND
@@ -258,7 +259,11 @@ class SimulationConfig:
     model: str = DEFAULT_SIMULATION_MODEL
     simulation_backend: str = PYTHON_DENSE_BACKEND
     evolution_method: str = FIXED_STEP_RK4
+    compilation_mode: str = "logical_direct"
+    native_gate_durations_us: dict[str, float] = field(default_factory=dict)
     snapshot_options: SnapshotOptions | None = None
+    measurement_shots: int = 1024
+    measurement_seed: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.circuit, CircuitConfig):
@@ -272,6 +277,12 @@ class SimulationConfig:
             self.fidelity_threshold,
             "fidelity_threshold",
         )
+        self.measurement_shots = _int(self.measurement_shots, "measurement_shots")
+        self.measurement_seed = _int(self.measurement_seed, "measurement_seed")
+        if not 1 <= self.measurement_shots <= 100_000:
+            raise ValueError("measurement_shots must be between 1 and 100000")
+        if not 0 <= self.measurement_seed <= 2 ** 32 - 1:
+            raise ValueError("measurement_seed must be between 0 and 2**32 - 1")
         self.model = str(self.model)
         if not self.model:
             raise ValueError("model must not be empty")
@@ -284,6 +295,18 @@ class SimulationConfig:
                 "evolution_method must be one of "
                 f"{SUPPORTED_GATE_AWARE_EVOLUTION_METHODS}"
             )
+        from core.gate_compiler import SUPPORTED_COMPILATION_MODES
+
+        self.compilation_mode = str(self.compilation_mode)
+        if self.compilation_mode not in SUPPORTED_COMPILATION_MODES:
+            raise ValueError(
+                "compilation_mode must be one of "
+                f"{sorted(SUPPORTED_COMPILATION_MODES)}"
+            )
+        self.native_gate_durations_us = {
+            str(name).upper(): _non_negative_float(value, f"native duration {name}")
+            for name, value in self.native_gate_durations_us.items()
+        }
         if self.snapshot_options is not None and not isinstance(
             self.snapshot_options,
             SnapshotOptions,
@@ -306,6 +329,10 @@ class SimulationConfig:
             "model": self.model,
             "simulation_backend": self.simulation_backend,
             "evolution_method": self.evolution_method,
+            "compilation_mode": self.compilation_mode,
+            "native_gate_durations_us": dict(self.native_gate_durations_us),
+            "measurement_shots": self.measurement_shots,
+            "measurement_seed": self.measurement_seed,
             "snapshot_options": (
                 None
                 if self.snapshot_options is None
@@ -325,6 +352,10 @@ class SimulationConfig:
             model=data.get("model", DEFAULT_SIMULATION_MODEL),
             simulation_backend=data.get("simulation_backend", PYTHON_DENSE_BACKEND),
             evolution_method=data.get("evolution_method", FIXED_STEP_RK4),
+            compilation_mode=data.get("compilation_mode", "logical_direct"),
+            native_gate_durations_us=dict(data.get("native_gate_durations_us") or {}),
+            measurement_shots=data.get("measurement_shots", 1024),
+            measurement_seed=data.get("measurement_seed", 0),
             snapshot_options=(
                 None
                 if data.get("snapshot_options") is None
@@ -343,11 +374,15 @@ class SimulationResult:
     purity: list[float]
     effective_operation_time_us: float | None
     output_probabilities: dict[str, float] = field(default_factory=dict)
+    measurement_counts: dict[str, int] = field(default_factory=dict)
+    classical_branch_records: list[dict[str, Any]] = field(default_factory=list)
+    classical_shot_preview: list[dict[str, Any]] = field(default_factory=list)
     derived_parameters: dict[str, Any] = field(default_factory=dict)
     diagnostics: dict[str, Any] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
     issues: list[ValidationIssue] = field(default_factory=list)
     state_snapshots: list[StateSnapshot] = field(default_factory=list)
+    physical_timeline: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not isinstance(self.config, SimulationConfig):
@@ -367,6 +402,18 @@ class SimulationResult:
             str(name): _float(value, f"output probability {name}")
             for name, value in self.output_probabilities.items()
         }
+        self.measurement_counts = {
+            str(name): _int(value, f"measurement count {name}")
+            for name, value in self.measurement_counts.items()
+        }
+        self.classical_branch_records = [
+            _json_value(record, f"classical branch {index}")
+            for index, record in enumerate(self.classical_branch_records)
+        ]
+        self.classical_shot_preview = [
+            _json_value(record, f"classical shot preview {index}")
+            for index, record in enumerate(self.classical_shot_preview)
+        ]
         self.derived_parameters = {
             str(name): _json_value(value, f"derived parameter {name}")
             for name, value in self.derived_parameters.items()
@@ -388,6 +435,10 @@ class SimulationResult:
             else StateSnapshot.from_dict(snapshot)
             for snapshot in self.state_snapshots
         ]
+        self.physical_timeline = _json_value(
+            self.physical_timeline,
+            "physical timeline",
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -397,6 +448,9 @@ class SimulationResult:
             "purity": list(self.purity),
             "effective_operation_time_us": self.effective_operation_time_us,
             "output_probabilities": dict(self.output_probabilities),
+            "measurement_counts": dict(self.measurement_counts),
+            "classical_branch_records": list(self.classical_branch_records),
+            "classical_shot_preview": list(self.classical_shot_preview),
             "derived_parameters": dict(self.derived_parameters),
             "diagnostics": dict(self.diagnostics),
             "warnings": list(self.warnings),
@@ -405,6 +459,7 @@ class SimulationResult:
                 snapshot.to_dict()
                 for snapshot in self.state_snapshots
             ],
+            "physical_timeline": dict(self.physical_timeline),
         }
 
     @classmethod
@@ -417,6 +472,9 @@ class SimulationResult:
             purity=list(data["purity"]),
             effective_operation_time_us=data.get("effective_operation_time_us"),
             output_probabilities=dict(data.get("output_probabilities") or {}),
+            measurement_counts=dict(data.get("measurement_counts") or {}),
+            classical_branch_records=list(data.get("classical_branch_records") or []),
+            classical_shot_preview=list(data.get("classical_shot_preview") or []),
             derived_parameters=dict(data.get("derived_parameters") or {}),
             diagnostics=dict(data.get("diagnostics") or {}),
             warnings=list(data.get("warnings") or []),
@@ -432,6 +490,7 @@ class SimulationResult:
                 else StateSnapshot.from_dict(snapshot)
                 for snapshot in data.get("state_snapshots", [])
             ],
+            physical_timeline=dict(data.get("physical_timeline") or {}),
         )
 
 
@@ -461,9 +520,19 @@ def _optional_float(value: Any, name: str) -> float | None:
 
 def _float(value: Any, name: str) -> float:
     try:
-        return float(value)
+        converted = float(value)
     except (TypeError, ValueError) as exc:
         raise TypeError(f"{name} must be a number") from exc
+    if not math.isfinite(converted):
+        raise ValueError(f"{name} must be finite")
+    return converted
+
+
+def _non_negative_float(value: Any, name: str) -> float:
+    converted = _float(value, name)
+    if converted < 0.0:
+        raise ValueError(f"{name} must be non-negative")
+    return converted
 
 
 def _json_value(value: Any, name: str) -> Any:
@@ -473,4 +542,14 @@ def _json_value(value: Any, name: str) -> Any:
         return value
     if isinstance(value, (int, float)):
         return float(value)
-    raise TypeError(f"{name} must be JSON-serializable scalar")
+    if isinstance(value, Mapping):
+        return {
+            str(key): _json_value(item, f"{name}.{key}")
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [
+            _json_value(item, f"{name}[{index}]")
+            for index, item in enumerate(value)
+        ]
+    raise TypeError(f"{name} must be JSON-serializable")

@@ -1,0 +1,209 @@
+.measurement-results {
+  width: min(1180px, 100%);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 22px;
+  border: 1px solid rgba(70, 216, 186, 0.24);
+  border-radius: 20px;
+  background: rgba(9, 24, 32, 0.88);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.28);
+}
+
+.measurement-results__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.measurement-results__eyebrow {
+  color: #5dd6c0;
+  font-size: 0.72rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.measurement-results__heading h2 {
+  margin: 5px 0 0;
+  color: #effbf8;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.45rem;
+  font-weight: 500;
+}
+
+.measurement-results__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 7px;
+}
+
+.measurement-results__meta span {
+  padding: 6px 9px;
+  border: 1px solid rgba(93, 214, 192, 0.2);
+  border-radius: 999px;
+  color: #bce9df;
+  font-size: 0.76rem;
+}
+
+.measurement-results__note,
+.measurement-results__constraint {
+  color: #91a9ac;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.measurement-results__branches {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(137, 183, 184, 0.14);
+}
+
+.measurement-results__subheading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.measurement-results__subheading h3 {
+  margin: 0;
+  color: #dcecea;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.measurement-results__subheading span {
+  color: #82a5a6;
+  font-size: 0.75rem;
+}
+
+.measurement-results__branch-table {
+  display: grid;
+  margin-top: 9px;
+}
+
+.measurement-results__branch-row {
+  display: grid;
+  grid-template-columns: 42px 1fr 74px 118px;
+  gap: 10px;
+  align-items: center;
+  min-height: 32px;
+  border-top: 1px solid rgba(137, 183, 184, 0.08);
+  color: #a8c2c2;
+  font-size: 0.78rem;
+}
+
+.measurement-results__branch-row span:nth-child(3) {
+  color: #6dddc6;
+  text-align: right;
+}
+
+.measurement-results__branch-row span:last-child {
+  color: #7f9b9c;
+  text-align: right;
+}
+
+.measurement-results__preview {
+  margin-top: 16px;
+}
+
+.measurement-results__shot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 116px;
+  margin-top: 9px;
+  overflow: auto;
+}
+
+.measurement-results__shot-chip {
+  padding: 4px 7px;
+  border: 1px solid rgba(93, 214, 192, 0.18);
+  border-radius: 999px;
+  color: #bce9df;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.measurement-results__note {
+  margin: 12px 0 17px;
+}
+
+.measurement-results__constraint {
+  margin: 15px 0 0;
+  color: #d8b46a;
+}
+
+.measurement-results__table {
+  display: grid;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.measurement-results__row {
+  display: grid;
+  grid-template-columns: 64px minmax(80px, 1fr) 78px 72px;
+  gap: 12px;
+  align-items: center;
+  min-height: 40px;
+  padding: 3px 6px;
+  border-top: 1px solid rgba(137, 183, 184, 0.1);
+}
+
+.measurement-results__row code,
+.measurement-results__row strong,
+.measurement-results__row > span:last-child {
+  color: #dcecea;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.measurement-results__row strong,
+.measurement-results__row > span:last-child {
+  text-align: right;
+}
+
+.measurement-results__bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(126, 151, 155, 0.15);
+}
+
+.measurement-results__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #26a68b, #6dddc6);
+}
+
+@media (max-width: 640px) {
+  .measurement-results {
+    padding: 16px 14px;
+  }
+
+  .measurement-results__heading {
+    flex-direction: column;
+  }
+
+  .measurement-results__meta {
+    justify-content: start;
+  }
+
+  .measurement-results__row {
+    grid-template-columns: 48px minmax(60px, 1fr) 62px;
+  }
+
+  .measurement-results__row > span:last-child {
+    display: none;
+  }
+
+  .measurement-results__branch-row {
+    grid-template-columns: 34px 1fr 62px;
+  }
+
+  .measurement-results__branch-row span:last-child {
+    display: none;
+  }
+}

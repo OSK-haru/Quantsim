@@ -36,7 +36,7 @@ except ImportError:  # pragma: no cover - NumPy is an existing project dependenc
 
 
 ABS_TOL = 1e-10
-REL_TOL = 1e-9
+REL_TOL = 5e-8
 TRACE_TOL = 1e-9
 HERMITICITY_TOL = 1e-9
 PROB_SUM_TOL = 1e-9

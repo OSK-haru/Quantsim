@@ -168,6 +168,7 @@ def map_normalized_to_physical(
         qubit_frequency_ghz=float(
             getattr(environment, "qubit_frequency_ghz", profile.qubit_frequency_ghz)
         ),
+        ideal_reference=bool(getattr(environment, "ideal_reference", False)),
     )
 
 

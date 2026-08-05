@@ -16,9 +16,11 @@ class CircuitState:
     logical_qubits: int = 1
     initial_states: list[str] = field(default_factory=lambda: ["0"])
     columns: list[GateColumn] = field(default_factory=list)
+    classical_bits: int = 0
 
     def __post_init__(self) -> None:
         self.logical_qubits = int(self.logical_qubits)
+        self.classical_bits = int(self.classical_bits)
         self.initial_states = [str(state) for state in self.initial_states]
         self.columns = [
             column if isinstance(column, GateColumn) else GateColumn.from_dict(column)
@@ -34,6 +36,7 @@ class CircuitState:
             self.columns,
             step,
             gate,
+            self.classical_bits,
         ))
 
         column = self._get_or_create_column(step)
@@ -73,6 +76,7 @@ class CircuitState:
             trial_columns,
             step,
             gate,
+            self.classical_bits,
         ))
 
         column.gates[replace_index] = gate
@@ -113,6 +117,7 @@ class CircuitState:
             trial_columns,
             to_step,
             moved_gate,
+            self.classical_bits,
         ))
 
         source_column.gates.pop(source_index)
@@ -168,6 +173,7 @@ class CircuitState:
             logical_qubits=self.logical_qubits,
             initial_states=list(self.initial_states),
             columns=self._copied_columns(),
+            classical_bits=self.classical_bits,
         )
 
     @classmethod
@@ -179,6 +185,7 @@ class CircuitState:
                 GateColumn.from_dict(column.to_dict())
                 for column in config.columns
             ],
+            classical_bits=config.classical_bits,
         )
 
     def copy(self) -> "CircuitState":

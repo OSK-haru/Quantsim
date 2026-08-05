@@ -31,33 +31,33 @@
     "zero_detuning_rmse": 0.374244377953252,
     "best": {
       "detuning_cycles_per_us": 0.0067,
-      "detuning_mhz": 6.7,
+      "detuning_khz": 6.7,
       "rmse": 0.030025684683833962
     },
     "top_candidates": [
       {
         "detuning_cycles_per_us": 0.0067,
-        "detuning_mhz": 6.7,
+        "detuning_khz": 6.7,
         "rmse": 0.030025684683833962
       },
       {
         "detuning_cycles_per_us": 0.0066,
-        "detuning_mhz": 6.6,
+        "detuning_khz": 6.6,
         "rmse": 0.03658320254392098
       },
       {
         "detuning_cycles_per_us": 0.0068000000000000005,
-        "detuning_mhz": 6.800000000000001,
+        "detuning_khz": 6.800000000000001,
         "rmse": 0.03934852998595264
       },
       {
         "detuning_cycles_per_us": 0.006500000000000001,
-        "detuning_mhz": 6.500000000000001,
+        "detuning_khz": 6.500000000000001,
         "rmse": 0.05307642288769482
       },
       {
         "detuning_cycles_per_us": 0.006900000000000001,
-        "detuning_mhz": 6.9,
+        "detuning_khz": 6.9,
         "rmse": 0.05732605238633063
       }
     ],

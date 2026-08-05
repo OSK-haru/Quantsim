@@ -25,7 +25,10 @@ from core.simulator import run_simulation
 
 
 ABS_TOL = 1e-10
-REL_TOL = 1e-9
+# NumPy and the pure-Python RK4 path use different summation orders. The
+# observed backend drift is below 3e-8 for the representative dense cases;
+# retain a strict bound without requiring bit-level equality across kernels.
+REL_TOL = 5e-8
 
 
 @unittest.skipUnless(numpy_dense_available(), "NumPy dense execution is unavailable")

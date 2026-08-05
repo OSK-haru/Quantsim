@@ -1,7 +1,7 @@
 {
   "validation": "CPTP-MODEL-FREEZE-C10",
   "freeze_schema_version": 1,
-  "generated_at_utc": "2026-07-26T10:41:48.572592+00:00",
+  "generated_at_utc": "2026-08-01T14:48:15.029659+00:00",
   "decision": "PASS WITH RESTRICTIONS",
   "overall_pass": true,
   "frozen_contract": {
@@ -143,8 +143,8 @@
     }
   },
   "source_revision": {
-    "git_commit": "06d1c4617ae337c912a29710ce2b5127d03403a2",
-    "critical_source_tree_sha256": "602ce9f2b63779fda7560418749d76a9731c152fde4e8841b1dc740bf0d52753",
+    "git_commit": "f306fbf6eb2083d9098ab0ade079e2681920ac4e",
+    "critical_source_tree_sha256": "9db9a192a46329d3577eac73be558c477d4dd73bc93cd4fa4607b09951c93cf9",
     "files": [
       {
         "file": "core/cptp.py",
@@ -194,32 +194,32 @@
       {
         "file": "rust_kernels/quantascope_rust/src/lib.rs",
         "exists": true,
-        "sha256": "ae9b269ccc4dc8c57f81553fe06fde6d1bf6b9b7f384f5a44cb6eea091abe311"
+        "sha256": "886616c16dd217cd1e8c1ea19d79c61de8fa5b714bc3007fefa95c40ef711086"
       },
       {
         "file": "api/pulse_models.py",
         "exists": true,
-        "sha256": "411163b9fee903b6145f87a0f327b690b478a73ffac220feff78aef8daebc1d2"
+        "sha256": "26619622ac478691fd5a8730426dcf695eceb9137223bf51517451915ed1c4ee"
       },
       {
         "file": "api/pulse_service.py",
         "exists": true,
-        "sha256": "2a8c47c202c7964df646d30d48357c8e7d17526ac905f782306728d8b7bd9844"
+        "sha256": "0c476e50172e0a406db301debd318fa67fc7c5f8799adb88a01e330f06454ee5"
       },
       {
         "file": "api/pulse_qutrit_service.py",
         "exists": true,
-        "sha256": "cc00125513da3870a39c58129b43a36a5fe479dc99f870dc441f910ecd89ddfa"
+        "sha256": "b3ee1b7e4a6858f0cd6871ecc25b27333f556666746cca163a9b5be81b891d23"
       },
       {
         "file": "frontend/src/types/pulse.ts",
         "exists": true,
-        "sha256": "81c8cd684e41d5c9cc98af9a3f8c48a8449570d491ca0a42eded7dd47e66d2fa"
+        "sha256": "6534b93834081dbf21c51f8f185675af5485ee3df7e5977da2f34b5b7fb20e44"
       },
       {
         "file": "frontend/src/utils/pulseLab.ts",
         "exists": true,
-        "sha256": "1bd11711fc4ca00adbe46261ba9e4fe978778f85ba1631302b002218bd7554dd"
+        "sha256": "3fa476ffd62873ae12825d1b9b2c577acc35e06857783e7df60ecb6f19369afe"
       },
       {
         "file": "frontend/src/components/PulseParameterPanel.tsx",
@@ -229,7 +229,7 @@
       {
         "file": "frontend/src/pages/PulseLabPage.tsx",
         "exists": true,
-        "sha256": "bb1ca04b20aa2dc9aee132284c7ae5e1c2bf18361e02550db711c65ce76d7828"
+        "sha256": "420dd381e9d1e14f62adc62cf8df3ea5b04c76bd5f1fa842d62737a0cb6ab38a"
       },
       {
         "file": "tests/test_cptp_qubit_channels.py",
@@ -312,7 +312,7 @@
     {
       "file": "docs/physics/model_identity.md",
       "exists": true,
-      "sha256": "10550d54cb7ea2091348135e20b4aa3ceab72abdcb78c995ee012e66a3396f99"
+      "sha256": "ba60923d1c47e38e55ce48651262a0b9f3b05a2f20be0b5b658c162624276291"
     },
     {
       "file": "docs/validation/cptp-model-freeze.md",

@@ -784,6 +784,45 @@ fn validate_time_dependent_rk4_inputs(
 
 fn matmul_flat(a: &[f64], b: &[f64], d: usize) -> Vec<f64> {
     let mut c = vec![0.0_f64; 2 * d * d];
+    // The explicit-CPTP path repeatedly multiplies the d²×d² Liouvillian
+    // matrices. For four logical qubits this is a 256×256 complex product;
+    // splitting independent output rows avoids the single-threaded hotspot
+    // without adding a runtime dependency or changing arithmetic semantics.
+    if d >= 64 {
+        let worker_count = std::thread::available_parallelism()
+            .map(|count| count.get())
+            .unwrap_or(1)
+            .min(d);
+        let rows_per_worker = (d + worker_count - 1) / worker_count;
+        std::thread::scope(|scope| {
+            for (chunk_index, chunk) in c.chunks_mut(2 * rows_per_worker * d).enumerate() {
+                let first_row = chunk_index * rows_per_worker;
+                let row_count = chunk.len() / (2 * d);
+                scope.spawn(move || {
+                    for local_row in 0..row_count {
+                        for j in 0..d {
+                            let mut real = 0.0_f64;
+                            let mut imag = 0.0_f64;
+                            for k in 0..d {
+                                let a_index = 2 * ((first_row + local_row) * d + k);
+                                let b_index = 2 * (k * d + j);
+                                let ar = a[a_index];
+                                let ai = a[a_index + 1];
+                                let br = b[b_index];
+                                let bi = b[b_index + 1];
+                                real += ar * br - ai * bi;
+                                imag += ar * bi + ai * br;
+                            }
+                            let c_index = 2 * (local_row * d + j);
+                            chunk[c_index] = real;
+                            chunk[c_index + 1] = imag;
+                        }
+                    }
+                });
+            }
+        });
+        return c;
+    }
     for i in 0..d {
         for j in 0..d {
             let mut real = 0.0_f64;

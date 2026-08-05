@@ -1,0 +1,267 @@
+{
+  "audit_id": "phase3a_cptp_qutip_v1",
+  "cases": [
+    {
+      "backends": [
+        {
+          "backend": "python",
+          "backend_pass": true,
+          "finest_trace_distance": 2.4919694162318257e-05,
+          "finest_trace_distance_tolerance": 5e-05,
+          "physicality_pass": true,
+          "refinement": [
+            {
+              "interval_count": 24,
+              "max_interval_us": 0.01,
+              "maximum_frobenius_difference": 0.0005654075680291429,
+              "maximum_max_element_difference": 0.0003537226434036782,
+              "maximum_trace_distance": 0.00039980352548760114,
+              "minimum_cptp_state_eigenvalue": 0.0
+            },
+            {
+              "interval_count": 48,
+              "max_interval_us": 0.005,
+              "maximum_frobenius_difference": 0.00014104367955434992,
+              "maximum_max_element_difference": 8.812833346665454e-05,
+              "maximum_trace_distance": 9.973294225638326e-05,
+              "minimum_cptp_state_eigenvalue": 0.0
+            },
+            {
+              "interval_count": 96,
+              "max_interval_us": 0.0025,
+              "maximum_frobenius_difference": 3.524176945454012e-05,
+              "maximum_max_element_difference": 2.201325976106183e-05,
+              "maximum_trace_distance": 2.4919694162318257e-05,
+              "minimum_cptp_state_eigenvalue": 0.0
+            }
+          ],
+          "trace_distance_monotonic": true
+        },
+        {
+          "backend": "rust",
+          "backend_pass": true,
+          "finest_trace_distance": 2.4919694162373067e-05,
+          "finest_trace_distance_tolerance": 5e-05,
+          "physicality_pass": true,
+          "refinement": [
+            {
+              "interval_count": 24,
+              "max_interval_us": 0.01,
+              "maximum_frobenius_difference": 0.0005654075680286816,
+              "maximum_max_element_difference": 0.00035372264340370894,
+              "maximum_trace_distance": 0.0003998035254872749,
+              "minimum_cptp_state_eigenvalue": 0.0
+            },
+            {
+              "interval_count": 48,
+              "max_interval_us": 0.005,
+              "maximum_frobenius_difference": 0.00014104367955345838,
+              "maximum_max_element_difference": 8.812833346663918e-05,
+              "maximum_trace_distance": 9.973294225575282e-05,
+              "minimum_cptp_state_eigenvalue": 0.0
+            },
+            {
+              "interval_count": 96,
+              "max_interval_us": 0.0025,
+              "maximum_frobenius_difference": 3.524176945461763e-05,
+              "maximum_max_element_difference": 2.2013259761134238e-05,
+              "maximum_trace_distance": 2.4919694162373067e-05,
+              "minimum_cptp_state_eigenvalue": 0.0
+            }
+          ],
+          "trace_distance_monotonic": true
+        }
+      ],
+      "case_id": "two_level_gaussian_open_pulse",
+      "case_pass": true,
+      "description": "Two-level Gaussian pulse with phase, detuning, relaxation, thermal excitation, and pure dephasing.",
+      "duration_us": 0.24,
+      "model_id": "driven_two_level_rwa_experimental_v1",
+      "parameters": {
+        "detuning_rad_per_us": -0.22,
+        "gamma_down_per_us": 0.031,
+        "gamma_phi_per_us": 0.016,
+        "gamma_up_per_us": 0.004,
+        "phase_rad": 0.31,
+        "sigma_us": 0.04,
+        "target_rotation_angle_rad": 1.2,
+        "truncation_sigma": 3.0
+      },
+      "python_rust_max_element_difference": 1.776362133348282e-15,
+      "python_rust_parity_pass": true,
+      "subsystem_dimensions": [
+        2
+      ]
+    },
+    {
+      "backends": [
+        {
+          "backend": "python",
+          "backend_pass": true,
+          "finest_trace_distance": 8.613461738369379e-06,
+          "finest_trace_distance_tolerance": 0.0002,
+          "physicality_pass": true,
+          "refinement": [
+            {
+              "interval_count": 80,
+              "max_interval_us": 0.0002,
+              "maximum_frobenius_difference": 0.00019500380703168967,
+              "maximum_max_element_difference": 8.817003371045215e-05,
+              "maximum_trace_distance": 0.00013791264232724658,
+              "minimum_cptp_state_eigenvalue": 0.0
+            },
+            {
+              "interval_count": 160,
+              "max_interval_us": 0.0001,
+              "maximum_frobenius_difference": 4.871928210959474e-05,
+              "maximum_max_element_difference": 2.2025121893849455e-05,
+              "maximum_trace_distance": 3.4455763398912574e-05,
+              "minimum_cptp_state_eigenvalue": 0.0
+            },
+            {
+              "interval_count": 320,
+              "max_interval_us": 5e-05,
+              "maximum_frobenius_difference": 1.2179103681586743e-05,
+              "maximum_max_element_difference": 5.506179039597799e-06,
+              "maximum_trace_distance": 8.613461738369379e-06,
+              "minimum_cptp_state_eigenvalue": 0.0
+            }
+          ],
+          "trace_distance_monotonic": true
+        },
+        {
+          "backend": "rust",
+          "backend_pass": true,
+          "finest_trace_distance": 8.613461738622388e-06,
+          "finest_trace_distance_tolerance": 0.0002,
+          "physicality_pass": true,
+          "refinement": [
+            {
+              "interval_count": 80,
+              "max_interval_us": 0.0002,
+              "maximum_frobenius_difference": 0.00019500380703186364,
+              "maximum_max_element_difference": 8.817003371043706e-05,
+              "maximum_trace_distance": 0.0001379126423274691,
+              "minimum_cptp_state_eigenvalue": 0.0
+            },
+            {
+              "interval_count": 160,
+              "max_interval_us": 0.0001,
+              "maximum_frobenius_difference": 4.871928211009561e-05,
+              "maximum_max_element_difference": 2.202512189376325e-05,
+              "maximum_trace_distance": 3.445576339943457e-05,
+              "minimum_cptp_state_eigenvalue": 0.0
+            },
+            {
+              "interval_count": 320,
+              "max_interval_us": 5e-05,
+              "maximum_frobenius_difference": 1.2179103681702472e-05,
+              "maximum_max_element_difference": 5.506179039378222e-06,
+              "maximum_trace_distance": 8.613461738622388e-06,
+              "minimum_cptp_state_eigenvalue": 0.0
+            }
+          ],
+          "trace_distance_monotonic": true
+        }
+      ],
+      "case_id": "qutrit_drag_open_pulse",
+      "case_pass": true,
+      "description": "Qutrit Gaussian DRAG pulse with phase, detuning, transition-specific dissipation, and number dephasing.",
+      "duration_us": 0.016,
+      "model_id": "driven_transmon_qutrit_rwa_experimental_v1",
+      "parameters": {
+        "anharmonicity_mhz": -100.0,
+        "detuning_rad_per_us": 0.2,
+        "drag_beta_us": 0.001,
+        "phase_rad": 0.35,
+        "rates": {
+          "dephasing_model": "number_operator_adjacent_rate_v1",
+          "gamma_01_up_per_us": 0.02,
+          "gamma_10_down_per_us": 0.2,
+          "gamma_10_zero_temperature_per_us": null,
+          "gamma_12_up_per_us": 0.03,
+          "gamma_21_down_per_us": 0.4,
+          "gamma_21_zero_temperature_per_us": null,
+          "gamma_phi_adjacent_per_us": 0.08,
+          "input_mode": "direct_rates",
+          "n_01": null,
+          "n_12": null,
+          "transition_01_frequency_ghz": null,
+          "transition_12_frequency_ghz": null
+        },
+        "sigma_us": 0.002,
+        "target_rotation_angle_rad": 1.5707963267948966,
+        "truncation_sigma": 4.0
+      },
+      "python_rust_max_element_difference": 3.775414261697975e-15,
+      "python_rust_parity_pass": true,
+      "subsystem_dimensions": [
+        3
+      ]
+    }
+  ],
+  "decision": "PASS",
+  "environment": {
+    "numpy": "2.4.4",
+    "python": "3.14.4",
+    "qutip": "5.2.3",
+    "rust_extension_available": true
+  },
+  "frozen_contract": {
+    "cleanup_applied": false,
+    "evolution_method_id": "explicit_cptp_midpoint_gksl_v1",
+    "freeze_id": "quantascope_explicit_cptp_v1",
+    "time_dependent_sampling_id": "midpoint_piecewise_constant_v1"
+  },
+  "generated_at_utc": "2026-07-29T06:22:01.592742+00:00",
+  "maximum_observed_errors": {
+    "coherence_difference": 0.00035372264340370894,
+    "frobenius_difference": 0.0005654075680291429,
+    "max_element_difference": 0.00035372264340370894,
+    "population_difference": 0.0003385011623425749,
+    "purity_difference": 7.307390671451586e-07,
+    "trace_distance": 0.00039980352548760114
+  },
+  "methodology": {
+    "all_interval_boundaries_compared": true,
+    "comparison_rule": "identical rho0, H(t) matrices, collapse-operator matrices, and interval-boundary times",
+    "cptp_solver": "midpoint piecewise-constant GKSL exponential composition",
+    "qutip_max_step_rule": "CPTP interval size divided by 8",
+    "qutip_options": {
+      "atol": 1e-12,
+      "method": "dop853",
+      "normalize_output": false,
+      "nsteps": 100000,
+      "progress_bar": false,
+      "rtol": 1e-12,
+      "store_states": true
+    },
+    "qutip_solver": "mesolve with DOP853",
+    "temperature_reinterpreted_by_qutip": false
+  },
+  "overall_pass": true,
+  "preregistered_acceptance": {
+    "case_finest_trace_distance_tolerances": {
+      "qutrit_drag_open_pulse": 0.0002,
+      "two_level_gaussian_open_pulse": 5e-05
+    },
+    "monotonicity_slack": 1e-12,
+    "physicality_tolerance": 1e-10,
+    "python_rust_parity_tolerance": 2e-10,
+    "required_backends": [
+      "python",
+      "rust"
+    ],
+    "required_cases": [
+      "two_level_gaussian_open_pulse",
+      "qutrit_drag_open_pulse"
+    ]
+  },
+  "rust_requirement_pass": true,
+  "scope_limitations": [
+    "This validates solver agreement for the shared equations.",
+    "It does not establish calibrated-hardware validity.",
+    "The CPTP pulse path remains a midpoint time-discretization.",
+    "Gate-aware execution is outside this explicit-CPTP audit."
+  ]
+}

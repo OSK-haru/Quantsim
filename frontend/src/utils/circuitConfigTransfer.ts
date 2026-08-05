@@ -13,6 +13,9 @@ export type CircuitConfigGate = {
   targets: number[]
   controls?: number[]
   params?: Record<string, number | undefined>
+  classical_targets?: number[]
+  condition?: { bit: number; value: 0 | 1 } | null
+  conditions?: Array<{ bit: number; value: 0 | 1 }>
 }
 
 export type CircuitConfigColumn = {
@@ -22,8 +25,10 @@ export type CircuitConfigColumn = {
 
 export type CircuitConfig = {
   logical_qubits: number
-  initial_states: number[]
+  initial_states: Array<number | '+' | '-'>
+  classical_bits?: number
   columns: CircuitConfigColumn[]
+  annotations?: CircuitAnnotationConfig[]
 }
 
 export type CircuitConfigBundle = {
@@ -33,7 +38,7 @@ export type CircuitConfigBundle = {
 }
 
 const MIN_SUPPORTED_QUBITS = 2
-const MAX_SUPPORTED_QUBITS = 4
+const MAX_SUPPORTED_QUBITS = 5
 const WRAPPER_KIND = 'quantscope_circuit_config'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -46,6 +51,18 @@ function isFiniteInteger(value: unknown): value is number {
 
 function isFiniteNonNegativeNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+type CircuitAnnotationConfig = {
+  kind: 'MESSAGE' | 'RECEIVED'
+  id?: string | null
+  source_id?: string | null
+  column_index: number
+  qubits: number[]
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
 }
 
 function validateGateParams(params: unknown, gateLabel: string) {
@@ -61,6 +78,9 @@ function validateGateParams(params: unknown, gateLabel: string) {
       `Import failed: ${gateLabel} params.duration_us must be a finite number greater than or equal to 0.`,
     )
   }
+  if ('theta_rad' in params && !isFiniteNumber(params.theta_rad)) {
+    throw new Error(`Import failed: ${gateLabel} params.theta_rad must be finite.`)
+  }
 }
 
 function validateGateShape(gate: Record<string, unknown>, logicalQubits: number, step: number, index: number) {
@@ -68,8 +88,18 @@ function validateGateShape(gate: Record<string, unknown>, logicalQubits: number,
   if (
     gateType !== 'H' &&
     gateType !== 'X' &&
+    gateType !== 'Y' &&
     gateType !== 'Z' &&
+    gateType !== 'S' &&
+    gateType !== 'T' &&
+    gateType !== 'RX' &&
+    gateType !== 'RY' &&
+    gateType !== 'RZ' &&
     gateType !== 'CNOT' &&
+    gateType !== 'CZ' &&
+    gateType !== 'CP' &&
+    gateType !== 'CCX' &&
+    gateType !== 'SWAP' &&
     gateType !== 'MEASURE'
   ) {
     throw new Error(`Import failed: unsupported gate type at step ${step}.`)
@@ -79,15 +109,32 @@ function validateGateShape(gate: Record<string, unknown>, logicalQubits: number,
     throw new Error(`Import failed: gate targets must be an array at step ${step}.`)
   }
 
-  if (gateType === 'CNOT') {
-    if (!Array.isArray(gate.controls)) {
-      throw new Error(`Import failed: CNOT controls must be an array at step ${step}.`)
-    }
-    if (gate.controls.length !== 1) {
-      throw new Error('Import failed: CNOT requires exactly one control qubit.')
+  if (gateType === 'CCX') {
+    if (!Array.isArray(gate.controls) || gate.controls.length !== 2) {
+      throw new Error('Import failed: CCX requires exactly two control qubits.')
     }
     if (gate.targets.length !== 1) {
-      throw new Error('Import failed: CNOT requires exactly one target qubit.')
+      throw new Error('Import failed: CCX requires exactly one target qubit.')
+    }
+    if (new Set([...gate.controls, gate.targets[0]]).size !== 3) {
+      throw new Error('Import failed: CCX controls and target must differ.')
+    }
+  } else if (gateType === 'CNOT' || gateType === 'CZ' || gateType === 'CP') {
+    if (!Array.isArray(gate.controls)) {
+      throw new Error(`Import failed: ${gateType} controls must be an array at step ${step}.`)
+    }
+    if (gate.controls.length !== 1) {
+      throw new Error(`Import failed: ${gateType} requires exactly one control qubit.`)
+    }
+    if (gate.targets.length !== 1) {
+      throw new Error(`Import failed: ${gateType} requires exactly one target qubit.`)
+    }
+  } else if (gateType === 'SWAP') {
+    if (gate.targets.length !== 2 || gate.targets[0] === gate.targets[1]) {
+      throw new Error('Import failed: SWAP requires two different target qubits.')
+    }
+    if (gate.controls !== undefined && (!Array.isArray(gate.controls) || gate.controls.length > 0)) {
+      throw new Error('Import failed: SWAP does not accept control qubits.')
     }
   } else {
     if (gate.targets.length !== 1) {
@@ -113,8 +160,8 @@ function validateGateShape(gate: Record<string, unknown>, logicalQubits: number,
     }
   }
 
-  if (gateType === 'CNOT' && controls[0] === targets[0]) {
-    throw new Error('Import failed: CNOT control and target must differ.')
+  if ((gateType === 'CNOT' || gateType === 'CZ' || gateType === 'CP') && controls[0] === targets[0]) {
+    throw new Error(`Import failed: ${gateType} control and target must differ.`)
   }
 
   validateGateParams(gate.params, `gate at step ${step}, index ${index}`)
@@ -144,7 +191,7 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
 
   const logicalQubits = candidate.logical_qubits
   if (!isFiniteInteger(logicalQubits) || logicalQubits < MIN_SUPPORTED_QUBITS || logicalQubits > MAX_SUPPORTED_QUBITS) {
-    throw new Error('Import failed: logical_qubits must be an integer from 2 to 4.')
+    throw new Error('Import failed: logical_qubits must be an integer from 2 to 5.')
   }
 
   const initialStates = candidate.initial_states
@@ -156,9 +203,9 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
   }
 
   initialStates.forEach((state, index) => {
-    if (!isFiniteInteger(state) || (state !== 0 && state !== 1)) {
+    if (!(isFiniteInteger(state) && (state === 0 || state === 1)) && state !== '+' && state !== '-') {
       throw new Error(
-        `Import failed: initial_states[${index}] must be either 0 or 1.`,
+        `Import failed: initial_states[${index}] must be one of 0, 1, +, or -.`,
       )
     }
   })
@@ -201,12 +248,24 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
         gateRecord.params === undefined
           ? undefined
           : (gateRecord.params as Record<string, number | undefined>)
+      const classicalTargets = Array.isArray(gateRecord.classical_targets)
+        ? (gateRecord.classical_targets as number[])
+        : undefined
+      const condition = isRecord(gateRecord.condition)
+        ? gateRecord.condition as { bit: number; value: 0 | 1 }
+        : undefined
+      const conditions = Array.isArray(gateRecord.conditions)
+        ? gateRecord.conditions as Array<{ bit: number; value: 0 | 1 }>
+        : undefined
 
       return {
         type: gateRecord.type as GateType,
         targets: [...targets],
         ...(Array.isArray(gateRecord.controls) ? { controls: [...controls] } : {}),
         ...(params === undefined ? {} : { params: { ...params } }),
+        ...(classicalTargets === undefined ? {} : { classical_targets: [...classicalTargets] }),
+        ...(condition === undefined ? {} : { condition }),
+        ...(conditions === undefined ? {} : { conditions: [...conditions] }),
       }
     })
 
@@ -219,7 +278,11 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
   return {
     logical_qubits: logicalQubits,
     initial_states: initialStates as InitialQubitState[],
+    ...(typeof candidate.classical_bits === 'number' ? { classical_bits: candidate.classical_bits } : {}),
     columns: normalizedColumns,
+    annotations: Array.isArray(candidate.annotations) ? candidate.annotations.filter((annotation): annotation is CircuitAnnotationConfig =>
+      isRecord(annotation) && (annotation.kind === 'MESSAGE' || annotation.kind === 'RECEIVED') && isFiniteInteger(annotation.column_index) && Array.isArray(annotation.qubits),
+    ) : [],
   }
 }
 
@@ -239,6 +302,7 @@ export function circuitConfigToEditorState(config: CircuitConfig): CircuitEditor
   const editorState = {
     logical_qubits: config.logical_qubits,
     initial_states: [...config.initial_states] as InitialQubitState[],
+    ...(config.classical_bits === undefined ? {} : { classical_bits: config.classical_bits }),
     columns: config.columns.map((column): CircuitColumn => ({
       step: column.step,
       gates: column.gates.map((gate, gateIndex): CircuitGate => ({
@@ -253,8 +317,24 @@ export function circuitConfigToEditorState(config: CircuitConfig): CircuitEditor
         targets: [...gate.targets],
         ...(gate.controls === undefined ? {} : { controls: [...gate.controls] }),
         ...(gate.params === undefined ? {} : { params: { ...gate.params } }),
+        ...(gate.classical_targets === undefined ? {} : { classical_targets: [...gate.classical_targets] }),
+        ...(gate.condition === undefined ? {} : { condition: gate.condition }),
+        ...(gate.conditions === undefined ? {} : { conditions: [...gate.conditions] }),
       })),
     })),
+  }
+
+  for (const annotation of config.annotations ?? []) {
+    const column = editorState.columns[annotation.column_index]
+    if (!column) continue
+    for (const qubit of annotation.qubits) {
+      column.gates.push({
+        id: annotation.id ?? `annotation-${annotation.kind.toLowerCase()}-${annotation.column_index}-${qubit}`,
+        type: annotation.kind,
+        targets: [qubit],
+        source_id: annotation.source_id,
+      })
+    }
   }
 
   for (const column of editorState.columns) {
