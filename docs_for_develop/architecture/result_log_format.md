@@ -1,4 +1,4 @@
-# QuantaScope Result Log Format
+# Yuragi-Strider Result Log Format
 
 Simulation result files use `.qscope.result.json`.
 
@@ -7,7 +7,7 @@ Simulation result files use `.qscope.result.json`.
 The result envelope contains:
 
 - `schema_version`
-- `kind`: `quanta_scope.result`
+- `kind`: `yuragi_strider.result`
 - `created_at`
 - `model_version`
 - `input_config`

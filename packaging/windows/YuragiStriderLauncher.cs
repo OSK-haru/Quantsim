@@ -3,13 +3,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
 
-internal static class QuantaScopeLauncher
+internal static class YuragiStriderLauncher
 {
     [STAThread]
     private static int Main()
     {
         var applicationDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        var backendPath = Path.Combine(applicationDirectory, "QuantaScopeBackend.exe");
+        var backendPath = Path.Combine(applicationDirectory, "YuragiStriderBackend.exe");
 
         try
         {
@@ -26,8 +26,8 @@ internal static class QuantaScopeLauncher
         catch (Exception exception)
         {
             MessageBox.Show(
-                "QuantaScope could not start.\n\n" + exception.Message,
-                "QuantaScope",
+                "Yuragi-Strider could not start.\n\n" + exception.Message,
+                "Yuragi-Strider",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error
             );

@@ -1,4 +1,4 @@
-"""Validation-only bridge from QuantaScope matrices to QuTiP ``mesolve``."""
+"""Validation-only bridge from Yuragi-Strider matrices to QuTiP ``mesolve``."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def as_qutip_operator(
     *,
     subsystem_dimensions: Sequence[int] | None = None,
 ):
-    """Wrap an existing QuantaScope operator without changing its basis order."""
+    """Wrap an existing Yuragi-Strider operator without changing its basis order."""
 
     _require_qutip()
     dimensions = _subsystem_dimensions(n_qubits, subsystem_dimensions)
@@ -52,7 +52,7 @@ def as_qutip_density_matrix(
     *,
     subsystem_dimensions: Sequence[int] | None = None,
 ):
-    """Wrap an existing QuantaScope density matrix without reconstruction."""
+    """Wrap an existing Yuragi-Strider density matrix without reconstruction."""
 
     return as_qutip_operator(
         matrix,
@@ -72,7 +72,7 @@ def run_qutip_constant_segment(
     max_step_us: float = 0.015625,
     subsystem_dimensions: Sequence[int] | None = None,
 ):
-    """Solve one constant segment with QuTiP using QuantaScope's exact matrices."""
+    """Solve one constant segment with QuTiP using Yuragi-Strider's exact matrices."""
 
     _require_qutip()
     if requested_times_us is None:

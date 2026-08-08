@@ -22,7 +22,7 @@ class ComparisonExportTest(unittest.TestCase):
     def test_comparison_json_contains_delta_metrics_and_conditions(self) -> None:
         encoded = comparison_result_to_dict(_comparison())
 
-        self.assertEqual(encoded["kind"], "quanta_scope.comparison_result")
+        self.assertEqual(encoded["kind"], "yuragi_strider.comparison_result")
         self.assertIn("condition_a", encoded)
         self.assertIn("condition_b", encoded)
         self.assertIn("delta_metrics", encoded)
@@ -48,12 +48,12 @@ class ComparisonExportTest(unittest.TestCase):
 
             self.assertIn("delta_metrics", json.loads(json_path.read_text(encoding="utf-8")))
             self.assertIn("state_fidelity_a", csv_path.read_text(encoding="utf-8"))
-            self.assertIn("QuantaScope Comparison Report", md_path.read_text(encoding="utf-8"))
+            self.assertIn("Yuragi-Strider Comparison Report", md_path.read_text(encoding="utf-8"))
 
     def test_comparison_markdown_report_is_generated(self) -> None:
         report = comparison_markdown_report_text(_comparison())
 
-        self.assertIn("# QuantaScope Comparison Report", report)
+        self.assertIn("# Yuragi-Strider Comparison Report", report)
         self.assertIn("## Delta Metrics", report)
 
 

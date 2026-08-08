@@ -12,7 +12,7 @@ not frozen yet because it is based on commit
 The scoped commit sequence was explicitly approved after the inventory and
 validation results were reviewed. The Python reference source commit is
 `28b28a5aa82ddbcef1ae22c974846f7ea5ff2c0d`, and the release tag is
-`quantascope-python-reference-pulse-b-v1`.
+`yuragi-strider-python-reference-pulse-b-v1`.
 
 ## Inventory Snapshot
 
@@ -146,7 +146,7 @@ blind `git add .`.
 Recommended final tag:
 
 ```text
-quantascope-python-reference-pulse-b-v1
+yuragi-strider-python-reference-pulse-b-v1
 ```
 
 ## Reproducibility Snapshot

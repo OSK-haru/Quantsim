@@ -87,9 +87,90 @@
   outline-offset: 2px;
 }
 
+.gate-palette__item {
+  position: relative;
+  display: inline-flex;
+  --gate-accent: rgba(148, 163, 184, 0.55);
+}
+
+.gate-palette__item[data-family='rotation'] {
+  --gate-accent: rgba(103, 232, 249, 0.75);
+}
+
+.gate-palette__item[data-family='phase'] {
+  --gate-accent: rgba(196, 181, 253, 0.75);
+}
+
+.gate-palette__item[data-family='control'] {
+  --gate-accent: rgba(251, 191, 36, 0.75);
+}
+
+.gate-palette__item[data-family='register'] {
+  --gate-accent: rgba(167, 139, 250, 0.85);
+}
+
+.gate-palette__item[data-family='measurement'] {
+  --gate-accent: rgba(251, 113, 133, 0.75);
+}
+
+.gate-palette__item[data-family='annotation'] {
+  --gate-accent: rgba(148, 163, 184, 0.55);
+}
+
+.gate-palette__item .gate-palette__button {
+  box-shadow: inset 0 -2px 0 var(--gate-accent);
+}
+
+.gate-palette__item .gate-palette__button--selected {
+  box-shadow: inset 0 -2px 0 var(--gate-accent), 0 0 0 2px rgba(96, 165, 250, 0.16);
+}
+
+.gate-palette__popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  z-index: 40;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  background: rgba(8, 20, 40, 0.98);
+  box-shadow: 0 20px 46px rgba(2, 6, 23, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.gate-palette__item:hover .gate-palette__popover,
+.gate-palette__item:focus-within .gate-palette__popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-palette__popover {
+    transition: none;
+  }
+}
+
+html[data-animations='off'] .gate-palette__popover {
+  transition: none;
+}
+
 @media (max-width: 640px) {
   .gate-palette,
   .gate-palette__group {
     width: 100%;
+  }
+
+  .gate-palette__popover {
+    left: 0;
+    transform: translate(0, 4px);
+  }
+
+  .gate-palette__item:hover .gate-palette__popover,
+  .gate-palette__item:focus-within .gate-palette__popover {
+    transform: translate(0, 0);
   }
 }

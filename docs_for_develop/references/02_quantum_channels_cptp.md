@@ -18,7 +18,7 @@ K. Kraus, "General state changes in quantum theory,"
 密度演算子に対する一般的な量子操作を線形写像として扱い、演算子和表現の
 基礎を与える。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 $$
 \mathcal E(\rho)
@@ -42,7 +42,7 @@ $$
 
 ### この文献だけでは支えないもの
 
-- QuantaScopeが選んだ各channelのパラメータ値
+- Yuragi-Striderが選んだ各channelのパラメータ値
 - 連続GKSL発展と複数Kraus channelのoperator splittingが厳密に同一であること
 - resetやmeasurementを連続散逸へ混ぜる設計
 
@@ -59,7 +59,7 @@ M.-D. Choi, "Completely positive linear maps on complex matrices,"
 有限次元線形写像の完全正値性を、対応するblock matrixの正半定値性によって
 判定できることを示す。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 $$
 J(\mathcal E)
@@ -80,7 +80,7 @@ $$
 - `tests/test_cptp_choi_audit.py`
 - `validation_results/cptp_model_freeze.json`
 
-### QuantaScopeで固定した追加規約
+### Yuragi-Striderで固定した追加規約
 
 ```text
 choi_convention_id: unnormalized_input_output_row_major_v1
@@ -90,7 +90,7 @@ Tr(J) = d for trace-preserving maps
 ```
 
 Choi論文は完全正値性の判定を支えるが、上記の配列順序や正規化方式そのものは
-QuantaScopeが相互運用のために固定した実装規約である。
+Yuragi-Striderが相互運用のために固定した実装規約である。
 
 ## 3. GKS/Lindblad semigroupから有限時間channelへ
 
@@ -101,7 +101,7 @@ QuantaScopeが相互運用のために固定した実装規約である。
 - [Gorini-Kossakowski-Sudarshan (1976)](https://doi.org/10.1063/1.522979)
 - [Lindblad (1976)](https://doi.org/10.1007/BF01608499)
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 時間一定GKSL generatorに対して、
 
@@ -152,5 +152,5 @@ Gate-aware Hamiltonianとcollapse operatorsを同じLiouvillianへ入れる区�
 個別channelを任意順に分割せず、原則としてgenerator全体の指数写像を構成する。
 
 この方針はGKSL、Kraus、Choiの理論と整合するが、具体的なcolumn semantics、
-measurement timing、zero-duration gateの扱いはQuantaScope固有のcontractとして
+measurement timing、zero-duration gateの扱いはYuragi-Strider固有のcontractとして
 別途freezeする必要がある。

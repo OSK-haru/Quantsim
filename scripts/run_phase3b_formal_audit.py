@@ -138,7 +138,7 @@ def main() -> int:
         "shot_count": SHOTS,
         "source_revision": formal["source_revision"],
         "protocol": formal["protocol"],
-        "quantascope_commit": source["source_revision"]["freeze_commit"],
+        "yuragi_strider_commit": source["source_revision"]["freeze_commit"],
         "formal_holdout_eligible": False,
         "protocol_committed": False,
         "model_refit_after_run": False,

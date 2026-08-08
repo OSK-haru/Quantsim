@@ -17,7 +17,7 @@ from typing import Sequence
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CACHE_PATH = ROOT / ".cache" / "quantascope-verification.json"
+CACHE_PATH = ROOT / ".cache" / "yuragi-strider-verification.json"
 PROJECT_PYTHON = (
     ROOT / ".venv" / "Scripts" / "python.exe"
     if os.name == "nt"

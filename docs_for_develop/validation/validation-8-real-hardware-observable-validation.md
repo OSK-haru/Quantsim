@@ -27,7 +27,7 @@
 established.**
 
 The gate-aware CPTP model is frozen at
-`quantascope-gate-aware-cptp-v1`. The QPU measurements are evidence about
+`yuragi-strider-gate-aware-cptp-v1`. The QPU measurements are evidence about
 observable hardware behavior, not a replacement for the local numerical and
 QuTiP audits.
 
@@ -121,7 +121,7 @@ hardware evidence and does not change the frozen Gate-aware CPTP equations.
 - [Native model comparison](phase3b-native-model-comparison.md)
 - [QuTiP CPTP comparison](cptp-qutip-comparison.md)
 - Freeze commit: `badb128`
-- Freeze tag: `quantascope-phase3b-qpu-observability-v1`
+- Freeze tag: `yuragi-strider-phase3b-qpu-observability-v1`
 
 ## Next validation option
 

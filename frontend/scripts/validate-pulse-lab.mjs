@@ -23,7 +23,7 @@ assert(
   'Pulse Lab scope boundary is not visible',
 )
 
-const temporaryRoot = mkdtempSync(path.join(tmpdir(), 'quantascope-pulse-lab-'))
+const temporaryRoot = mkdtempSync(path.join(tmpdir(), 'yuragi-strider-pulse-lab-'))
 const temporarySource = path.join(temporaryRoot, 'src')
 mkdirSync(path.join(temporarySource, 'utils'), { recursive: true })
 mkdirSync(path.join(temporarySource, 'types'), { recursive: true })

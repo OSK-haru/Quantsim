@@ -1,6 +1,6 @@
 """python scripts/dev_server_doctor.py
 
-Small local development server diagnostic for QuantaScope.
+Small local development server diagnostic for Yuragi-Strider.
 """
 
 from __future__ import annotations
@@ -77,9 +77,9 @@ def build_recommendation(
     if port_5173.reachable and not vite_proxy_health.ok and api_health.ok:
         return "Vite is reachable but the proxy health check failed. The Vite proxy may be misconfigured or Vite should be restarted."
     if port_8001.reachable and not api_health.ok:
-        return "Port 8001 is reachable but /api/health did not return ok. Something other than the QuantaScope API may be using port 8001."
+        return "Port 8001 is reachable but /api/health did not return ok. Something other than the Yuragi-Strider API may be using port 8001."
     if port_8000.reachable and not api_health.ok:
-        return "Port 8000 is reachable but /api/health did not return ok. Something other than the QuantaScope API may be using port 8000."
+        return "Port 8000 is reachable but /api/health did not return ok. Something other than the Yuragi-Strider API may be using port 8000."
     if not port_8001.reachable and not port_8000.reachable and not port_5173.reachable:
         return "Both dev servers appear stopped."
     if api_health.ok:
@@ -97,7 +97,7 @@ def main() -> int:
         api_health = check_health("Direct API health", "http://127.0.0.1:8001/api/health")
         vite_proxy_health = check_health("Vite proxy health", "http://127.0.0.1:5173/api/health")
 
-        print("QuantaScope Dev Server Doctor")
+        print("Yuragi-Strider Dev Server Doctor")
         print(f"Port 8001: {'reachable' if port_8001.reachable else 'not reachable'}")
         print(f"Port 8000: {'reachable' if port_8000.reachable else 'not reachable'}")
         print(f"Port 5173: {'reachable' if port_5173.reachable else 'not reachable'}")

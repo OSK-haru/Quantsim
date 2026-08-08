@@ -20,7 +20,7 @@ class ResultExportTest(unittest.TestCase):
         result = _result()
         encoded = result_to_dict(result)
 
-        self.assertEqual(encoded["kind"], "quanta_scope.result")
+        self.assertEqual(encoded["kind"], "yuragi_strider.result")
         self.assertIn("summary", encoded)
         self.assertIn("timeseries", encoded)
         self.assertIn("derived_parameters", encoded)
@@ -46,12 +46,12 @@ class ResultExportTest(unittest.TestCase):
 
             self.assertIn("summary", json.loads(json_path.read_text(encoding="utf-8")))
             self.assertIn("time_us", csv_path.read_text(encoding="utf-8"))
-            self.assertIn("QuantaScope Simulation Report", md_path.read_text(encoding="utf-8"))
+            self.assertIn("Yuragi-Strider Simulation Report", md_path.read_text(encoding="utf-8"))
 
     def test_markdown_report_is_generated(self) -> None:
         report = markdown_report_text(_result())
 
-        self.assertIn("# QuantaScope Simulation Report", report)
+        self.assertIn("# Yuragi-Strider Simulation Report", report)
         self.assertIn("## Derived Parameters", report)
 
 

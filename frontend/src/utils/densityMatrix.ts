@@ -28,9 +28,13 @@ export type DensityMatrixValidationResult =
   | { valid: true; matrix: ValidatedDensityMatrix }
   | { valid: false; message: string }
 
+// Matches the core's noisy ceiling (MAX_DENSITY_MATRIX_QUBITS), so a 5-qubit
+// run's 32x32 matrix still renders instead of being rejected as malformed.
+const MAX_RENDERABLE_QUBITS = 5
+
 export function inferQubitCountFromDimension(dimension: number): number | null {
   const qubitCount = Math.log2(dimension)
-  return Number.isInteger(qubitCount) && qubitCount >= 1 && qubitCount <= 4
+  return Number.isInteger(qubitCount) && qubitCount >= 1 && qubitCount <= MAX_RENDERABLE_QUBITS
     ? qubitCount
     : null
 }

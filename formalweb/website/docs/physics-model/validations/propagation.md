@@ -156,11 +156,11 @@ V6は「**すべての有限RK4ステップがCPTP写像であることの一般
 同一の初期状態 $\rho(0)$、ハミルトニアン行列、崩壊演算子、区間長、出力時刻をQuTiPに渡して比較します。
 
 :::info 比較の独立性
-アダプタはQuantaScopeの行列を**そのままQobjに変換**します。QuTiPのスピン演算子を使って系を組み直すことはしません。これにより「同じ物理を2つの独立した積分器で解く」比較になります。
+アダプタはYuragi-Striderの行列を**そのままQobjに変換**します。QuTiPのスピン演算子を使って系を組み直すことはしません。これにより「同じ物理を2つの独立した積分器で解く」比較になります。
 :::
 
 ```text
-QuantaScope 内部RK4上限 : 0.03125 μs
+Yuragi-Strider 内部RK4上限 : 0.03125 μs
 QuTiP mesolve           : method=dop853, atol=1e-12, rtol=1e-12,
                           nsteps=100000, max_step_us=0.015625,
                           normalize_output=False, store_states=True
@@ -307,7 +307,7 @@ Python と Rust の結果は数値的に同一。一致誤差は two_level 1.776
 ## 明示的CPTPモデルの凍結
 
 ```text
-freeze_id : quantascope_explicit_cptp_v1
+freeze_id : yuragi_strider_explicit_cptp_v1
 method    : explicit_cptp_midpoint_gksl_v1
 判定       : PASS WITH RESTRICTIONS
 commit    : f306fbf6eb2083d9098ab0ade079e2681920ac4e

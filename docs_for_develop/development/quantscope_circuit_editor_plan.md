@@ -1,16 +1,16 @@
-# QuantaScope Circuit Editor Implementation Plan
+# Yuragi-Strider Circuit Editor Implementation Plan
 
 > **Status: Completed and retained as implementation history**
 >
 > UI-3A through UI-3G and arbitrary `circuit_config` submission are now
-> implemented. Circuit Studio supports 2-4 qubits, click and drag-and-drop
+> implemented. Circuit Studio supports 2-5 qubits, click and drag-and-drop
 > placement, CNOT, movement, deletion, Clear, Undo/Redo, and JSON
 > import/export. Statements below that describe a fixed Bell-only circuit or
 > future API integration are obsolete.
 
 ## 目的
 
-この文書は、QuantaScope に **Drag & Drop と基本ゲートパレットを備えた回路編集機能**を追加するための実装計画である。
+この文書は、Yuragi-Strider に **Drag & Drop と基本ゲートパレットを備えた回路編集機能**を追加するための実装計画である。
 
 対象は React frontend の UI / state 管理であり、現時点では core physics や FastAPI の任意回路実行には踏み込まない。
 
@@ -20,7 +20,7 @@
 
 ## 背景
 
-現在の QuantaScope は、以下の基本フローが成立している。
+現在の Yuragi-Strider は、以下の基本フローが成立している。
 
 ```text
 ParameterPanel

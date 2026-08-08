@@ -40,18 +40,18 @@ export function PulseWaveform({
     <section className="pulse-waveform" aria-labelledby="pulse-waveform-title">
       <div className="pulse-waveform__heading">
         <div>
-          <span>CONTROL ENVELOPE</span>
-          <h2 id="pulse-waveform-title">Drive waveform</h2>
+          <span>制御エンベロープ</span>
+          <h2 id="pulse-waveform-title">駆動波形</h2>
         </div>
         <div className="pulse-waveform__legend">
-          <span data-series="x">Omega x</span>
-          <span data-series="y">Omega y</span>
+          <span data-series="x">Ω x</span>
+          <span data-series="y">Ω y</span>
         </div>
       </div>
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
-        aria-label="Pulse x and y quadrature waveform in radians per microsecond"
+        aria-label="Pulseのx・y直交位相波形(rad/us)"
       >
         <line className="pulse-waveform__axis" x1={PAD_X} x2={WIDTH - PAD_X} y1={HEIGHT / 2} y2={HEIGHT / 2} />
         <line className="pulse-waveform__axis" x1={PAD_X} x2={PAD_X} y1={PAD_Y} y2={HEIGHT - PAD_Y} />
@@ -59,12 +59,12 @@ export function PulseWaveform({
         <path className="pulse-waveform__line pulse-waveform__line--x" d={path('omegaX')} />
         <path className="pulse-waveform__line pulse-waveform__line--y" d={path('omegaY')} />
         <text x={PAD_X} y={HEIGHT - 7}>0</text>
-        <text x={pulseBoundary} y={HEIGHT - 7} textAnchor="middle">pulse end</text>
+        <text x={pulseBoundary} y={HEIGHT - 7} textAnchor="middle">Pulse終了</text>
         <text x={WIDTH - PAD_X} y={HEIGHT - 7} textAnchor="end">{chartDurationUs.toPrecision(3)} us</text>
         <text x={8} y={18}>rad/us</text>
       </svg>
       {totalSimulationTimeUs > pulseDurationUs ? (
-        <p>After the pulse boundary, the control is zero and the state continues through idle observation.</p>
+        <p>Pulse境界以降は制御がゼロになり、状態はアイドル観測を通じて発展を続けます。</p>
       ) : null}
     </section>
   )

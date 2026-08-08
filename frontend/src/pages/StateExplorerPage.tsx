@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import './StateExplorerPage.css'
 import { BlochSphereExplorer } from '../components/BlochSphereExplorer'
-import { ParameterAnimationView } from '../components/ParameterAnimationView'
 import { MessageReceiveStateTransferView } from '../components/MessageReceiveStateTransferView'
 import { DensityMatrixViewer } from '../components/DensityMatrixViewer'
 import { MetricTimeline } from '../components/MetricTimeline'
 import { PhysicalTimelinePlayback } from '../components/PhysicalTimelinePlayback'
 import { MeasurementResults } from '../components/MeasurementResults'
+import { OutputProbabilities } from '../components/OutputProbabilities'
 import { StateProbabilityComparison } from '../components/StateProbabilityComparison'
 import { useCircuitContext } from '../context/useCircuitContext'
 import type { GateDurationDefaults, SimulationResponse } from '../types/simulation'
@@ -24,11 +24,11 @@ type StateExplorerPageProps = {
   onOpenSimulation: () => void
 }
 
-type ExplorerPanelKey = 'parameter' | 'physical' | 'metrics' | 'probabilities' | 'measurement' | 'bloch' | 'density' | 'transfer'
+type ExplorerPanelKey = 'physical' | 'metrics' | 'probabilities' | 'output' | 'measurement' | 'bloch' | 'density' | 'transfer'
 const EXPLORER_PANEL_LABELS: Record<ExplorerPanelKey, string> = {
   transfer: 'Message → Receive',
-  parameter: 'パラメータ', physical: '物理時間', metrics: '指標タイムライン',
-  probabilities: '確率比較', measurement: '測定結果', bloch: 'Bloch球', density: '密度行列',
+  physical: '物理時間', metrics: '指標タイムライン',
+  probabilities: '確率比較', output: '出力確率', measurement: '測定結果', bloch: 'Bloch球', density: '密度行列',
 }
 function CollapsiblePanel({ panelKey, open, onToggle, children }: { panelKey: ExplorerPanelKey; open: boolean; onToggle: () => void; children: ReactNode }) {
   return <section className={`state-explorer-panel${open ? '' : ' state-explorer-panel--collapsed'}`}>
@@ -37,6 +37,94 @@ function CollapsiblePanel({ panelKey, open, onToggle, children }: { panelKey: Ex
     </button>
     {open ? <div className="state-explorer-panel__body">{children}</div> : null}
   </section>
+}
+
+function PanelVisibilityMenu({
+  panels,
+  openPanels,
+  onToggle,
+  onShowAll,
+  onHideAll,
+}: {
+  panels: ExplorerPanelKey[]
+  openPanels: Record<ExplorerPanelKey, boolean>
+  onToggle: (panelKey: ExplorerPanelKey) => void
+  onShowAll: () => void
+  onHideAll: () => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const visibleCount = panels.filter((panelKey) => openPanels[panelKey]).length
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
+
+  return (
+    <div className="state-explorer-page__panel-menu" ref={containerRef}>
+      <button
+        type="button"
+        className="state-explorer-page__panel-menu-toggle"
+        aria-expanded={isOpen}
+        aria-controls="state-explorer-panel-menu-list"
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span className="state-explorer-page__panel-menu-icon" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
+        <span>表示項目</span>
+        <span className="state-explorer-page__panel-menu-count">
+          {visibleCount}/{panels.length}
+        </span>
+      </button>
+      {isOpen ? (
+        <div
+          id="state-explorer-panel-menu-list"
+          className="state-explorer-page__panel-menu-list"
+          role="menu"
+          aria-label="表示項目の選択"
+        >
+          <div className="state-explorer-page__panel-menu-actions">
+            <button type="button" onClick={onShowAll}>すべて表示</button>
+            <button type="button" onClick={onHideAll}>すべて非表示</button>
+          </div>
+          {panels.map((panelKey) => (
+            <label key={panelKey} className="state-explorer-page__panel-menu-item">
+              <input
+                type="checkbox"
+                checked={openPanels[panelKey]}
+                onChange={() => onToggle(panelKey)}
+              />
+              {EXPLORER_PANEL_LABELS[panelKey]}
+            </label>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 export function StateExplorerPage({
@@ -61,11 +149,22 @@ export function StateExplorerPage({
   const [snapshotIndex, setSnapshotIndex] = useState(() => preferredSnapshotIndex(snapshots))
   const [playbackSimulationTimeUs, setPlaybackSimulationTimeUs] = useState(0)
   const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
-    parameter: false, physical: true, metrics: true, probabilities: true, measurement: false, bloch: true, density: true, transfer: true,
+    physical: true, metrics: true, probabilities: true, output: true, measurement: true, bloch: true, density: true, transfer: true,
   })
   const togglePanel = useCallback((panelKey: ExplorerPanelKey) => {
     setOpenPanels((current) => ({ ...current, [panelKey]: !current[panelKey] }))
   }, [])
+  const setAllPanels = useCallback((visible: boolean) => {
+    setOpenPanels((current) => {
+      const next = { ...current }
+      for (const panelKey of Object.keys(EXPLORER_PANEL_LABELS) as ExplorerPanelKey[]) {
+        next[panelKey] = visible
+      }
+      return next
+    })
+  }, [])
+  const showAllPanels = useCallback(() => setAllPanels(true), [setAllPanels])
+  const hideAllPanels = useCallback(() => setAllPanels(false), [setAllPanels])
   const idealSnapshots = activeResponse && Array.isArray(activeResponse.run.comparison?.ideal_state_snapshots)
     ? activeResponse.run.comparison.ideal_state_snapshots
     : []
@@ -77,6 +176,17 @@ export function StateExplorerPage({
     ? activeResponse.circuit.qubit_count
     : null
   const matrixDimension = qubitCount === null ? null : 2 ** qubitCount
+  const hasTransfer = circuitState.columns.some((column) => column.gates.some((gate) => gate.type === 'MESSAGE'))
+    && circuitState.columns.some((column) => column.gates.some((gate) => gate.type === 'RECEIVED'))
+  const availablePanelKeys = useMemo(
+    () => (Object.keys(EXPLORER_PANEL_LABELS) as ExplorerPanelKey[]).filter((panelKey) => {
+      if (panelKey === 'transfer') return hasTransfer
+      if (panelKey === 'probabilities' || panelKey === 'measurement') return qubitCount !== null
+      if (panelKey === 'bloch' || panelKey === 'density') return snapshots.length > 0
+      return true
+    }),
+    [hasTransfer, qubitCount, snapshots.length],
+  )
   const handlePlaybackSimulationTimeChange = useCallback((simulationTimeUs: number) => {
     setPlaybackSimulationTimeUs(simulationTimeUs)
     const nextSnapshotIndex = nearestSnapshotIndex(snapshots, simulationTimeUs)
@@ -94,7 +204,7 @@ export function StateExplorerPage({
     <main className="state-explorer-page">
       <header className="state-explorer-page__header">
         <div>
-          <span className="state-explorer-page__eyebrow">QuantaScope / Gate-aware results</span>
+          <span className="state-explorer-page__eyebrow">Yuragi-Strider / Gate-aware results</span>
           <h1>Gate-aware 状態エクスプローラー</h1>
           <p className="state-explorer-page__scope">
             `/api/simulate` の回路スナップショット専用です。Pulse Labの結果は
@@ -122,24 +232,14 @@ export function StateExplorerPage({
         </section>
       ) : (
         <>
-          <div className="state-explorer-page__panel-toolbar" aria-label="表示項目の選択">
-            <span>表示項目</span>
-            {(Object.keys(EXPLORER_PANEL_LABELS) as ExplorerPanelKey[]).map((panelKey) => (
-              <button key={panelKey} type="button" className={openPanels[panelKey] ? 'is-active' : ''} aria-pressed={openPanels[panelKey]} onClick={() => togglePanel(panelKey)}>
-                {EXPLORER_PANEL_LABELS[panelKey]}
-              </button>
-            ))}
-          </div>
-          <CollapsiblePanel panelKey="parameter" open={openPanels.parameter} onToggle={() => togglePanel('parameter')}>
-            <ParameterAnimationView
-              circuit={circuitState}
-              circuitConfig={executedCircuitConfig ?? currentCircuitConfig}
-              gateDurationDefaults={gateDurationDefaults}
-              baseResponse={activeResponse}
-            />
-          </CollapsiblePanel>
-          {circuitState.columns.some((column) => column.gates.some((gate) => gate.type === 'MESSAGE'))
-            && circuitState.columns.some((column) => column.gates.some((gate) => gate.type === 'RECEIVED')) ? (
+          <PanelVisibilityMenu
+            panels={availablePanelKeys}
+            openPanels={openPanels}
+            onToggle={togglePanel}
+            onShowAll={showAllPanels}
+            onHideAll={hideAllPanels}
+          />
+          {hasTransfer ? (
             <CollapsiblePanel panelKey="transfer" open={openPanels.transfer} onToggle={() => togglePanel('transfer')}>
               <MessageReceiveStateTransferView circuit={circuitState} noisySnapshots={snapshots} idealSnapshots={idealSnapshots} stateTransfer={activeResponse.state_transfer} />
             </CollapsiblePanel>
@@ -175,6 +275,13 @@ export function StateExplorerPage({
             />
             </CollapsiblePanel>
           )}
+          <CollapsiblePanel panelKey="output" open={openPanels.output} onToggle={() => togglePanel('output')}>
+            <OutputProbabilities
+              outputProbabilities={activeResponse.output_probabilities}
+              qubitCount={qubitCount}
+              defaultOpen
+            />
+          </CollapsiblePanel>
           {qubitCount === null ? null : (
             <CollapsiblePanel panelKey="measurement" open={openPanels.measurement} onToggle={() => togglePanel('measurement')}>
             <MeasurementResults

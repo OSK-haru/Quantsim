@@ -24,9 +24,9 @@ Noise adds random disturbance to the state as it evolves. That disturbance makes
 
 Completion fidelity measures the state when the intended operation is considered complete. Final fidelity measures the state at the end of the whole simulated timeline. They can be different when the state keeps evolving after the gate has finished.
 
-## What model is QuantaScope using?
+## What model is Yuragi-Strider using?
 
-QuantaScope uses an educational weak-coupling open-system simulation. It uses gate-aware Lindblad-style evolution for a one-qubit H-gate model and maps environment settings into simple T1 and T2 lifetimes. The goal is to show trends under the chosen model, not to reproduce every hardware detail.
+Yuragi-Strider uses an educational weak-coupling open-system simulation. It uses gate-aware Lindblad-style evolution for a one-qubit H-gate model and maps environment settings into simple T1 and T2 lifetimes. The goal is to show trends under the chosen model, not to reproduce every hardware detail.
 
 ## Is this a hardware-accurate simulator?
 

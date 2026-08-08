@@ -4,15 +4,15 @@
 
 This directory tracks execution of the audited physical-model finalization
 roadmap. The canonical requirements and mathematical direction are in
-[`../../requirements/quantascope_physical_model_finalization_plan.md`](../../requirements/quantascope_physical_model_finalization_plan.md).
+[`../../requirements/yuragi_strider_physical_model_finalization_plan.md`](../../requirements/yuragi_strider_physical_model_finalization_plan.md).
 
 ## Current State
 
 | Phase | Status | Entry condition | Main output |
 |---|---|---|---|
-| Phase 0: Clean Python reference freeze | Complete | Completed | `28b28a5` source commit and `quantascope-python-reference-pulse-b-v1` tag |
+| Phase 0: Clean Python reference freeze | Complete | Completed | `28b28a5` source commit and `yuragi-strider-python-reference-pulse-b-v1` tag |
 | Phase 1: Rust parity | Complete | Phase 0 clean tag | Operator, RHS, RK4-stage, trajectory, and API parity |
-| Phase 2: Explicit CPTP path | Complete | Frozen Python/Rust RK4 parity | `quantascope_explicit_cptp_v1` freeze |
+| Phase 2: Explicit CPTP path | Complete | Frozen Python/Rust RK4 parity | `yuragi_strider_explicit_cptp_v1` freeze |
 | Phase 3A: QuTiP audit | Complete | Phase 2 frozen CPTP path | Independent Python/Rust CPTP comparison with QuTiP |
 | Gate-aware explicit CPTP | Complete | Gate-aware Hamiltonian-Lindblad V1 | Constant-GKSL CPTP maps, QuTiP audit, Python/Rust parity, API/UI selection |
 | Phase 3B: Hardware audit | In progress | Phase 3A complete | Dataset contract frozen; collection not started |
@@ -59,7 +59,7 @@ piecewise paths have Python-Rust parity coverage, and their accuracy,
 physicality, and observed runtime have been compared with RK4. Pulse API and
 Pulse Lab now expose an explicit `fixed_step_rk4 | explicit_cptp` selection,
 with RK4 retained as the backward-compatible default. Gate-aware execution is
-unchanged. The explicit path is frozen as `quantascope_explicit_cptp_v1` with
+unchanged. The explicit path is frozen as `yuragi_strider_explicit_cptp_v1` with
 a `PASS WITH RESTRICTIONS` decision.
 
 Phase 3A is complete. Existing gate-aware and RK4 pulse comparisons are now

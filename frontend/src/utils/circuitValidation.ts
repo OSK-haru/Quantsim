@@ -93,6 +93,8 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
         gate.type !== 'CP' &&
         gate.type !== 'CCX' &&
         gate.type !== 'SWAP' &&
+        gate.type !== 'QFT' &&
+        gate.type !== 'ORACLE' &&
         gate.type !== 'MEASURE'
         && gate.type !== 'MESSAGE'
       ) {
@@ -173,6 +175,38 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
           return {
             valid: false,
             message: formatValidationFailure(`SWAP in column ${columnIndex + 1} uses an out-of-range qubit.`),
+          }
+        }
+      } else if (gate.type === 'QFT' || gate.type === 'ORACLE') {
+        if (gate.targets.length < 1 || (gate.controls?.length ?? 0) > 0) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`${gate.type} in column ${columnIndex + 1} needs at least one target and no controls.`),
+          }
+        }
+        if (hasDuplicateQubits(gate.targets)) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`${gate.type} in column ${columnIndex + 1} lists a qubit more than once.`),
+          }
+        }
+        if (gate.targets.some((target) =>
+          !isFiniteInteger(target) || target < 0 || target >= config.logical_qubits
+        )) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`${gate.type} in column ${columnIndex + 1} uses an out-of-range qubit.`),
+          }
+        }
+        if (gate.type === 'ORACLE') {
+          const marked = gate.params?.marked_index ?? 0
+          if (!isFiniteInteger(marked) || marked < 0 || marked >= 2 ** gate.targets.length) {
+            return {
+              valid: false,
+              message: formatValidationFailure(
+                `ORACLE in column ${columnIndex + 1} marks a state outside its ${gate.targets.length}-qubit register.`,
+              ),
+            }
           }
         }
       } else {

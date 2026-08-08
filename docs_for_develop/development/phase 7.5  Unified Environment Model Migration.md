@@ -16,7 +16,7 @@
   → 互換・簡易入力レイヤーへ降格
 
 新物理モデル
-  → QuantaScopeの標準環境モデルへ昇格
+  → Yuragi-Striderの標準環境モデルへ昇格
 ```
 
 にすることです。
@@ -492,7 +492,7 @@ input_mode in {"normalized", "physical"}
 ```json
 {
   "schema_version": "1.1",
-  "kind": "quanta_scope.config",
+  "kind": "yuragi_strider.config",
   "environment": {
     "model": "generic_superconducting_open_system_v1",
     "input_mode": "normalized",

@@ -165,6 +165,28 @@
   font-weight: 700;
 }
 
+.circuit-preview__add-column-band {
+  fill: rgba(103, 232, 249, 0.05);
+  stroke: rgba(103, 232, 249, 0.4);
+  stroke-width: 1.4;
+  stroke-dasharray: 6 5;
+}
+
+.circuit-preview__add-column-band--hovered {
+  fill: rgba(103, 232, 249, 0.16);
+  stroke: rgba(103, 232, 249, 0.85);
+  stroke-dasharray: none;
+}
+
+.circuit-preview__add-column-label {
+  fill: rgba(165, 243, 252, 0.85);
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .circuit-preview__wire {
   stroke: rgba(148, 163, 184, 0.42);
   stroke-width: 2;
@@ -231,14 +253,12 @@
 
 .circuit-preview__slot-group--selected .circuit-preview__slot {
   stroke: rgba(253, 224, 71, 0.98);
-  fill: rgba(250, 204, 21, 0.08);
   stroke-width: 1.8;
 }
 
 .circuit-preview__slot-group--selected .circuit-preview__gate {
   stroke: rgba(253, 224, 71, 0.98);
   stroke-width: 2.4;
-  filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.26));
 }
 
 .circuit-preview__slot-group--selected .circuit-preview__gate--measure {
@@ -361,6 +381,15 @@
   user-select: none;
 }
 
+.circuit-preview__gate-theta-label {
+  fill: #fcd34d;
+  font-size: 9px;
+  font-weight: 800;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .circuit-preview__duration-badge {
   pointer-events: none;
 }
@@ -429,6 +458,67 @@
 .circuit-preview__cnot-line--selected {
   stroke: rgba(253, 224, 71, 0.98);
   stroke-width: 2.4;
+}
+
+/* QFT-style register gates: dashed connector because the register may skip
+   qubits, one boxed cell per member showing its position in the register. */
+.circuit-preview__register-line {
+  stroke: rgba(196, 181, 253, 0.7);
+  stroke-width: 1.6;
+  stroke-dasharray: 4 3;
+}
+
+.circuit-preview__register-line--selected {
+  stroke: rgba(253, 224, 71, 0.98);
+  stroke-width: 2.4;
+}
+
+.circuit-preview__register-box {
+  fill: rgba(76, 29, 149, 0.92);
+  stroke: rgba(196, 181, 253, 0.9);
+  stroke-width: 1.6;
+}
+
+/* The oracle is a marking gate rather than a transform, so it gets its own
+   colour and its cells show the bit the marked state needs on that qubit. */
+.circuit-preview__register-box--oracle {
+  fill: rgba(15, 76, 74, 0.94);
+  stroke: rgba(94, 234, 212, 0.9);
+}
+
+.circuit-preview__register-box--selected {
+  stroke: rgba(253, 224, 71, 0.98);
+  stroke-width: 2.4;
+}
+
+.circuit-preview__register-label {
+  fill: #ddd6fe;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.circuit-preview__register-label--selected {
+  fill: #fde047;
+}
+
+.circuit-preview__draw-preview-line {
+  stroke: rgba(103, 232, 249, 0.85);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
+
+.circuit-preview__slot-group--draw-start .circuit-preview__slot {
+  stroke: rgba(103, 232, 249, 0.55);
+  stroke-dasharray: 4 3;
+}
+
+.circuit-preview__slot-group--draw-start:hover .circuit-preview__slot {
+  stroke: rgba(103, 232, 249, 0.88);
+  fill: rgba(103, 232, 249, 0.1);
 }
 
 @media (max-width: 640px) {

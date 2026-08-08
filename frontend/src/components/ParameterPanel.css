@@ -175,6 +175,12 @@ details[open] > .parameter-panel__section-summary .parameter-panel__section-togg
   gap: 12px;
 }
 
+.parameter-panel__fields--dials {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  justify-items: center;
+  gap: 18px 12px;
+}
+
 .parameter-panel__field {
   display: grid;
   gap: 7px;
@@ -219,37 +225,6 @@ details[open] > .parameter-panel__section-summary .parameter-panel__section-togg
   color: #fca5a5;
   font-size: 0.78rem;
   line-height: 1.35;
-}
-
-.parameter-panel__snapshot {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
-  margin: 16px 0 0;
-}
-
-.parameter-panel__snapshot-item {
-  display: grid;
-  gap: 4px;
-  padding: 12px 14px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 12px;
-  background: rgba(2, 6, 23, 0.28);
-}
-
-.parameter-panel__snapshot-item dt {
-  color: #94a3b8;
-  font-size: 0.74rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.parameter-panel__snapshot-item dd {
-  margin: 0;
-  color: #e2e8f0;
-  font-size: 0.92rem;
-  line-height: 1.4;
-  word-break: break-word;
 }
 
 @media (max-width: 640px) {

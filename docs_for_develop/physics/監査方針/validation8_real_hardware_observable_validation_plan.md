@@ -31,12 +31,12 @@ gate-aware実行には接続されていない。したがってformal実行前�
 # 1. 目的
 
 VALIDATION-1からVALIDATION-7は、解析解、既知極限、時間刻み収束、
-QuTiPとの同一条件比較によって、QuantaScopeの内部妥当性と数値妥当性を
+QuTiPとの同一条件比較によって、Yuragi-Striderの内部妥当性と数値妥当性を
 監査する。
 
 VALIDATION-8では、それらとは異なる問いを扱う。
 
-> QuantaScopeのgate-aware開放系モデルは、実量子プロセッサから得られる
+> Yuragi-Striderのgate-aware開放系モデルは、実量子プロセッサから得られる
 > 測定確率、緩和曲線、コヒーレンス減衰、回路出力を、事前に定めた誤差範囲で
 > 予測できるか。
 
@@ -49,7 +49,7 @@ V8はQuTiPとの再比較ではない。実機または実機由来の公開デ�
 
 ## 2.1 VALIDATION-7
 
-VALIDATION-7では、QuantaScopeとQuTiPに同一の
+VALIDATION-7では、Yuragi-StriderとQuTiPに同一の
 
 $$
 \rho(0),\quad H(t),\quad L_k,\quad t_j
@@ -139,7 +139,7 @@ V8の主対象は、既存のgate-aware open-system modelとする。
 
 ## 4.2 Pulseモデルとの分離
 
-V8は、QuantaScopeのGaussianまたはSquare pulse波形が実機制御線上の
+V8は、Yuragi-StriderのGaussianまたはSquare pulse波形が実機制御線上の
 実波形と一致することを監査しない。
 
 Pulse-level実機検証には、少なくとも次が必要になる。
@@ -262,7 +262,7 @@ V8-Aは、測定済みの有効rateを与えたときに、gate-awareモデル�
 ## 6.2 V8-B: Physical-input mapping audit
 
 温度、qubit frequency、`device_quality`、flux noise等からrateを生成する
-QuantaScope固有のmappingは、V8-Aとは別に評価する。
+Yuragi-Strider固有のmappingは、V8-Aとは別に評価する。
 
 特に`device_quality`は教育用の抽象パラメータであり、実機の単一校正値と
 直接同一視してはならない。
@@ -300,7 +300,7 @@ not externally identifiable
 - gate error
 - shot数
 - calibration timestamp
-- QuantaScope commit
+- Yuragi-Strider commit
 - Python/Rust backend ID
 - model ID
 
@@ -347,7 +347,7 @@ $T_2^*$には準静的ノイズやinhomogeneous broadeningが含まれる可能�
 したがって、Markov型の$T_\phi$と無条件に同一視してはならない。
 
 可能であればT2 Hahnまたは別のhomogeneous coherence指標も取得し、
-どの値をQuantaScopeの$\gamma_\phi$へ対応させたか明記する。
+どの値をYuragi-Striderの$\gamma_\phi$へ対応させたか明記する。
 
 ## V8-3: Idle中のpopulationとcoherence
 
@@ -380,7 +380,7 @@ $T_2^*$には準静的ノイズやinhomogeneous broadeningが含まれる可能�
 - Zまたはvirtual-Z相当操作
 - gate後に異なる長さのidleを付けた回路
 
-実機のnative gateとQuantaScopeの論理gateが同じ操作を意味するか、
+実機のnative gateとYuragi-Striderの論理gateが同じ操作を意味するか、
 transpiled circuitを監査する。
 
 論理ゲート名が同じであることだけを根拠に、同一Hamiltonianとみなしてはならない。
@@ -402,7 +402,7 @@ measure(q0, q1)
 - 全bit stringの出力分布
 - parity
 - ideal Bell distributionからの距離
-- QuantaScope予測分布からの距離
+- Yuragi-Strider予測分布からの距離
 
 実機ではnative entangling gateへtranspileされるため、CNOT一個という表示だけで
 実機のgate durationやnoise exposureを決めてはならない。
@@ -461,10 +461,10 @@ calibration subsetで推定したパラメータを固定した後、次のい�
 1. raw measured distribution
 2. readout mitigation後のdistribution
 
-QuantaScopeの状態発展と比較する主対象は、原則としてmitigation後の推定値とする。
+Yuragi-Striderの状態発展と比較する主対象は、原則としてmitigation後の推定値とする。
 ただし、raw結果も必ず残し、補正によって不一致が隠れていないか監査する。
 
-必要に応じて、QuantaScopeの最終確率へ独立したmeasurement confusion matrixを
+必要に応じて、Yuragi-Striderの最終確率へ独立したmeasurement confusion matrixを
 作用させ、raw hardware distributionとの比較も行う。
 
 状態発展ノイズと測定ノイズを一つのrateへ吸収してはならない。
@@ -549,7 +549,7 @@ multiple-comparison policy
 1. V8-0のprovenanceが完全である。
 2. calibration subsetとholdout subsetが分離されている。
 3. holdoutのprimary endpointが事前閾値内である。
-4. QuantaScope予測が、少なくとも対象ケースでideal/no-noise baselineより改善する。
+4. Yuragi-Strider予測が、少なくとも対象ケースでideal/no-noise baselineより改善する。
 5. raw結果とmitigated結果の両方が保存されている。
 6. 実機driftが結果を無効化する水準でない。
 7. 不合格ケースが削除されず、理由とともに保存されている。
@@ -562,14 +562,14 @@ pilot runは正式閾値の設計に利用してよいが、同じデータをfo
 
 # 11. 比較baseline
 
-V8では、QuantaScopeだけを単独評価せず、少なくとも次と比較する。
+V8では、Yuragi-Striderだけを単独評価せず、少なくとも次と比較する。
 
 1. ideal/no-noise circuit prediction
-2. QuantaScope gate-aware prediction
+2. Yuragi-Strider gate-aware prediction
 3. 必要に応じて単純なgate depolarizing model
 4. hardware measurement
 
-QuantaScopeが複雑であること自体を価値とみなさない。
+Yuragi-Striderが複雑であること自体を価値とみなさない。
 単純baselineと同等または劣る場合は、その事実を報告する。
 
 ---
@@ -659,7 +659,7 @@ scope_and_limitations
 合格した場合、次のように限定して主張できる。
 
 > 固定した実機、qubit、校正時刻、回路群、shot数、評価指標の範囲で、
-> QuantaScopeのgate-aware open-system modelは、未使用条件の実機観測量を
+> Yuragi-Striderのgate-aware open-system modelは、未使用条件の実機観測量を
 > 事前に定めた誤差範囲で予測した。
 
 ---
@@ -671,7 +671,7 @@ V8が合格しても、次は主張しない。
 - すべての量子コンピュータで精度が保証される
 - 実機内部の真の密度行列を直接観測した
 - collapse operatorが実機の微視的機構を一意に表す
-- QuantaScopeのpulse波形が実機pulseと一致する
+- Yuragi-Striderのpulse波形が実機pulseと一致する
 - non-Markovian noiseを再現している
 - qutrit leakageやcrosstalkを再現している
 - 特定メーカーの校正用シミュレーターになった

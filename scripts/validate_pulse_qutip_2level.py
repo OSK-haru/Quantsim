@@ -464,7 +464,7 @@ def _write_plot(cases, path):
             [point["quanta_population_1"] for point in case["trajectory"]],
             color="#1f77b4",
             linewidth=2,
-            label="QuantaScope",
+            label="Yuragi-Strider",
         )
         axis.plot(
             times,
@@ -491,7 +491,7 @@ def _write_plot(cases, path):
         axis.grid(True, alpha=0.25)
         axis.legend(fontsize=8)
     figure.suptitle(
-        "Identical time-dependent problems: QuantaScope vs QuTiP",
+        "Identical time-dependent problems: Yuragi-Strider vs QuTiP",
         fontsize=14,
     )
     figure.tight_layout(rect=(0, 0, 1, 0.97))
@@ -509,7 +509,7 @@ def _write_report(report, path):
         "",
         "Both solvers receive the same initial density matrix, exact "
         "time-dependent Hamiltonian matrices, collapse-operator matrices, "
-        "and requested output times. QuantaScope uses its fixed-step RK4 "
+        "and requested output times. Yuragi-Strider uses its fixed-step RK4 "
         "reference path; QuTiP uses `mesolve` with DOP853.",
         "",
         f"The matrix-difference tolerance was fixed at "

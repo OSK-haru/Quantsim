@@ -35,7 +35,7 @@ from core.rust_dense_kernel import is_rust_kernel_available
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CPTP_MODEL_FREEZE_ID = "quantascope_explicit_cptp_v1"
+CPTP_MODEL_FREEZE_ID = "yuragi_strider_explicit_cptp_v1"
 
 CRITICAL_SOURCE_FILES = (
     "core/cptp.py",
@@ -47,7 +47,7 @@ CRITICAL_SOURCE_FILES = (
     "core/pulse_open_system.py",
     "core/pulse_qutrit_open_system.py",
     "core/rust_dense_kernel.py",
-    "rust_kernels/quantascope_rust/src/lib.rs",
+    "rust_kernels/yuragi_strider_rust/src/lib.rs",
     "api/pulse_models.py",
     "api/pulse_service.py",
     "api/pulse_qutrit_service.py",
@@ -71,11 +71,11 @@ CRITICAL_SOURCE_FILES = (
 
 REQUIRED_EVIDENCE_FILES = (
     "validation_results/cptp_rk4_comparison.json",
-    "docs/validation/cptp-rk4-comparison.md",
-    "docs/development/physical-model-finalization/"
+    "docs_for_develop/validation/cptp-rk4-comparison.md",
+    "docs_for_develop/development/physical-model-finalization/"
     "phase2-explicit-cptp-path.md",
-    "docs/physics/model_identity.md",
-    "docs/validation/cptp-model-freeze.md",
+    "docs_for_develop/physics/model_identity.md",
+    "docs_for_develop/validation/cptp-model-freeze.md",
 )
 
 

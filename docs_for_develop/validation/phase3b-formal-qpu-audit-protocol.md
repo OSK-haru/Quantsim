@@ -9,7 +9,7 @@ without changing the model.
 
 ## Frozen model
 
-- Freeze tag: `quantascope-gate-aware-cptp-v1`
+- Freeze tag: `yuragi-strider-gate-aware-cptp-v1`
 - Freeze commit: `f306fbf6eb2083d9098ab0ade079e2681920ac4e`
 - Backend: `ibm_kingston`
 - Physical qubit: `150`

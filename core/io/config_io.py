@@ -1,4 +1,4 @@
-"""Read and write QuantaScope simulation configs."""
+"""Read and write Yuragi-Strider simulation configs."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from core.validation import has_blocking_issues, validate_simulation_config
 
 
 SCHEMA_VERSION = "1.1"
-CONFIG_KIND = "quanta_scope.config"
+CONFIG_KIND = "yuragi_strider.config"
 
 
 class ConfigValidationError(ValueError):
@@ -21,7 +21,7 @@ class ConfigValidationError(ValueError):
     def __init__(self, issues: list[ValidationIssue]) -> None:
         self.issues = issues
         details = "; ".join(f"{issue.code}: {issue.message}" for issue in issues)
-        super().__init__(f"invalid QuantaScope config: {details}")
+        super().__init__(f"invalid Yuragi-Strider config: {details}")
 
 
 def config_to_dict(

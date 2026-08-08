@@ -10,10 +10,10 @@ from core.gates import Matrix
 
 
 def is_rust_kernel_available() -> bool:
-    """Return whether the optional quantascope_rust module is importable."""
+    """Return whether the optional yuragi_strider_rust module is importable."""
 
     try:
-        importlib.import_module("quantascope_rust")
+        importlib.import_module("yuragi_strider_rust")
     except Exception:
         return False
     return True
@@ -203,7 +203,7 @@ def rust_rk4_time_dependent_stages(
     matrix_size = 2 * dimension * dimension
     if len(flat_stages) != 4 * matrix_size:
         raise RuntimeError(
-            "quantascope_rust returned an unexpected RK4 stage length"
+            "yuragi_strider_rust returned an unexpected RK4 stage length"
         )
     return (
         unflatten_complex_matrix(flat_stages[0:matrix_size], dimension),
@@ -362,7 +362,7 @@ def rust_rk4_evolve_segment_samples(
     expected = len(sample_substeps) * matrix_size
     if len(result) != expected:
         raise RuntimeError(
-            "quantascope_rust returned an unexpected sampled output length"
+            "yuragi_strider_rust returned an unexpected sampled output length"
         )
     return tuple(
         unflatten_complex_matrix(result[start:start + matrix_size], dimension)
@@ -372,9 +372,9 @@ def rust_rk4_evolve_segment_samples(
 
 def _load_rust_module():
     try:
-        return importlib.import_module("quantascope_rust")
+        return importlib.import_module("yuragi_strider_rust")
     except Exception as exc:
-        raise RuntimeError("quantascope_rust is not available") from exc
+        raise RuntimeError("yuragi_strider_rust is not available") from exc
 
 
 def _validate_evolution_inputs(

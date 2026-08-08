@@ -228,7 +228,7 @@ def run(args: argparse.Namespace) -> int:
                 for record in compiled_records
             }
         ),
-        "quantascope_commit": manifest["source_revision"]["freeze_commit"],
+        "yuragi_strider_commit": manifest["source_revision"]["freeze_commit"],
         "model_refit_after_pilot": policy["model_refit_after_pilot"],
     }
     args.output_dir.mkdir(parents=True, exist_ok=True)

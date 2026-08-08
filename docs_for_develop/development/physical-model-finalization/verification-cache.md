@@ -2,7 +2,7 @@
 
 The repository now provides `scripts/verify_cached.py` for deterministic local
 checks. It stores fingerprints in the ignored file
-`.cache/quantascope-verification.json`.
+`.cache/yuragi-strider-verification.json`.
 
 Available checks:
 

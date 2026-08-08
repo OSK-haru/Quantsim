@@ -29,13 +29,13 @@ from core.simulator import run_simulation
 from core.ui_response import simulation_result_to_ui_response
 
 
-app = FastAPI(title="QuantaScope API", version="0.1.0")
+app = FastAPI(title="Yuragi-Strider API", version="0.1.0")
 
 PULSE_API_TIMEOUT_SECONDS = 90.0
 PULSE_API_MAX_CONCURRENT_REQUESTS = 2
 _PULSE_EXECUTOR = ThreadPoolExecutor(
     max_workers=PULSE_API_MAX_CONCURRENT_REQUESTS,
-    thread_name_prefix="quantscope-pulse",
+    thread_name_prefix="yuragi-strider-pulse",
 )
 _PULSE_EXECUTION_SLOTS = BoundedSemaphore(
     PULSE_API_MAX_CONCURRENT_REQUESTS
@@ -57,6 +57,9 @@ class GateDurationDefaultsRequest(BaseModel):
     SWAP: float = Field(default=0.2, gt=0.0)
     CP: float = Field(default=0.2, gt=0.0)
     CCX: float = Field(default=0.4, gt=0.0)
+    # QFT and ORACLE span a variable register, so these are per spanned qubit.
+    QFT: float = Field(default=0.2, gt=0.0)
+    ORACLE: float = Field(default=0.2, gt=0.0)
     MEASURE: float = Field(default=0.0, ge=0.0)
     MESSAGE: float = Field(default=0.04, gt=0.0)
 
@@ -108,6 +111,15 @@ class CircuitGateParamsRequest(BaseModel):
     duration_us: float | None = None
     theta_rad: float | None = None
     animation_parameter_t: float | None = None
+    marked_index: float | None = None
+
+    @validator("marked_index")
+    def validate_marked_index(cls, value: float | None) -> float | None:
+        if value is None:
+            return value
+        if not math.isfinite(value) or value != int(value) or value < 0:
+            raise ValueError("marked_index must be a non-negative integer.")
+        return value
 
     @validator("duration_us")
     def validate_duration_us(cls, value: float | None) -> float | None:
@@ -136,7 +148,7 @@ class ClassicalConditionRequest(BaseModel):
 
 
 class CircuitGateRequest(BaseModel):
-    type: Literal["H", "X", "Y", "Z", "S", "T", "RX", "RY", "RZ", "CNOT", "CZ", "CP", "CCX", "SWAP", "MEASURE", "MESSAGE", "RECEIVED"]
+    type: Literal["H", "X", "Y", "Z", "S", "T", "RX", "RY", "RZ", "CNOT", "CZ", "CP", "CCX", "SWAP", "QFT", "ORACLE", "MEASURE", "MESSAGE", "RECEIVED"]
     targets: list[int]
     controls: list[int] = Field(default_factory=list)
     params: CircuitGateParamsRequest = Field(default_factory=CircuitGateParamsRequest)
@@ -173,6 +185,21 @@ class CircuitGateRequest(BaseModel):
                 raise ValueError("SWAP requires exactly two target qubits.")
             if targets[0] == targets[1]:
                 raise ValueError("SWAP target qubits must be different.")
+        elif gate_type in {"QFT", "ORACLE"}:
+            if controls:
+                raise ValueError(f"{gate_type} does not accept control qubits.")
+            if not targets:
+                raise ValueError(f"{gate_type} requires at least one target qubit.")
+            if len(set(targets)) != len(targets):
+                raise ValueError(f"{gate_type} target qubits must all be different.")
+            if gate_type == "ORACLE":
+                params = values.get("params")
+                marked = getattr(params, "marked_index", None)
+                if marked is not None and not 0 <= int(marked) < 2 ** len(targets):
+                    raise ValueError(
+                        "ORACLE marked_index must be inside the register range "
+                        f"0..{2 ** len(targets) - 1}."
+                    )
         else:
             if len(targets) != 1:
                 raise ValueError(f"{gate_type} requires exactly one target qubit.")
@@ -447,6 +474,14 @@ def build_custom_circuit(
         "MESSAGE": gate_durations.MESSAGE,
     }
 
+    def default_duration_us(gate: CircuitGateRequest) -> float:
+        # QFT and ORACLE declare their default per spanned qubit.
+        if gate.type == "QFT":
+            return gate_durations.QFT * len(gate.targets)
+        if gate.type == "ORACLE":
+            return gate_durations.ORACLE * len(gate.targets)
+        return duration_defaults[gate.type]
+
     return CircuitConfig(
         logical_qubits=circuit_config.logical_qubits,
         classical_bits=circuit_config.classical_bits,
@@ -462,7 +497,7 @@ def build_custom_circuit(
                         params={
                             **gate.params.model_dump(exclude_none=True),
                             **(
-                                {"duration_us": duration_defaults[gate.type]}
+                                {"duration_us": default_duration_us(gate)}
                                 if gate.params.duration_us is None
                                 else {}
                             ),

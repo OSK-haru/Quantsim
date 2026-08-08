@@ -13,7 +13,7 @@
 
 ## 目的
 
-Phase 8 の目的は、QuantaScope の本開発版について、以下を検証することです。
+Phase 8 の目的は、Yuragi-Strider の本開発版について、以下を検証することです。
 
 ```text
 1. 主要機能が壊れていない
@@ -107,7 +107,7 @@ git checkout -b phase8-validation-regression
 
 # Step 1: 回帰テスト対象を固定する
 
-まず、QuantaScopeで絶対に壊してはいけない代表ケースを決めます。
+まず、Yuragi-Striderで絶対に壊してはいけない代表ケースを決めます。
 
 ## 必須回帰ケース
 

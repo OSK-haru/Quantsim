@@ -1,4 +1,4 @@
-"""Backend selection boundary for QuantaScope simulation runners."""
+"""Backend selection boundary for Yuragi-Strider simulation runners."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def rust_backend_status() -> dict[str, Any]:
     """Return import/smoke metadata for the optional Rust preview module."""
 
     try:
-        module = import_module("quantascope_rust")
+        module = import_module("yuragi_strider_rust")
     except Exception as exc:  # pragma: no cover - exact import errors vary locally.
         return {
             "available": False,
@@ -37,7 +37,7 @@ def rust_backend_status() -> dict[str, Any]:
         return {
             "available": False,
             "name": "",
-            "reason": "quantascope_rust.backend_name() is missing",
+            "reason": "yuragi_strider_rust.backend_name() is missing",
         }
     try:
         name = str(backend_name())
@@ -45,7 +45,7 @@ def rust_backend_status() -> dict[str, Any]:
         return {
             "available": False,
             "name": "",
-            "reason": f"quantascope_rust.backend_name() failed: {exc}",
+            "reason": f"yuragi_strider_rust.backend_name() failed: {exc}",
         }
     return {
         "available": True,

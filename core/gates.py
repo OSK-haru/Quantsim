@@ -82,7 +82,12 @@ DEFAULT_GATE_DURATIONS_US = {
     "MEASURE": 0.0,
     "MESSAGE": 0.04,
 }
+# QFT and ORACLE span a variable number of qubits, so their logical durations are
+# declared per spanned qubit instead of as single entries in the table above.
+QFT_DURATION_PER_QUBIT_US = 0.20
+ORACLE_DURATION_PER_QUBIT_US = 0.20
 INVOLUTION_TOLERANCE = 1e-9
+DEGENERATE_EIGENVALUE_TOLERANCE = 1e-9
 
 
 def expand_single_qubit_gate(gate: Matrix, target: int, n_qubits: int) -> Matrix:
@@ -252,6 +257,128 @@ def expand_ccx(
     return _freeze(rows)
 
 
+def expand_qft(targets: Sequence[int], n_qubits: int) -> Matrix:
+    """Return the QFT over an arbitrary ordered subset of qubits.
+
+    ``targets[0]`` is the most significant bit of the transformed register and
+    qubits outside ``targets`` are left untouched.  With ``N = 2 ** len(targets)``
+    the register map is the standard convention
+
+    ``|j> -> N ** -0.5 * sum_k exp(2 pi i j k / N) |k>``.
+    """
+
+    register = qft_register(targets)
+    for qubit in register:
+        _require_qubit_index(qubit, n_qubits)
+    register_size = len(register)
+    register_dimension = 2 ** register_size
+    normalization = 1.0 / sqrt(register_dimension)
+    dimension = 2 ** n_qubits
+    rows = [[0.0 + 0.0j for _ in range(dimension)] for _ in range(dimension)]
+    for column in range(dimension):
+        bits = _index_to_bits(column, n_qubits)
+        source_value = int("".join(bits[qubit] for qubit in register), 2)
+        for output_value in range(register_dimension):
+            output_bits = list(bits)
+            value_bits = _index_to_bits(output_value, register_size)
+            for position, qubit in enumerate(register):
+                output_bits[qubit] = value_bits[position]
+            phase = 2.0 * pi * source_value * output_value / register_dimension
+            rows[_bits_to_index(output_bits)][column] = normalization * complex(
+                np.exp(1.0j * phase)
+            )
+    return _freeze(rows)
+
+
+def register_targets(targets: Sequence[int], label: str) -> tuple[int, ...]:
+    """Validate and return an ordered operand register (most significant first)."""
+
+    register = tuple(int(target) for target in targets)
+    if not register:
+        raise ValueError(f"{label} requires at least one target")
+    if len(set(register)) != len(register):
+        raise ValueError(f"{label} targets must be different")
+    return register
+
+
+def qft_register(targets: Sequence[int]) -> tuple[int, ...]:
+    """Validate and return the ordered QFT register (most significant first)."""
+
+    return register_targets(targets, "QFT")
+
+
+def oracle_register(targets: Sequence[int]) -> tuple[int, ...]:
+    """Validate and return the ordered oracle register (most significant first)."""
+
+    return register_targets(targets, "ORACLE")
+
+
+def oracle_marked_index(
+    params: dict[str, float] | None,
+    register_size: int,
+) -> int:
+    """Read and range-check the basis state an oracle marks."""
+
+    value = float((params or {}).get("marked_index", 0.0))
+    if not np.isfinite(value) or value != int(value):
+        raise ValueError("ORACLE marked_index must be a finite integer")
+    index = int(value)
+    if not 0 <= index < 2 ** register_size:
+        raise ValueError(
+            "ORACLE marked_index must be inside the register range "
+            f"0..{2 ** register_size - 1}"
+        )
+    return index
+
+
+def expand_phase_oracle(
+    targets: Sequence[int],
+    n_qubits: int,
+    marked_index: int,
+) -> Matrix:
+    """Return the phase oracle ``I - 2|m><m|`` over an ordered sub-register.
+
+    ``targets[0]`` is the most significant bit of the marked value and qubits
+    outside ``targets`` are untouched. The matrix is diagonal with -1 on every
+    basis state whose register bits equal ``marked_index``, so it is Hermitian
+    and involutory and takes the gate-aware involution generator branch.
+    """
+
+    register = oracle_register(targets)
+    for qubit in register:
+        _require_qubit_index(qubit, n_qubits)
+    register_size = len(register)
+    if not 0 <= int(marked_index) < 2 ** register_size:
+        raise ValueError("ORACLE marked_index is outside the register range")
+    marked_bits = _index_to_bits(int(marked_index), register_size)
+    dimension = 2 ** n_qubits
+    rows = [[0.0 + 0.0j for _ in range(dimension)] for _ in range(dimension)]
+    for index in range(dimension):
+        bits = _index_to_bits(index, n_qubits)
+        is_marked = all(
+            bits[qubit] == marked_bits[position]
+            for position, qubit in enumerate(register)
+        )
+        rows[index][index] = -1.0 + 0.0j if is_marked else 1.0 + 0.0j
+    return _freeze(rows)
+
+
+def oracle_duration_us(target_count: int) -> float:
+    """Return the logical-direct oracle duration for a register of this size."""
+
+    if target_count < 1:
+        raise ValueError("ORACLE requires at least one target")
+    return ORACLE_DURATION_PER_QUBIT_US * float(target_count)
+
+
+def qft_duration_us(target_count: int) -> float:
+    """Return the logical-direct QFT duration for a register of this size."""
+
+    if target_count < 1:
+        raise ValueError("QFT requires at least one target")
+    return QFT_DURATION_PER_QUBIT_US * float(target_count)
+
+
 def initial_density_matrix(initial_states: list[str]) -> Matrix:
     """Build a tensor-product density matrix for 0, 1, +, and - states."""
 
@@ -385,10 +512,13 @@ def gate_duration_us(gate: GateOperation) -> float:
     """Return the assigned gate duration in microseconds."""
 
     gate_type = normalize_gate_type(gate.type)
-    duration = (gate.params or {}).get(
-        "duration_us",
-        DEFAULT_GATE_DURATIONS_US.get(gate_type),
-    )
+    if gate_type == "QFT":
+        default_duration = qft_duration_us(len(gate.targets))
+    elif gate_type == "ORACLE":
+        default_duration = oracle_duration_us(len(gate.targets))
+    else:
+        default_duration = DEFAULT_GATE_DURATIONS_US.get(gate_type)
+    duration = (gate.params or {}).get("duration_us", default_duration)
     if duration is None:
         raise ValueError(f"unsupported gate type: {gate.type}")
     duration = float(duration)
@@ -439,6 +569,18 @@ def gate_unitary(gate: GateOperation, n_qubits: int) -> Matrix:
         if gate.controls or len(gate.targets) != 2:
             raise ValueError("SWAP requires exactly two targets and no controls")
         return expand_swap(gate.targets[0], gate.targets[1], n_qubits)
+    if gate_type == "QFT":
+        if gate.controls:
+            raise ValueError("QFT requires targets only and no controls")
+        return expand_qft(gate.targets, n_qubits)
+    if gate_type == "ORACLE":
+        if gate.controls:
+            raise ValueError("ORACLE requires targets only and no controls")
+        return expand_phase_oracle(
+            gate.targets,
+            n_qubits,
+            oracle_marked_index(gate.params, len(gate.targets)),
+        )
     if gate_type in {"RX", "RY", "RZ"}:
         if len(gate.targets) != 1 or gate.controls:
             raise ValueError(
@@ -545,20 +687,86 @@ def effective_hamiltonian_from_unitary(
     ):
         return effective_hamiltonian_from_involution(unitary, duration)
 
+    generator = _general_eigensystem_generator(array, duration)
+    if not _reproduces_unitary(generator, array, duration):
+        # ``np.linalg.eig`` may return a non-orthogonal basis inside a degenerate
+        # eigenspace, and Hermitizing that generator then no longer reproduces
+        # the gate.  Multi-qubit QFT hits this because its spectrum is only the
+        # four fourth roots of unity regardless of register size.
+        generator = _normal_unitary_generator(array, duration)
+        if not _reproduces_unitary(generator, array, duration):
+            raise ValueError(
+                "failed to reconstruct unitary from effective Hamiltonian"
+            )
+    return _freeze(generator.tolist())
+
+
+def _general_eigensystem_generator(
+    array: np.ndarray,
+    duration_us: float,
+) -> np.ndarray | None:
+    """Return the principal-eigenphase generator, or None if unusable."""
+
     eigenvalues, eigenvectors = np.linalg.eig(array)
     if np.linalg.cond(eigenvectors) > 1.0 / INVOLUTION_TOLERANCE:
-        raise ValueError("unitary eigensystem is too ill-conditioned")
+        return None
     eigenphases = np.angle(eigenvalues)
     generator = (
         eigenvectors
-        @ np.diag(-eigenphases / duration)
+        @ np.diag(-eigenphases / duration_us)
         @ np.linalg.inv(eigenvectors)
     )
-    generator = 0.5 * (generator + generator.conj().T)
-    reconstructed = _unitary_array_from_hermitian(generator, duration)
-    if np.max(np.abs(reconstructed - array)) > 5.0 * INVOLUTION_TOLERANCE:
-        raise ValueError("failed to reconstruct unitary from effective Hamiltonian")
-    return _freeze(generator.tolist())
+    return 0.5 * (generator + generator.conj().T)
+
+
+def _normal_unitary_generator(
+    array: np.ndarray,
+    duration_us: float,
+) -> np.ndarray:
+    """Return the principal generator built on an orthonormal eigenbasis.
+
+    Unitary matrices are normal, so their Hermitian and anti-Hermitian parts
+    commute and can be diagonalized together.  Two ``eigh`` passes therefore
+    give an exactly orthonormal eigenbasis even for degenerate eigenvalues.
+    """
+
+    hermitian_part = 0.5 * (array + array.conj().T)
+    anti_hermitian_part = -0.5j * (array - array.conj().T)
+    values, basis = np.linalg.eigh(hermitian_part)
+    blocks: list[np.ndarray] = []
+    block_start = 0
+    for index in range(1, values.size + 1):
+        if (
+            index < values.size
+            and values[index] - values[index - 1] <= DEGENERATE_EIGENVALUE_TOLERANCE
+        ):
+            continue
+        block = basis[:, block_start:index]
+        reduced = block.conj().T @ anti_hermitian_part @ block
+        _, rotation = np.linalg.eigh(0.5 * (reduced + reduced.conj().T))
+        blocks.append(block @ rotation)
+        block_start = index
+    eigenbasis = np.hstack(blocks)
+    eigenvalues = np.einsum(
+        "ji,jk,ki->i", eigenbasis.conj(), array, eigenbasis
+    )
+    generator = (
+        eigenbasis * (-np.angle(eigenvalues) / duration_us)
+    ) @ eigenbasis.conj().T
+    return 0.5 * (generator + generator.conj().T)
+
+
+def _reproduces_unitary(
+    generator: np.ndarray | None,
+    array: np.ndarray,
+    duration_us: float,
+) -> bool:
+    if generator is None:
+        return False
+    reconstructed = _unitary_array_from_hermitian(generator, duration_us)
+    return bool(
+        np.max(np.abs(reconstructed - array)) <= 5.0 * INVOLUTION_TOLERANCE
+    )
 
 
 def unitary_from_hamiltonian(

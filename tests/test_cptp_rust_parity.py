@@ -54,7 +54,7 @@ class SwitchingHamiltonian:
 
 @unittest.skipUnless(
     is_rust_kernel_available(),
-    "quantascope_rust is not importable",
+    "yuragi_strider_rust is not importable",
 )
 class RustCPTPParityTests(unittest.TestCase):
     def test_qubit_open_system_exponential_matches_python(self) -> None:

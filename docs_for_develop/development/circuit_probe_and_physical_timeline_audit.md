@@ -3,7 +3,7 @@
 Date: 2026-08-02
 Branch: `React-phase`
 
-This audit reconciles the current repository with the Quirk-like video. The key distinction is that Quirk's changing demonstration parameter is not the same thing as QuantaScope's physical solver time.
+This audit reconciles the current repository with the Quirk-like video. The key distinction is that Quirk's changing demonstration parameter is not the same thing as Yuragi-Strider's physical solver time.
 
 ## Audit table
 

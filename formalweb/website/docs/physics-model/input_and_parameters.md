@@ -5,7 +5,7 @@ sidebar_position: 3
 
 # 入力とパラメータ
 
-QuantaScopeは環境の記述に統一環境モデル `generic_superconducting_open_system_v1` を用います。入力は2つのモードのいずれかで与えられ、どちらも最終的には同じ物理レートの組に変換されます。
+Yuragi-Striderは環境の記述に統一環境モデル `generic_superconducting_open_system_v1` を用います。入力は2つのモードのいずれかで与えられ、どちらも最終的には同じ物理レートの組に変換されます。
 
 ## 入力モード
 

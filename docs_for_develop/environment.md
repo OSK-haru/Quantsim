@@ -24,7 +24,7 @@ Browser :5173
 
 ### 任意: Rust dense preview
 
-`rust_kernels/quantascope_rust` は PyO3 の Python 拡張です。未導入時は `python_dense` が標準 backend として動作します。API の現行 request model は `python_dense` のみを受け付けるため、Rust は開発・比較試験向けです。
+`rust_kernels/yuragi_strider_rust` は PyO3 の Python 拡張です。未導入時は `python_dense` が標準 backend として動作します。API の現行 request model は `python_dense` のみを受け付けるため、Rust は開発・比較試験向けです。
 
 ## 2. toolchain
 
@@ -79,7 +79,7 @@ Python と Node.js はそれぞれ `.python-version` と `.nvmrc` に監査済�
 | PyO3 | 0.29.0 | Rust/Python binding |
 | maturin | 1.14.1（監査環境） | PEP 517 build backend。`pyproject.toml` は `>=1.14,<2.0` |
 
-Cargo 依存は `rust_kernels/quantascope_rust/Cargo.lock` で固定されています。
+Cargo 依存は `rust_kernels/yuragi_strider_rust/Cargo.lock` で固定されています。
 
 ## 4. 依存ファイルの使い分け
 
@@ -91,9 +91,9 @@ Cargo 依存は `rust_kernels/quantascope_rust/Cargo.lock` で固定されてい
 | `requirements.txt` | 既存環境との互換用。新規構築には非推奨 |
 | `frontend/package.json` | Frontend の直接依存と npm scripts |
 | `frontend/package-lock.json` | Frontend の完全な依存解決結果 |
-| `rust_kernels/quantascope_rust/pyproject.toml` | Python extension の build 設定 |
-| `rust_kernels/quantascope_rust/Cargo.toml` | Rust crate の直接依存 |
-| `rust_kernels/quantascope_rust/Cargo.lock` | Rust の完全な依存解決結果 |
+| `rust_kernels/yuragi_strider_rust/pyproject.toml` | Python extension の build 設定 |
+| `rust_kernels/yuragi_strider_rust/Cargo.toml` | Rust crate の直接依存 |
+| `rust_kernels/yuragi_strider_rust/Cargo.lock` | Rust の完全な依存解決結果 |
 
 ## 5. 環境変数・port・外部 service
 

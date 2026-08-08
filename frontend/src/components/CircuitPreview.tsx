@@ -14,7 +14,18 @@ import type {
   GateType,
 } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
-import { getGateIdAtSlot, isMultiQubitGateType } from '../utils/circuitEditing'
+import {
+  formatThetaLabel,
+  gateThetaRad,
+  getGateIdAtSlot,
+  isControlledGateType,
+  isMultiQubitGateType,
+  isPairGateType,
+  isRegisterGateType,
+  markedBitAt,
+  registerDurationUs,
+  registerBitWeight,
+} from '../utils/circuitEditing'
 import {
   CIRCUIT_CELL_HEIGHT,
   CIRCUIT_CELL_WIDTH,
@@ -66,7 +77,15 @@ function getGateDuration(gate: CircuitGate, gateDurationDefaults?: GateDurationD
     return gate.params.duration_us
   }
 
-  return gateDurationDefaults?.[gate.type] ?? null
+  const gateDefault = gateDurationDefaults?.[gate.type]
+  if (gateDefault === undefined) {
+    return null
+  }
+
+  // The QFT default is declared per spanned qubit, not per gate.
+  return isRegisterGateType(gate.type)
+    ? registerDurationUs(gateDefault, gate.targets.length)
+    : gateDefault
 }
 
 function formatDurationLabel(duration: number) {
@@ -116,17 +135,35 @@ export function CircuitPreview({
   onSlotDrop,
 }: CircuitPreviewProps) {
   const [dragHoverSlot, setDragHoverSlot] = useState<PendingCnotControl | null>(null)
+  const [hoveredQubitSlot, setHoveredQubitSlot] = useState<{ columnIndex: number; qubitIndex: number } | null>(null)
   const internalViewportRef = useRef<HTMLDivElement | null>(null)
   const activeViewportRef = viewportRef ?? internalViewportRef
   const previousColumnCountRef = useRef<number>(Math.max(1, circuit.columns.length))
   const previousScrollTokenRef = useRef(scrollToEndToken)
   const visibleColumnCount = Math.max(1, circuit.columns.length)
-  const wireWidth = visibleColumnCount * CIRCUIT_CELL_WIDTH + CIRCUIT_LEFT_PADDING + 28
+  // While a gate is being dragged, reserve one extra column past the last one so it
+  // can be dropped there to grow the circuit instead of only reordering within it.
+  const isAddColumnDropVisible = Boolean(dragPayload && onSlotDrop)
+  const newColumnIndex = circuit.columns.length
+  const wireWidth =
+    (visibleColumnCount + (isAddColumnDropVisible ? 1 : 0)) * CIRCUIT_CELL_WIDTH +
+    CIRCUIT_LEFT_PADDING +
+    28
   const height = Math.max(220, circuit.logical_qubits * CIRCUIT_CELL_HEIGHT + 48)
   const renderedWireWidth = wireWidth * zoom
   const renderedHeight = height * zoom
   const yForQubit = (qubit: number) => CIRCUIT_TOP_PADDING + qubit * CIRCUIT_CELL_HEIGHT
   const isCircuitDragActive = dragPayload?.source === 'circuit'
+  const addColumnCenterX = CIRCUIT_LEFT_PADDING + 20 + newColumnIndex * CIRCUIT_CELL_WIDTH
+  const addColumnLeft = addColumnCenterX - CIRCUIT_CELL_WIDTH / 2
+  const isAddColumnHovered = dragHoverSlot?.columnIndex === newColumnIndex
+  const isDrawableGateType = Boolean(
+    selectedGateType && (
+      isControlledGateType(selectedGateType) ||
+      isPairGateType(selectedGateType) ||
+      isRegisterGateType(selectedGateType)
+    ),
+  )
   const isHighlightedGate = (gate: CircuitGate) => {
     const qubits = [...(gate.controls ?? []), ...gate.targets].sort((left, right) => left - right)
     return highlightedGateSignatures.includes(`${gate.type}:${qubits.join(',')}`)
@@ -181,7 +218,7 @@ export function CircuitPreview({
     }
 
     event.preventDefault()
-    event.dataTransfer.dropEffect = dragPayload.source === 'palette' ? 'copy' : 'move'
+    event.dataTransfer.dropEffect = dragPayload.source === 'circuit' ? 'move' : 'copy'
   }
 
   function handleSlotDrop(
@@ -306,6 +343,28 @@ export function CircuitPreview({
                 </g>
               )
             })}
+          {isAddColumnDropVisible ? (
+            <g key="add-column-zone">
+              <rect
+                x={addColumnLeft}
+                y="4"
+                width={CIRCUIT_CELL_WIDTH}
+                height={height - 12}
+                rx="10"
+                className={`circuit-preview__add-column-band${
+                  isAddColumnHovered ? ' circuit-preview__add-column-band--hovered' : ''
+                }`}
+              />
+              <text
+                x={addColumnCenterX}
+                y="22"
+                textAnchor="middle"
+                className="circuit-preview__add-column-label"
+              >
+                + 列を追加
+              </text>
+            </g>
+          ) : null}
           {Array.from({ length: circuit.logical_qubits }).map((_, qubit) => {
             const y = yForQubit(qubit)
             return (
@@ -342,6 +401,102 @@ export function CircuitPreview({
                   const cnotDurationY = cnotQubits.length > 0
                     ? Math.max(...cnotQubits.map(yForQubit)) + 28
                     : CIRCUIT_TOP_PADDING + 28
+
+                  // A register gate can skip qubits, so it is drawn as one boxed
+                  // cell per member instead of a solid block over the whole
+                  // span. QFT cells carry the bit weight k (the qubit holds
+                  // 2**k); ORACLE cells carry the bit the marked state needs on
+                  // that qubit, which is how an oracle is actually read.
+                  if (isRegisterGateType(cnotGate.type)) {
+                    const topY = Math.min(...cnotGate.targets.map(yForQubit))
+                    const isOracle = cnotGate.type === 'ORACLE'
+                    const markedIndex = cnotGate.params?.marked_index ?? 0
+                    const registerLabel = isOracle
+                      ? `ORACLE |${markedIndex
+                          .toString(2)
+                          .padStart(cnotGate.targets.length, '0')}⟩`
+                      : cnotGate.type
+                    return (
+                      <g
+                        key={cnotGate.id}
+                        className={`circuit-preview__cnot-overlay${
+                          isSelectedCnot ? ' circuit-preview__cnot-overlay--selected' : ''
+                        }`}
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        {cnotGate.targets.length >= 2 ? (
+                          <line
+                            x1={cnotX}
+                            y1={topY}
+                            x2={cnotX}
+                            y2={Math.max(...cnotGate.targets.map(yForQubit))}
+                            className={`circuit-preview__register-line${
+                              isSelectedCnot ? ' circuit-preview__register-line--selected' : ''
+                            }`}
+                          />
+                        ) : null}
+                        {cnotGate.targets.map((target, position) => {
+                          const y = yForQubit(target)
+                          return (
+                            <g key={`${cnotGate.id}-register-${target}`}>
+                              <rect
+                                x={cnotX - 17}
+                                y={y - 14}
+                                width="34"
+                                height="28"
+                                rx="8"
+                                className={`circuit-preview__register-box${
+                                  isOracle ? ' circuit-preview__register-box--oracle' : ''
+                                }${
+                                  isSelectedCnot ? ' circuit-preview__register-box--selected' : ''
+                                }`}
+                              />
+                              <text
+                                x={cnotX}
+                                y={y + 5}
+                                textAnchor="middle"
+                                className="circuit-preview__gate-label"
+                              >
+                                {isOracle
+                                  ? markedBitAt(markedIndex, position, cnotGate.targets.length)
+                                  : registerBitWeight(position, cnotGate.targets.length)}
+                              </text>
+                            </g>
+                          )
+                        })}
+                        <text
+                          x={cnotX}
+                          y={topY - 20}
+                          textAnchor="middle"
+                          className={`circuit-preview__register-label${
+                            isSelectedCnot ? ' circuit-preview__register-label--selected' : ''
+                          }`}
+                        >
+                          {registerLabel}
+                        </text>
+                        {isSelectedCnot && cnotDuration != null ? (
+                          <g className="circuit-preview__duration-badge">
+                            <rect
+                              x={cnotX - 24}
+                              y={cnotDurationY - 10}
+                              width="48"
+                              height="16"
+                              rx="8"
+                              className="circuit-preview__duration-badge-bg"
+                            />
+                            <text
+                              x={cnotX}
+                              y={cnotDurationY + 2}
+                              textAnchor="middle"
+                              className="circuit-preview__duration-badge-text"
+                            >
+                              {formatDurationLabel(cnotDuration)}
+                            </text>
+                          </g>
+                        ) : null}
+                      </g>
+                    )
+                  }
 
                   return (
                     <g
@@ -401,11 +556,19 @@ export function CircuitPreview({
                               />
                               <text
                                 x={cnotX}
-                                y={y + 5}
+                                y={y - 2}
                                 textAnchor="middle"
                                 className="circuit-preview__gate-label"
                               >
                                 P
+                              </text>
+                              <text
+                                x={cnotX}
+                                y={y + 10}
+                                textAnchor="middle"
+                                className="circuit-preview__gate-theta-label"
+                              >
+                                {formatThetaLabel(gateThetaRad(cnotGate) ?? 0)}
                               </text>
                             </g>
                           )
@@ -489,6 +652,27 @@ export function CircuitPreview({
                   )
                 })}
 
+                {pendingCnotControl &&
+                pendingCnotControl.columnIndex === columnIndex &&
+                selectedGateType &&
+                (
+                  isControlledGateType(selectedGateType) ||
+                  isPairGateType(selectedGateType) ||
+                  isRegisterGateType(selectedGateType)
+                ) &&
+                hoveredQubitSlot &&
+                hoveredQubitSlot.columnIndex === columnIndex &&
+                hoveredQubitSlot.qubitIndex !== pendingCnotControl.qubitIndex ? (
+                  <line
+                    x1={x}
+                    y1={yForQubit(pendingCnotControl.qubitIndex)}
+                    x2={x}
+                    y2={yForQubit(hoveredQubitSlot.qubitIndex)}
+                    className="circuit-preview__draw-preview-line"
+                    style={{ pointerEvents: 'none' }}
+                  />
+                ) : null}
+
                 {Array.from({ length: circuit.logical_qubits }).map((_, qubitIndex) => {
                   const y = yForQubit(qubitIndex)
                   const gate = getColumnSingleGate(column, qubitIndex)
@@ -522,12 +706,44 @@ export function CircuitPreview({
                     dragPayload?.source === 'circuit' && dragPayload.gateId === gateIdAtSlot
                   const isInvalidDropTarget =
                     isDropTarget && Boolean(gate || hasCnotOccupancy) && !isSameDraggedGate
-                  const interactive = Boolean(selectedGateType && onSlotClick)
-                  const selectable = Boolean(!selectedGateType && gateIdAtSlot && onGateSelect)
+                  // Only CNOT/CZ/CP/SWAP place gates by clicking the grid (the
+                  // two-click "stretch" flow); every other gate type is
+                  // drag-only, so clicking their empty slots does nothing.
+                  const interactive = Boolean(selectedGateType && onSlotClick && isDrawableGateType)
+                  const isStretchEligible =
+                    !gate &&
+                    !hasCnotOccupancy &&
+                    isDrawableGateType &&
+                    !isPendingControl &&
+                    !isPendingTargetCandidate
+                  // Selecting an existing gate always works by clicking it,
+                  // regardless of which tool is currently active in the palette.
+                  const selectable = Boolean(gateIdAtSlot && onGateSelect)
                   const isClickable = interactive || selectable
                   const selectedGateDuration = gate && isSelectedGate
                     ? getGateDuration(gate, gateDurationDefaults)
                     : null
+                  const gateTheta = gate ? gateThetaRad(gate) : null
+                  // Angle first: it changes what the gate does, the duration only when selected.
+                  const gateSubLabels: Array<{ text: string; className: string }> = [
+                    ...(gateTheta === null
+                      ? []
+                      : [{
+                          text: `θ=${formatThetaLabel(gateTheta)}`,
+                          className: 'circuit-preview__gate-theta-label',
+                        }]),
+                    ...(selectedGateDuration === null
+                      ? []
+                      : [{
+                          text: formatDurationLabel(selectedGateDuration),
+                          className: 'circuit-preview__gate-duration-label',
+                        }]),
+                  ]
+                  const gateLabelY = gateSubLabels.length === 0
+                    ? y + 5
+                    : gateSubLabels.length === 1
+                      ? y - 3
+                      : y - 7
                   const slotLabel = gate
                     ? `${gate.type} gate at q${qubitIndex}, column ${columnIndex}`
                     : hasCnotOccupancy
@@ -554,7 +770,9 @@ export function CircuitPreview({
                         isPendingTargetCandidate
                           ? ' circuit-preview__slot-group--pending-target'
                           : ''
-                      }${isDraggedGate || isDraggedCnot ? ' circuit-preview__slot-group--dragging' : ''}`}
+                      }${isDraggedGate || isDraggedCnot ? ' circuit-preview__slot-group--dragging' : ''}${
+                        isStretchEligible ? ' circuit-preview__slot-group--draw-start' : ''
+                      }`}
                       role={isClickable ? 'button' : undefined}
                       tabIndex={isClickable ? 0 : undefined}
                       aria-label={slotLabel}
@@ -580,22 +798,22 @@ export function CircuitPreview({
                           : undefined
                       }
                       onClick={
-                        interactive
-                          ? () => handleSlotClick(columnIndex, qubitIndex)
-                          : selectable && gateIdAtSlot && onGateSelect
-                            ? () => onGateSelect(gateIdAtSlot)
+                        selectable && gateIdAtSlot && onGateSelect
+                          ? () => onGateSelect(gateIdAtSlot)
+                          : interactive
+                            ? () => handleSlotClick(columnIndex, qubitIndex)
                             : undefined
                       }
                       onKeyDown={
-                        interactive
-                          ? (event) => handleSlotKeyDown(event, columnIndex, qubitIndex)
-                          : selectable && gateIdAtSlot && onGateSelect
-                            ? (event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault()
-                                  onGateSelect(gateIdAtSlot)
-                                }
+                        selectable && gateIdAtSlot && onGateSelect
+                          ? (event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                onGateSelect(gateIdAtSlot)
                               }
+                            }
+                          : interactive
+                            ? (event) => handleSlotKeyDown(event, columnIndex, qubitIndex)
                             : undefined
                       }
                       onDragOver={handleSlotDragOver}
@@ -610,6 +828,19 @@ export function CircuitPreview({
                         }
                       }}
                       onDrop={(event) => handleSlotDrop(event, columnIndex, qubitIndex)}
+                      onMouseEnter={
+                        interactive ? () => setHoveredQubitSlot({ columnIndex, qubitIndex }) : undefined
+                      }
+                      onMouseLeave={
+                        interactive
+                          ? () =>
+                              setHoveredQubitSlot((current) =>
+                                current?.columnIndex === columnIndex && current.qubitIndex === qubitIndex
+                                  ? null
+                                  : current,
+                              )
+                          : undefined
+                      }
                     >
                       <rect
                         x={x - SLOT_SIZE / 2}
@@ -776,29 +1007,72 @@ export function CircuitPreview({
                       {gate ? (
                         <text
                           x={x}
-                          y={selectedGateDuration != null ? y - 3 : y + 5}
+                          y={gateLabelY}
                           textAnchor="middle"
                           className="circuit-preview__gate-label"
                         >
                           {getGateLabel(gate)}
                         </text>
                       ) : null}
-                      {selectedGateDuration != null ? (
-                        <text
-                          x={x}
-                          y={y + 10}
-                          textAnchor="middle"
-                          className="circuit-preview__gate-duration-label"
-                        >
-                          {formatDurationLabel(selectedGateDuration)}
-                        </text>
-                      ) : null}
+                      {gate
+                        ? gateSubLabels.map((subLabel, subLabelIndex) => (
+                            <text
+                              key={subLabel.className}
+                              x={x}
+                              y={gateSubLabels.length === 1
+                                ? y + 10
+                                : y + 3 + subLabelIndex * 10}
+                              textAnchor="middle"
+                              className={subLabel.className}
+                            >
+                              {subLabel.text}
+                            </text>
+                          ))
+                        : null}
                     </g>
                   )
                 })}
               </g>
             )
           })}
+          {isAddColumnDropVisible
+            ? Array.from({ length: circuit.logical_qubits }).map((_, qubitIndex) => {
+                const y = yForQubit(qubitIndex)
+                const isHovered =
+                  dragHoverSlot?.columnIndex === newColumnIndex && dragHoverSlot.qubitIndex === qubitIndex
+
+                return (
+                  <g
+                    key={`add-column-slot-${qubitIndex}`}
+                    className={`circuit-preview__slot-group circuit-preview__slot-group--add-column circuit-preview__slot-group--drop-target${
+                      isHovered ? ' circuit-preview__slot-group--drop-hovered' : ''
+                    }`}
+                    aria-label={`Drop here to add column ${newColumnIndex + 1} at q${qubitIndex}`}
+                    onDragOver={handleSlotDragOver}
+                    onDragEnter={() => setDragHoverSlot({ columnIndex: newColumnIndex, qubitIndex })}
+                    onDragLeave={() =>
+                      setDragHoverSlot((current) =>
+                        current?.columnIndex === newColumnIndex && current.qubitIndex === qubitIndex
+                          ? null
+                          : current,
+                      )
+                    }
+                    onDrop={(event) => handleSlotDrop(event, newColumnIndex, qubitIndex)}
+                  >
+                    <rect
+                      x={addColumnCenterX - SLOT_SIZE / 2}
+                      y={y - SLOT_SIZE / 2}
+                      width={SLOT_SIZE}
+                      height={SLOT_SIZE}
+                      rx="8"
+                      className={`circuit-preview__slot circuit-preview__slot--drop-target${
+                        isHovered ? ' circuit-preview__slot--drop-hovered' : ''
+                      }`}
+                    />
+                  </g>
+                )
+              })
+            : null}
           </svg>
         </div>
       </div>

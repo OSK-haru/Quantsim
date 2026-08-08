@@ -524,6 +524,34 @@
   }
 }
 
+/*
+ * 設定メニューの「アニメーション」トグルをOFFにした場合も、
+ * OSのprefers-reduced-motionと同じ抑制を適用する。
+ */
+html[data-animations='off'] .simulation-completion-popup {
+  animation:
+    simulation-completion-popup-reduced
+    4.2s
+    ease
+    forwards;
+}
+
+html[data-animations='off'] .simulation-completion-popup::before,
+html[data-animations='off'] .simulation-completion-popup__glow,
+html[data-animations='off'] .simulation-completion-popup__fluctuation {
+  animation: none;
+}
+
+html[data-animations='off'] .simulation-completion-popup::before {
+  filter:
+    drop-shadow(0 0 6px rgba(103, 232, 249, 0.42));
+}
+
+html[data-animations='off'] .simulation-completion-popup--pulse::before {
+  filter:
+    drop-shadow(0 0 6px rgba(196, 181, 253, 0.46));
+}
+
 @keyframes simulation-completion-popup-reduced {
   0%,
   82% {

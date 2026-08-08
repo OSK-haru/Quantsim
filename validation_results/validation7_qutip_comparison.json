@@ -23,7 +23,7 @@
   "basis_and_qubit_order_audit": {
     "basis": "|0>=(1,0), |1>=(0,1); sigma_down maps |1> to |0>; sigma_z has +1/-1 eigenvalues",
     "qubit_order": "q0 is the most significant bit: |00>, |01>, |10>, |11>",
-    "adapter_policy": "Existing QuantaScope matrices are converted directly to Qobj; sigmam/sigmap/tensor are not used to reconstruct physics."
+    "adapter_policy": "Existing Yuragi-Strider matrices are converted directly to Qobj; sigmam/sigmap/tensor are not used to reconstruct physics."
   },
   "cases": [
     {
@@ -2684,7 +2684,7 @@
   ],
   "overall_pass": true,
   "scope_and_limitations": [
-    "QuTiP receives the same QuantaScope Hamiltonian, initial density matrix, collapse operators, and segment durations.",
+    "QuTiP receives the same Yuragi-Strider Hamiltonian, initial density matrix, collapse operators, and segment durations.",
     "This validates the tested Lindblad equation integration, not the physical calibration of the generic device profile.",
     "A pass does not prove that finite RK4 steps are CPTP for arbitrary circuits."
   ]

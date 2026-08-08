@@ -30,6 +30,8 @@ PROFILE_MODULES: dict[str, tuple[str, ...]] = {
         "tests.test_gate_compiler_rotations",
         "tests.test_gate_compiler_cp",
         "tests.test_gate_compiler_ccx",
+        "tests.test_gate_compiler_qft",
+        "tests.test_gate_oracle_grover",
     ),
     "pulse": (
         "tests.test_pulse_api_baseline_a",

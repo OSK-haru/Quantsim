@@ -3,6 +3,10 @@ export type CircuitPreviewGate = {
   type: string
   qubits: number[]
   kind: 'single' | 'control' | 'target' | 'measure' | 'idle'
+  /** Position in an ordered register (QFT), 0 being the most significant bit. */
+  register_position?: number
+  /** Bit weight k held by this qubit in a QFT register (it carries 2**k). */
+  register_bit_weight?: number
   classical_targets?: number[]
   condition?: { bit: number; value: 0 | 1 } | null
   conditions?: Array<{ bit: number; value: 0 | 1 }>
@@ -21,14 +25,16 @@ export type CircuitPreviewData = {
   columns: CircuitPreviewColumn[]
 }
 
-export type GateType = 'H' | 'X' | 'Y' | 'Z' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'CNOT' | 'CZ' | 'CP' | 'CCX' | 'SWAP' | 'MEASURE' | 'MESSAGE' | 'RECEIVED'
+export type GateType = 'H' | 'X' | 'Y' | 'Z' | 'S' | 'T' | 'RX' | 'RY' | 'RZ' | 'CNOT' | 'CZ' | 'CP' | 'CCX' | 'SWAP' | 'QFT' | 'ORACLE' | 'MEASURE' | 'MESSAGE' | 'RECEIVED'
 export type AnnotationGateType = Extract<GateType, 'MESSAGE' | 'RECEIVED'>
 
 export type ControlledGateType = Extract<GateType, 'CNOT' | 'CZ' | 'CP'>
 export type PairGateType = Extract<GateType, 'SWAP'>
 export type MultiControlledGateType = Extract<GateType, 'CCX'>
+/** Gates whose operands are an ordered register of arbitrary width. */
+export type RegisterGateType = Extract<GateType, 'QFT' | 'ORACLE'>
 export type TwoQubitGateType = ControlledGateType | PairGateType
-export type MultiQubitGateType = TwoQubitGateType | MultiControlledGateType
+export type MultiQubitGateType = TwoQubitGateType | MultiControlledGateType | RegisterGateType
 export type SingleQubitGateType = Exclude<GateType, MultiQubitGateType>
 
 export type InitialQubitState = 0 | 1 | '+' | '-'

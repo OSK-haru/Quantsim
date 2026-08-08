@@ -1,4 +1,4 @@
-# QuantaScope Pulse Phase 開発・検証計画書 v3
+# Yuragi-Strider Pulse Phase 開発・検証計画書 v3
 
 > **Status update**
 >
@@ -14,7 +14,7 @@
 
 ## 0. 文書の目的
 
-本計画書は、QuantaScope に時間依存の制御包絡線モデルを追加し、二準位モデルから三準位 transmon モデル、leakage、DRAG までを段階的に実装・検証するための仕様書である。
+本計画書は、Yuragi-Strider に時間依存の制御包絡線モデルを追加し、二準位モデルから三準位 transmon モデル、leakage、DRAG までを段階的に実装・検証するための仕様書である。
 
 本計画で扱うモデルは、実験室座標系で GHz の搬送波を直接時間分解する厳密な実機再現ではない。位置づけは次のとおりとする。
 
@@ -57,7 +57,7 @@ Pulse Baseline A の完了時点で、検証済み二準位モデルを独立し
 
 # 1. 現在の基準モデル
 
-現行 QuantaScope では、区間一定の有効 Hamiltonian と Lindblad 散逸を同時に解く gate-level モデルが実装されている。
+現行 Yuragi-Strider では、区間一定の有効 Hamiltonian と Lindblad 散逸を同時に解く gate-level モデルが実装されている。
 
 $$
 \frac{d\rho}{dt}
@@ -1263,7 +1263,7 @@ dims=[list(subsystem_dimensions), list(subsystem_dimensions)]
 
 を渡す。
 
-Pulse Phase では QuantaScope が生成した Hamiltonian、density matrix、collapse operator をそのまま `Qobj` に変換し、QuTiP の spin operator や destroy operator からモデルを再構築しない。
+Pulse Phase では Yuragi-Strider が生成した Hamiltonian、density matrix、collapse operator をそのまま `Qobj` に変換し、QuTiP の spin operator や destroy operator からモデルを再構築しない。
 
 ---
 
@@ -1545,7 +1545,7 @@ L_k,
 t_j
 $$
 
-を QuantaScope と QuTiP に渡す。
+を Yuragi-Strider と QuTiP に渡す。
 
 対象:
 

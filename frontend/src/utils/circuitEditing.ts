@@ -8,6 +8,7 @@ import type {
   GateType,
   MultiControlledGateType,
   PairGateType,
+  RegisterGateType,
   SingleQubitGateType,
 } from '../types/circuit'
 
@@ -29,17 +30,67 @@ export function isMultiControlledGateType(
   return gateType === 'CCX'
 }
 
+export function isRegisterGateType(gateType: GateType): gateType is RegisterGateType {
+  return gateType === 'QFT' || gateType === 'ORACLE'
+}
+
 export function isTwoQubitGateType(gateType: GateType) {
   return isControlledGateType(gateType) || isPairGateType(gateType)
 }
 
-export function isMultiQubitGateType(gateType: GateType) {
-  return isTwoQubitGateType(gateType) || isMultiControlledGateType(gateType)
+/** Gates whose behaviour is set by a rotation angle the user types in when placing them. */
+export function isThetaGateType(gateType: GateType) {
+  return gateType === 'RX' || gateType === 'RY' || gateType === 'RZ' || gateType === 'CP'
 }
+
+/** Angle used when a theta gate carries no explicit params, matching gate creation. */
+export const DEFAULT_THETA_RAD = Math.PI / 2
+
+export function gateThetaRad(gate: CircuitGate): number | null {
+  return isThetaGateType(gate.type)
+    ? gate.params?.theta_rad ?? DEFAULT_THETA_RAD
+    : null
+}
+
+/** Renders an angle as a multiple of pi when it is one, so tiles stay readable. */
+export function formatThetaLabel(thetaRad: number): string {
+  if (!Number.isFinite(thetaRad)) {
+    return '-'
+  }
+  if (Math.abs(thetaRad) < 1e-9) {
+    return '0'
+  }
+
+  const piRatio = thetaRad / Math.PI
+  for (const denominator of [1, 2, 3, 4, 6, 8]) {
+    const numerator = Math.round(piRatio * denominator)
+    if (numerator !== 0 && Math.abs(piRatio * denominator - numerator) < 1e-6) {
+      const sign = numerator < 0 ? '-' : ''
+      const magnitude = Math.abs(numerator)
+      const head = magnitude === 1 ? 'π' : `${magnitude}π`
+      return denominator === 1 ? `${sign}${head}` : `${sign}${head}/${denominator}`
+    }
+  }
+
+  return thetaRad.toFixed(2)
+}
+
+export function isMultiQubitGateType(gateType: GateType) {
+  return (
+    isTwoQubitGateType(gateType) ||
+    isMultiControlledGateType(gateType) ||
+    isRegisterGateType(gateType)
+  )
+}
+
+/** Smallest register the editor will build for a variable-width gate. */
+export const MIN_REGISTER_GATE_QUBITS = 2
 
 export const DEFAULT_EDITOR_COLUMN_COUNT = 4
 const MIN_SUPPORTED_LOGICAL_QUBITS = 2
-const MAX_SUPPORTED_LOGICAL_QUBITS = 4
+// 5 is the core's noisy density-matrix ceiling (MAX_DENSITY_MATRIX_QUBITS), so
+// editing beyond it would build circuits the gate-aware path cannot run.
+const MAX_SUPPORTED_LOGICAL_QUBITS = 5
 
 export function createEmptyCircuitColumn(step: number): CircuitColumn {
   return {
@@ -140,6 +191,15 @@ function isGateValidForLogicalQubits(gate: CircuitGate, logicalQubits: number) {
       gate.targets.length === 1 &&
       new Set(qubits).size === 3 &&
       qubits.every((qubit) => isQubitIndexValid(qubit, logicalQubits))
+    )
+  }
+
+  if (isRegisterGateType(gate.type)) {
+    return (
+      (gate.controls ?? []).length === 0 &&
+      gate.targets.length >= 1 &&
+      new Set(gate.targets).size === gate.targets.length &&
+      gate.targets.every((target) => isQubitIndexValid(target, logicalQubits))
     )
   }
 
@@ -289,6 +349,98 @@ export function createCcxGate(
   }
 }
 
+// QFT declares its whole register in `targets`, ordered most significant bit
+// first, so the qubit order is part of the gate rather than a drawing detail.
+export function createRegisterGate(
+  registerQubits: number[],
+  durationUs: number,
+  gateId: string,
+  gateType: RegisterGateType = 'QFT',
+): CircuitGate {
+  return {
+    id: gateId,
+    type: gateType,
+    targets: [...registerQubits],
+    params: {
+      duration_us: durationUs,
+      // ORACLE needs a state to mark; 0 is the predictable starting point and
+      // the inspector edits it afterwards.
+      ...(gateType === 'ORACLE' ? { marked_index: 0 } : {}),
+    },
+  }
+}
+
+/** Register-gate durations scale with the width, so defaults are per qubit. */
+export function registerDurationUs(perQubitDurationUs: number, registerSize: number) {
+  return perQubitDurationUs * Math.max(1, registerSize)
+}
+
+/** Highest basis-state index an ``m``-qubit register can mark. */
+export function maxMarkedIndex(registerSize: number) {
+  return 2 ** Math.max(1, registerSize) - 1
+}
+
+/** The marked value's bit on ``targets[position]`` (targets are MSB-first). */
+export function markedBitAt(
+  markedIndex: number,
+  position: number,
+  registerSize: number,
+) {
+  return (markedIndex >> (registerSize - 1 - position)) & 1
+}
+
+// The editor enters a register LSB-first: the qubit picked first carries bit 0,
+// so a top-to-bottom pick makes the top wire the least significant bit. That is
+// the Quirk and Qiskit operand order, which keeps side-by-side comparisons
+// honest. `targets` itself stays MSB-first, which is the core's contract.
+export function registerTargetsFromEntryOrder(entryOrder: number[]): number[] {
+  return [...entryOrder].reverse()
+}
+
+/** Bit weight k (the qubit carries 2**k) held by `targets[position]`. */
+export function registerBitWeight(position: number, registerSize: number) {
+  return registerSize - 1 - position
+}
+
+// Dropping QFT claims the drop row and everything below it, so one drag gives a
+// register wide enough to be useful. Arbitrary subsets come from click placement.
+export function resolveRegisterDropPlacement(qubitIndex: number, logicalQubits: number) {
+  if (logicalQubits < MIN_REGISTER_GATE_QUBITS) {
+    return []
+  }
+
+  const start = Math.min(
+    Math.max(0, qubitIndex),
+    logicalQubits - MIN_REGISTER_GATE_QUBITS,
+  )
+  const topToBottom = Array.from(
+    { length: logicalQubits - start },
+    (_, offset) => start + offset,
+  )
+  return registerTargetsFromEntryOrder(topToBottom)
+}
+
+// Keeps the register's shape and order while it is dragged, shifting the whole
+// span by the drag delta and clamping so no qubit runs off either edge.
+export function resolveMovedRegisterPlacement(
+  registerQubits: number[],
+  grabbedQubit: number,
+  droppedQubit: number,
+  logicalQubits: number,
+) {
+  if (registerQubits.length === 0) {
+    return []
+  }
+
+  const lowest = Math.min(...registerQubits)
+  const highest = Math.max(...registerQubits)
+  const delta = Math.min(
+    Math.max(droppedQubit - grabbedQubit, -lowest),
+    logicalQubits - 1 - highest,
+  )
+  return registerQubits.map((qubit) => qubit + delta)
+}
+
 export function resolveCnotDropPlacement(qubitIndex: number, logicalQubits: number) {
   if (logicalQubits < 2) {
     return { controlQubit: 0, targetQubit: 0 }
@@ -303,6 +455,34 @@ export function resolveCnotDropPlacement(qubitIndex: number, logicalQubits: numb
   }
 
   return { controlQubit: 0, targetQubit: 1 }
+}
+
+// Preserves the qubit span of an existing two-qubit gate while it is being
+// dragged, instead of collapsing control/target back to adjacent qubits.
+// `grabbedQubit` is the endpoint the drag started from; `otherQubit` is the
+// gate's other endpoint. The whole span is shifted (not re-anchored) if it
+// would otherwise run off either edge of the register.
+export function resolveMovedTwoQubitPlacement(
+  droppedQubit: number,
+  grabbedQubit: number,
+  otherQubit: number,
+  logicalQubits: number,
+) {
+  const offset = otherQubit - grabbedQubit
+  let nextGrabbed = droppedQubit
+  let nextOther = droppedQubit + offset
+
+  if (nextOther < 0) {
+    nextGrabbed -= nextOther
+    nextOther = 0
+  } else if (nextOther > logicalQubits - 1) {
+    nextGrabbed -= nextOther - (logicalQubits - 1)
+    nextOther = logicalQubits - 1
+  }
+
+  nextGrabbed = Math.min(logicalQubits - 1, Math.max(0, nextGrabbed))
+
+  return { grabbedQubit: nextGrabbed, otherQubit: nextOther }
 }
 
 function findGateLocationById(circuit: CircuitEditorState, gateId: string) {
@@ -645,6 +825,7 @@ export function movePairGateInCircuit(
   gateId: string,
   targetColumnIndex: number,
   targetQubitIndex: number,
+  fromQubitIndex: number,
 ): CircuitEditorState {
   if (!isQubitIndexValid(targetQubitIndex, circuit.logical_qubits)) {
     return circuit
@@ -653,18 +834,28 @@ export function movePairGateInCircuit(
   if (sourceLocation === null || !isPairGateType(sourceLocation.gate.type)) {
     return circuit
   }
+  const sourceTargets = sourceLocation.gate.targets
+  if (sourceTargets.length !== 2) {
+    return circuit
+  }
   const normalizedCircuit = ensureCircuitColumnCount(
     circuit,
     Math.max(columnCount, targetColumnIndex + 1),
   )
-  const targetPlacement = resolveCnotDropPlacement(
+  const grabbedWasFirst = fromQubitIndex === sourceTargets[0]
+  const otherQubit = grabbedWasFirst ? sourceTargets[1] : sourceTargets[0]
+  const movedPlacement = resolveMovedTwoQubitPlacement(
     targetQubitIndex,
+    fromQubitIndex,
+    otherQubit,
     normalizedCircuit.logical_qubits,
   )
+  const movedFirst = grabbedWasFirst ? movedPlacement.grabbedQubit : movedPlacement.otherQubit
+  const movedSecond = grabbedWasFirst ? movedPlacement.otherQubit : movedPlacement.grabbedQubit
   const movedGate: CircuitGate = {
     ...sourceLocation.gate,
     controls: [],
-    targets: [targetPlacement.controlQubit, targetPlacement.targetQubit],
+    targets: [movedFirst, movedSecond],
     params: sourceLocation.gate.params === undefined
       ? undefined
       : { ...sourceLocation.gate.params },
@@ -816,12 +1007,127 @@ export function moveCcxGateInCircuit(
   }
 }
 
+export function placeRegisterGateInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  columnIndex: number,
+  registerQubits: number[],
+  durationUs: number,
+  gateId: string,
+  gateType: RegisterGateType = 'QFT',
+): CircuitEditorState {
+  if (
+    registerQubits.length < MIN_REGISTER_GATE_QUBITS ||
+    new Set(registerQubits).size !== registerQubits.length ||
+    registerQubits.some((qubit) => !isQubitIndexValid(qubit, circuit.logical_qubits))
+  ) {
+    return circuit
+  }
+  const normalizedCircuit = ensureCircuitColumnCount(
+    circuit,
+    Math.max(columnCount, columnIndex + 1),
+  )
+  const candidate = createRegisterGate(registerQubits, durationUs, gateId, gateType)
+  if (!canPlaceGateInColumn(normalizedCircuit, columnIndex, candidate).valid) {
+    return circuit
+  }
+  return {
+    ...normalizedCircuit,
+    columns: normalizedCircuit.columns.map((column, index) =>
+      index === columnIndex
+        ? { ...column, gates: sortCircuitColumnGates([...column.gates, candidate]) }
+        : column,
+    ),
+  }
+}
+
+export function placeRegisterGateFromDropInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  columnIndex: number,
+  qubitIndex: number,
+  perQubitDurationUs: number,
+  gateId: string,
+  gateType: RegisterGateType = 'QFT',
+): CircuitEditorState {
+  const registerQubits = resolveRegisterDropPlacement(qubitIndex, circuit.logical_qubits)
+  return placeRegisterGateInCircuit(
+    circuit,
+    columnCount,
+    columnIndex,
+    registerQubits,
+    registerDurationUs(perQubitDurationUs, registerQubits.length),
+    gateId,
+    gateType,
+  )
+}
+
+export function moveRegisterGateInCircuit(
+  circuit: CircuitEditorState,
+  columnCount: number,
+  gateId: string,
+  targetColumnIndex: number,
+  targetQubitIndex: number,
+  fromQubitIndex: number,
+): CircuitEditorState {
+  if (!isQubitIndexValid(targetQubitIndex, circuit.logical_qubits)) {
+    return circuit
+  }
+  const sourceLocation = findGateLocationById(circuit, gateId)
+  if (sourceLocation === null || !isRegisterGateType(sourceLocation.gate.type)) {
+    return circuit
+  }
+  const normalizedCircuit = ensureCircuitColumnCount(
+    circuit,
+    Math.max(columnCount, targetColumnIndex + 1),
+  )
+  const movedTargets = resolveMovedRegisterPlacement(
+    sourceLocation.gate.targets,
+    fromQubitIndex,
+    targetQubitIndex,
+    normalizedCircuit.logical_qubits,
+  )
+  const movedGate: CircuitGate = {
+    ...sourceLocation.gate,
+    controls: [],
+    targets: movedTargets,
+    params: sourceLocation.gate.params === undefined
+      ? undefined
+      : { ...sourceLocation.gate.params },
+  }
+  if (!canPlaceGateInColumn(
+    normalizedCircuit,
+    targetColumnIndex,
+    movedGate,
+    gateId,
+  ).valid) {
+    return circuit
+  }
+  if (
+    sourceLocation.columnIndex === targetColumnIndex &&
+    sourceLocation.gate.targets.every((qubit, index) => qubit === movedTargets[index])
+  ) {
+    return circuit
+  }
+  return {
+    ...normalizedCircuit,
+    columns: normalizedCircuit.columns.map((column, index) => {
+      const gates = column.gates.filter((gate) => gate.id !== gateId)
+      if (index === targetColumnIndex) {
+        gates.push(movedGate)
+      }
+      return { ...column, gates: sortCircuitColumnGates(gates) }
+    }),
+  }
+}
+
 export function moveCnotGateInCircuit(
   circuit: CircuitEditorState,
   columnCount: number,
   gateId: string,
   targetColumnIndex: number,
   targetQubitIndex: number,
+  fromQubitIndex: number,
 ): CircuitEditorState {
   if (!isQubitIndexValid(targetQubitIndex, circuit.logical_qubits)) {
     return circuit
@@ -838,31 +1144,25 @@ export function moveCnotGateInCircuit(
     return circuit
   }
 
-  const targetPlacement = resolveCnotDropPlacement(
-    targetQubitIndex,
-    circuit.logical_qubits,
-  )
-  if (
-    sourceLocation.columnIndex === targetColumnIndex &&
-    sourceControls[0] === targetPlacement.controlQubit &&
-    sourceTargets[0] === targetPlacement.targetQubit
-  ) {
-    return circuit
-  }
-
   const normalizedCircuit = ensureCircuitColumnCount(
     circuit,
     Math.max(columnCount, targetColumnIndex + 1),
   )
 
-  const movedTargetPlacement = resolveCnotDropPlacement(
+  const grabbedWasControl = fromQubitIndex === sourceControls[0]
+  const otherQubit = grabbedWasControl ? sourceTargets[0] : sourceControls[0]
+  const movedPlacement = resolveMovedTwoQubitPlacement(
     targetQubitIndex,
+    fromQubitIndex,
+    otherQubit,
     normalizedCircuit.logical_qubits,
   )
+  const movedControl = grabbedWasControl ? movedPlacement.grabbedQubit : movedPlacement.otherQubit
+  const movedTarget = grabbedWasControl ? movedPlacement.otherQubit : movedPlacement.grabbedQubit
   const movedGate: CircuitGate = {
     ...sourceLocation.gate,
-    controls: [movedTargetPlacement.controlQubit],
-    targets: [movedTargetPlacement.targetQubit],
+    controls: [movedControl],
+    targets: [movedTarget],
     params:
       sourceLocation.gate.params === undefined
         ? undefined
@@ -929,6 +1229,32 @@ export function updateGateParamsById(
         ...gate,
         params: { ...(gate.params ?? {}), ...params },
       }
+    }),
+  }))
+  return changed ? { ...circuit, columns } : circuit
+}
+
+// Reversing the register turns our MSB-first operand order into the LSB-first
+// order used by Quirk and Qiskit, so a circuit can be lined up against an
+// external simulator without rebuilding it. The occupied qubits do not change,
+// so this never collides with other gates in the column.
+export function reverseRegisterOrderById(
+  circuit: CircuitEditorState,
+  gateId: string,
+): CircuitEditorState {
+  let changed = false
+  const columns = circuit.columns.map((column) => ({
+    ...column,
+    gates: column.gates.map((gate) => {
+      if (
+        gate.id !== gateId ||
+        !isRegisterGateType(gate.type) ||
+        gate.targets.length < 2
+      ) {
+        return gate
+      }
+      changed = true
+      return { ...gate, targets: [...gate.targets].reverse() }
     }),
   }))
   return changed ? { ...circuit, columns } : circuit

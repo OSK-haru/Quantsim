@@ -5,6 +5,7 @@ import type { CircuitEditorState } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
 import { useCircuitContext } from '../context/useCircuitContext'
 import { circuitEditorStateToConfig } from '../utils/circuitConfig'
+import { isMultiQubitGateType } from '../utils/circuitEditing'
 import { validateCircuitConfigForRun } from '../utils/circuitValidation'
 
 type CircuitStudioPageProps = {
@@ -17,7 +18,7 @@ function getCircuitCounts(circuit: CircuitEditorState) {
     (summary, column) => {
       for (const gate of column.gates) {
         summary.gates += 1
-        if (gate.type === 'CNOT' || gate.type === 'CZ' || gate.type === 'CP' || gate.type === 'CCX' || gate.type === 'SWAP') {
+        if (isMultiQubitGateType(gate.type)) {
           summary.cnots += 1
         }
       }
@@ -63,7 +64,7 @@ export function CircuitStudioPage({
     <main className="circuit-studio-page">
       <header className="circuit-studio-page__header">
         <div>
-          <div className="circuit-studio-page__eyebrow">QuantaScope / Gate-aware</div>
+          <div className="circuit-studio-page__eyebrow">Yuragi-Strider / Gate-aware</div>
           <h1>Gate-aware 回路スタジオ</h1>
           <p className="circuit-studio-page__lede">
             Gate-aware シミュレーションで使用する回路を編集します。Pulse
@@ -101,6 +102,8 @@ export function CircuitStudioPage({
           onRedo={circuit.handleRedoCircuit}
           onDeleteSelected={circuit.handleDeleteSelectedGate}
           onUpdateSelectedGateTheta={circuit.handleUpdateSelectedGateTheta}
+          onUpdateSelectedGateMarkedIndex={circuit.handleUpdateSelectedGateMarkedIndex}
+          onReverseSelectedGateRegister={circuit.handleReverseSelectedGateRegister}
           onClearCircuit={circuit.handleClearCircuit}
           onAddColumn={circuit.handleAddCircuitColumn}
           onRemoveLastColumn={circuit.handleRemoveLastCircuitColumn}

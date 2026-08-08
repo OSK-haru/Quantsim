@@ -1,1 +1,1 @@
-"""Persistence and export helpers for QuantaScope core data."""
+"""Persistence and export helpers for Yuragi-Strider core data."""

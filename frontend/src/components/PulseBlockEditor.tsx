@@ -58,7 +58,7 @@ export function PulseBlockEditor({
     <aside className="pulse-block-editor" aria-labelledby="pulse-block-editor-title">
       <div className="pulse-block-editor__heading">
         <div>
-          <span>PULSE BLOCK</span>
+          <span>Pulseブロック</span>
           <h2 id="pulse-block-editor-title">{label} をカスタマイズ</h2>
           <p>このブロック固有の制御波形だけを編集します。外界環境はPulse Labの共通設定です。</p>
         </div>
@@ -101,9 +101,9 @@ export function PulseBlockEditor({
           ) : null}
         </div>
 
-        <section className="pulse-block-editor__preview" aria-label="Pulse waveform preview">
+        <section className="pulse-block-editor__preview" aria-label="Pulse波形プレビュー">
           <div>
-            <span>WAVEFORM PREVIEW</span>
+            <span>波形プレビュー</span>
             <strong>{pulseStepDurationUs(pulse).toPrecision(4)} us</strong>
           </div>
           <svg viewBox="0 0 320 84" role="img" aria-label={`${label}の振幅波形`}>
@@ -111,9 +111,9 @@ export function PulseBlockEditor({
             <path d={path} />
           </svg>
           <dl>
-            <div><dt>Phase</dt><dd>{pulse.phaseRad.toFixed(3)} rad</dd></div>
-            <div><dt>Detuning</dt><dd>{pulse.detuningRadPerUs.toFixed(3)} rad/us</dd></div>
-            <div><dt>Environment</dt><dd>Global</dd></div>
+            <div><dt>位相</dt><dd>{pulse.phaseRad.toFixed(3)} rad</dd></div>
+            <div><dt>離調</dt><dd>{pulse.detuningRadPerUs.toFixed(3)} rad/us</dd></div>
+            <div><dt>環境</dt><dd>グローバル</dd></div>
           </dl>
         </section>
       </div>

@@ -93,7 +93,7 @@ function reduceToBlochState(
   qubitIndex: number,
 ): BlochQubitState {
   const dimension = real.length
-  // QuantaScope uses q0 as the most-significant basis bit.
+  // Yuragi-Strider uses q0 as the most-significant basis bit.
   const targetBitMask = 1 << (qubitCount - qubitIndex - 1)
   let populationZero = 0
   let populationOne = 0

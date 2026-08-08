@@ -13,6 +13,7 @@ type EstimateSimulationCostInput = {
   durationUs: number
   circuitGateCount: number
   circuitColumnCount: number
+  evolutionMethod?: 'fixed_step_rk4' | 'explicit_cptp'
 }
 
 const COST_LABELS: Record<SimulationCostLevel, string> = {
@@ -28,6 +29,7 @@ export function estimateSimulationCost({
   durationUs,
   circuitGateCount,
   circuitColumnCount,
+  evolutionMethod = 'fixed_step_rk4',
 }: EstimateSimulationCostInput): SimulationCostEstimate {
   const qubits = sanitizePositiveInteger(logicalQubits, 2)
   const steps = sanitizePositiveInteger(timeSteps, 11)
@@ -59,11 +61,24 @@ export function estimateSimulationCost({
     level = 'very_high'
   }
 
+  // Explicit CPTP builds and audits a 4**n superoperator per distinct interval.
+  // Measured on python_dense: 4 qubits ~14 s, 5 qubits over 10 minutes. Flag it
+  // before the run rather than letting the request hang.
+  const cptpAtFiveQubits = evolutionMethod === 'explicit_cptp' && qubits >= 5
+  if (cptpAtFiveQubits) {
+    level = 'very_high'
+  }
+
   return {
     level,
     label: COST_LABELS[level],
-    message: buildMessage(qubits, steps, duration, level),
-    suggestion: buildSuggestion(qubits, level),
+    message: cptpAtFiveQubits
+      ? `量子ビット ${qubits} 個で Explicit CPTP を選ぶと、区間ごとに ${4 ** qubits} 次元の超演算子を構築・監査します。`
+        + ' python_dense では10分以上かかる見込みです。'
+      : buildMessage(qubits, steps, duration, level),
+    suggestion: cptpAtFiveQubits
+      ? '5量子ビットでは Fixed-step RK4 を使ってください（同条件で数秒です）。'
+      : buildSuggestion(qubits, level),
   }
 }
 
@@ -93,7 +108,7 @@ function buildSuggestion(logicalQubits: number, level: SimulationCostLevel): str
   }
 
   if (level === 'low' || level === 'medium') {
-    return '4量子ビットでの推奨設定: time_steps 11〜31、duration_us 0.5〜1.0。'
+    return `${logicalQubits}量子ビットでの推奨設定: time_steps 11〜31、duration_us 0.5〜1.0。`
   }
 
   return '対話的に試す場合は、時間ステップを 11〜31 にするか、時間を短くしてください。'

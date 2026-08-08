@@ -36,9 +36,9 @@
 
 ## 目的
 
-この文書は、QuantaScope の各画面におけるUI要件を定義する。
+この文書は、Yuragi-Strider の各画面におけるUI要件を定義する。
 
-QuantaScope は、小規模量子回路に対して環境条件を与え、開放系としての状態劣化・計算信頼性・有効動作時間を可視化するアプリケーションである。
+Yuragi-Strider は、小規模量子回路に対して環境条件を与え、開放系としての状態劣化・計算信頼性・有効動作時間を可視化するアプリケーションである。
 
 UI設計では、以下を重視する。
 
@@ -56,7 +56,7 @@ UI設計では、以下を重視する。
 
 ### 概要
 
-QuantaScope のUIは、起動画面、Beginner表示、Expert表示、比較ワークフローを中心に構成する。
+Yuragi-Strider のUIは、起動画面、Beginner表示、Expert表示、比較ワークフローを中心に構成する。
 
 ### 基本画面
 
@@ -70,7 +70,7 @@ QuantaScope のUIは、起動画面、Beginner表示、Expert表示、比較ワ�
 
 ### 表示レベル
 
-QuantaScopeでは、表示の詳しさを以下の2段階に分ける。
+Yuragi-Striderでは、表示の詳しさを以下の2段階に分ける。
 
 | 表示レベル | 対象 | 内容 |
 |---|---|---|
@@ -101,7 +101,7 @@ QuantaScopeでは、表示の詳しさを以下の2段階に分ける。
 
 Start Screen は、起動直後に表示される開始画面である。
 
-利用者が QuantaScope の目的を理解し、デモ実行、チュートリアル開始、保存済み設定の読込、表示レベル選択を行えるようにする。
+利用者が Yuragi-Strider の目的を理解し、デモ実行、チュートリアル開始、保存済み設定の読込、表示レベル選択を行えるようにする。
 
 ---
 
@@ -137,7 +137,7 @@ Start Screen は以下の領域で構成する。
 
 ### Header
 
-- アプリ名 `QuantaScope`
+- アプリ名 `Yuragi-Strider`
 
 - 設定アイコン
 
@@ -154,14 +154,14 @@ Start Screen は以下の領域で構成する。
 表示例:
 
 ```text
-QuantaScope
+Yuragi-Strider
 Explore how environment conditions degrade quantum circuits.
 ```
 
 日本語表示例:
 
 ```text
-QuantaScope
+Yuragi-Strider
 環境条件が量子回路の状態忠実度・純度・有効動作時間に与える影響を可視化します。
 ```
 
@@ -1611,7 +1611,7 @@ Expertモードは「情報をすべて見せる画面」ではなく、
 
 # UI-12 最終方針
 
-QuantaScope のUIは、以下の方針で設計する。
+Yuragi-Strider のUIは、以下の方針で設計する。
 
 1. Start Screenで目的と開始操作を明確にする
 

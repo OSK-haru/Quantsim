@@ -1,7 +1,7 @@
-# QuantaScope Frontend
+# Yuragi-Strider Frontend
 
 The frontend is a React 19 and TypeScript application built with Vite. It is
-the current QuantaScope UI; the former Streamlit UI is not part of the active
+the current Yuragi-Strider UI; the former Streamlit UI is not part of the active
 tree.
 
 ## Local Development

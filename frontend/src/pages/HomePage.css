@@ -212,6 +212,12 @@
   color: #e7d2a8;
 }
 
+.home-page__footnote {
+  margin: 18px 0 0;
+  color: #8a7458;
+  font-size: 0.78rem;
+}
+
 @keyframes home-page-button-ignite {
   0% {
     filter: brightness(1);
@@ -256,6 +262,13 @@
   .home-page__button--activated::after {
     animation: none;
   }
+}
+
+html[data-animations='off'] .home-page--activated::before,
+html[data-animations='off'] .home-page--activated::after,
+html[data-animations='off'] .home-page__button--activated,
+html[data-animations='off'] .home-page__button--activated::after {
+  animation: none;
 }
 
 @media (max-width: 640px) {

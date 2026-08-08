@@ -770,7 +770,7 @@ Task:
 Implement Phase 7.7: Gate-aware Effective-Hamiltonian Lindblad Simulation.
 
 Background:
-The current simulator applies the full circuit ideally first and then applies Lindblad environment evolution afterward. This is a post-circuit state degradation model. It is useful for visualizing degradation of a prepared state, but it does not model noise during gate execution. For QuantaScope to behave more like a quantum circuit simulator, the model must include environmental time evolution during each gate or circuit column.
+The current simulator applies the full circuit ideally first and then applies Lindblad environment evolution afterward. This is a post-circuit state degradation model. It is useful for visualizing degradation of a prepared state, but it does not model noise during gate execution. For Yuragi-Strider to behave more like a quantum circuit simulator, the model must include environmental time evolution during each gate or circuit column.
 
 Goal:
 Add a new gate-aware simulation mode:

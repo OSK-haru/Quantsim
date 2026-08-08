@@ -12,12 +12,12 @@ export function PulseDensityMatrixHeatmap({ matrix, basisLabels }: PulseDensityM
     <section className="pulse-density" aria-labelledby="pulse-density-title">
       <div className="pulse-density__heading">
         <div>
-          <span>FULL DENSITY OPERATOR</span>
-          <h2 id="pulse-density-title">Final density matrix</h2>
+          <span>全密度演算子</span>
+          <h2 id="pulse-density-title">最終密度行列</h2>
         </div>
-        <p>{matrix.length} x {matrix.length}, basis {labels.map((label) => `|${label}>`).join(', ')}</p>
+        <p>{matrix.length} x {matrix.length}、基底 {labels.map((label) => `|${label}>`).join(', ')}</p>
       </div>
-      <div className="pulse-density__matrix" role="table" aria-label="Final density matrix" style={{ '--matrix-dimension': matrix.length } as React.CSSProperties}>
+      <div className="pulse-density__matrix" role="table" aria-label="最終密度行列" style={{ '--matrix-dimension': matrix.length } as React.CSSProperties}>
         {matrix.flatMap((row, rowIndex) =>
           row.map((value, columnIndex) => {
             const magnitude = Math.hypot(value.real, value.imag)
@@ -29,11 +29,11 @@ export function PulseDensityMatrixHeatmap({ matrix, basisLabels }: PulseDensityM
                 key={`${rowIndex}-${columnIndex}`}
                 role="cell"
                 style={{ '--cell-strength': Math.min(1, magnitude) } as React.CSSProperties}
-                aria-label={`rho ${rowIndex}${columnIndex}: ${formatComplex(value)}`}
+                aria-label={`ρ${rowIndex}${columnIndex}: ${formatComplex(value)}`}
               >
-                <span>rho[{labels[rowIndex]},{labels[columnIndex]}]</span>
+                <span>ρ[{labels[rowIndex]},{labels[columnIndex]}]</span>
                 <strong>{formatComplex(value)}</strong>
-                <small>|rho| {magnitude.toFixed(4)}</small>
+                <small>|ρ| {magnitude.toFixed(4)}</small>
               </div>
             )
           }),

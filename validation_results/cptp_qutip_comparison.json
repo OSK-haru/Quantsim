@@ -210,7 +210,7 @@
   "frozen_contract": {
     "cleanup_applied": false,
     "evolution_method_id": "explicit_cptp_midpoint_gksl_v1",
-    "freeze_id": "quantascope_explicit_cptp_v1",
+    "freeze_id": "yuragi_strider_explicit_cptp_v1",
     "time_dependent_sampling_id": "midpoint_piecewise_constant_v1"
   },
   "generated_at_utc": "2026-07-29T06:22:01.592742+00:00",

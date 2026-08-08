@@ -4,7 +4,7 @@
 
 ## Comparison Contract
 
-Both solvers receive the same initial density matrix, exact time-dependent Hamiltonian matrices, collapse-operator matrices, and requested output times. QuantaScope uses its fixed-step RK4 reference path; QuTiP uses `mesolve` with DOP853.
+Both solvers receive the same initial density matrix, exact time-dependent Hamiltonian matrices, collapse-operator matrices, and requested output times. Yuragi-Strider uses its fixed-step RK4 reference path; QuTiP uses `mesolve` with DOP853.
 
 The matrix-difference tolerance was fixed at `5.0e-07`.
 

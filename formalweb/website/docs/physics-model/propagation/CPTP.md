@@ -84,7 +84,7 @@ Coupled transmon pairモデルでは、CPTP区間数の上限が 500 に設定�
 明示的CPTPモデルは監査を経て凍結されています。
 
 ```text
-freeze_id : quantascope_explicit_cptp_v1
+freeze_id : yuragi_strider_explicit_cptp_v1
 method    : explicit_cptp_midpoint_gksl_v1
 判定       : PASS WITH RESTRICTIONS
 ```
@@ -92,7 +92,7 @@ method    : explicit_cptp_midpoint_gksl_v1
 Gate-aware経路についても別途凍結されています。
 
 ```text
-freeze_id : quantascope_gate_aware_cptp_v1
+freeze_id : yuragi_strider_gate_aware_cptp_v1
 method    : gate_aware_constant_gksl_exponential_v1
 判定       : PASS WITH RESTRICTIONS
 ```
@@ -104,7 +104,7 @@ method    : gate_aware_constant_gksl_exponential_v1
 - 実験室系の搬送波積分を行わない
 - 多量子ビットパルス制御を確立しない
 
-なお、凍結時点では「Gate-aware `run_simulation` でのCPTP実行」は未確立とされていましたが、これは後続の `quantascope_gate_aware_cptp_v1` で確立されています。
+なお、凍結時点では「Gate-aware `run_simulation` でのCPTP実行」は未確立とされていましたが、これは後続の `yuragi_strider_gate_aware_cptp_v1` で確立されています。
 
 ## 検証状況
 

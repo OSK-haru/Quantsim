@@ -122,7 +122,7 @@ def main() -> int:
         "raw_counts": raw_counts,
         "shot_count": SHOTS,
         "source_job": "d9njjeoqs0bc73e3gss0",
-        "quantascope_commit": manifest["source_revision"]["freeze_commit"],
+        "yuragi_strider_commit": manifest["source_revision"]["freeze_commit"],
         "formal_holdout_eligible": False,
         "model_refit_after_followup": False,
     }

@@ -1,4 +1,4 @@
-"""Windows-friendly local launcher for the built QuantaScope application.
+"""Windows-friendly local launcher for the built Yuragi-Strider application.
 
 The launcher serves the Vite build and the FastAPI endpoints from one local
 address, then opens the default browser. It is intentionally free of external
@@ -37,7 +37,7 @@ from api.main import app
 def configure_launcher_logging() -> None:
     """Keep diagnostics available when the packaged app has no console."""
 
-    log_root = Path(os.environ.get("LOCALAPPDATA", resource_root())) / "QuantaScope"
+    log_root = Path(os.environ.get("LOCALAPPDATA", resource_root())) / "Yuragi-Strider"
     log_root.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
         filename=log_root / "launcher.log",
@@ -65,7 +65,7 @@ def find_available_port(host: str, preferred_port: int) -> int:
             except OSError:
                 continue
             return port
-    raise RuntimeError("No local port is available for QuantaScope.")
+    raise RuntimeError("No local port is available for Yuragi-Strider.")
 
 
 def configure_static_ui(ui_directory: Path) -> None:
@@ -112,7 +112,7 @@ def main() -> int:
     args = parser.parse_args()
 
     configure_launcher_logging()
-    logging.info("Starting QuantaScope desktop launcher.")
+    logging.info("Starting Yuragi-Strider desktop launcher.")
     ui_directory = resource_root() / "frontend" / "dist"
     configure_static_ui(ui_directory)
     port = find_available_port(args.host, args.port)
@@ -129,7 +129,7 @@ def main() -> int:
             access_log=False,
         )
     )
-    logging.info("Serving QuantaScope at %s", url)
+    logging.info("Serving Yuragi-Strider at %s", url)
     server.run()
     return 0
 
@@ -138,5 +138,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception:
-        logging.exception("QuantaScope desktop launcher failed.")
+        logging.exception("Yuragi-Strider desktop launcher failed.")
         raise

@@ -2,6 +2,7 @@ import './RunPanel.css'
 import { ResultDrawer } from './ResultDrawer'
 import { SectionHeader } from './SectionHeader'
 import { RunCostNotice } from './RunCostNotice'
+import { SimulationProgressIndicator } from './SimulationProgressIndicator'
 import type {
   GateAwareEvolutionMethod,
   GateCompilationMode,
@@ -53,6 +54,21 @@ const compilationModeDescriptions: Record<GateCompilationMode, string> = {
     '発展ゲートを1つの有効Hamiltonianとして直接実行します。',
   auto_decompose:
     '発展ゲートを基本ゲート列へ展開し、増加した深さと実行時間にもノイズを作用させます。',
+}
+
+const compilationModeLabels: Record<GateCompilationMode, string> = {
+  logical_direct: '理想ゲート（直接）',
+  auto_decompose: '基本ゲートへ自動分解',
+}
+
+const evolutionMethodLabels: Record<GateAwareEvolutionMethod, string> = {
+  fixed_step_rk4: 'Fixed-step RK4',
+  explicit_cptp: 'Explicit CPTP maps',
+}
+
+const backendLabels: Record<SimulationBackend, string> = {
+  python_dense: 'Python dense',
+  rust_dense_preview: 'Rust dense (preview)',
 }
 
 function formatElapsedMs(value: number | null) {
@@ -124,60 +140,76 @@ export function RunPanel({
         </div>
       </div>
 
+      <SimulationProgressIndicator isPending={isRequestPending} timeoutMs={frontendRunTimeoutMs} />
+
       <div className="run-panel__rows">
-        <label className="run-panel__method">
-          <span>
-            <strong>Gate execution</strong>
-            <small>{compilationModeDescriptions[compilationMode]}</small>
-          </span>
-          <select
-            value={compilationMode}
-            onChange={(event) => {
-              onCompilationModeChange(event.target.value as GateCompilationMode)
-            }}
-            disabled={isRequestPending}
-            aria-label="Gate compilation mode"
-          >
-            <option value="logical_direct">理想ゲート（直接）</option>
-            <option value="auto_decompose">基本ゲートへ自動分解</option>
-          </select>
-        </label>
-        <label className="run-panel__method">
-          <span>
-            <strong>Evolution method</strong>
-            <small>{evolutionMethodDescriptions[evolutionMethod]}</small>
-          </span>
-          <select
-            value={evolutionMethod}
-            onChange={(event) => {
-              onEvolutionMethodChange(
-                event.target.value as GateAwareEvolutionMethod,
-              )
-            }}
-            disabled={isRequestPending}
-            aria-label="Gate-aware evolution method"
-          >
-            <option value="fixed_step_rk4">Fixed-step RK4</option>
-            <option value="explicit_cptp">Explicit CPTP maps</option>
-          </select>
-        </label>
-        <label className="run-panel__method">
-          <span>
-            <strong>Execution backend</strong>
-            <small>{backendDescriptions[simulationBackend]}</small>
-          </span>
-          <select
-            value={simulationBackend}
-            onChange={(event) => {
-              onSimulationBackendChange(event.target.value as SimulationBackend)
-            }}
-            disabled={isRequestPending}
-            aria-label="Simulation backend"
-          >
-            <option value="python_dense">Python dense (standard)</option>
-            <option value="rust_dense_preview">Rust dense (preview)</option>
-          </select>
-        </label>
+        <details className="run-panel__methods">
+          <summary className="run-panel__methods-summary">
+            <span>
+              <strong>計算方法</strong>
+              <small>
+                推奨設定を使用中: {compilationModeLabels[compilationMode]} /{' '}
+                {evolutionMethodLabels[evolutionMethod]} / {backendLabels[simulationBackend]}
+              </small>
+            </span>
+            <span className="run-panel__methods-toggle" aria-hidden="true" />
+          </summary>
+          <div className="run-panel__methods-body">
+            <label className="run-panel__method">
+              <span>
+                <strong>Gate execution</strong>
+                <small>{compilationModeDescriptions[compilationMode]}</small>
+              </span>
+              <select
+                value={compilationMode}
+                onChange={(event) => {
+                  onCompilationModeChange(event.target.value as GateCompilationMode)
+                }}
+                disabled={isRequestPending}
+                aria-label="Gate compilation mode"
+              >
+                <option value="logical_direct">理想ゲート（直接）</option>
+                <option value="auto_decompose">基本ゲートへ自動分解</option>
+              </select>
+            </label>
+            <label className="run-panel__method">
+              <span>
+                <strong>Evolution method</strong>
+                <small>{evolutionMethodDescriptions[evolutionMethod]}</small>
+              </span>
+              <select
+                value={evolutionMethod}
+                onChange={(event) => {
+                  onEvolutionMethodChange(
+                    event.target.value as GateAwareEvolutionMethod,
+                  )
+                }}
+                disabled={isRequestPending}
+                aria-label="Gate-aware evolution method"
+              >
+                <option value="fixed_step_rk4">Fixed-step RK4</option>
+                <option value="explicit_cptp">Explicit CPTP maps</option>
+              </select>
+            </label>
+            <label className="run-panel__method">
+              <span>
+                <strong>Execution backend</strong>
+                <small>{backendDescriptions[simulationBackend]}</small>
+              </span>
+              <select
+                value={simulationBackend}
+                onChange={(event) => {
+                  onSimulationBackendChange(event.target.value as SimulationBackend)
+                }}
+                disabled={isRequestPending}
+                aria-label="Simulation backend"
+              >
+                <option value="python_dense">Python dense (standard)</option>
+                <option value="rust_dense_preview">Rust dense (preview)</option>
+              </select>
+            </label>
+          </div>
+        </details>
         <div className="run-panel__row">
           <span className="run-panel__label">状態</span>
           <strong className="run-panel__value">{run.status}</strong>
@@ -264,7 +296,7 @@ export function RunPanel({
           onClick={onRunSimulation}
           disabled={!canRun || isRequestPending}
         >
-          シミュレーションを実行
+          {isRequestPending ? '実行中…' : 'シミュレーションを実行'}
         </button>
       </div>
 

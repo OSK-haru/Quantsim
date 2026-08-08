@@ -10,8 +10,8 @@ Gate-awareモデルと3つのPulse-levelモデルが、解析解および独立�
 ## Gate-aware CPTP の凍結
 
 ```text
-freeze_id : quantascope_gate_aware_cptp_v1
-tag       : quantascope-gate-aware-cptp-v1
+freeze_id : yuragi_strider_gate_aware_cptp_v1
+tag       : yuragi-strider-gate-aware-cptp-v1
 method    : gate_aware_constant_gksl_exponential_v1
 判定       : PASS WITH RESTRICTIONS
 日付       : 2026-07-29
@@ -116,7 +116,7 @@ QuTiP      : mesolve / DOP853、atol=rtol=1e-12、max_step 0.00125 μs、
 | dissipative_gaussian | **2.820964e-09** |
 | pulse_then_idle | 5.400107e-08 |
 
-**PASS**(`overall_pass: true`)。実行時間はQuantaScope 26.9〜433.8 ms に対しQuTiP 726〜5364 ms。
+**PASS**(`overall_pass: true`)。実行時間はYuragi-Strider 26.9〜433.8 ms に対しQuTiP 726〜5364 ms。
 
 ### 収束検証(PULSE-CONV-2LEVEL)
 
@@ -314,7 +314,7 @@ capability status : experimental
 ```
 
 :::info 独立性の境界
-QuTiP側は**公開リクエスト契約から $H(t)$・崩壊演算子・Gaussian包絡線・DRAGクアドラチャ・Gauss-Hermiteノードを独立に再構成**しています。QuantaScope内部の行列をそのまま受け取るのではありません。
+QuTiP側は**公開リクエスト契約から $H(t)$・崩壊演算子・Gaussian包絡線・DRAGクアドラチャ・Gauss-Hermiteノードを独立に再構成**しています。Yuragi-Strider内部の行列をそのまま受け取るのではありません。
 
 これはV7やBA-5より強い独立性であり、契約の解釈自体も検証対象に含まれます。
 :::

@@ -1,16 +1,16 @@
-# QuantaScope 参考文献台帳
+# Yuragi-Strider 参考文献台帳
 
 ## 目的
 
-このフォルダは、QuantaScopeの物理モデル、数値実装、評価方法について、
+このフォルダは、Yuragi-Striderの物理モデル、数値実装、評価方法について、
 どの文献を何の根拠として参照したかを追跡するための台帳である。
 
 単なる文献一覧ではなく、各文献について次を区別する。
 
 1. 文献が述べている内容
-2. QuantaScopeで使用した考え方
+2. Yuragi-Striderで使用した考え方
 3. 使用したコード・仕様・検証文書
-4. 文献からは正当化されないQuantaScope固有の判断
+4. 文献からは正当化されないYuragi-Strider固有の判断
 
 ## 引用区分
 
@@ -34,7 +34,7 @@
 
 ## 現行モデルとの対応
 
-| QuantaScope領域 | 主な文献分類 | 現在の状態 |
+| Yuragi-Strider領域 | 主な文献分類 | 現在の状態 |
 |---|---|---|
 | Gate-aware Hamiltonian-Lindblad | 開放量子系 | 実装・V1-V7検証済み |
 | Two-level Pulse RWA | Pulse/control | 実装・QuTiP比較済み |
@@ -45,7 +45,7 @@
 
 ## 重要な主張境界
 
-文献との整合は、QuantaScopeが特定実機を校正済みであることを意味しない。
+文献との整合は、Yuragi-Striderが特定実機を校正済みであることを意味しない。
 
 現時点で文献と検証が支えるのは、主に次である。
 

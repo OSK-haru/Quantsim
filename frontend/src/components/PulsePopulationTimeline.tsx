@@ -34,8 +34,8 @@ export function PulsePopulationTimeline({
     <section className="pulse-population" aria-labelledby="pulse-population-title">
       <div className="pulse-population__heading">
         <div>
-          <span>STATE EVOLUTION</span>
-          <h2 id="pulse-population-title">Populations and quality metrics</h2>
+          <span>状態発展</span>
+          <h2 id="pulse-population-title">占有確率と品質指標</h2>
         </div>
         <div className="pulse-population__legend">
           {availableSeries.map((item) => (
@@ -45,7 +45,7 @@ export function PulsePopulationTimeline({
           ))}
         </div>
       </div>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="State populations, purity, and fidelity over time">
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="時間に対する状態占有確率・純度・忠実度">
         {[0, 0.5, 1].map((tick) => (
           <g key={tick}>
             <line className="pulse-population__grid" x1={PAD_X} x2={WIDTH - PAD_X} y1={y(tick)} y2={y(tick)} />
@@ -58,7 +58,7 @@ export function PulsePopulationTimeline({
             className="pulse-population__line"
             key={item.label}
             stroke={item.color}
-            strokeDasharray={item.label.includes('Purity') || item.label.includes('overlap') || item.label.includes('Fidelity') ? '5 4' : undefined}
+            strokeDasharray={item.label.includes('純度') || item.label.includes('重なり') || item.label.includes('忠実度') ? '5 4' : undefined}
             d={linePath(timeValues, item.values, x, y)}
           />
         ))}
@@ -67,8 +67,8 @@ export function PulsePopulationTimeline({
       </svg>
       {qutrit ? (
         <p className="pulse-population__note">
-          P2 is the leakage probability and is never removed by computational-subspace normalization.
-          Target overlap is shown only for a resonant target-angle request.
+          P2はリーケージ確率であり、計算部分空間の正規化によって除かれることはありません。
+          目標との重なりは、共鳴する目標角度のリクエストの場合のみ表示されます。
         </p>
       ) : null}
     </section>
@@ -85,12 +85,12 @@ function pairSeries(
       values: response.trajectory.map((point) => point.joint_populations[label] ?? 0),
     })),
     {
-      label: 'Leakage',
+      label: 'リーケージ',
       color: '#ef8b66',
       values: response.trajectory.map((point) => point.leakage_probability),
     },
     {
-      label: 'Purity',
+      label: '純度',
       color: '#f0d878',
       values: response.trajectory.map((point) => point.purity),
     },
@@ -105,10 +105,10 @@ function qutritSeries(
   return [
     { label: 'P0', color: '#61d7c2', values: response.trajectory.map((point) => point.population_0) },
     { label: 'P1', color: '#6da7ff', values: response.trajectory.map((point) => point.population_1) },
-    { label: 'P2 / leakage', color: '#ef8b66', values: response.trajectory.map((point) => point.population_2) },
-    { label: 'Purity', color: '#d9c66c', values: response.trajectory.map((point) => point.purity) },
+    { label: 'P2 / リーケージ', color: '#ef8b66', values: response.trajectory.map((point) => point.population_2) },
+    { label: '純度', color: '#d9c66c', values: response.trajectory.map((point) => point.purity) },
     {
-      label: 'Target overlap',
+      label: '目標との重なり',
       color: '#e7a9ee',
       values: response.trajectory.map((point) => (
         isSequence ? null : qutritTargetOverlap(point, formAtRun)
@@ -123,9 +123,9 @@ function twoLevelSeries(
   return [
     { label: 'P0', color: '#61d7c2', values: response.trajectory.map((point) => point.open_population_0) },
     { label: 'P1', color: '#6da7ff', values: response.trajectory.map((point) => point.open_population_1) },
-    { label: 'Purity', color: '#d9c66c', values: response.trajectory.map((point) => point.purity) },
+    { label: '純度', color: '#d9c66c', values: response.trajectory.map((point) => point.purity) },
     {
-      label: 'Fidelity to closed',
+      label: '閉じた系への忠実度',
       color: '#e7a9ee',
       values: response.trajectory.map((point) => point.fidelity_to_closed),
     },

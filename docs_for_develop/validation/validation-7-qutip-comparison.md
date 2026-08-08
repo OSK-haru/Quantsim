@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Compare the current QuantaScope Lindblad solver with QuTiP `mesolve` using exactly the same density matrices, Hamiltonians, collapse operators, segment durations, and requested snapshot times.
+Compare the current Yuragi-Strider Lindblad solver with QuTiP `mesolve` using exactly the same density matrices, Hamiltonians, collapse operators, segment durations, and requested snapshot times.
 
 ## Environment and Versions
 
@@ -16,11 +16,11 @@ Compare the current QuantaScope Lindblad solver with QuTiP `mesolve` using exact
 ## Basis and Qubit-Order Audit
 
 - `q0` is the most-significant bit, so two-qubit order is `|00>, |01>, |10>, |11>`.
-- The adapter converts QuantaScope matrices directly to `Qobj`; it does not rebuild the model with QuTiP spin operators.
+- The adapter converts Yuragi-Strider matrices directly to `Qobj`; it does not rebuild the model with QuTiP spin operators.
 
 ## Solver Settings
 
-- QuantaScope fixed internal RK4 cap: `0.03125 us`.
+- Yuragi-Strider fixed internal RK4 cap: `0.03125 us`.
 - QuTiP options: `{'store_states': True, 'normalize_output': False, 'progress_bar': False, 'method': 'dop853', 'atol': 1e-12, 'rtol': 1e-12, 'nsteps': 100000, 'max_step_us': 0.015625}`.
 
 ## Results

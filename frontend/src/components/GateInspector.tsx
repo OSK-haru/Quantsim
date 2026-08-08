@@ -1,6 +1,11 @@
 import './GateInspector.css'
 import type { CircuitEditorState, CircuitGate } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
+import {
+  isRegisterGateType,
+  maxMarkedIndex,
+  registerDurationUs,
+} from '../utils/circuitEditing'
 
 type GateInspectorProps = {
   circuit: CircuitEditorState
@@ -9,6 +14,8 @@ type GateInspectorProps = {
   onDeleteSelected: () => void
   onReveal: () => void
   onThetaChange: (thetaRad: number) => void
+  onMarkedIndexChange: (markedIndex: number) => void
+  onReverseRegister: () => void
 }
 
 type GateLocation = {
@@ -40,7 +47,14 @@ function formatQubits(qubits: number[] | undefined) {
 }
 
 function getGateDuration(gate: CircuitGate, gateDurationDefaults: GateDurationDefaults) {
-  return gate.params?.duration_us ?? gateDurationDefaults[gate.type]
+  if (gate.params?.duration_us !== undefined) {
+    return gate.params.duration_us
+  }
+
+  // Register-gate defaults are declared per spanned qubit, not per gate.
+  return isRegisterGateType(gate.type)
+    ? registerDurationUs(gateDurationDefaults[gate.type], gate.targets.length)
+    : gateDurationDefaults[gate.type]
 }
 
 export function GateInspector({
@@ -50,6 +64,8 @@ export function GateInspector({
   onDeleteSelected,
   onReveal,
   onThetaChange,
+  onMarkedIndexChange,
+  onReverseRegister,
 }: GateInspectorProps) {
   const location = findGateLocation(circuit, selectedGateId)
 
@@ -63,6 +79,11 @@ export function GateInspector({
     || location.gate.type === 'CP'
   )
   const thetaRad = location.gate.params?.theta_rad ?? Math.PI / 2
+  const isRegisterGate = isRegisterGateType(location.gate.type)
+  const isOracle = location.gate.type === 'ORACLE'
+  const registerSize = location.gate.targets.length
+  const markedIndex = location.gate.params?.marked_index ?? 0
+  const markedLabel = markedIndex.toString(2).padStart(registerSize, '0')
 
   return (
     <aside className="gate-inspector" aria-label="選択中のゲートインスペクター">
@@ -77,13 +98,35 @@ export function GateInspector({
           <dd>{location.columnIndex + 1}</dd>
         </div>
         <div>
-          <dt>対象</dt>
-          <dd>{formatQubits(location.gate.targets)}</dd>
+          <dt>{isRegisterGate ? 'レジスタ (ビット0から)' : '対象'}</dt>
+          <dd>
+            {formatQubits(
+              isRegisterGate
+                ? [...location.gate.targets].reverse()
+                : location.gate.targets,
+            )}
+          </dd>
         </div>
-        <div>
-          <dt>制御</dt>
-          <dd>{formatQubits(location.gate.controls)}</dd>
-        </div>
+        {isRegisterGate ? (
+          <div>
+            <dt>レジスタ幅</dt>
+            <dd>
+              {registerSize} 量子ビット
+              <span className="gate-inspector__note">
+                {isOracle
+                  ? '盤面の数字は、マークする状態がその量子ビットに要求するビットです。'
+                  : '盤面の数字はビット重み k で、その量子ビットが 2^k を担います。'}
+                {` q${location.gate.targets[registerSize - 1]} がビット0(最下位)、`}
+                {`q${location.gate.targets[0]} が最上位です。Quirk や Qiskit と同じ並びです。`}
+              </span>
+            </dd>
+          </div>
+        ) : (
+          <div>
+            <dt>制御</dt>
+            <dd>{formatQubits(location.gate.controls)}</dd>
+          </div>
+        )}
         <div>
           <dt>操作時間</dt>
           <dd>{getGateDuration(location.gate, gateDurationDefaults).toFixed(3)} us</dd>
@@ -115,6 +158,39 @@ export function GateInspector({
             </dd>
           </div>
         ) : null}
+        {isOracle ? (
+          <div>
+            <dt>マークする状態</dt>
+            <dd>
+              <input
+                key={location.gate.id}
+                className="gate-inspector__angle-input"
+                type="number"
+                step="1"
+                min={0}
+                max={maxMarkedIndex(registerSize)}
+                defaultValue={markedIndex}
+                aria-label="Oracle marked basis state index"
+                onBlur={(event) => {
+                  const value = event.currentTarget.valueAsNumber
+                  if (Number.isInteger(value)) {
+                    onMarkedIndexChange(value)
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.currentTarget.blur()
+                  }
+                }}
+              />{' '}
+              = |{markedLabel}⟩
+              <span className="gate-inspector__note">
+                0〜{maxMarkedIndex(registerSize)} の基底状態を指定します。
+                この状態の位相だけが反転します。
+              </span>
+            </dd>
+          </div>
+        ) : null}
         <div className="gate-inspector__debug">
           <dt>エディター ID</dt>
           <dd>{location.gate.id}</dd>
@@ -122,6 +198,16 @@ export function GateInspector({
       </dl>
 
       <div className="gate-inspector__actions">
+        {isRegisterGate && location.gate.targets.length >= 2 ? (
+          <button
+            className="gate-inspector__reverse"
+            type="button"
+            onClick={onReverseRegister}
+            title="レジスタのビット重みを上下反転します（既定は Quirk / Qiskit と同じく上のワイヤがビット0）"
+          >
+            ビット順を反転
+          </button>
+        ) : null}
         <button className="gate-inspector__reveal" type="button" onClick={onReveal}>
           表示位置へ移動
         </button>

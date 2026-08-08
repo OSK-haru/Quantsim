@@ -1,4 +1,4 @@
-# QuantaScope Documentation Index
+# Yuragi-Strider Documentation Index
 
 ## Current Implementation Status
 
@@ -105,7 +105,7 @@ gate_aware_hamiltonian_lindblad_v1
 | Pulse Lab UI validation | [`validation/pulse-b-pulse-lab-ui.md`](validation/pulse-b-pulse-lab-ui.md) |
 | Pulse Extension B final report | [`validation/pulse-extension-b-report.md`](validation/pulse-extension-b-report.md) |
 | Frozen qutrit model | [`physics/pulse-extension-b-qutrit-model.md`](physics/pulse-extension-b-qutrit-model.md) |
-| Physical model finalization roadmap | [`requirements/quantascope_physical_model_finalization_plan.md`](requirements/quantascope_physical_model_finalization_plan.md) |
+| Physical model finalization roadmap | [`requirements/yuragi_strider_physical_model_finalization_plan.md`](requirements/yuragi_strider_physical_model_finalization_plan.md) |
 | Finalization execution status | [`development/physical-model-finalization/README.md`](development/physical-model-finalization/README.md) |
 | Planned Pulse Extension B phases | [`development/pulse-extension-b/README.md`](development/pulse-extension-b/README.md) |
 | V1-V7 validation reports | [`validation/`](validation/) |

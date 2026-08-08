@@ -15,7 +15,7 @@ def markdown_report_text(result: SimulationResult) -> str:
     data = result_to_dict(result)
     expert = build_expert_inspector_data(result)
     lines = [
-        "# QuantaScope Simulation Report",
+        "# Yuragi-Strider Simulation Report",
         "",
         "## Summary",
         *_bullet_mapping(data["summary"]),
@@ -51,7 +51,7 @@ def export_markdown_report(result: SimulationResult, path: str | Path) -> None:
 def comparison_markdown_report_text(comparison_result: ComparisonResult) -> str:
     data = comparison_result_to_dict(comparison_result)
     lines = [
-        "# QuantaScope Comparison Report",
+        "# Yuragi-Strider Comparison Report",
         "",
         "## Delta Metrics",
         *_bullet_mapping(data["delta_metrics"]),

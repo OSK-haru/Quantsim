@@ -3,9 +3,9 @@
   "manifest_id": "phase3b_gate_aware_pilot_manifest_v1",
   "status": "PILOT_EXECUTED_RAW_ARCHIVED_FORMAL_HOLDOUT_FALSE",
   "formal_holdout_eligible": false,
-  "dataset_id": "quantascope_hardware_audit_dataset_v1",
+  "dataset_id": "yuragi_strider_hardware_audit_dataset_v1",
   "source_revision": {
-    "freeze_tag": "quantascope-gate-aware-cptp-v1",
+    "freeze_tag": "yuragi-strider-gate-aware-cptp-v1",
     "freeze_commit": "f306fbf6eb2083d9098ab0ade079e2681920ac4e"
   },
   "provider": {
@@ -77,7 +77,7 @@
     "shot_count",
     "raw_counts",
     "software_versions",
-    "quantascope_commit"
+    "yuragi_strider_commit"
   ],
   "cases": [
     {

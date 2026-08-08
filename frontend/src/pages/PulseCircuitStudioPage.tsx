@@ -25,10 +25,10 @@ type PulseCircuitStudioPageProps = {
 }
 
 const palette: Array<{ primitive: PulsePrimitive; label: string; detail: string }> = [
-  { primitive: 'x90', label: 'X/2', detail: '+90° around X' },
-  { primitive: 'x180', label: 'X', detail: '+180° around X' },
-  { primitive: 'y90', label: 'Y/2', detail: '+90° around Y' },
-  { primitive: 'y180', label: 'Y', detail: '+180° around Y' },
+  { primitive: 'x90', label: 'X/2', detail: 'X軸周りに+90°' },
+  { primitive: 'x180', label: 'X', detail: 'X軸周りに+180°' },
+  { primitive: 'y90', label: 'Y/2', detail: 'Y軸周りに+90°' },
+  { primitive: 'y180', label: 'Y', detail: 'Y軸周りに+180°' },
   { primitive: 'custom', label: 'Custom', detail: '現在のPulse設定' },
   { primitive: 'virtual_z', label: 'VZ', detail: 'ゼロ時間の位相フレーム更新' },
 ]
@@ -172,13 +172,13 @@ export function PulseCircuitStudioPage({
     <main className="pulse-circuit-studio">
       <header className="pulse-circuit-studio__header">
         <div>
-          <span className="pulse-circuit-studio__eyebrow">QuantaScope / Pulse workspace</span>
+          <span className="pulse-circuit-studio__eyebrow">Yuragi-Strider / Pulseワークスペース</span>
           <h1>Pulse 回路スタジオ</h1>
           <p>トランズモンごとの制御レーンへPulseを配置します。Gate-aware回路とは状態を共有しません。</p>
         </div>
         <div className="pulse-circuit-studio__summary">
-          <span>{transmonCount} transmons</span>
-          <strong>{totalPulseCount} pulses</strong>
+          <span>{transmonCount} トランズモン</span>
+          <strong>{totalPulseCount} Pulse</strong>
         </div>
       </header>
 
@@ -186,9 +186,9 @@ export function PulseCircuitStudioPage({
         回路データは複数トランズモン対応です。現行バックエンドは選択中の単一Pulseのみ実行し、複数トランズモン結合は将来の実行エンジンで接続します。
       </aside>
 
-      <section className="pulse-circuit-studio__environment" aria-label="Pulse circuit environment">
+      <section className="pulse-circuit-studio__environment" aria-label="Pulse回路の環境設定">
         <div>
-          <span>GLOBAL SYSTEM</span>
+          <span>システム全体</span>
           <strong>回路全体の構成</strong>
         </div>
         <label className="pulse-circuit-studio__transmon-count">
@@ -209,9 +209,9 @@ export function PulseCircuitStudioPage({
       </section>
 
       <section className="pulse-circuit-studio__workspace">
-        <aside className="pulse-circuit-studio__palette" aria-label="Pulse palette">
+        <aside className="pulse-circuit-studio__palette" aria-label="Pulseパレット">
           <div>
-            <span>PRIMITIVES / q{selectedTransmonIndex}</span>
+            <span>プリミティブ / q{selectedTransmonIndex}</span>
             <h2>Pulseを追加</h2>
           </div>
           {palette.map((item) => (
@@ -225,8 +225,8 @@ export function PulseCircuitStudioPage({
         <section className="pulse-circuit-studio__sequence" aria-labelledby="pulse-sequence-title">
           <div className="pulse-circuit-studio__sequence-heading">
             <div>
-              <span>MULTI-TRANSMON SEQUENCE</span>
-              <h2 id="pulse-sequence-title">Pulse timeline</h2>
+              <span>複数トランズモンシーケンス</span>
+              <h2 id="pulse-sequence-title">Pulseタイムライン</h2>
             </div>
             <button
               type="button"
@@ -261,7 +261,7 @@ export function PulseCircuitStudioPage({
                   onClick={() => setSelectedTransmonIndex(lane.transmonIndex)}
                 >
                   <strong>{circuit.transmons[lane.transmonIndex]?.label ?? `q${lane.transmonIndex}`}</strong>
-                  <small>|0⟩ / drive</small>
+                  <small>|0⟩ / 駆動</small>
                 </button>
                 {lane.steps.length === 0 ? (
                   <p className="pulse-circuit-studio__lane-empty">q{lane.transmonIndex}を選択してPulseを追加</p>

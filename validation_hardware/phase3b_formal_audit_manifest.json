@@ -5,7 +5,7 @@
   "formal_holdout_eligible": false,
   "protocol": "docs/validation/phase3b-formal-qpu-audit-protocol.md",
   "source_revision": {
-    "freeze_tag": "quantascope-gate-aware-cptp-v1",
+    "freeze_tag": "yuragi-strider-gate-aware-cptp-v1",
     "freeze_commit": "f306fbf6eb2083d9098ab0ade079e2681920ac4e"
   },
   "provider": {

@@ -31,7 +31,7 @@ class PresetsRegressionTest(unittest.TestCase):
             with self.subTest(name=name):
                 data = json.loads((PRESETS / "examples" / name).read_text(encoding="utf-8"))
 
-                self.assertEqual(data["kind"], "quanta_scope.comparison_config")
+                self.assertEqual(data["kind"], "yuragi_strider.comparison_config")
                 self.assertIn("environment_a", data)
                 self.assertIn("environment_b", data)
                 self.assertIn("labels", data)

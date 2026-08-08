@@ -9,7 +9,7 @@
 
 ## 目的
 
-Phase 3 の目的は、QuantaScope の中核UIである **回路エディタ** を本開発用に整備することである。
+Phase 3 の目的は、Yuragi-Strider の中核UIである **回路エディタ** を本開発用に整備することである。
 
 Phase 1 では `CircuitConfig / SimulationConfig / SimulationResult / run_simulation(config)` を整備した。
 Phase 2 では入力検証・数値異常検出・警告/エラーの基盤を整備した。

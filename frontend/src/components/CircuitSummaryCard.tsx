@@ -1,5 +1,6 @@
 import './CircuitSummaryCard.css'
 import type { CircuitEditorState } from '../types/circuit'
+import { isMultiQubitGateType } from '../utils/circuitEditing'
 
 type CircuitSummaryCardProps = {
   circuit: CircuitEditorState
@@ -13,7 +14,7 @@ function getGateCounts(circuit: CircuitEditorState) {
     (summary, column) => {
       for (const gate of column.gates) {
         summary.total += 1
-        if (gate.type === 'CNOT' || gate.type === 'CZ' || gate.type === 'CP' || gate.type === 'CCX' || gate.type === 'SWAP') {
+        if (isMultiQubitGateType(gate.type)) {
           summary.cnot += 1
         }
       }

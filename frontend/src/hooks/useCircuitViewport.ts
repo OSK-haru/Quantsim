@@ -15,7 +15,7 @@ type UseCircuitViewportArgs = {
   selectedColumnIndex: number | null
 }
 
-function isTypingTarget(target: EventTarget | null) {
+export function isTypingTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false
   }

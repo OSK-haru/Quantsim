@@ -19,7 +19,7 @@ revisited," *SIAM Journal on Matrix Analysis and Applications* 26,
 matrix exponentialに対するscaling-and-squaring法をbackward errorの観点から
 解析し、double precisionでPadé degree 13を用いる構成を示す。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - dense Liouvillian matrixの指数計算
 - scaling-and-squaring
@@ -29,13 +29,13 @@ matrix exponentialに対するscaling-and-squaring法をbackward errorの観点�
 
 - `core/cptp_liouvillian.py`
 - `core/cptp_rust.py`
-- `rust_kernels/quantascope_rust/src/lib.rs`
+- `rust_kernels/yuragi_strider_rust/src/lib.rs`
 - `tests/test_cptp_liouvillian.py`
 - `tests/test_cptp_rust_parity.py`
 
 ### この文献だけでは支えないもの
 
-- QuantaScope実装が自動的に正しいこと
+- Yuragi-Strider実装が自動的に正しいこと
 - Choi conventionやvectorization order
 - 大規模疎行列への性能
 
@@ -54,7 +54,7 @@ A. H. Al-Mohy and N. J. Higham,
 
 overscalingによる精度低下を扱い、matrix exponentialのscaling選択を改良する。
 
-### QuantaScopeでの位置づけ
+### Yuragi-Striderでの位置づけ
 
 現行実装の直接的なalgorithm contractはHigham (2005)型Padé(13)である。
 この論文は、scaling選択とoverscalingが数値誤差要因になることを確認するための
@@ -79,7 +79,7 @@ S. Blanes, F. Casas, J. A. Oteo, and J. Ros,
 時間依存線形微分方程式に対するMagnus expansionと、指数写像を用いる
 時間積分法を体系的に整理する。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 時間依存Hamiltonianに対して、各区間でgeneratorを代表点評価し、
 指数mapを時間順序で合成する方針の数値解析上の背景として参照する。
@@ -93,7 +93,7 @@ S. Blanes, F. Casas, J. A. Oteo, and J. Ros,
 
 ### 重要な制限
 
-QuantaScopeの現行方式はfull Magnus integratorではない。
+Yuragi-Striderの現行方式はfull Magnus integratorではない。
 `midpoint_piecewise_constant_v1`という中点固定の区分指数近似である。
 したがって、このレビューを根拠に高次Magnus法を実装済みとは主張しない。
 
@@ -111,10 +111,10 @@ systems," *Computer Physics Communications* 183, 1760-1772 (2012).
 Hamiltonian、density matrix、collapse operatorsを用いた開放量子系の
 master-equation solverを提供するQuTiPの設計と用途を述べる。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - 同一の`rho(0)`、`H(t)`、`L_k`、時刻列をQuTiPへ直接渡す。
-- QuantaScopeと異なるsolverで同じ数理問題を解く。
+- Yuragi-Striderと異なるsolverで同じ数理問題を解く。
 - solver agreementとhardware validityを分離する。
 
 ### 使用箇所
@@ -137,13 +137,13 @@ normalize_output: false
 ```
 
 これらの具体的なtoleranceはQuTiP論文から一意に導かれた値ではなく、
-QuantaScopeの独立solver監査contractである。
+Yuragi-Striderの独立solver監査contractである。
 
 ## 5. Fixed-step RK4とrefinement
 
 **区分:** `PROJECT DECISION`
 
-現行RK4 pathは古典的な4段4次Runge-Kutta法を使用する。QuantaScopeでは、
+現行RK4 pathは古典的な4段4次Runge-Kutta法を使用する。Yuragi-Striderでは、
 method名だけを根拠に精度を仮定せず、次で監査する。
 
 - 解析解との比較

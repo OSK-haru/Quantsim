@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "kind": "quanta_scope.config",
+  "kind": "yuragi_strider.config",
   "metadata": {
     "name": "Bell state",
     "description": "H on q0 followed by CNOT q0 -> q1."

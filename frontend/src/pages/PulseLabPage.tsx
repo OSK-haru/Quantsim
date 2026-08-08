@@ -172,10 +172,10 @@ export function PulseLabPage({
         }
         const parsed: unknown = await response.json()
         if (!hasPulseResponseShape(parsed)) {
-          throw new Error('The pulse API returned an invalid response shape.')
+          throw new Error('Pulse APIが不正な形式のレスポンスを返しました。')
         }
         if (sequenceMode && !isQutritPulseResponse(parsed)) {
-          throw new Error('Pulse sequence execution currently requires the qutrit model.')
+          throw new Error('Pulseシーケンスの実行には現在qutritモデルが必要です。')
         }
         responses.push(parsed)
         driveStepIndices.push(operation.stepIndex)
@@ -224,8 +224,8 @@ export function PulseLabPage({
       setStatus('error')
       setErrorMessage(
         error instanceof Error && error.name === 'AbortError'
-          ? 'Pulse request timed out. The previous valid result remains visible.'
-          : `${error instanceof Error ? error.message : 'Pulse request failed.'} The previous valid result remains visible.`,
+          ? 'Pulseリクエストがタイムアウトしました。前回の有効な結果を表示しています。'
+          : `${error instanceof Error ? error.message : 'Pulseリクエストが失敗しました。'} 前回の有効な結果を表示しています。`,
       )
     } finally {
       window.clearTimeout(timeoutId)
@@ -239,17 +239,17 @@ export function PulseLabPage({
     <main className="pulse-lab">
       <header className="pulse-lab__header">
         <div>
-          <span className="pulse-lab__eyebrow">QuantaScope / Experimental</span>
-          <h1>Pulse Lab</h1>
+          <span className="pulse-lab__eyebrow">Yuragi-Strider / 実験的</span>
+          <h1>Pulseラボ</h1>
           <p>
-            Rotating-frame RWA control-envelope experimental model.
-            <strong> Not a calibrated hardware model.</strong>
+            回転フレームRWA制御エンベロープの実験的モデルです。
+            <strong> 校正済みのハードウェアモデルではありません。</strong>
           </p>
         </div>
       </header>
 
-      <aside className="pulse-lab__scope-note" aria-label="Pulse Lab scope">
-        <strong>{sequenceMode ? `q${activeTransmonIndex} sequence execution.` : 'Single-pulse experiment.'}</strong>
+      <aside className="pulse-lab__scope-note" aria-label="Pulseラボの適用範囲">
+        <strong>{sequenceMode ? `q${activeTransmonIndex} シーケンス実行。` : '単一Pulse実験。'}</strong>
         <span>
           {form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
             ? `q${form.pairDriveTarget}への現在の局所Pulseと、q0-q1交換結合を9次元密度行列で実行します。回路レーンの同時driveは未接続です。`
@@ -259,31 +259,31 @@ export function PulseLabPage({
         </span>
       </aside>
 
-      <section className="pulse-lab__identity" aria-label="Pulse model identity">
+      <section className="pulse-lab__identity" aria-label="Pulseモデルの識別情報">
         <div>
-          <span>MODEL</span>
+          <span>モデル</span>
           <strong>
             {form.modelId === QUTRIT_PULSE_MODEL
-              ? 'Three-level transmon qutrit'
+              ? '3準位トランズモン qutrit'
               : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
-                ? 'Coupled transmon pair / 3 x 3 levels'
-              : 'Two-level baseline'}
+                ? '結合トランズモンペア / 3 x 3準位'
+              : '2準位ベースライン'}
           </strong>
         </div>
         <div>
-          <span>FRAME</span>
-          <strong>Rotating / RWA</strong>
+          <span>フレーム</span>
+          <strong>回転フレーム / RWA</strong>
         </div>
         <div>
-          <span>PULSE WINDOW</span>
+          <span>PULSE時間幅</span>
           <strong>{sequenceDurationUs.toPrecision(4)} us</strong>
         </div>
         <div>
-          <span>TOTAL OBSERVATION</span>
+          <span>総観測時間</span>
           <strong>{form.totalSimulationTimeUs.toPrecision(4)} us</strong>
         </div>
         <div>
-          <span>EVOLUTION</span>
+          <span>発展方式</span>
           <strong>
             {form.evolutionMethod === 'explicit_cptp'
               ? 'Explicit CPTP'
@@ -304,12 +304,12 @@ export function PulseLabPage({
 
         <section className="pulse-lab__run" aria-labelledby="pulse-run-title">
           <div>
-            <span>BOUNDED EXECUTION</span>
-            <h2 id="pulse-run-title">{sequenceMode ? 'Run pulse sequence' : 'Run pulse simulation'}</h2>
+            <span>実行上限管理</span>
+            <h2 id="pulse-run-title">{sequenceMode ? 'Pulseシーケンスを実行' : 'Pulseシミュレーションを実行'}</h2>
             <p data-level={cost.level}>
-              {cost.message} Conservative UI estimate: approximately{' '}
+              {cost.message} UIによる保守的な見積り: 約{' '}
               {cost.estimatedInternalSteps.toLocaleString()} /{' '}
-              {cost.maximumInternalSteps.toLocaleString()} steps.
+              {cost.maximumInternalSteps.toLocaleString()} ステップ。
             </p>
           </div>
           <button
@@ -318,18 +318,18 @@ export function PulseLabPage({
             onClick={() => void runPulseSimulation()}
           >
             {status === 'loading'
-              ? `Running ${executionForms.length} block${executionForms.length === 1 ? '' : 's'}...`
+              ? `${executionForms.length}個のブロックを実行中...`
               : sequenceMode
-                ? `Run q${activeTransmonIndex} sequence`
-                : 'Run pulse simulation'}
+                ? `q${activeTransmonIndex} シーケンスを実行`
+                : 'Pulseシミュレーションを実行'}
           </button>
           {!isValid ? (
             <p className="pulse-lab__run-error" role="alert">
-              Correct the highlighted fields before running.
+              実行前に、強調表示されている項目を修正してください。
             </p>
           ) : null}
           {constraintIssues.length > 0 ? (
-            <ul className="pulse-lab__run-error" aria-label="Execution constraint violations">
+            <ul className="pulse-lab__run-error" aria-label="実行制約の違反">
               {constraintIssues.map((issue) => (
                 <li key={`${issue.stepIndex}-${issue.message}`}>{issue.label}: {issue.message}</li>
               ))}
@@ -350,19 +350,19 @@ export function PulseLabPage({
           <>
             <section className="pulse-lab__result-banner">
               <div>
-                <span>LAST VALID RESULT</span>
+                <span>直近の有効な結果</span>
                 <strong>{result.model.description}</strong>
               </div>
               <div>
-                <span>CONTRACT</span>
+                <span>契約バージョン</span>
                 <strong>{result.contract_version}</strong>
               </div>
               <div>
-                <span>COMPLETED</span>
-                <strong>{lastResponseAt ? new Date(lastResponseAt).toLocaleTimeString() : 'now'}</strong>
+                <span>完了時刻</span>
+                <strong>{lastResponseAt ? new Date(lastResponseAt).toLocaleTimeString() : 'たった今'}</strong>
               </div>
               <div>
-                <span>EVOLUTION</span>
+                <span>発展方式</span>
                 <strong>
                   {result.diagnostics.evolution.resolved === 'explicit_cptp'
                     ? 'Explicit CPTP'
@@ -385,30 +385,30 @@ export function PulseLabPage({
 
             <div className="pulse-lab__drawers">
               <ResultDrawer
-                eyebrow="MODEL"
-                title="Model and approximation details"
-                description="Identity and assumptions returned by the API."
+                eyebrow="モデル"
+                title="モデルと近似の詳細"
+                description="APIが返すモデル識別情報と前提条件。"
               >
                 <JsonBlock value={result.model} />
               </ResultDrawer>
               <ResultDrawer
-                eyebrow="ENVIRONMENT"
-                title="Rates and thermal occupations"
-                description="Canonical rates actually used by the solver."
+                eyebrow="環境"
+                title="レートと熱占有数"
+                description="ソルバーが実際に使用した正規化レート。"
               >
                 <JsonBlock value={result.rates} />
               </ResultDrawer>
               <ResultDrawer
-                eyebrow="NUMERICS"
-                title="Step policy and physicality"
-                description="Work bound, raw physicality, and cleanup diagnostics."
+                eyebrow="数値計算"
+                title="ステップ方針と物理的整合性"
+                description="計算量の上限、生の物理的整合性、クリーンアップ診断。"
               >
                 <JsonBlock value={{ step_policy: result.step_policy, diagnostics: result.diagnostics }} />
               </ResultDrawer>
               {(result.warnings.length > 0 || result.limitations.length > 0) ? (
                 <ResultDrawer
-                  eyebrow="SCOPE"
-                  title="Warnings and limitations"
+                  eyebrow="適用範囲"
+                  title="警告と制限事項"
                   icon="warning"
                   defaultOpen={result.warnings.length > 1}
                 >
@@ -422,8 +422,8 @@ export function PulseLabPage({
               ) : null}
               <ResultDrawer
                 eyebrow="API"
-                title="Request debug fields"
-                description="Last payload sent by this page. Inactive fields are absent."
+                title="リクエストのデバッグ情報"
+                description="このページが最後に送信したペイロード。未使用のフィールドは含まれません。"
               >
                 <JsonBlock value={lastRequestPayload} />
               </ResultDrawer>
@@ -431,9 +431,9 @@ export function PulseLabPage({
           </>
         ) : (
           <section className="pulse-lab__empty">
-            <span>RESULTS ARMED</span>
-            <h2>No pulse result yet</h2>
-            <p>Review the waveform and bounded-work estimate, then run the selected model.</p>
+            <span>実行準備完了</span>
+            <h2>まだPulseの結果がありません</h2>
+            <p>波形と計算量見積りを確認してから、選択したモデルを実行してください。</p>
           </section>
         )}
       </div>
@@ -441,7 +441,7 @@ export function PulseLabPage({
         <SimulationCompletionPopup
           mode="pulse"
           title="Pulse シミュレーションが完了しました"
-          detail={`Evolution: ${result?.diagnostics.evolution.resolved ?? 'completed'}`}
+          detail={`発展方式: ${result?.diagnostics.evolution.resolved ?? '完了'}`}
           onDismiss={() => setShowCompletionPopup(false)}
         />
       ) : null}
@@ -478,7 +478,7 @@ function sequenceExecutionPlan(
   constraints: PulseExecutionConstraints,
 ): SequenceExecutionOperation[] {
   if (globalForm.modelId !== QUTRIT_PULSE_MODEL || sequence.length === 0) {
-    return [{ kind: 'drive', stepIndex: 0, label: 'Single pulse', form: { ...globalForm } }]
+    return [{ kind: 'drive', stepIndex: 0, label: '単一Pulse', form: { ...globalForm } }]
   }
 
   const driveSteps = sequence.filter(isDrivePulseStep)
@@ -545,8 +545,8 @@ function validateExecutionConstraints(
   ) {
     return [{
       stepIndex: -1,
-      label: 'Global constraints',
-      message: 'Limits and resolutions must be positive finite values; the inter-pulse gap may be zero.',
+      label: '全体制約',
+      message: '上限値と分解能は正の有限値である必要があります(Pulse間隔は0でも構いません)。',
     }]
   }
 
@@ -556,7 +556,7 @@ function validateExecutionConstraints(
         issues.push({
           stepIndex: operation.stepIndex,
           label: operation.label,
-          message: `Virtual Z angle must align to ${constraints.phaseResolutionRad.toPrecision(4)} rad.`,
+          message: `Virtual Zの角度は ${constraints.phaseResolutionRad.toPrecision(4)} rad の倍数である必要があります。`,
         })
       }
       return
@@ -567,28 +567,28 @@ function validateExecutionConstraints(
       issues.push({
         stepIndex: operation.stepIndex,
         label: operation.label,
-        message: `Pulse duration must be at least ${constraints.minimumPulseDurationUs} us.`,
+        message: `Pulse幅は ${constraints.minimumPulseDurationUs} us 以上である必要があります。`,
       })
     }
     if (!isAligned(durationUs, constraints.awgSamplePeriodUs)) {
       issues.push({
         stepIndex: operation.stepIndex,
         label: operation.label,
-        message: `Pulse duration must align to the ${constraints.awgSamplePeriodUs} us AWG period.`,
+        message: `Pulse幅は AWG周期 ${constraints.awgSamplePeriodUs} us の倍数である必要があります。`,
       })
     }
     if (Math.abs(operation.form.detuningRadPerUs) > constraints.maximumDetuningRadPerUs) {
       issues.push({
         stepIndex: operation.stepIndex,
         label: operation.label,
-        message: `Detuning exceeds +/-${constraints.maximumDetuningRadPerUs} rad/us.`,
+        message: `デチューニングが上限 ±${constraints.maximumDetuningRadPerUs} rad/us を超えています。`,
       })
     }
     if (!isAligned(operation.form.phaseRad, constraints.phaseResolutionRad)) {
       issues.push({
         stepIndex: operation.stepIndex,
         label: operation.label,
-        message: `Phase must align to ${constraints.phaseResolutionRad.toPrecision(4)} rad.`,
+        message: `位相は ${constraints.phaseResolutionRad.toPrecision(4)} rad の倍数である必要があります。`,
       })
     }
 
@@ -600,7 +600,7 @@ function validateExecutionConstraints(
       issues.push({
         stepIndex: operation.stepIndex,
         label: operation.label,
-        message: `Waveform peak ${maximumWaveformAmplitude.toPrecision(4)} rad/us exceeds the ${constraints.maximumDriveAmplitudeRadPerUs} rad/us limit.`,
+        message: `波形のピーク ${maximumWaveformAmplitude.toPrecision(4)} rad/us が上限 ${constraints.maximumDriveAmplitudeRadPerUs} rad/us を超えています。`,
       })
     }
     if (
@@ -610,7 +610,7 @@ function validateExecutionConstraints(
       issues.push({
         stepIndex: operation.stepIndex,
         label: operation.label,
-        message: `Peak amplitude must align to ${constraints.amplitudeResolutionRadPerUs} rad/us.`,
+        message: `ピーク振幅は ${constraints.amplitudeResolutionRadPerUs} rad/us の倍数である必要があります。`,
       })
     }
   })
@@ -648,20 +648,20 @@ function validatePairSecondaryConstraints(
   const duration = pulseDurationUs(secondaryForm)
   const issues: PulseConstraintIssue[] = []
   if (duration < constraints.minimumPulseDurationUs) {
-    issues.push({ stepIndex: -2, label: 'Secondary drive', message: `Pulse duration must be at least ${constraints.minimumPulseDurationUs} us.` })
+    issues.push({ stepIndex: -2, label: '副駆動', message: `Pulse幅は ${constraints.minimumPulseDurationUs} us 以上である必要があります。` })
   }
   if (!isAligned(duration, constraints.awgSamplePeriodUs)) {
-    issues.push({ stepIndex: -2, label: 'Secondary drive', message: `Duration must align to ${constraints.awgSamplePeriodUs} us.` })
+    issues.push({ stepIndex: -2, label: '副駆動', message: `幅は ${constraints.awgSamplePeriodUs} us の倍数である必要があります。` })
   }
   if (!isAligned(secondaryForm.phaseRad, constraints.phaseResolutionRad)) {
-    issues.push({ stepIndex: -2, label: 'Secondary drive', message: `Phase must align to ${constraints.phaseResolutionRad.toPrecision(4)} rad.` })
+    issues.push({ stepIndex: -2, label: '副駆動', message: `位相は ${constraints.phaseResolutionRad.toPrecision(4)} rad の倍数である必要があります。` })
   }
   const peak = Math.max(
     0,
     ...pulseWaveform(secondaryForm, 129).map((point) => Math.hypot(point.omegaX, point.omegaY)),
   )
   if (peak > constraints.maximumDriveAmplitudeRadPerUs * (1 + 1e-9)) {
-    issues.push({ stepIndex: -2, label: 'Secondary drive', message: `Waveform peak ${peak.toPrecision(4)} rad/us exceeds the limit.` })
+    issues.push({ stepIndex: -2, label: '副駆動', message: `波形のピーク ${peak.toPrecision(4)} rad/us が上限を超えています。` })
   }
   return issues
 }
@@ -686,10 +686,10 @@ function combinedPulseCost(forms: PulseLabForm[]): PulseCostEstimate {
     overBudget,
     level: overBudget ? 'blocked' : ratio >= 0.7 ? 'elevated' : 'normal',
     message: overBudget
-      ? 'At least one Pulse block exceeds the per-request API work limit.'
+      ? '少なくとも1つのPulseブロックがAPIのリクエストあたりの計算量上限を超えています。'
       : forms.length > 1
-        ? `Estimated work for ${forms.length} sequential Pulse blocks is within the API limits.`
-        : costs[0]?.message ?? 'Estimated work is within the API limits.',
+        ? `${forms.length}個の連続したPulseブロックの推定計算量はAPI上限内です。`
+        : costs[0]?.message ?? '推定計算量はAPI上限内です。',
   }
 }
 
@@ -703,7 +703,7 @@ function aggregateQutritSequence(
 ): QutritPulseResponse {
   const last = responses.at(-1)
   if (!last) {
-    throw new Error('Pulse sequence returned no results.')
+    throw new Error('Pulseシーケンスから結果が返されませんでした。')
   }
 
   let timeOffset = 0
@@ -711,7 +711,7 @@ function aggregateQutritSequence(
   const trajectory: QutritPulseResponse['trajectory'] = []
   let maximumLeakage = 0
   let estimatedInternalSteps = 0
-  const operationLabels = Array.from({ length: totalOperationCount }, (_, index) => `Step ${index + 1}`)
+  const operationLabels = Array.from({ length: totalOperationCount }, (_, index) => `ステップ${index + 1}`)
 
   driveStepIndices.forEach((operationIndex, driveIndex) => {
     operationLabels[operationIndex] = driveLabels[driveIndex] ?? `Pulse ${driveIndex + 1}`
@@ -805,7 +805,7 @@ function aggregateQutritSequence(
     },
     warnings: [
       ...last.warnings,
-      `Executed ${totalOperationCount} operations with density-matrix handoff and phase-frame tracking.`,
+      `密度行列の引き継ぎと位相フレーム追跡を伴い、${totalOperationCount}個の操作を実行しました。`,
     ],
   }
 }
@@ -892,28 +892,28 @@ function PulseSummary({
       : qutritTargetOverlap(response.final, formAtRun)
     : response.final.fidelity_to_closed
   return (
-    <section className="pulse-lab__summary" aria-label="Pulse result summary">
+    <section className="pulse-lab__summary" aria-label="Pulse結果サマリー">
       <article>
-        <span>PULSE-END PURITY</span>
+        <span>Pulse終了時の純度</span>
         <strong>{pulseEnd.purity.toFixed(6)}</strong>
       </article>
       <article>
-        <span>FINAL PURITY</span>
+        <span>最終純度</span>
         <strong>{final.purity.toFixed(6)}</strong>
       </article>
       <article>
-        <span>{qutrit ? 'TARGET OVERLAP' : pair ? 'JOINT MODEL' : 'FINAL FIDELITY'}</span>
+        <span>{qutrit ? '目標状態との重なり' : pair ? '結合モデル' : '最終忠実度'}</span>
         <strong>{fidelity === null ? 'N/A' : fidelity.toFixed(6)}</strong>
-        {qutrit ? <small>Not leakage-renormalized</small> : null}
+        {qutrit ? <small>リーケージ非正規化</small> : null}
       </article>
       {qutrit || pair ? (
         <>
           <article className="pulse-lab__summary--leakage">
-            <span>{pair ? 'MAX OUTSIDE |00..11>' : 'MAX LEAKAGE P2'}</span>
+            <span>{pair ? '計算空間外の最大値 |00..11>' : '最大リーケージ P2'}</span>
             <strong>{response.leakage.maximum_recorded_leakage_probability.toFixed(6)}</strong>
           </article>
           <article className="pulse-lab__summary--leakage">
-            <span>{pair ? 'FINAL OUTSIDE |00..11>' : 'FINAL LEAKAGE P2'}</span>
+            <span>{pair ? '計算空間外の最終値 |00..11>' : '最終リーケージ P2'}</span>
             <strong>{response.leakage.leakage_at_final_time.toFixed(6)}</strong>
           </article>
         </>
@@ -940,9 +940,9 @@ async function pulseApiError(response: Response) {
   }
   const label =
     response.status === 422
-      ? 'Pulse request was rejected by validation or the work gate.'
+      ? 'Pulseリクエストが検証または計算量ゲートで拒否されました。'
       : response.status === 504
-        ? 'Pulse request exceeded the API timeout.'
-        : `Pulse API returned HTTP ${response.status}.`
+        ? 'PulseリクエストがAPIのタイムアウトを超過しました。'
+        : `Pulse APIがHTTP ${response.status}を返しました。`
   return detail ? `${label} ${detail}` : label
 }

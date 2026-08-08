@@ -1,15 +1,14 @@
 import './ParameterPanel.css'
+import { LabDial } from './LabDial'
 import { SectionHeader } from './SectionHeader'
 import type {
   GateDurationDefaultErrors,
   GateDurationDefaults,
   SimulateRequestParameterErrors,
   SimulateRequestParameters,
-  SimulationParameters,
 } from '../types/simulation'
 
 type ParameterPanelProps = {
-  parameters: SimulationParameters
   editableParameters: SimulateRequestParameters
   gateDurationDefaults: GateDurationDefaults
   validationMessages: SimulateRequestParameterErrors
@@ -54,9 +53,26 @@ const gateDurationRanges: Record<
   SWAP: { min: 0.001, step: 0.01 },
   CP: { min: 0.001, step: 0.01 },
   CCX: { min: 0.001, step: 0.01 },
+  QFT: { min: 0.001, step: 0.01 },
+  ORACLE: { min: 0.001, step: 0.01 },
   MEASURE: { min: 0, step: 0.01 },
   RECEIVED: { min: 0, step: 0.01 },
   MESSAGE: { min: 0.04, step: 0.01 },
+}
+
+type DialConfig = {
+  dialMax: number
+  unit?: string
+  formatValue?: (value: number) => string
+}
+
+const dialConfigs: Partial<Record<EditableParameterName, DialConfig>> = {
+  device_quality: { dialMax: 1, formatValue: (value) => value.toFixed(2) },
+  qubit_frequency_ghz: { dialMax: 10, unit: 'GHz', formatValue: (value) => value.toFixed(2) },
+  t1_max_us: { dialMax: 200, unit: 'μs', formatValue: (value) => value.toFixed(1) },
+  tphi_max_us: { dialMax: 200, unit: 'μs', formatValue: (value) => value.toFixed(1) },
+  temperature_mk: { dialMax: 100, unit: 'mK', formatValue: (value) => value.toFixed(1) },
+  flux_noise_phi0: { dialMax: 0.00001, unit: 'Φ0', formatValue: (value) => value.toExponential(2) },
 }
 
 type GateDurationGroup = {
@@ -99,6 +115,14 @@ const gateDurationGroups: GateDurationGroup[] = [
     ],
   },
   {
+    title: 'レジスタゲート',
+    note: 'またぐ量子ビット数が可変のため、1量子ビットあたりの所要時間を指定します。',
+    gates: [
+      { name: 'QFT', label: 'QFT (1量子ビットあたり)' },
+      { name: 'ORACLE', label: 'ORACLE (1量子ビットあたり)' },
+    ],
+  },
+  {
     title: '測定',
     note: '測定操作の所要時間です。',
     gates: [{ name: 'MEASURE', label: '測定' }],
@@ -118,7 +142,6 @@ function clampGateDurationValue(name: GateDurationName, value: number) {
 }
 
 export function ParameterPanel({
-  parameters,
   editableParameters,
   gateDurationDefaults,
   validationMessages,
@@ -178,6 +201,30 @@ export function ParameterPanel({
     )
   }
 
+  function renderDial(name: EditableParameterName, label: string, hint: string) {
+    const range = parameterRanges[name]
+    const config = dialConfigs[name]
+    if (!config) {
+      return renderNumberInput(name, label, hint)
+    }
+
+    return (
+      <LabDial
+        key={name}
+        label={label}
+        value={editableParameters[name]}
+        min={range.min}
+        max={config.dialMax}
+        step={range.step}
+        unit={config.unit}
+        hint={hint}
+        validationMessage={validationMessages[name]}
+        formatValue={config.formatValue}
+        onChange={(nextValue) => updateParameter(name, nextValue)}
+      />
+    )
+  }
+
   function renderGateDurationInput(name: GateDurationName, label: string) {
     const range = gateDurationRanges[name]
     const validationMessage = gateDurationValidationMessages[name]
@@ -223,25 +270,25 @@ export function ParameterPanel({
             title="デバイス"
             headingLevel="h3"
           />
-          <div className="parameter-panel__fields">
-            {renderNumberInput(
+          <div className="parameter-panel__fields parameter-panel__fields--dials">
+            {renderDial(
               'device_quality',
               'デバイス品質',
               '学習用デバイスモデルで使用する 0〜1 の抽象的なプロファイル値です。',
             )}
-            {renderNumberInput(
+            {renderDial(
               'qubit_frequency_ghz',
-              '量子ビット周波数 [GHz]',
+              '量子ビット周波数',
               '0 より大きい値',
             )}
-            {renderNumberInput(
+            {renderDial(
               't1_max_us',
-              '最大 T1 [μs]',
+              '最大 T1',
               '0 より大きい値',
             )}
-            {renderNumberInput(
+            {renderDial(
               'tphi_max_us',
-              '最大 Tφ [μs]',
+              '最大 Tφ',
               '0 より大きい値',
             )}
           </div>
@@ -254,15 +301,15 @@ export function ParameterPanel({
             title="環境"
             headingLevel="h3"
           />
-          <div className="parameter-panel__fields">
-            {renderNumberInput(
+          <div className="parameter-panel__fields parameter-panel__fields--dials">
+            {renderDial(
               'temperature_mk',
-              '温度 [mK]',
+              '温度',
               '0 以上',
             )}
-            {renderNumberInput(
+            {renderDial(
               'flux_noise_phi0',
-              '磁束ノイズ [Φ0]',
+              '磁束ノイズ',
               '0 以上',
             )}
           </div>
@@ -319,21 +366,6 @@ export function ParameterPanel({
           </div>
         </details>
       </div>
-
-      <dl className="parameter-panel__snapshot" aria-label="最新の応答情報">
-        <div className="parameter-panel__snapshot-item">
-          <dt>入力モード</dt>
-          <dd>{parameters.input_mode}</dd>
-        </div>
-        <div className="parameter-panel__snapshot-item">
-          <dt>バックエンド</dt>
-          <dd>{parameters.simulation_backend}</dd>
-        </div>
-        <div className="parameter-panel__snapshot-item">
-          <dt>最新の実行時間</dt>
-          <dd>{parameters.duration_us.toFixed(2)} us</dd>
-        </div>
-      </dl>
     </section>
   )
 }

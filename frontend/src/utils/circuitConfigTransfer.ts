@@ -100,6 +100,8 @@ function validateGateShape(gate: Record<string, unknown>, logicalQubits: number,
     gateType !== 'CP' &&
     gateType !== 'CCX' &&
     gateType !== 'SWAP' &&
+    gateType !== 'QFT' &&
+    gateType !== 'ORACLE' &&
     gateType !== 'MEASURE'
   ) {
     throw new Error(`Import failed: unsupported gate type at step ${step}.`)
@@ -135,6 +137,27 @@ function validateGateShape(gate: Record<string, unknown>, logicalQubits: number,
     }
     if (gate.controls !== undefined && (!Array.isArray(gate.controls) || gate.controls.length > 0)) {
       throw new Error('Import failed: SWAP does not accept control qubits.')
+    }
+  } else if (gateType === 'QFT' || gateType === 'ORACLE') {
+    if (gate.targets.length < 1) {
+      throw new Error(`Import failed: ${gateType} requires at least one target qubit.`)
+    }
+    if (new Set(gate.targets).size !== gate.targets.length) {
+      throw new Error(`Import failed: ${gateType} target qubits must all be different.`)
+    }
+    if (gate.controls !== undefined && (!Array.isArray(gate.controls) || gate.controls.length > 0)) {
+      throw new Error(`Import failed: ${gateType} does not accept control qubits.`)
+    }
+    if (gateType === 'ORACLE' && isRecord(gate.params)) {
+      const marked = gate.params.marked_index
+      if (
+        marked !== undefined
+        && (!isFiniteInteger(marked) || marked < 0 || marked >= 2 ** gate.targets.length)
+      ) {
+        throw new Error(
+          'Import failed: ORACLE marked_index must sit inside the register range.',
+        )
+      }
     }
   } else {
     if (gate.targets.length !== 1) {

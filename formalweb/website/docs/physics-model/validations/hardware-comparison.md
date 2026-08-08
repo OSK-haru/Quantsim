@@ -5,12 +5,12 @@ sidebar_position: 5
 
 # 実機比較
 
-実際の量子プロセッサで測定した観測量とQuantaScopeのモデル予測を比較した記録です。
+実際の量子プロセッサで測定した観測量とYuragi-Striderのモデル予測を比較した記録です。
 
 :::danger 形式的な合格判定は確立していません
 このページで扱う実機比較は、事前登録したプロトコルに基づく**形式的な合格判定(formal holdout)に到達していません**。
 
-正式な判定は `CANDIDATE_NOT_FORMAL` です。QuantaScopeを校正済みハードウェア予測器として扱うことはできません。
+正式な判定は `CANDIDATE_NOT_FORMAL` です。Yuragi-Striderを校正済みハードウェア予測器として扱うことはできません。
 
 以下では、実施した条件・得られた数値・**未達成の理由**をすべて記載します。
 :::
@@ -278,7 +278,7 @@ V8のドキュメントに従い、次のことは**このデータからは主�
 
 ```text
 状態         : DATASET_CONTRACT_FROZEN_COLLECTION_NOT_STARTED
-主データセット : QHAD-v1(quantascope_hardware_audit_dataset_v1)
+主データセット : QHAD-v1(yuragi_strider_hardware_audit_dataset_v1)
 プロバイダ    : IBM Quantum
 パイロットの再利用 : 不可(pilot_reusable_as_formal_holdout: false)
 公開先        : Zenodo / DOI(予定)
@@ -314,7 +314,7 @@ validation_results/phase3b_hardware_dataset_registry.json
 validation_hardware/phase3b_formal_audit_manifest.json
 ```
 
-凍結タグ: `quantascope-phase3b-qpu-observability-v1`(コミット `badb128`)
+凍結タグ: `yuragi-strider-phase3b-qpu-observability-v1`(コミット `badb128`)
 
 :::note 図がありません
 他の検証と異なり、実機比較には生成済みのPNG図が存在しません。可視化が必要な場合は上記JSONの `rows` 配列から再生成してください。

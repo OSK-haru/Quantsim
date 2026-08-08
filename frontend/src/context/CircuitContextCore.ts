@@ -7,6 +7,8 @@ export type PendingCnotControl = {
   additionalQubits?: number[]
 }
 
+export type CircuitPresetKey = 'teleportation' | 'bit_flip_repetition' | 'grover_2qubit'
+
 export type CircuitContextValue = {
   circuitState: CircuitEditorState
   selectedGateType: GateType | null
@@ -22,11 +24,13 @@ export type CircuitContextValue = {
   handleSelectGateType: (gateType: GateType | null) => void
   handleGateSelect: (gateId: string | null) => void
   handleResetCircuitToBell: () => void
-  handleLoadCircuitPreset: (preset: 'teleportation' | 'bit_flip_repetition') => void
+  handleLoadCircuitPreset: (preset: CircuitPresetKey) => void
   handleLogicalQubitsChange: (nextLogicalQubits: number) => void
   handleCircuitSlotClick: (columnIndex: number, qubitIndex: number) => void
   handleDeleteSelectedGate: () => void
   handleUpdateSelectedGateTheta: (thetaRad: number) => void
+  handleUpdateSelectedGateMarkedIndex: (markedIndex: number) => void
+  handleReverseSelectedGateRegister: () => void
   handleClearCircuit: () => void
   handleAddCircuitColumn: () => void
   handleRemoveLastCircuitColumn: () => void

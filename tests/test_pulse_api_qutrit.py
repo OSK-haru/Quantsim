@@ -62,7 +62,7 @@ class PulseQutritApiTests(unittest.TestCase):
 
     @unittest.skipUnless(
         is_rust_kernel_available(),
-        "quantascope_rust is not importable",
+        "yuragi_strider_rust is not importable",
     )
     def test_rust_qutrit_backend_matches_python_and_auto_resolves_rust(self) -> None:
         python_payload = _direct_payload()

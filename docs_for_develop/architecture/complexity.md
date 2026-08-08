@@ -1,6 +1,6 @@
 # Computational Complexity
 
-QuantaScope uses dense density matrices. The public backend remains
+Yuragi-Strider uses dense density matrices. The public backend remains
 `python_dense`; when NumPy is installed, its active dense execution engine is
 `numpy_dense_v1`. A pure-Python tuple implementation remains available for
 regression comparison. `rust_dense_preview` is an optional preview request

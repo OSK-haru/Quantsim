@@ -494,7 +494,7 @@ scripts/benchmark_complexity.py
 
 ```text
 Task:
-Implement Phase 7.8: Computational Complexity Analysis for QuantaScope.
+Implement Phase 7.8: Computational Complexity Analysis for Yuragi-Strider.
 
 Goal:
 Add theoretical and empirical complexity diagnostics for the current dense density-matrix Lindblad simulator. The purpose is to understand scaling before moving to Plus Requirements such as parameter sweeps, React UI, algorithm presets, and 3-6 qubit experimental support.

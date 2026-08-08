@@ -18,7 +18,7 @@ box," *Physical Review A* 76, 042319 (2007).
 transmonをJosephson energyとcharging energyの比が大きい弱非調和oscillator
 として導出し、charge dispersionとanharmonicityのtrade-offを示す。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - transmonを完全な二準位系ではなく弱非調和多準位系として扱う。
 - 最低三準位`|0>, |1>, |2>`を保持してleakageを表示する。
@@ -35,7 +35,7 @@ transmonをJosephson energyとcharging energyの比が大きい弱非調和oscil
 ### この文献だけでは支えないもの
 
 - 任意の強driveで三準位打ち切りが十分であること
-- QuantaScopeのdefault anharmonicity
+- Yuragi-Striderのdefault anharmonicity
 - 特定chipのmatrix elementsや周波数
 - RWA外のBloch-Siegert shiftやlaboratory-frame carrier
 
@@ -54,7 +54,7 @@ F. Motzoi, J. M. Gambetta, P. Rebentrost, and F. K. Wilhelm,
 主quadratureの時間微分に比例する補助quadratureを加えてleakageを抑える
 DRAGの基本構成を示す。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 $$
 \Omega_y(t)
@@ -73,7 +73,7 @@ $$
 
 ### この文献だけでは支えないもの
 
-- QuantaScopeの固定`beta`が任意の実機で最適であること
+- Yuragi-Striderの固定`beta`が任意の実機で最適であること
 - transfer function、IQ imbalance、mixer distortion
 - Gaussian pulse以外への現行DRAG実装
 
@@ -91,7 +91,7 @@ nonlinear oscillator," *Physical Review A* 83, 012308 (2011).
 弱非調和oscillatorに対するadiabatic expansionから、DRAGを含む解析的な
 control correctionの族を導く。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - DRAGを単なるUI上の補助波形ではなく、leakage抑制の制御モデルとして扱う。
 - leakageだけでなくtarget fidelityとphase errorも同時評価する。
@@ -106,7 +106,7 @@ control correctionの族を導く。
 
 ### この文献だけでは支えないもの
 
-- QuantaScopeが全てのanalytic correction termを実装していること
+- Yuragi-Striderが全てのanalytic correction termを実装していること
 - hardware-calibrated DRAG
 - multi-qubit cross-resonance pulse
 
@@ -114,7 +114,7 @@ control correctionの族を導く。
 
 **区分:** `PROJECT DECISION` + `MODEL BASIS`
 
-QuantaScopeのtwo-level Pulse Hamiltonianは、
+Yuragi-Striderのtwo-level Pulse Hamiltonianは、
 
 $$
 H_{\mathrm{rot}}(t)
@@ -144,7 +144,7 @@ $$
 を使用する。
 
 Koch、Motzoi、Gambetta各論文は弱非調和transmonとcontrolの物理的背景を
-支える。一方、次はQuantaScopeがfreezeした規約である。
+支える。一方、次はYuragi-Striderがfreezeした規約である。
 
 ```text
 frame: rotating

@@ -131,7 +131,7 @@ def main() -> int:
         "compiled_circuits": records,
         "raw_counts": raw_counts,
         "shot_count": SHOTS,
-        "quantascope_commit": manifest["source_revision"]["freeze_commit"],
+        "yuragi_strider_commit": manifest["source_revision"]["freeze_commit"],
         "formal_holdout_eligible": False,
         "model_refit_after_followup": False,
     }

@@ -866,7 +866,7 @@ fn conjugate_transpose_flat(matrix: &[f64], d: usize) -> Vec<f64> {
 }
 
 #[pymodule]
-fn quantascope_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn yuragi_strider_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(backend_name, m)?)?;
     m.add_function(wrap_pyfunction!(add_f64, m)?)?;
     m.add_function(wrap_pyfunction!(matmul_complex_flat, m)?)?;

@@ -75,7 +75,7 @@ The convergence standard tolerance was `2e-7`.
 
 ## QuTiP Comparison
 
-QuantaScope and QuTiP received the same:
+Yuragi-Strider and QuTiP received the same:
 
 $$
 \rho(0),\quad H(t),\quad L_k,\quad t_j.

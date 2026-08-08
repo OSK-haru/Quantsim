@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import './AppNavigation.css'
+import { SettingsMenu } from './SettingsMenu'
 
 export type NavigationRoute =
   | 'home'
   | 'simulate'
+  | 'algorithm-library'
   | 'circuit-studio'
   | 'state-explorer'
   | 'pulse-lab'
@@ -17,18 +19,19 @@ type AppNavigationProps = {
 
 type NavigationItem = { route: NavigationRoute; label: string; detail: string }
 
-const homeItem: NavigationItem = { route: 'home', label: 'ホーム', detail: 'QuantaScope' }
+const homeItem: NavigationItem = { route: 'home', label: 'ホーム', detail: 'Yuragi-Strider' }
 
 const gateAwareItems: NavigationItem[] = [
   { route: 'simulate', label: 'シミュレーションラボ', detail: 'Gate-aware' },
+  { route: 'algorithm-library', label: 'アルゴリズム一覧', detail: 'Algorithm Library' },
   { route: 'circuit-studio', label: '回路スタジオ', detail: 'Circuit Studio' },
   { route: 'state-explorer', label: '状態エクスプローラー', detail: 'State Explorer' },
   { route: 'help', label: 'ヘルプ / Q&A', detail: 'Guide' },
 ]
 
 const pulseItems: NavigationItem[] = [
-  { route: 'pulse-lab', label: 'Pulse Lab', detail: 'Pulse workspace' },
-  { route: 'pulse-circuit-studio', label: 'Pulse 回路スタジオ', detail: 'Pulse sequence editor' },
+  { route: 'pulse-lab', label: 'Pulseラボ', detail: 'Pulseワークスペース' },
+  { route: 'pulse-circuit-studio', label: 'Pulse 回路スタジオ', detail: 'Pulseシーケンスエディター' },
 ]
 
 type NavigationDomain = 'home' | 'gate-aware' | 'pulse'
@@ -102,13 +105,13 @@ export function AppNavigation({ currentRoute, onNavigate }: AppNavigationProps) 
         aria-hidden={!isOpen}
       >
         <div className="app-navigation__menu-header">
-          <span>QUANTASCOPE</span>
+          <span>YURAGI-STRIDER</span>
           <small>
             {domain === 'home'
               ? 'モードを選択'
               : domain === 'pulse'
-                ? 'Pulse workspace'
-                : 'Gate-aware workspace'}
+                ? 'Pulseワークスペース'
+                : 'Gate-awareワークスペース'}
           </small>
         </div>
         {navigationItems.map((item) => (
@@ -123,6 +126,7 @@ export function AppNavigation({ currentRoute, onNavigate }: AppNavigationProps) 
             <small>{item.detail}</small>
           </button>
         ))}
+        <SettingsMenu />
       </nav>
     </div>
   )

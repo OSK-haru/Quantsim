@@ -10,7 +10,7 @@ from typing import Any
 
 PILOT_MANIFEST_SCHEMA_VERSION = 1
 PILOT_MANIFEST_ID = "phase3b_gate_aware_pilot_manifest_v1"
-FREEZE_TAG = "quantascope-gate-aware-cptp-v1"
+FREEZE_TAG = "yuragi-strider-gate-aware-cptp-v1"
 FREEZE_COMMIT = "f306fbf6eb2083d9098ab0ade079e2681920ac4e"
 EXPECTED_CASE_IDS = (
     "readout_zero_calibration",

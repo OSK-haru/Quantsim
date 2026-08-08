@@ -1,4 +1,4 @@
-# QuantaScope React Physical Input Specification
+# Yuragi-Strider React Physical Input Specification
 
 > **Status: Implemented and retained as migration history**
 >
@@ -11,7 +11,7 @@
 
 ## 目的
 
-この文書は、QuantaScope の React 版 UI における入力仕様を、物理単位ベースの入力へ統一するための設計メモである。
+この文書は、Yuragi-Strider の React 版 UI における入力仕様を、物理単位ベースの入力へ統一するための設計メモである。
 
 特に、旧 Streamlit 版で扱っていた入力項目、現在の Python core が受け取れる `EnvironmentConfig` / `SimulationConfig`、React + FastAPI 版で今後採用する入力仕様を照合し、回路編集機能に入る前の土台を固定する。
 
@@ -23,7 +23,7 @@
 
 現在の React 版は、API 接続と UI 表示を優先して進めてきたため、`normalized_temperature`、`normalized_magnetic_field`、`noise_level` などの正規化入力を中心にしている。
 
-一方、QuantaScope の本来の方向性は、小規模量子回路を開放量子系として扱い、温度、flux noise、qubit frequency、T1/Tphi、gate duration などを用いて、実機に近い環境での状態劣化を可視化することである。
+一方、Yuragi-Strider の本来の方向性は、小規模量子回路を開放量子系として扱い、温度、flux noise、qubit frequency、T1/Tphi、gate duration などを用いて、実機に近い環境での状態劣化を可視化することである。
 
 そのため、Drag & Drop 回路編集に入る前に、React 版の標準入力を physical mode に寄せる。
 

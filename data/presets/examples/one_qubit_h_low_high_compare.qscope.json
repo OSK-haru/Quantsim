@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "kind": "quanta_scope.comparison_config",
+  "kind": "yuragi_strider.comparison_config",
   "metadata": {
     "name": "One-qubit H low/high comparison"
   },

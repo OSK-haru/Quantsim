@@ -2,13 +2,13 @@
 
 ## 目的
 
-物理・数値文献は設計の重要な根拠になるが、QuantaScopeの全仕様が論文から
+物理・数値文献は設計の重要な根拠になるが、Yuragi-Striderの全仕様が論文から
 一意に導かれるわけではない。この文書は、外部文献の権威へ過剰に帰属しては
 ならない判断を明示する。
 
 ## 1. Gate-aware有効Hamiltonian
 
-QuantaScopeでは、`U^2 = I`を満たす対象gateについて、
+Yuragi-Striderでは、`U^2 = I`を満たす対象gateについて、
 
 $$
 H_{\mathrm{gate}}
@@ -32,7 +32,7 @@ $$
 
 これは行列指数から直接確認できる代数的構成である。GKSL文献は、この
 Hamiltonianと散逸を同じgeneratorへ入れる一般形式を支えるが、この具体式を
-QuantaScopeへ採用すること自体はプロジェクト判断である。
+Yuragi-Striderへ採用すること自体はプロジェクト判断である。
 
 ### 使用箇所
 
@@ -92,7 +92,7 @@ This is a generic educational profile, not a calibrated hardware model.
 
 `PROJECT DECISION` + `VALIDATED CONVENTION`
 
-QuantaScopeは、
+Yuragi-Striderは、
 
 $$
 L_\phi=\sqrt{\gamma_\phi/2}\sigma_z
@@ -195,7 +195,7 @@ column_major_vec_f_v1
 ```text
 driven_two_level_rwa_experimental_v1
 driven_transmon_qutrit_rwa_experimental_v1
-quantascope_explicit_cptp_v1
+yuragi_strider_explicit_cptp_v1
 ```
 
 `experimental`は、数理・数値検証済みであってもhardware-calibrated modelでは

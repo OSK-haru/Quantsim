@@ -1,0 +1,109 @@
+.algorithm-library-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 32px 24px 56px;
+  display: grid;
+  align-content: start;
+  gap: 28px;
+  background:
+    radial-gradient(circle at 13% 0%, rgba(38, 156, 140, 0.18), transparent 28%),
+    radial-gradient(circle at 92% 16%, rgba(221, 132, 68, 0.12), transparent 25%),
+    repeating-linear-gradient(90deg, transparent 0 79px, rgba(137, 183, 184, 0.025) 79px 80px),
+    linear-gradient(145deg, #071118 0%, #0a1b22 48%, #071016 100%);
+  color: #e9f6f3;
+}
+
+.algorithm-library-page__header,
+.algorithm-library-page__grid {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.algorithm-library-page__eyebrow {
+  color: #5dd6c0;
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.algorithm-library-page h1 {
+  margin: 8px 0 0;
+  color: #e9f6f3;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  font-size: clamp(2rem, 5vw, 3.3rem);
+  letter-spacing: -0.05em;
+}
+
+.algorithm-library-page__lede {
+  max-width: 66ch;
+  margin: 10px 0 0;
+  color: #8ca5a9;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.algorithm-library-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 20px;
+}
+
+.algorithm-library-page__card {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid rgba(99, 173, 177, 0.2);
+  border-radius: 20px;
+  background: rgba(9, 24, 32, 0.86);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
+}
+
+.algorithm-library-page__description {
+  margin: 0;
+  color: #b7ccce;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.algorithm-library-page__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.algorithm-library-page__tags span {
+  padding: 6px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #9bd8ce;
+  font-size: 0.76rem;
+}
+
+.algorithm-library-page__button {
+  justify-self: start;
+  padding: 11px 18px;
+  border: 1px solid rgba(97, 215, 193, 0.5);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #35c9ac 0%, #1f8f79 100%);
+  color: #04231d;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.algorithm-library-page__button:hover {
+  filter: brightness(1.08);
+}
+
+@media (max-width: 640px) {
+  .algorithm-library-page {
+    padding: 24px 16px 40px;
+  }
+
+  .algorithm-library-page__card {
+    padding: 18px;
+  }
+}

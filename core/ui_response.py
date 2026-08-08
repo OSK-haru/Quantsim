@@ -357,6 +357,30 @@ def _gate_response_entries(gate: GateOperation) -> list[dict[str, Any]]:
             for target in gate.targets
         ]
 
+    if normalized_type in {"QFT", "ORACLE"}:
+        # Register gates are order sensitive, so each cell also carries its
+        # position in the register (0 = most significant, matching the targets
+        # index) and the bit weight k it holds, which is what the editor draws.
+        register_size = len(gate.targets)
+        marked_index = (
+            int((gate.params or {}).get("marked_index", 0.0))
+            if normalized_type == "ORACLE"
+            else None
+        )
+        return [
+            {
+                "label": normalized_type,
+                "type": gate_type,
+                "qubits": [int(target)],
+                "kind": "target",
+                "register_position": position,
+                "register_bit_weight": register_size - 1 - position,
+                **({} if marked_index is None else {"marked_index": marked_index}),
+                **_classical_gate_metadata(gate),
+            }
+            for position, target in enumerate(gate.targets)
+        ]
+
     kind = "measure" if normalized_type == "MEASURE" else "single"
     label = "M" if normalized_type == "MEASURE" else gate_type
     return [

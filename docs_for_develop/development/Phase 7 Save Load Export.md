@@ -354,7 +354,7 @@ Plus Requirementsでも、Obsidian Markdownレポート出力は将来拡張候�
 ## 出力例
 
 ```md
-# QuantaScope Simulation Report
+# Yuragi-Strider Simulation Report
 
 ## Summary
 
@@ -512,7 +512,7 @@ Task:
 Implement Phase 7: Save, Load, and Export.
 
 Goal:
-Add local file-based persistence and export for QuantaScope configurations, simulation results, comparison results, CSV time series, and Markdown reports. This phase must reuse existing SimulationConfig, SimulationResult, ComparisonResult, validation, and expert data structures.
+Add local file-based persistence and export for Yuragi-Strider configurations, simulation results, comparison results, CSV time series, and Markdown reports. This phase must reuse existing SimulationConfig, SimulationResult, ComparisonResult, validation, and expert data structures.
 
 Required changes:
 

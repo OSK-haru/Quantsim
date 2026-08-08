@@ -160,7 +160,7 @@ class GateAwareCPTPQuTiPTests(unittest.TestCase):
 
 @unittest.skipUnless(
     is_rust_kernel_available(),
-    "quantascope_rust is not importable",
+    "yuragi_strider_rust is not importable",
 )
 class GateAwareCPTPRustParityTests(unittest.TestCase):
     def test_bell_python_and_rust_cptp_paths_match(self) -> None:

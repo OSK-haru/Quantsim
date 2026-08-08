@@ -1,13 +1,13 @@
 # Phase 3B Pilot Execution Plan
 
 **Status:** Pilot contract frozen for 10-minute trial; external execution not started
-**Dataset:** `quantascope_hardware_audit_dataset_v1` (`QHAD-v1`)
+**Dataset:** `yuragi_strider_hardware_audit_dataset_v1` (`QHAD-v1`)
 **Purpose:** Operational smoke test only, not formal holdout evidence
 
 ## Execution boundary
 
 Gate-aware explicit CPTP is now frozen as
-`quantascope_gate_aware_cptp_v1`. The Phase 3B execution gate is therefore no
+`yuragi_strider_gate_aware_cptp_v1`. The Phase 3B execution gate is therefore no
 longer blocked by the evolution-method decision. It remains blocked until a
 user-owned provider account, explicit network approval, and a fixed budget are
 available.

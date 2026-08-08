@@ -1,4 +1,4 @@
-# QuantaScope 物理モデル確定計画書
+# Yuragi-Strider 物理モデル確定計画書
 
 > **監査済み実行計画**
 >
@@ -9,13 +9,13 @@
 > validation、tag は完了した。
 >
 > Phase 1 の参照 revision は
-> `quantascope-python-reference-pulse-b-v1` とする。
+> `yuragi-strider-python-reference-pulse-b-v1` とする。
 
 ## 1. 文書の目的
 
-本計画書は、QuantaScope の物理モデルを最終的に確定するまでの開発、検証、監査、文書化の順序を定めるものである。
+本計画書は、Yuragi-Strider の物理モデルを最終的に確定するまでの開発、検証、監査、文書化の順序を定めるものである。
 
-現時点で QuantaScope には、以下の検証済みモデルが存在する。
+現時点で Yuragi-Strider には、以下の検証済みモデルが存在する。
 
 - gate-aware Hamiltonian-Lindblad model
 - two-level rotating-frame RWA control-envelope model
@@ -304,7 +304,7 @@ tag 対象 commit に何を含めるかを記録し、untracked file を無条�
 推奨 tag:
 
 ```text
-quantascope-python-reference-pulse-b-v1
+yuragi-strider-python-reference-pulse-b-v1
 ```
 
 ## 6. 記録項目
@@ -509,7 +509,7 @@ EvolutionMethod
 
 ## 14. 目的
 
-QuantaScope における物理的な量子チャネルを、完全正値かつトレース保存であることが明示できる形で構成する。
+Yuragi-Strider における物理的な量子チャネルを、完全正値かつトレース保存であることが明示できる形で構成する。
 
 現在の RK4 は高精度な数値積分法であるが、任意の有限 step において CPTP を保証しない。そのため、RK4 を置き換えるのではなく、CPTP を保証する別の発展方式を追加する。
 
@@ -721,13 +721,13 @@ $$
 
 Phase 3A の Python gate-aware、two-level pulse、qutrit pulse 比較に加え、
 frozen explicit CPTP pulse path の Python/Rust 出力と QuTiP の直接比較が
-完了した。Phase 3B は `quantascope_hardware_audit_dataset_v1`
+完了した。Phase 3B は `yuragi_strider_hardware_audit_dataset_v1`
 （`QHAD-v1`）を主datasetとして選定し、calibration / holdout分離を含むdataset
 contractをfreezeした。hardware collectionとformal holdout監査は未実施である。
 
 ## 22. 目的
 
-QuantaScope の数値実装と物理モデルを、独立 solver および実機データを用いて監査する。
+Yuragi-Strider の数値実装と物理モデルを、独立 solver および実機データを用いて監査する。
 
 ```text
 Phase 3A  QuTiP による数値実装監査
@@ -789,7 +789,7 @@ $$
 =
 \max_{i,j,t}
 \left|
-\rho_{ij}^{\mathrm{QuantaScope}}(t)
+\rho_{ij}^{\mathrm{Yuragi-Strider}}(t)
 -
 \rho_{ij}^{\mathrm{QuTiP}}(t)
 \right|
@@ -799,7 +799,7 @@ $$
 \varepsilon_F
 =
 \left\|
-\rho^{\mathrm{QuantaScope}}
+\rho^{\mathrm{Yuragi-Strider}}
 -
 \rho^{\mathrm{QuTiP}}
 \right\|_F
@@ -810,7 +810,7 @@ D_{\mathrm{tr}}
 =
 \frac{1}{2}
 \left\|
-\rho^{\mathrm{QuantaScope}}
+\rho^{\mathrm{Yuragi-Strider}}
 -
 \rho^{\mathrm{QuTiP}}
 \right\|_1
@@ -830,7 +830,7 @@ $$
 
 ### 24.1 役割
 
-実機監査では、QuantaScope の物理モデルが実際の量子デバイスの観測量をどの程度説明または予測できるかを確認する。
+実機監査では、Yuragi-Strider の物理モデルが実際の量子デバイスの観測量をどの程度説明または予測できるかを確認する。
 
 ### 24.2 データの分割
 
@@ -986,7 +986,7 @@ $$
 
 ## 25. 目的
 
-Rust parity、CPTP、QuTiP 監査、実機監査の結果を統合し、QuantaScope の物理モデルを正式に確定する。
+Rust parity、CPTP、QuTiP 監査、実機監査の結果を統合し、Yuragi-Strider の物理モデルを正式に確定する。
 
 ## 26. モデル version の決定
 
@@ -1207,7 +1207,7 @@ FAIL
 
 # 31. 最終的な確定方針
 
-QuantaScope の最終物理モデルは、単に一つの solver が動くことによって確定しない。
+Yuragi-Strider の最終物理モデルは、単に一つの solver が動くことによって確定しない。
 
 確定には次の五層の証拠を要求する。
 
@@ -1219,9 +1219,9 @@ QuantaScope の最終物理モデルは、単に一つの solver が動くこと
 5. 実機データとの比較
 ```
 
-これらを満たしたとき、QuantaScope は次のように説明できる。
+これらを満たしたとき、Yuragi-Strider は次のように説明できる。
 
-> QuantaScope は、gate-level 有効 Hamiltonian、回転座標系 RWA pulse model、三準位 transmon、リーク、DRAG、Markov 型 Lindblad 散逸、明示的 CPTP channel を統合し、Python、Rust、QuTiP、実機データの複数経路によって検証された教育・研究用量子シミュレーターである。
+> Yuragi-Strider は、gate-level 有効 Hamiltonian、回転座標系 RWA pulse model、三準位 transmon、リーク、DRAG、Markov 型 Lindblad 散逸、明示的 CPTP channel を統合し、Python、Rust、QuTiP、実機データの複数経路によって検証された教育・研究用量子シミュレーターである。
 
 ただし、実機との完全一致や任意の量子デバイスへの普遍的適用は主張しない。
 

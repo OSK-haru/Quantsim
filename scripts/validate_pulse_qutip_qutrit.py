@@ -62,7 +62,7 @@ def _plot(report: dict[str, object]) -> None:
     axis.set_yscale("log")
     axis.set_ylabel("Maximum density-matrix element error")
     axis.set_xticks(range(len(labels)), labels, rotation=35, ha="right")
-    axis.set_title("QuantaScope vs QuTiP: qutrit checkpoints")
+    axis.set_title("Yuragi-Strider vs QuTiP: qutrit checkpoints")
     axis.legend()
     figure.tight_layout()
     figure.savefig(

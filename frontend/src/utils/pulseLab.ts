@@ -85,68 +85,68 @@ export function validatePulseLabForm(form: PulseLabForm): PulseLabErrors {
   const errors: PulseLabErrors = {}
   const positive = (key: keyof PulseLabForm, value: number, label: string) => {
     if (!Number.isFinite(value) || value <= 0) {
-      errors[key] = `${label} must be greater than 0.`
+      errors[key] = `${label}は0より大きい値である必要があります。`
     }
   }
   const nonnegative = (key: keyof PulseLabForm, value: number, label: string) => {
     if (!Number.isFinite(value) || value < 0) {
-      errors[key] = `${label} must be 0 or greater.`
+      errors[key] = `${label}は0以上である必要があります。`
     }
   }
 
-  positive('totalSimulationTimeUs', form.totalSimulationTimeUs, 'Total simulation time')
+  positive('totalSimulationTimeUs', form.totalSimulationTimeUs, '総シミュレーション時間')
   if (form.shape === 'square') {
-    positive('pulseDurationUs', form.pulseDurationUs, 'Pulse duration')
+    positive('pulseDurationUs', form.pulseDurationUs, 'Pulse幅')
   } else {
-    positive('sigmaUs', form.sigmaUs, 'Gaussian sigma')
-    positive('truncationSigma', form.truncationSigma, 'Truncation sigma')
+    positive('sigmaUs', form.sigmaUs, 'Gaussian σ')
+    positive('truncationSigma', form.truncationSigma, '打ち切りσ')
   }
   if (form.amplitudeMode === 'target_rotation_angle') {
     if (!Number.isFinite(form.targetRotationAngleRad)) {
-      errors.targetRotationAngleRad = 'Target angle must be finite.'
+      errors.targetRotationAngleRad = '目標角度は有限の値である必要があります。'
     }
   } else {
     if (!Number.isFinite(form.peakAmplitudeRadPerUs)) {
-      errors.peakAmplitudeRadPerUs = 'Peak amplitude must be finite.'
+      errors.peakAmplitudeRadPerUs = 'ピーク振幅は有限の値である必要があります。'
     }
   }
   if (!Number.isFinite(form.phaseRad)) {
-    errors.phaseRad = 'Phase must be finite.'
+    errors.phaseRad = '位相は有限の値である必要があります。'
   }
   if (!Number.isFinite(form.detuningRadPerUs)) {
-    errors.detuningRadPerUs = 'Detuning must be finite.'
+    errors.detuningRadPerUs = 'デチューニングは有限の値である必要があります。'
   }
   nonnegative(
     'quasiStaticDetuningSigmaRadPerUs',
     form.quasiStaticDetuningSigmaRadPerUs,
-    'Quasi-static detuning sigma',
+    '準静的デチューニングσ',
   )
   if (form.quasiStaticNoiseEnabled && form.quasiStaticDetuningSigmaRadPerUs <= 0) {
     errors.quasiStaticDetuningSigmaRadPerUs =
-      'Enabled quasi-static noise requires a sigma greater than 0.'
+      '準静的ノイズを有効にする場合、σは0より大きい値である必要があります。'
   }
   if (![3, 5, 7, 9].includes(form.quasiStaticQuadratureOrder)) {
-    errors.quasiStaticQuadratureOrder = 'Quadrature order must be 3, 5, 7, or 9.'
+    errors.quasiStaticQuadratureOrder = '直交次数は3、5、7、9のいずれかである必要があります。'
   }
   if (pulseDurationUs(form) > form.totalSimulationTimeUs) {
     errors.totalSimulationTimeUs =
-      'Total simulation time must include the full pulse duration.'
+      '総シミュレーション時間はPulse幅全体を含む必要があります。'
   }
   if (
     !Number.isInteger(form.snapshotCount) ||
     form.snapshotCount < 2 ||
     form.snapshotCount > 1001
   ) {
-    errors.snapshotCount = 'Snapshot count must be an integer from 2 to 1001.'
+    errors.snapshotCount = 'スナップショット数は2から1001までの整数である必要があります。'
   }
 
   if (form.modelId !== TWO_LEVEL_PULSE_MODEL) {
     if (!Number.isFinite(form.anharmonicityMhz) || form.anharmonicityMhz >= 0) {
-      errors.anharmonicityMhz = 'Anharmonicity must be a finite negative value.'
+      errors.anharmonicityMhz = '非調和性は有限の負の値である必要があります。'
     }
     if (form.shape === 'gaussian') {
       if (!Number.isFinite(form.dragBetaUs)) {
-        errors.dragBetaUs = 'DRAG beta must be finite.'
+        errors.dragBetaUs = 'DRAG βは有限の値である必要があります。'
       }
     }
     if (
@@ -154,62 +154,62 @@ export function validatePulseLabForm(form: PulseLabForm): PulseLabErrors {
       form.qubitFrequencyGhz + form.anharmonicityMhz / 1000 <= 0
     ) {
       errors.anharmonicityMhz =
-        'The resulting |1>-|2> transition frequency must remain positive.'
+        '結果として得られる|1>-|2>遷移周波数は正の値を保つ必要があります。'
     }
   }
   if (form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL) {
     if (!Number.isFinite(form.pairSecondAnharmonicityMhz) || form.pairSecondAnharmonicityMhz >= 0) {
-      errors.pairSecondAnharmonicityMhz = 'The second anharmonicity must be finite and negative.'
+      errors.pairSecondAnharmonicityMhz = '2つ目の非調和性は有限かつ負の値である必要があります。'
     }
     if (!Number.isFinite(form.pairDetuningQ0RadPerUs)) {
-      errors.pairDetuningQ0RadPerUs = 'q0 detuning must be finite.'
+      errors.pairDetuningQ0RadPerUs = 'q0のデチューニングは有限の値である必要があります。'
     }
     if (!Number.isFinite(form.pairDetuningQ1RadPerUs)) {
-      errors.pairDetuningQ1RadPerUs = 'q1 detuning must be finite.'
+      errors.pairDetuningQ1RadPerUs = 'q1のデチューニングは有限の値である必要があります。'
     }
     nonnegative(
       'pairExchangeCouplingRadPerUs',
       form.pairExchangeCouplingRadPerUs,
-      'Exchange coupling',
+      '交換結合',
     )
-    nonnegative('pairQuasiStaticSigmaQ0RadPerUs', form.pairQuasiStaticSigmaQ0RadPerUs, 'q0 quasi-static sigma')
-    nonnegative('pairQuasiStaticSigmaQ1RadPerUs', form.pairQuasiStaticSigmaQ1RadPerUs, 'q1 quasi-static sigma')
+    nonnegative('pairQuasiStaticSigmaQ0RadPerUs', form.pairQuasiStaticSigmaQ0RadPerUs, 'q0 準静的σ')
+    nonnegative('pairQuasiStaticSigmaQ1RadPerUs', form.pairQuasiStaticSigmaQ1RadPerUs, 'q1 準静的σ')
     if (!Number.isFinite(form.pairQuasiStaticCorrelation) || Math.abs(form.pairQuasiStaticCorrelation) > 1) {
-      errors.pairQuasiStaticCorrelation = 'Noise correlation must be between -1 and 1.'
+      errors.pairQuasiStaticCorrelation = 'ノイズ相関は-1から1の間である必要があります。'
     }
     if (form.pairSecondaryDriveEnabled) {
       if (
         form.pairSecondaryAmplitudeMode === 'target_rotation_angle'
         && !Number.isFinite(form.pairSecondaryTargetRotationAngleRad)
       ) {
-        errors.pairSecondaryTargetRotationAngleRad = 'Secondary target angle must be finite.'
+        errors.pairSecondaryTargetRotationAngleRad = '副目標角度は有限の値である必要があります。'
       }
       if (
         form.pairSecondaryAmplitudeMode === 'peak_amplitude'
         && !Number.isFinite(form.pairSecondaryPeakAmplitudeRadPerUs)
       ) {
-        errors.pairSecondaryPeakAmplitudeRadPerUs = 'Secondary peak amplitude must be finite.'
+        errors.pairSecondaryPeakAmplitudeRadPerUs = '副ピーク振幅は有限の値である必要があります。'
       }
       if (form.pairSecondaryShape === 'square') {
-        positive('pairSecondaryPulseDurationUs', form.pairSecondaryPulseDurationUs, 'Secondary pulse duration')
+        positive('pairSecondaryPulseDurationUs', form.pairSecondaryPulseDurationUs, '副Pulse幅')
       } else {
-        positive('pairSecondarySigmaUs', form.pairSecondarySigmaUs, 'Secondary Gaussian sigma')
-        positive('pairSecondaryTruncationSigma', form.pairSecondaryTruncationSigma, 'Secondary truncation sigma')
+        positive('pairSecondarySigmaUs', form.pairSecondarySigmaUs, '副Gaussian σ')
+        positive('pairSecondaryTruncationSigma', form.pairSecondaryTruncationSigma, '副打ち切りσ')
       }
       if (!Number.isFinite(form.pairSecondaryPhaseRad)) {
-        errors.pairSecondaryPhaseRad = 'Secondary phase must be finite.'
+        errors.pairSecondaryPhaseRad = '副位相は有限の値である必要があります。'
       }
       if (!Number.isFinite(form.pairSecondaryDetuningRadPerUs)) {
-        errors.pairSecondaryDetuningRadPerUs = 'Secondary detuning must be finite.'
+        errors.pairSecondaryDetuningRadPerUs = '副デチューニングは有限の値である必要があります。'
       }
       if (!Number.isFinite(form.pairSecondaryDragBetaUs)) {
-        errors.pairSecondaryDragBetaUs = 'Secondary DRAG beta must be finite.'
+        errors.pairSecondaryDragBetaUs = '副DRAG βは有限の値である必要があります。'
       }
       const secondaryDuration = form.pairSecondaryShape === 'square'
         ? form.pairSecondaryPulseDurationUs
         : 2 * form.pairSecondarySigmaUs * form.pairSecondaryTruncationSigma
       if (secondaryDuration > form.totalSimulationTimeUs) {
-        errors.totalSimulationTimeUs = 'Total time must include both simultaneous pulses.'
+        errors.totalSimulationTimeUs = '総時間は同時発生する両方のPulseを含む必要があります。'
       }
     }
   }
@@ -220,26 +220,26 @@ export function validatePulseLabForm(form: PulseLabForm): PulseLabErrors {
       form.deviceQuality < 0 ||
       form.deviceQuality > 1
     ) {
-      errors.deviceQuality = 'Device quality must be between 0 and 1.'
+      errors.deviceQuality = 'デバイス品質は0から1の間である必要があります。'
     }
-    nonnegative('temperatureMk', form.temperatureMk, 'Temperature')
-    nonnegative('fluxNoisePhi0', form.fluxNoisePhi0, 'Flux noise')
-    positive('qubitFrequencyGhz', form.qubitFrequencyGhz, 'Qubit frequency')
-    positive('t1MaxUs', form.t1MaxUs, 'Max T1')
-    positive('tphiMaxUs', form.tphiMaxUs, 'Max Tphi')
+    nonnegative('temperatureMk', form.temperatureMk, '温度')
+    nonnegative('fluxNoisePhi0', form.fluxNoisePhi0, '磁束ノイズ')
+    positive('qubitFrequencyGhz', form.qubitFrequencyGhz, '量子ビット周波数')
+    positive('t1MaxUs', form.t1MaxUs, '最大T1')
+    positive('tphiMaxUs', form.tphiMaxUs, '最大Tφ')
   } else if (form.modelId === TWO_LEVEL_PULSE_MODEL) {
-    nonnegative('gammaDownPerUs', form.gammaDownPerUs, 'gamma down')
-    nonnegative('gammaUpPerUs', form.gammaUpPerUs, 'gamma up')
-    nonnegative('gammaPhiPerUs', form.gammaPhiPerUs, 'gamma phi')
+    nonnegative('gammaDownPerUs', form.gammaDownPerUs, 'γ↓ (下降)')
+    nonnegative('gammaUpPerUs', form.gammaUpPerUs, 'γ↑ (上昇)')
+    nonnegative('gammaPhiPerUs', form.gammaPhiPerUs, 'γφ (位相緩和)')
   } else {
-    nonnegative('gamma10DownPerUs', form.gamma10DownPerUs, 'gamma 10 down')
-    nonnegative('gamma01UpPerUs', form.gamma01UpPerUs, 'gamma 01 up')
-    nonnegative('gamma21DownPerUs', form.gamma21DownPerUs, 'gamma 21 down')
-    nonnegative('gamma12UpPerUs', form.gamma12UpPerUs, 'gamma 12 up')
+    nonnegative('gamma10DownPerUs', form.gamma10DownPerUs, 'γ10↓ (下降)')
+    nonnegative('gamma01UpPerUs', form.gamma01UpPerUs, 'γ01↑ (上昇)')
+    nonnegative('gamma21DownPerUs', form.gamma21DownPerUs, 'γ21↓ (下降)')
+    nonnegative('gamma12UpPerUs', form.gamma12UpPerUs, 'γ12↑ (上昇)')
     nonnegative(
       'gammaPhiAdjacentPerUs',
       form.gammaPhiAdjacentPerUs,
-      'adjacent dephasing rate',
+      '隣接デフェージングレート',
     )
   }
   return errors
@@ -560,10 +560,10 @@ function costResult(estimated: number, maximum: number): PulseCostEstimate {
     overBudget,
     level: overBudget ? 'blocked' : ratio >= 0.7 ? 'elevated' : 'normal',
     message: overBudget
-      ? `Estimated work exceeds the ${maximum.toLocaleString()}-step API gate.`
+      ? `推定計算量が ${maximum.toLocaleString()} ステップのAPI上限を超えています。`
       : ratio >= 0.7
-        ? 'This request is close to the API work ceiling and may take several seconds.'
-        : 'Estimated work is within the bounded API execution range.',
+        ? 'このリクエストはAPIの計算量上限に近く、数秒かかる場合があります。'
+        : '推定計算量はAPIの実行上限内です。',
   }
 }
 

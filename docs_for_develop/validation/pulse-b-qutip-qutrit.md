@@ -4,7 +4,7 @@
 
 ## Scope
 
-QuantaScope and QuTiP solved the same 3x3 density-matrix problems. Both
+Yuragi-Strider and QuTiP solved the same 3x3 density-matrix problems. Both
 received the same initial state, time-dependent Hamiltonian matrices, collapse
 operator matrices, and checkpoint times.
 

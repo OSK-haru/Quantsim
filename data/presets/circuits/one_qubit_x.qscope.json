@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "kind": "quanta_scope.config",
+  "kind": "yuragi_strider.config",
   "metadata": {
     "name": "One-qubit X",
     "description": "Single X gate on q0."

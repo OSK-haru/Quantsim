@@ -95,7 +95,7 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                     "UNSUPPORTED_GATE",
                     "Gate type is not supported.",
                     f"Received gate type={gate.type!r} at step {column.step}.",
-                    "Use one of I, H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX, SWAP, or Measure.",
+                    "Use one of I, H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX, SWAP, QFT, ORACLE, or Measure.",
                 ))
             elif gate_type in {"I", "H", "X", "Y", "Z", "S", "T", "RX", "RY", "RZ", "MEASURE"} and len(gate.targets) != 1:
                 issues.append(_error(
@@ -209,6 +209,48 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                         f"Gate SWAP at step {column.step} has targets {gate.targets!r}.",
                         "Choose two different target qubits for SWAP.",
                     ))
+            elif gate_type in {"QFT", "ORACLE"}:
+                if gate.controls:
+                    issues.append(_error(
+                        f"{gate_type}_REJECTS_CONTROLS",
+                        f"{gate_type} does not accept control qubits.",
+                        f"Gate {gate_type} at step {column.step} has controls {gate.controls!r}.",
+                        f"List every {gate_type} qubit as a target instead.",
+                    ))
+                if not gate.targets:
+                    issues.append(_error(
+                        f"{gate_type}_REQUIRES_TARGET",
+                        f"{gate_type} requires at least one target qubit.",
+                        f"Gate {gate_type} at step {column.step} has targets {gate.targets!r}.",
+                        f"List the {gate_type} register qubits, most significant first.",
+                    ))
+                if len(set(gate.targets)) != len(gate.targets):
+                    issues.append(_error(
+                        f"{gate_type}_TARGETS_MUST_DIFFER",
+                        f"{gate_type} target qubits must all be different.",
+                        f"Gate {gate_type} at step {column.step} has targets {gate.targets!r}.",
+                        f"List each {gate_type} qubit exactly once, most significant first.",
+                    ))
+                if gate_type == "ORACLE" and gate.targets:
+                    marked = float((gate.params or {}).get("marked_index", 0.0))
+                    register_size = len(set(gate.targets))
+                    if marked != int(marked):
+                        issues.append(_error(
+                            "ORACLE_MARKED_INDEX_NOT_INTEGER",
+                            "Oracle marked_index must be an integer.",
+                            f"Gate ORACLE at step {column.step} has marked_index={marked!r}.",
+                            "Choose a whole basis-state index for the oracle to mark.",
+                        ))
+                    elif not 0 <= int(marked) < 2 ** register_size:
+                        issues.append(_error(
+                            "ORACLE_MARKED_INDEX_OUT_OF_RANGE",
+                            "Oracle marked_index is outside the register range.",
+                            (
+                                f"Gate ORACLE at step {column.step} marks {int(marked)} "
+                                f"with a {register_size}-qubit register."
+                            ),
+                            "Pick a basis state the oracle register can represent.",
+                        ))
 
             for classical_target in gate.classical_targets or []:
                 if classical_target >= circuit.classical_bits:

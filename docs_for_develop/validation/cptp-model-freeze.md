@@ -8,7 +8,7 @@ Phase 2 C0-C10 is complete. The explicit CPTP pulse-evolution family is
 frozen as:
 
 ```text
-freeze ID: quantascope_explicit_cptp_v1
+freeze ID: yuragi_strider_explicit_cptp_v1
 public API value: explicit_cptp
 evolution method ID: explicit_cptp_midpoint_gksl_v1
 RK4 reference method ID: fixed_step_rk4_v1

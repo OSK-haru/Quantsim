@@ -195,7 +195,7 @@ Validation checks:
 
 ### C7: Python-Rust CPTP Parity
 
-The optional `quantascope_rust` extension now implements:
+The optional `yuragi_strider_rust` extension now implements:
 
 - a column-major GKSL Liouvillian superoperator;
 - NumPy-independent scaling-and-squaring Pade(13);
@@ -329,7 +329,7 @@ C9 validation covers:
 The model family is frozen as:
 
 ```text
-freeze_id = quantascope_explicit_cptp_v1
+freeze_id = yuragi_strider_explicit_cptp_v1
 evolution_method = explicit_cptp
 method_id = explicit_cptp_midpoint_gksl_v1
 ```

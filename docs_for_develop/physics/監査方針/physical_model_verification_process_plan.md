@@ -1,4 +1,4 @@
-# QuantaScope Physical Model Verification Index
+# Yuragi-Strider Physical Model Verification Index
 
 ## Status
 

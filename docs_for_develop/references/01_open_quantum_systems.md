@@ -19,7 +19,7 @@ V. Gorini, A. Kossakowski, and E. C. G. Sudarshan,
 有限次元量子系における完全正値な力学的半群のgeneratorの一般形を与える。
 現在GKSL generatorと呼ばれる構造の原典の一つである。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - Hamiltonian交換子と散逸子を同じmaster equationで扱う。
 - 非負rateを持つcollapse operatorからMarkov型generatorを構成する。
@@ -36,7 +36,7 @@ V. Gorini, A. Kossakowski, and E. C. G. Sudarshan,
 
 ### この文献だけでは支えないもの
 
-- Born-Markov近似がQuantaScopeの全入力範囲で成立すること
+- Born-Markov近似がYuragi-Striderの全入力範囲で成立すること
 - 使用rateが特定実機のrateと一致すること
 - 固定step RK4の有限step写像がCPTPであること
 
@@ -53,7 +53,7 @@ G. Lindblad, "On the generators of quantum dynamical semigroups,"
 量子力学的半群のgeneratorを作用素論的に特徴づける。GKS論文と合わせて、
 現在のGKSL/Lindblad形式の基礎を与える。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 $$
 \frac{d\rho}{dt}
@@ -82,7 +82,7 @@ $$
 
 ### この文献だけでは支えないもの
 
-- QuantaScopeのrate mapping
+- Yuragi-Striderのrate mapping
 - `gamma_phi`の係数規約
 - qutritを三準位で打ち切る精度
 - gate-aware有効Hamiltonianの具体式
@@ -101,7 +101,7 @@ A. A. Clerk, M. H. Devoret, S. M. Girvin, F. Marquardt, and R. J. Schoelkopf,
 量子雑音spectral density、有限温度bath、詳細釣り合い、量子測定を含む
 量子雑音のレビューである。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - ボソン熱浴の平均占有数
 
@@ -140,7 +140,7 @@ G. Ithier et al., "Decoherence in a superconducting quantum bit circuit,"
 超伝導qubitのdecoherenceをnoise spectral density、relaxation、
 dephasing、およびNMR由来の測定手法と結びつけて解析する。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - population relaxationとphase decoherenceを分離して表示する考え方
 - `T1`、`Tphi`、`T2`を区別する説明方針
@@ -151,17 +151,17 @@ dephasing、およびNMR由来の測定手法と結びつけて解析する。
 - `core/physical_environment.py`
 - `core/expert_data.py`
 - `docs/physics/監査方針/validation8_real_hardware_observable_validation_plan.md`
-- `docs/requirements/quantascope_physical_model_finalization_plan.md`
+- `docs/requirements/yuragi_strider_physical_model_finalization_plan.md`
 
 ### この文献だけでは支えないもの
 
-- QuantaScopeのpure-dephasing collapse operator係数を一意に決めること
+- Yuragi-Striderのpure-dephasing collapse operator係数を一意に決めること
 - Quantroniumの校正値をtransmon一般へ転用すること
 - Markov型の定数rateが全時間scaleで妥当であること
 
 ## 実装規約との対応
 
-QuantaScopeでは、
+Yuragi-Striderでは、
 
 $$
 L_\phi
@@ -172,7 +172,7 @@ $$
 と定義し、off-diagonal coherenceが
 `exp(-gamma_phi * t)`で減衰する規約を採用する。この係数は文献名だけから
 自動的に決まるものではなく、`gamma_phi`を何の減衰率と定義するかに依存する。
-QuantaScopeの規約はV4で解析解に対して検証した。
+Yuragi-Striderの規約はV4で解析解に対して検証した。
 
 有限温度のpopulation relaxation timeは、
 

@@ -193,7 +193,7 @@ Extension B is complete only when:
 - closed qutrit evolution preserves trace and exposes leakage,
 - qutrit thermal and dephasing conventions pass analytic checks,
 - qutrit and DRAG trajectories have demonstrated convergence,
-- QuantaScope and QuTiP agree on shared 3x3 mathematical problems,
+- Yuragi-Strider and QuTiP agree on shared 3x3 mathematical problems,
 - the Pulse Lab labels qutrit projections and approximations honestly,
 - Baseline A and gate-aware regressions remain unchanged,
 - a final Extension B report records performance and limitations.

@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # RK4(固定ステップ数値積分)
 
-古典的な4次のRunge-Kutta法でGKSL方程式を直接積分する経路です。QuantaScopeの**既定の時間発展方式**です。
+古典的な4次のRunge-Kutta法でGKSL方程式を直接積分する経路です。Yuragi-Striderの**既定の時間発展方式**です。
 
 識別子は `fixed_step_rk4`(メソッドIDは `fixed_step_rk4_v1`)です。
 

@@ -18,7 +18,7 @@ R. Jozsa, "Fidelity for mixed quantum states,"
 
 混合状態間fidelityの定義と基本性質を整理する。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 一般のdensity matrix比較では、
 
@@ -50,7 +50,7 @@ $$
 
 ### 注意
 
-QuantaScopeの画面では、closed trajectory fidelity、target-state fidelity、
+Yuragi-Striderの画面では、closed trajectory fidelity、target-state fidelity、
 completion fidelity、final fidelityを区別する。同じfidelityという語でも
 reference stateが異なるため、値を直接混同しない。
 
@@ -68,7 +68,7 @@ C. A. Fuchs and J. van de Graaf,
 量子状態のdistinguishability measureを整理し、trace distanceとfidelityを
 関係づける不等式を与える。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 $$
 D_{\mathrm{tr}}(\rho,\sigma)
@@ -91,7 +91,7 @@ $$
 - hardware prediction errorの許容値
 - trajectory全体の集約方法
 
-これらは監査開始前にQuantaScope側で事前登録する。
+これらは監査開始前にYuragi-Strider側で事前登録する。
 
 ## 3. Wood and Gambetta
 
@@ -107,7 +107,7 @@ C. J. Wood and J. M. Gambetta,
 計算部分空間より大きなHilbert空間におけるleakageとseepageを定量化し、
 average gate fidelityと合わせた評価方法を示す。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - `|2>` populationを計算部分空間外へのleakageとして独立表示する。
 - computational-subspace内で再正規化したfidelityだけを示さない。
@@ -139,7 +139,7 @@ E. Magesan, J. M. Gambetta, and J. Emerson,
 gate setの平均error rateを推定するscalable randomized benchmarkingを示し、
 time-dependent、gate-dependent errorを含む条件を解析する。
 
-### QuantaScopeでの使用方針
+### Yuragi-Striderでの使用方針
 
 - 将来のGate-aware hardware auditにおけるgate error評価候補
 - depth dependenceとsequence decayの評価候補
@@ -164,14 +164,14 @@ with gate set tomography," *Nature Communications* 8, 14485 (2017).
 gate set tomographyによって、state preparation、measurement、gateを
 self-consistentにcharacterizeする方法を実機で示す。
 
-### QuantaScopeでの使用方針
+### Yuragi-Striderでの使用方針
 
 - SPAM errorをモデル誤差へ誤帰属しないための監査設計参考
 - simple probability comparisonより厳密な将来監査候補
 
 ### 現在の状態
 
-GSTは未実装であり、QuantaScopeがfault-tolerance thresholdを満たすという
+GSTは未実装であり、Yuragi-Striderがfault-tolerance thresholdを満たすという
 主張は行わない。
 
 ## 6. Kennedy and O'Hagan
@@ -188,7 +188,7 @@ M. C. Kennedy and A. O'Hagan,
 computer modelのparameter calibration、prediction uncertainty、および
 model discrepancyを分離して扱う枠組みを示す。
 
-### QuantaScopeで使用した内容
+### Yuragi-Striderで使用した内容
 
 - calibrationに使うdataとholdout prediction dataを分離する。
 - parameter uncertaintyとmodel discrepancyを区別する。

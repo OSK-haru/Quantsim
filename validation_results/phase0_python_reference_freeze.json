@@ -9,7 +9,7 @@
     "python_reference_source_commit": "28b28a5aa82ddbcef1ae22c974846f7ea5ff2c0d",
     "branch": "React-phase",
     "working_tree_clean_after_release_commit": true,
-    "git_tag": "quantascope-python-reference-pulse-b-v1",
+    "git_tag": "yuragi-strider-python-reference-pulse-b-v1",
     "pre_freeze_git_collapsed_change_count": 252,
     "file_level_change_count_before_this_manifest": 280,
     "file_level_change_summary_before_this_manifest": {

@@ -66,12 +66,12 @@ def main() -> int:
         "basis_and_qubit_order_audit": {
             "basis": "|0>=(1,0), |1>=(0,1); sigma_down maps |1> to |0>; sigma_z has +1/-1 eigenvalues",
             "qubit_order": "q0 is the most significant bit: |00>, |01>, |10>, |11>",
-            "adapter_policy": "Existing QuantaScope matrices are converted directly to Qobj; sigmam/sigmap/tensor are not used to reconstruct physics.",
+            "adapter_policy": "Existing Yuragi-Strider matrices are converted directly to Qobj; sigmam/sigmap/tensor are not used to reconstruct physics.",
         },
         "cases": cases,
         "overall_pass": all(case["pass"] for case in cases),
         "scope_and_limitations": [
-            "QuTiP receives the same QuantaScope Hamiltonian, initial density matrix, collapse operators, and segment durations.",
+            "QuTiP receives the same Yuragi-Strider Hamiltonian, initial density matrix, collapse operators, and segment durations.",
             "This validates the tested Lindblad equation integration, not the physical calibration of the generic device profile.",
             "A pass does not prove that finite RK4 steps are CPTP for arbitrary circuits.",
         ],
@@ -166,7 +166,7 @@ def _write_plots(cases, population_path, error_path):
     figure, axis = plt.subplots(figsize=(9, 5))
     for case in cases:
         times = [record["global_time_us"] for record in case["records"]]
-        axis.plot(times, [record["population_quanta"] for record in case["records"]], "o-", label=f"{case['name']} QuantaScope")
+        axis.plot(times, [record["population_quanta"] for record in case["records"]], "o-", label=f"{case['name']} Yuragi-Strider")
         axis.plot(times, [record["population_qutip"] for record in case["records"]], "x--", label=f"{case['name']} QuTiP")
     from matplotlib.font_manager import FontProperties
     japanese_font = FontProperties(fname="C:/Windows/Fonts/YuGothM.ttc")
@@ -181,7 +181,7 @@ def _write_plots(cases, population_path, error_path):
         times = [record["global_time_us"] for record in case["records"]]
         axis.semilogy(times, [max(record["metrics"]["max_element_difference"], 1e-18) for record in case["records"]], "o-", label=f"{case['name']} max element")
         axis.semilogy(times, [max(record["metrics"]["trace_distance"], 1e-18) for record in case["records"]], "x--", label=f"{case['name']} trace distance")
-    axis.set_title("QuantaScope vs QuTiP comparison error")
+    axis.set_title("Yuragi-Strider vs QuTiP comparison error")
     axis.set_xlabel("time [us]")
     axis.set_ylabel("difference")
     axis.grid(True, which="both", alpha=0.3)
@@ -190,9 +190,9 @@ def _write_plots(cases, population_path, error_path):
 
 
 def _write_report(report, path, paths):
-    lines = ["# VALIDATION-7: QuTiP Comparison", "", "## Purpose", "", "Compare the current QuantaScope Lindblad solver with QuTiP `mesolve` using exactly the same density matrices, Hamiltonians, collapse operators, segment durations, and requested snapshot times.", "", "## Environment and Versions", ""]
+    lines = ["# VALIDATION-7: QuTiP Comparison", "", "## Purpose", "", "Compare the current Yuragi-Strider Lindblad solver with QuTiP `mesolve` using exactly the same density matrices, Hamiltonians, collapse operators, segment durations, and requested snapshot times.", "", "## Environment and Versions", ""]
     lines.extend(f"- {key}: `{value}`" for key, value in report["environment"].items())
-    lines.extend(["", "## Basis and Qubit-Order Audit", "", "- `q0` is the most-significant bit, so two-qubit order is `|00>, |01>, |10>, |11>`.", "- The adapter converts QuantaScope matrices directly to `Qobj`; it does not rebuild the model with QuTiP spin operators.", "", "## Solver Settings", "", f"- QuantaScope fixed internal RK4 cap: `{report['quanta_internal_step_us']} us`.", f"- QuTiP options: `{report['solver_options']}`.", "", "## Results", "", "| Case | Max matrix difference | Max trace distance | Pass |", "|---|---:|---:|---|"])
+    lines.extend(["", "## Basis and Qubit-Order Audit", "", "- `q0` is the most-significant bit, so two-qubit order is `|00>, |01>, |10>, |11>`.", "- The adapter converts Yuragi-Strider matrices directly to `Qobj`; it does not rebuild the model with QuTiP spin operators.", "", "## Solver Settings", "", f"- Yuragi-Strider fixed internal RK4 cap: `{report['quanta_internal_step_us']} us`.", f"- QuTiP options: `{report['solver_options']}`.", "", "## Results", "", "| Case | Max matrix difference | Max trace distance | Pass |", "|---|---:|---:|---|"])
     for case in report["cases"]:
         lines.append(f"| {case['name']} | {case['max_element_difference']:.6e} | {case['max_trace_distance']:.6e} | {case['pass']} |")
     lines.extend(["", "## Interpretation", "", "A pass establishes agreement for the tested small-system Lindblad trajectories. It does not establish calibrated-hardware accuracy or prove CPTP behavior of arbitrary finite RK4 steps.", "", "## Files", ""])

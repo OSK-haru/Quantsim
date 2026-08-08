@@ -49,7 +49,7 @@ export function PulseEnvironmentPanel({
     <section className="pulse-parameters" aria-labelledby="pulse-environment-title">
       <div className="pulse-parameters__heading">
         <div>
-          <span>GLOBAL EXECUTION CONDITIONS</span>
+          <span>実行条件(共通)</span>
           <h2 id="pulse-environment-title">外界環境と実行設定</h2>
         </div>
         <p>ここで設定した条件は、Pulse回路内のすべてのブロックに共通で適用されます。</p>

@@ -26,7 +26,7 @@ function HomepageHeader(): ReactNode {
           <Link
             className="button button--secondary button--lg"
             to="/docs/overview/introduction">
-            QuantaScopeとは
+            Yuragi-Striderとは
           </Link>
 
           <Link

@@ -94,7 +94,7 @@ class PulseBaselineAApiTests(unittest.TestCase):
 
     @unittest.skipUnless(
         is_rust_kernel_available(),
-        "quantascope_rust is not importable",
+        "yuragi_strider_rust is not importable",
     )
     def test_rust_and_auto_backends_report_resolution_and_match_python(self) -> None:
         python_payload = _direct_square_payload()

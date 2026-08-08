@@ -20,11 +20,11 @@ The direct CPTP comparison is frozen as:
 
 ```text
 audit_id: phase3a_cptp_qutip_v1
-freeze_id: quantascope_explicit_cptp_v1
+freeze_id: yuragi_strider_explicit_cptp_v1
 evolution_method_id: explicit_cptp_midpoint_gksl_v1
 ```
 
-QuantaScope and QuTiP receive identical:
+Yuragi-Strider and QuTiP receive identical:
 
 - initial density matrices;
 - time-dependent Hamiltonian matrices;
@@ -33,7 +33,7 @@ QuantaScope and QuTiP receive identical:
 
 QuTiP does not independently reinterpret temperature, device quality, or
 other physical inputs. It solves the matrices already constructed by
-QuantaScope using `mesolve` with DOP853, `atol=1e-12`, and `rtol=1e-12`.
+Yuragi-Strider using `mesolve` with DOP853, `atol=1e-12`, and `rtol=1e-12`.
 
 This separation is important: the audit checks independent-solver agreement
 for the same mathematical problem. It does not establish hardware validity.

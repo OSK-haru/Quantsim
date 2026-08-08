@@ -36,9 +36,9 @@ const helpItems = [
       '完了時の忠実度は、意図した操作が完了した時点の状態を測定します。最終忠実度は、シミュレーション全体のタイムラインが終了した時点の状態を測定します。ゲート完了後も状態が発展し続ける場合、両者は異なる値になります。',
   },
   {
-    question: 'QuantaScope はどのモデルを使用していますか？',
+    question: 'Yuragi-Strider はどのモデルを使用していますか？',
     answer:
-      `QuantaScope は現在、学習用の弱結合開放系シミュレーションである「${currentEvolutionLabel}」を使用しています。環境設定を単純化した T1・T2 緩和時間に変換し、選択したモデルでの傾向を確認できるようにしています。特定のハードウェアを正確に予測するものではありません。「${plannedModeLabel}」は将来対応予定で、現在のシミュレーション経路には未実装です。`,
+      `Yuragi-Strider は現在、学習用の弱結合開放系シミュレーションである「${currentEvolutionLabel}」を使用しています。環境設定を単純化した T1・T2 緩和時間に変換し、選択したモデルでの傾向を確認できるようにしています。特定のハードウェアを正確に予測するものではありません。「${plannedModeLabel}」は将来対応予定で、現在のシミュレーション経路には未実装です。`,
   },
   {
     question: 'ハードウェアを正確に再現するシミュレーターですか？',
@@ -57,7 +57,7 @@ export function HelpPage() {
     <main className="help-page">
       <header className="help-page__header">
         <div>
-          <div className="help-page__eyebrow">QuantaScope</div>
+          <div className="help-page__eyebrow">Yuragi-Strider</div>
           <h1>ヘルプ / Q&amp;A</h1>
           <p className="help-page__lede">
             シミュレーション画面の見方、指標の比較、結果が変化する理由を説明します。

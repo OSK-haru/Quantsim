@@ -51,7 +51,7 @@ TOLERANCE = 1e-12
 
 @unittest.skipUnless(
     is_rust_kernel_available(),
-    "quantascope_rust is not importable",
+    "yuragi_strider_rust is not importable",
 )
 class RustTimeDependentParityTest(unittest.TestCase):
     def test_two_level_gaussian_rhs_stages_and_step_match_python(self) -> None:

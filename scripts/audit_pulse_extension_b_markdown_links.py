@@ -68,7 +68,7 @@ def _documents() -> list[Path]:
         "docs/README.md",
         "docs/development/pulse-extension-b/*.md",
         "docs/development/physical-model-finalization/*.md",
-        "docs/requirements/quantascope_physical_model_finalization_plan.md",
+        "docs/requirements/yuragi_strider_physical_model_finalization_plan.md",
         "docs/physics/pulse-extension-b-*.md",
         "docs/architecture/pulse-api-contract.md",
         "docs/validation/pulse-b-*.md",

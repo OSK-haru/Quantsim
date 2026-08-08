@@ -25,7 +25,7 @@ The formal Phase 3B PASS/FAIL decision will use a purpose-built,
 preregistered dataset:
 
 ```text
-dataset_id: quantascope_hardware_audit_dataset_v1
+dataset_id: yuragi_strider_hardware_audit_dataset_v1
 short_name: QHAD-v1
 provider candidate: IBM Quantum
 ```
@@ -36,7 +36,7 @@ Two third-party datasets are selected for separate supporting roles:
 2. Aalto single-shot readout data is auxiliary T1, Ramsey, and SPAM evidence.
 
 Third-party evidence does not replace the QHAD-v1 holdout because the existing
-datasets do not simultaneously provide QuantaScope's exact circuits,
+datasets do not simultaneously provide Yuragi-Strider's exact circuits,
 same-session backend properties, preregistered calibration/holdout separation,
 and all required gate-aware outputs.
 
@@ -52,7 +52,7 @@ QHAD-v1 can preserve:
 - qubit mapping and backend target data;
 - fixed calibration and holdout case IDs;
 - failed jobs and exclusions;
-- QuantaScope source revision and software versions.
+- Yuragi-Strider source revision and software versions.
 
 IBM documents an Open Plan for limited free QPU access, backend properties
 including T1, T2, gate length, and error, and persistent job result retrieval.
@@ -126,7 +126,7 @@ Reasons:
 - associated peer-reviewed publication;
 - known case where a purely Markovian model is insufficient.
 
-This is valuable precisely because it may not agree with QuantaScope. It is
+This is valuable precisely because it may not agree with Yuragi-Strider. It is
 used to document model-form limitations, not to tune the model until it passes.
 
 The inspected record did not clearly expose a reuse license. The file metadata
@@ -158,7 +158,7 @@ Restrictions:
 - redistribution remains blocked until license review.
 
 It is auxiliary evidence for SPAM and documentation methodology, not the
-formal QuantaScope prediction dataset.
+formal Yuragi-Strider prediction dataset.
 
 ## Rejected or Deferred Candidates
 

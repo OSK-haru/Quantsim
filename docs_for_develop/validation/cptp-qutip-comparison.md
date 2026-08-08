@@ -6,15 +6,15 @@
 
 ## Frozen Contract
 
-- Freeze ID: `quantascope_explicit_cptp_v1`
+- Freeze ID: `yuragi_strider_explicit_cptp_v1`
 - Evolution method: `explicit_cptp_midpoint_gksl_v1`
 - Time-dependent policy: midpoint piecewise constant.
 - Density-matrix cleanup: not applied.
 
 ## Method
 
-- QuantaScope and QuTiP receive identical initial density matrices.
-- QuTiP receives the exact QuantaScope Hamiltonian matrices and collapse-operator matrices.
+- Yuragi-Strider and QuTiP receive identical initial density matrices.
+- QuTiP receives the exact Yuragi-Strider Hamiltonian matrices and collapse-operator matrices.
 - Temperature and device parameters are not independently reinterpreted by QuTiP.
 - Every CPTP interval boundary is compared with QuTiP `mesolve` using DOP853.
 - Three interval sizes are preregistered for each case.

@@ -15,8 +15,8 @@ from core.results import SimulationResult
 
 
 SCHEMA_VERSION = "1.0"
-RESULT_KIND = "quanta_scope.result"
-COMPARISON_KIND = "quanta_scope.comparison_result"
+RESULT_KIND = "yuragi_strider.result"
+COMPARISON_KIND = "yuragi_strider.comparison_result"
 
 
 def result_to_dict(result: SimulationResult) -> dict[str, Any]:

@@ -1,0 +1,86 @@
+.settings-menu {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(125, 211, 252, 0.18);
+}
+
+.settings-menu__header {
+  padding: 0 10px 2px;
+  color: #67e8f9;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.settings-menu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 13px 17px 12px 16px;
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.settings-menu__row-label {
+  display: grid;
+  gap: 2px;
+}
+
+.settings-menu__row-label span {
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.settings-menu__row-label small {
+  color: #94a3b8;
+  font-size: 0.7rem;
+}
+
+.settings-menu__switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 24px;
+  padding: 2px;
+  border: 1px solid rgba(125, 211, 252, 0.32);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.settings-menu__switch--on {
+  border-color: rgba(103, 232, 249, 0.82);
+  background: rgba(14, 116, 144, 0.7);
+}
+
+.settings-menu__switch-knob {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  transform: translateX(0);
+  transition: transform 160ms ease;
+}
+
+.settings-menu__switch--on .settings-menu__switch-knob {
+  transform: translateX(18px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-menu__switch,
+  .settings-menu__switch-knob {
+    transition: none;
+  }
+}
+
+html[data-animations='off'] .settings-menu__switch,
+html[data-animations='off'] .settings-menu__switch-knob {
+  transition: none;
+}

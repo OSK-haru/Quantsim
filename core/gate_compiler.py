@@ -6,7 +6,13 @@ from dataclasses import dataclass
 import math
 
 from core.circuit_model import CircuitConfig, GateColumn, GateOperation
-from core.gates import DEFAULT_GATE_DURATIONS_US, column_duration_us
+from core.gates import (
+    DEFAULT_GATE_DURATIONS_US,
+    column_duration_us,
+    oracle_marked_index,
+    oracle_register,
+    qft_register,
+)
 
 
 LOGICAL_DIRECT = "logical_direct"
@@ -19,7 +25,11 @@ CP_DECOMPOSITION_ID = "cp_to_rz_cnot_v1"
 CCX_DECOMPOSITION_ID = "ccx_to_h_cnot_rz_v1"
 RX_DECOMPOSITION_ID = "rx_to_h_rz_h_v1"
 RY_DECOMPOSITION_ID = "ry_to_rz_h_rz_h_rz_v1"
-DECOMPOSABLE_GATES = frozenset({"RX", "RY", "CZ", "SWAP", "CP", "CCX"})
+QFT_DECOMPOSITION_ID = "qft_to_h_cp_swap_v1"
+ORACLE_DECOMPOSITION_ID = "oracle_to_x_mcz_graycode_v1"
+DECOMPOSABLE_GATES = frozenset({
+    "RX", "RY", "CZ", "SWAP", "CP", "CCX", "QFT", "ORACLE",
+})
 DecompositionLayers = tuple[tuple[GateOperation, ...], ...]
 
 
@@ -327,7 +337,174 @@ def _decompose_gate(
             (rz(control_a, quarter_turn), rz(control_b, -quarter_turn)),
             (cnot(control_a, control_b),),
         ), CCX_DECOMPOSITION_ID
+    if gate_type == "QFT":
+        if gate.controls:
+            raise ValueError("QFT requires targets only and no controls")
+        register = qft_register(gate.targets)
+        return _expand_logical_layers(
+            _qft_logical_layers(register, durations),
+            durations,
+        ), QFT_DECOMPOSITION_ID
+    if gate_type == "ORACLE":
+        if gate.controls:
+            raise ValueError("ORACLE requires targets only and no controls")
+        register = oracle_register(gate.targets)
+        marked = oracle_marked_index(gate.params, len(register))
+        return _oracle_layers(register, marked, durations), ORACLE_DECOMPOSITION_ID
     raise ValueError(f"no decomposition rule is registered for {gate.type!r}")
+
+
+def _oracle_layers(
+    register: tuple[int, ...],
+    marked_index: int,
+    durations: dict[str, float],
+) -> DecompositionLayers:
+    """Conjugate a multi-controlled Z with X on the marked value's zero bits.
+
+    ``MCZ`` flips the sign of ``|1...1>``; the X pairs move that sign onto
+    ``|marked_index>``.
+    """
+
+    size = len(register)
+    marked_bits = format(int(marked_index), f"0{size}b")
+    zero_bits = tuple(
+        qubit for position, qubit in enumerate(register)
+        if marked_bits[position] == "0"
+    )
+    flip = tuple(
+        GateOperation("X", [qubit], params={"duration_us": durations["X"]})
+        for qubit in zero_bits
+    )
+    layers: list[tuple[GateOperation, ...]] = []
+    if flip:
+        layers.append(flip)
+    layers.extend(_multi_controlled_z_layers(register, durations))
+    if flip:
+        layers.append(flip)
+    return tuple(layers)
+
+
+def _multi_controlled_z_layers(
+    register: tuple[int, ...],
+    durations: dict[str, float],
+) -> DecompositionLayers:
+    """Return C^(m-1)Z on ``register`` as native CNOT and RZ layers.
+
+    Writes the diagonal phase ``pi * prod_j b_j`` in the Pauli-Z basis. With
+    ``z_j = (-1)^b_j`` we have
+    ``prod_j b_j = 2^-m * sum_S (-1)^|S| prod_{j in S} z_j``,
+    so the gate is a product of RZ rotations on subset parities. Subsets are
+    walked in Gray-code order, which keeps each step to one CNOT instead of
+    rebuilding a parity ladder per subset: 2^m - 1 CNOTs rather than O(m 2^m).
+    The empty subset contributes only a global phase and is dropped, exactly as
+    the CP and CCX rules already do.
+    """
+
+    size = len(register)
+    scale = 2.0 * math.pi / float(2 ** size)
+    rz_duration = durations["RZ"]
+    cnot_duration = durations["CNOT"]
+    layers: list[tuple[GateOperation, ...]] = []
+
+    def cnot(control: int, target: int) -> tuple[GateOperation, ...]:
+        return (GateOperation(
+            "CNOT", [target], controls=[control],
+            params={"duration_us": cnot_duration},
+        ),)
+
+    def rz(qubit: int, subset_size: int) -> tuple[GateOperation, ...]:
+        # theta_S = 2 pi (-1)^(|S|+1) / 2^m
+        angle = scale * (-1.0 if subset_size % 2 == 0 else 1.0)
+        return (GateOperation(
+            "RZ", [qubit],
+            params={"duration_us": rz_duration, "theta_rad": angle},
+        ),)
+
+    def sweep(qubits: tuple[int, ...]) -> None:
+        # Handles every subset containing `accumulator`, then recurses on the
+        # rest, so each non-empty subset is visited exactly once.
+        if not qubits:
+            return
+        accumulator = qubits[-1]
+        others = qubits[:-1]
+        active: frozenset[int] = frozenset()
+        for code in range(2 ** len(others)):
+            gray = code ^ (code >> 1)
+            wanted = frozenset(
+                others[bit] for bit in range(len(others)) if (gray >> bit) & 1
+            )
+            for qubit in sorted(wanted ^ active):
+                layers.append(cnot(qubit, accumulator))
+            active = wanted
+            layers.append(rz(accumulator, len(active) + 1))
+        for qubit in sorted(active):
+            layers.append(cnot(qubit, accumulator))
+        sweep(others)
+
+    sweep(tuple(register))
+    return tuple(layers)
+
+
+def _qft_logical_layers(
+    register: tuple[int, ...],
+    durations: dict[str, float],
+) -> DecompositionLayers:
+    """Return the textbook H / CP ladder followed by the bit-reversal SWAPs."""
+
+    size = len(register)
+    layers: list[tuple[GateOperation, ...]] = []
+    for position, target in enumerate(register):
+        layers.append((
+            GateOperation("H", [target], params={"duration_us": durations["H"]}),
+        ))
+        for offset in range(1, size - position):
+            layers.append((
+                GateOperation(
+                    "CP", [target], controls=[register[position + offset]],
+                    params={
+                        "duration_us": durations["CP"],
+                        "theta_rad": math.pi / float(2 ** offset),
+                    },
+                ),
+            ))
+    reversal = tuple(
+        GateOperation(
+            "SWAP",
+            [register[index], register[size - 1 - index]],
+            params={"duration_us": durations["SWAP"]},
+        )
+        for index in range(size // 2)
+    )
+    if reversal:
+        layers.append(reversal)
+    return tuple(layers)
+
+
+def _expand_logical_layers(
+    logical_layers: DecompositionLayers,
+    durations: dict[str, float],
+) -> DecompositionLayers:
+    """Flatten layers of logical sub-gates into native-gate layers."""
+
+    native: list[list[GateOperation]] = []
+    for logical_layer in logical_layers:
+        merged: list[list[GateOperation]] = []
+        for sub_gate in logical_layer:
+            for index, operations in enumerate(_native_layers(sub_gate, durations)):
+                while len(merged) <= index:
+                    merged.append([])
+                merged[index].extend(operations)
+        native.extend(merged)
+    return tuple(tuple(layer) for layer in native)
+
+
+def _native_layers(
+    gate: GateOperation,
+    durations: dict[str, float],
+) -> DecompositionLayers:
+    if gate.type.upper() in DECOMPOSABLE_GATES:
+        return _decompose_gate(gate, durations)[0]
+    return ((_copy_gate(gate),),)
 
 
 def _single_target(gate: GateOperation, label: str) -> int:

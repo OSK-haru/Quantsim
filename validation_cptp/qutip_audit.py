@@ -36,7 +36,7 @@ from validation_pulse.qutip_adapter import (
 
 
 AUDIT_ID = "phase3a_cptp_qutip_v1"
-FREEZE_ID = "quantascope_explicit_cptp_v1"
+FREEZE_ID = "yuragi_strider_explicit_cptp_v1"
 EVOLUTION_METHOD_ID = "explicit_cptp_midpoint_gksl_v1"
 PHYSICALITY_TOLERANCE = 1e-10
 PYTHON_RUST_PARITY_TOLERANCE = 2e-10

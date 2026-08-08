@@ -7,7 +7,7 @@ type SimulationSummaryProps = {
 }
 
 function formatMetric(value: number) {
-  return value.toFixed(12)
+  return value.toFixed(4)
 }
 
 function formatOptionalMetric(value: number | null) {

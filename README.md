@@ -1,6 +1,6 @@
-# QuantaScope
+# Yuragi-Strider
 
-QuantaScope は、温度・磁場・ノイズなどの物理環境が小規模量子回路の状態と有効寿命に与える影響を、対話的に理解するためのシミュレーターです。
+Yuragi-Strider は、温度・磁場・ノイズなどの物理環境が小規模量子回路の状態と有効寿命に与える影響を、対話的に理解するためのシミュレーターです。
 
 現在の実装状況と文書の優先順位は
 [`docs_for_develop/README.md`](docs_for_develop/README.md)を参照してください。
@@ -106,8 +106,8 @@ QuTiP を使う独立検証も含める場合:
 Rust toolchain が利用できる環境で、Python 仮想環境へローカル拡張をビルドします。
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -e .\rust_kernels\quantascope_rust
-.\.venv\Scripts\python.exe -c "import quantascope_rust; print(quantascope_rust.backend_name())"
+.\.venv\Scripts\python.exe -m pip install -e .\rust_kernels\yuragi_strider_rust
+.\.venv\Scripts\python.exe -c "import yuragi_strider_rust; print(yuragi_strider_rust.backend_name())"
 ```
 
 標準 backend は `python_dense` です。Rust 拡張がなくても通常利用とテストは可能で、Rust 専用テストは自動的に skip されます。

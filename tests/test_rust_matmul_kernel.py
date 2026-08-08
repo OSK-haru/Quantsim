@@ -3,12 +3,12 @@ import unittest
 
 
 try:
-    import quantascope_rust
+    import yuragi_strider_rust
 except Exception:  # pragma: no cover - optional local Rust extension.
-    quantascope_rust = None
+    yuragi_strider_rust = None
 
 
-@unittest.skipIf(quantascope_rust is None, "quantascope_rust is not importable")
+@unittest.skipIf(yuragi_strider_rust is None, "yuragi_strider_rust is not importable")
 class RustMatmulKernelTest(unittest.TestCase):
     def test_matmul_complex_flat_identity_1q(self) -> None:
         identity = _flatten([
@@ -16,7 +16,7 @@ class RustMatmulKernelTest(unittest.TestCase):
             [0.0 + 0.0j, 1.0 + 0.0j],
         ])
 
-        result = quantascope_rust.matmul_complex_flat(identity, identity, 2)
+        result = yuragi_strider_rust.matmul_complex_flat(identity, identity, 2)
 
         _assert_flat_close(self, result, identity)
 
@@ -30,7 +30,7 @@ class RustMatmulKernelTest(unittest.TestCase):
             [0.0 + 0.0j, 1.0 + 0.0j],
         ])
 
-        result = quantascope_rust.matmul_complex_flat(pauli_x, pauli_x, 2)
+        result = yuragi_strider_rust.matmul_complex_flat(pauli_x, pauli_x, 2)
 
         _assert_flat_close(self, result, identity)
 
@@ -45,7 +45,7 @@ class RustMatmulKernelTest(unittest.TestCase):
             [0.0 + 0.0j, 1.0 + 0.0j],
         ])
 
-        result = quantascope_rust.matmul_complex_flat(h_gate, h_gate, 2)
+        result = yuragi_strider_rust.matmul_complex_flat(h_gate, h_gate, 2)
 
         _assert_flat_close(self, result, identity)
 
@@ -59,7 +59,7 @@ class RustMatmulKernelTest(unittest.TestCase):
             [0.5 + 3.0j, -2.0 + 0.75j],
         ]
 
-        result = quantascope_rust.matmul_complex_flat(
+        result = yuragi_strider_rust.matmul_complex_flat(
             _flatten(left),
             _flatten(right),
             2,
@@ -70,10 +70,10 @@ class RustMatmulKernelTest(unittest.TestCase):
 
     def test_matmul_complex_flat_rejects_bad_lengths(self) -> None:
         with self.assertRaises(ValueError):
-            quantascope_rust.matmul_complex_flat([1.0, 0.0], [1.0, 0.0], 2)
+            yuragi_strider_rust.matmul_complex_flat([1.0, 0.0], [1.0, 0.0], 2)
 
         with self.assertRaises(ValueError):
-            quantascope_rust.matmul_complex_flat(
+            yuragi_strider_rust.matmul_complex_flat(
                 _flatten([[1.0 + 0.0j]]),
                 [1.0, 0.0],
                 2,
@@ -81,7 +81,7 @@ class RustMatmulKernelTest(unittest.TestCase):
 
     def test_matmul_complex_flat_rejects_zero_dimension(self) -> None:
         with self.assertRaises(ValueError):
-            quantascope_rust.matmul_complex_flat([], [], 0)
+            yuragi_strider_rust.matmul_complex_flat([], [], 0)
 
 
 def _flatten(matrix: list[list[complex]]) -> list[float]:

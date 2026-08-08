@@ -33,7 +33,7 @@ class ExportRegressionTest(unittest.TestCase):
             self.assertTrue(markdown_path.exists())
             self.assertIn("summary", json.loads(result_json_path.read_text(encoding="utf-8")))
             self.assertIn("time_us,state_fidelity,purity", csv_path.read_text(encoding="utf-8"))
-            self.assertIn("QuantaScope Simulation Report", markdown_path.read_text(encoding="utf-8"))
+            self.assertIn("Yuragi-Strider Simulation Report", markdown_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

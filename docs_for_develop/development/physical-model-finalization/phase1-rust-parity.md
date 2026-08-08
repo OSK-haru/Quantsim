@@ -5,7 +5,7 @@
 **COMPLETE**
 
 This phase starts from the Python reference tag
-`quantascope-python-reference-pulse-b-v1`. It adds a Rust implementation of
+`yuragi-strider-python-reference-pulse-b-v1`. It adds a Rust implementation of
 the raw, time-dependent RK4 dense-matrix calculation without changing a
 Hamiltonian, collapse operator, time grid, or density-matrix cleanup rule.
 

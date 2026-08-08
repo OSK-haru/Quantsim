@@ -246,6 +246,10 @@ export type GateDurationDefaults = {
   SWAP: number
   CP: number
   CCX: number
+  /** QFT spans a variable register, so this is the duration per spanned qubit. */
+  QFT: number
+  /** ORACLE spans a variable register too; this is per spanned qubit. */
+  ORACLE: number
   MEASURE: number
   MESSAGE: number
   RECEIVED: number

@@ -1,1 +1,1 @@
-"""Minimal API package for QuantaScope."""
+"""Minimal API package for Yuragi-Strider."""

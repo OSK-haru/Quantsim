@@ -4,7 +4,7 @@
 
 ## 1. Goal
 
-Compare QuantaScope and QuTiP on identical 3x3 mathematical problems, then
+Compare Yuragi-Strider and QuTiP on identical 3x3 mathematical problems, then
 decide whether the validated qutrit model may be enabled through the pulse
 API.
 
@@ -23,7 +23,7 @@ $$
 \rho(0),\quad H(t),\quad L_k,\quad t_j.
 $$
 
-Do not compare a physical-input QuantaScope problem directly with unrelated
+Do not compare a physical-input Yuragi-Strider problem directly with unrelated
 QuTiP parameters. Derive rates once, record them, and pass the same collapse
 operators to both solvers.
 
@@ -127,7 +127,7 @@ between solvers, or if the cost budget does not safely bound execution.
 
 - All eight preregistered 3x3 cases passed at the fixed `5e-7` tolerance.
 - The maximum density-matrix element error was `5.03e-10`.
-- QuTiP receives the exact QuantaScope Hamiltonian and collapse matrices with
+- QuTiP receives the exact Yuragi-Strider Hamiltonian and collapse matrices with
   `subsystem_dimensions: (3,)` and basis order `|0>, |1>, |2>`.
 - `POST /api/pulse/simulate` now dispatches by `model_id` and accepts the
   qutrit model.

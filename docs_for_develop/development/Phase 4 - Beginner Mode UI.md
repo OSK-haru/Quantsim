@@ -13,7 +13,7 @@
 
 ## 目的
 
-Phase 4 の目的は、QuantaScope の入門者向けUIを実装することです。
+Phase 4 の目的は、Yuragi-Strider の入門者向けUIを実装することです。
 
 本Phaseでは、以下の画面・部品を作ります。
 
@@ -149,7 +149,7 @@ Phase 4では、UIを部品に分けることが重要です。非機能要件�
 ### 必須要素
 
 ```text
-QuantaScope title
+Yuragi-Strider title
 短い説明文
 表示レベル選択: Beginner / Expert
 Run Demo
@@ -504,7 +504,7 @@ Required changes:
    - app/ui/error_display.py
 
 2. Start Screen:
-   - Show QuantaScope title
+   - Show Yuragi-Strider title
    - Show short app description
    - Show display level choice: Beginner / Expert
    - Add Run Demo button
@@ -655,7 +655,7 @@ Explanation Drawerが存在する
 
 ### Start Screen
 
-- [ ] QuantaScopeタイトルが表示される
+- [ ] Yuragi-Striderタイトルが表示される
 - [ ] アプリ説明が表示される
 - [ ] Beginner / Expert を選択できる
 - [ ] Run Demo ボタンがある

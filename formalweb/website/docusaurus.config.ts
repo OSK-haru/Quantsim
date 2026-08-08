@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'QuantaScope',
+  title: 'Yuragi-Strider',
   tagline: '物理環境が量子回路に与える影響を可視化するシミュレーター',
   favicon: 'img/favicon.ico',
 
@@ -55,9 +55,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'QuantaScope',
+      title: 'Yuragi-Strider',
       logo: {
-        alt: 'QuantaScope Logo',
+        alt: 'Yuragi-Strider Logo',
         src: 'img/logo.svg',
       },
       items: [
@@ -76,7 +76,7 @@ const config: Config = {
           title: 'ドキュメント',
           items: [
             {
-              label: 'QuantaScopeとは',
+              label: 'Yuragi-Striderとは',
               to: '/docs/overview/introduction',
             },
             {
@@ -90,7 +90,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} QuantaScope. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Yuragi-Strider. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

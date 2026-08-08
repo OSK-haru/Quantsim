@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import './CircuitWorkspace.css'
 import { CircuitColumnNavigator } from './CircuitColumnNavigator'
 import { CircuitConfigPreview } from './CircuitConfigPreview'
@@ -8,13 +8,14 @@ import { GateInspector } from './GateInspector'
 import { GatePalette } from './GatePalette'
 import type { CircuitEditorState, CircuitGate, DragGatePayload, GateType } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
-import { useCircuitViewport } from '../hooks/useCircuitViewport'
+import { isTypingTarget, useCircuitViewport } from '../hooks/useCircuitViewport'
 import { exportCircuitConfigBundleJson } from '../utils/circuitConfigTransfer'
 import {
   isControlledGateType,
   isMultiControlledGateType,
   isMultiQubitGateType,
   isPairGateType,
+  isThetaGateType,
 } from '../utils/circuitEditing'
 
 type PendingCnotControl = {
@@ -43,6 +44,8 @@ type CircuitWorkspaceProps = {
   onRedo: () => void
   onDeleteSelected: () => void
   onUpdateSelectedGateTheta: (thetaRad: number) => void
+  onUpdateSelectedGateMarkedIndex: (markedIndex: number) => void
+  onReverseSelectedGateRegister: () => void
   onClearCircuit: () => void
   onAddColumn: () => void
   onRemoveLastColumn: () => void
@@ -172,6 +175,8 @@ export function CircuitWorkspace({
   onRedo,
   onDeleteSelected,
   onUpdateSelectedGateTheta,
+  onUpdateSelectedGateMarkedIndex,
+  onReverseSelectedGateRegister,
   onClearCircuit,
   onAddColumn,
   onRemoveLastColumn,
@@ -190,6 +195,7 @@ export function CircuitWorkspace({
   const [scrollToEndToken, setScrollToEndToken] = useState(0)
   const [showConfigPreview, setShowConfigPreview] = useState(false)
   const [showInspector, setShowInspector] = useState(false)
+  const [inspectedGateId, setInspectedGateId] = useState<string | null>(selectedGateId)
   const [transferStatus, setTransferStatus] = useState('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const selectedGateInfo = getSelectedGateInfo(circuit, selectedGateId)
@@ -207,6 +213,30 @@ export function CircuitWorkspace({
     dragPayload,
     editorHint,
   })
+
+  // Angle-carrying gates are unusable until theta is set, so surface the inspector
+  // as soon as one is placed or selected. Adjusted during render rather than in an
+  // effect so the panel is already open on the first paint after selection.
+  if (selectedGateId !== inspectedGateId) {
+    setInspectedGateId(selectedGateId)
+    if (selectedGateInfo && isThetaGateType(selectedGateInfo.gate.type)) {
+      setShowInspector(true)
+    }
+  }
+
+  useEffect(() => {
+    function handleDeleteKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Delete' || isTypingTarget(event.target) || !canDeleteSelected) {
+        return
+      }
+
+      event.preventDefault()
+      onDeleteSelected()
+    }
+
+    window.addEventListener('keydown', handleDeleteKeyDown)
+    return () => window.removeEventListener('keydown', handleDeleteKeyDown)
+  }, [canDeleteSelected, onDeleteSelected])
 
   function handleAddColumn() {
     setScrollToEndToken((token) => token + 1)
@@ -391,6 +421,8 @@ export function CircuitWorkspace({
           gateDurationDefaults={gateDurationDefaults}
           onDeleteSelected={onDeleteSelected}
           onThetaChange={onUpdateSelectedGateTheta}
+          onMarkedIndexChange={onUpdateSelectedGateMarkedIndex}
+          onReverseRegister={onReverseSelectedGateRegister}
           onReveal={viewport.revealSelectedColumn}
         />
       ) : null}

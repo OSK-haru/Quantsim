@@ -28,7 +28,7 @@
     ]
   },
   "primary_dataset": {
-    "dataset_id": "quantascope_hardware_audit_dataset_v1",
+    "dataset_id": "yuragi_strider_hardware_audit_dataset_v1",
     "short_name": "QHAD-v1",
     "dataset_type": "first_party_preregistered_hardware_collection",
     "provider": "IBM Quantum",
@@ -89,7 +89,7 @@
       "shot_count",
       "raw_counts",
       "software_versions",
-      "quantascope_commit"
+      "yuragi_strider_commit"
     ],
     "required_observable_families": [
       "readout_confusion",

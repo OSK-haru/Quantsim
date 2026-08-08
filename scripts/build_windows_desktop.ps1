@@ -32,14 +32,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $outputRoot = Join-Path $repositoryRoot 'release\windows'
-$stagingDirectory = Join-Path $outputRoot 'QuantaScopeBackend'
-$applicationDirectory = Join-Path $outputRoot 'QuantaScope'
-$launcherSource = Join-Path $repositoryRoot 'packaging\windows\QuantaScopeLauncher.cs'
+$stagingDirectory = Join-Path $outputRoot 'YuragiStriderBackend'
+$applicationDirectory = Join-Path $outputRoot 'Yuragi-Strider'
+$launcherSource = Join-Path $repositoryRoot 'packaging\windows\YuragiStriderLauncher.cs'
 & $python -m PyInstaller `
     --noconfirm `
     --clean `
     --console `
-    --name QuantaScopeBackend `
+    --name YuragiStriderBackend `
     --distpath $outputRoot `
     --workpath (Join-Path $repositoryRoot 'build\pyinstaller') `
     --specpath (Join-Path $repositoryRoot 'build\pyinstaller') `
@@ -64,7 +64,7 @@ else {
     $csharpCompilerPath = $csharpCompiler.Source
 }
 
-$launcherOutput = Join-Path $applicationDirectory 'QuantaScope.exe'
+$launcherOutput = Join-Path $applicationDirectory 'Yuragi-Strider.exe'
 $compilerArguments = @(
     '/nologo',
     '/target:winexe',
@@ -75,16 +75,16 @@ $compilerArguments = @(
 
 & $csharpCompilerPath @compilerArguments
 if ($LASTEXITCODE -ne 0) {
-    throw 'The QuantaScope GUI launcher could not be compiled.'
+    throw 'The Yuragi-Strider GUI launcher could not be compiled.'
 }
 
-$shortcutPath = Join-Path $applicationDirectory 'QuantaScope.lnk'
+$shortcutPath = Join-Path $applicationDirectory 'Yuragi-Strider.lnk'
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = Join-Path $applicationDirectory 'QuantaScope.exe'
+$shortcut.TargetPath = Join-Path $applicationDirectory 'Yuragi-Strider.exe'
 $shortcut.WorkingDirectory = $applicationDirectory
-$shortcut.IconLocation = Join-Path $applicationDirectory 'QuantaScope.exe'
-$shortcut.Description = 'Start QuantaScope.'
+$shortcut.IconLocation = Join-Path $applicationDirectory 'Yuragi-Strider.exe'
+$shortcut.Description = 'Start Yuragi-Strider.'
 $shortcut.Save()
 
-Write-Host "Built: $(Join-Path $applicationDirectory 'QuantaScope.exe')"
+Write-Host "Built: $(Join-Path $applicationDirectory 'Yuragi-Strider.exe')"

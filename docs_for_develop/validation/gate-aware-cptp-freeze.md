@@ -1,7 +1,7 @@
 # Gate-aware CPTP Freeze
 
-**Freeze ID:** `quantascope_gate_aware_cptp_v1`
-**Tag:** `quantascope-gate-aware-cptp-v1`
+**Freeze ID:** `yuragi_strider_gate_aware_cptp_v1`
+**Tag:** `yuragi-strider-gate-aware-cptp-v1`
 **Status:** PASS WITH RESTRICTIONS
 **Scope:** Gate-aware Hamiltonian-Lindblad circuit execution
 

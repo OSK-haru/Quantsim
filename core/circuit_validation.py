@@ -45,7 +45,7 @@ def validate_gate_for_circuit(
             "INVALID_GATE_TYPE",
             "Gate type is not supported by the circuit editor.",
             f"Received gate type={gate.type!r}.",
-            "Use one of I, H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX, SWAP, or Measure.",
+            "Use one of I, H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX, SWAP, QFT, ORACLE, or Measure.",
         ))
 
     if gate.classical_targets and gate_type != "MEASURE":
@@ -189,8 +189,48 @@ def validate_gate_for_circuit(
                 f"Received targets={gate.targets!r}.",
                 "Choose two different target qubits for SWAP.",
             ))
+    elif gate_type in {"QFT", "ORACLE"}:
+        if gate.controls:
+            issues.append(_error(
+                f"{gate_type}_REJECTS_CONTROLS",
+                f"{gate_type} does not accept control qubits.",
+                f"Received controls={gate.controls!r}.",
+                f"List every {gate_type} qubit as a target instead.",
+            ))
+        if len(set(gate.targets)) != len(gate.targets):
+            issues.append(_error(
+                f"{gate_type}_TARGETS_MUST_DIFFER",
+                f"{gate_type} target qubits must all be different.",
+                f"Received targets={gate.targets!r}.",
+                f"List each {gate_type} qubit exactly once, most significant first.",
+            ))
+        if gate_type == "ORACLE" and gate.targets:
+            issues.extend(_oracle_marked_index_issues(gate))
 
     return issues
+
+
+def _oracle_marked_index_issues(gate: GateOperation) -> list[ValidationIssue]:
+    value = float((gate.params or {}).get("marked_index", 0.0))
+    register_size = len(set(gate.targets))
+    if value != int(value):
+        return [_error(
+            "ORACLE_MARKED_INDEX_NOT_INTEGER",
+            "Oracle marked_index must be an integer.",
+            f"Received marked_index={value!r}.",
+            "Choose a whole basis-state index for the oracle to mark.",
+        )]
+    if not 0 <= int(value) < 2 ** register_size:
+        return [_error(
+            "ORACLE_MARKED_INDEX_OUT_OF_RANGE",
+            "Oracle marked_index is outside the register range.",
+            (
+                f"Received marked_index={int(value)}; the register holds "
+                f"{register_size} qubits, so it must be 0..{2 ** register_size - 1}."
+            ),
+            "Pick a basis state the oracle register can represent.",
+        )]
+    return []
 
 
 def validate_gate_placement(

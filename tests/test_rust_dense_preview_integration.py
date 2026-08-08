@@ -22,7 +22,7 @@ class RustDensePreviewIntegrationTest(unittest.TestCase):
         self.assertEqual(result.diagnostics["rust_kernel_substep_count"], 0.0)
         self.assertGreater(result.diagnostics["python_kernel_substep_count"], 0.0)
 
-    @unittest.skipUnless(is_rust_kernel_available(), "quantascope_rust is not importable")
+    @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
     def test_rust_dense_preview_uses_rust_kernel_when_available(self) -> None:
         result = run_simulation(_one_qubit_h_config("rust_dense_preview"))
 
@@ -37,7 +37,7 @@ class RustDensePreviewIntegrationTest(unittest.TestCase):
         self.assertFalse(result.diagnostics["rust_kernel_fallback_used"])
         self.assertGreater(result.diagnostics["rust_kernel_substep_count"], 0.0)
 
-    @unittest.skipUnless(is_rust_kernel_available(), "quantascope_rust is not importable")
+    @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
     def test_rust_preview_call_count_is_less_than_substep_count(self) -> None:
         result = run_simulation(_bell_long_cnot_config("rust_dense_preview"))
 
@@ -49,7 +49,7 @@ class RustDensePreviewIntegrationTest(unittest.TestCase):
         )
         _assert_batchability_diagnostics_consistent(self, result.diagnostics)
 
-    @unittest.skipUnless(is_rust_kernel_available(), "quantascope_rust is not importable")
+    @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
     def test_rust_preview_matches_python_dense_for_required_cases(self) -> None:
         for builder in [
             _one_qubit_h_config,
@@ -66,7 +66,7 @@ class RustDensePreviewIntegrationTest(unittest.TestCase):
                     run_simulation(builder("rust_dense_preview")),
                 )
 
-    @unittest.skipUnless(is_rust_kernel_available(), "quantascope_rust is not importable")
+    @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
     def test_batchability_diagnostics_do_not_change_sampling_series(self) -> None:
         python_result = run_simulation(_bell_with_idle_config("python_dense"))
         rust_result = run_simulation(_bell_with_idle_config("rust_dense_preview"))
@@ -77,7 +77,7 @@ class RustDensePreviewIntegrationTest(unittest.TestCase):
         _assert_batchability_diagnostics_consistent(self, rust_result.diagnostics)
         _assert_sampled_batch_diagnostics_consistent(self, rust_result.diagnostics)
 
-    @unittest.skipUnless(is_rust_kernel_available(), "quantascope_rust is not importable")
+    @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
     def test_rust_preview_matches_python_dense_for_hamiltonian_only(self) -> None:
         _assert_results_close(
             self,
@@ -85,7 +85,7 @@ class RustDensePreviewIntegrationTest(unittest.TestCase):
             run_simulation(_hamiltonian_only_config("rust_dense_preview")),
         )
 
-    @unittest.skipUnless(is_rust_kernel_available(), "quantascope_rust is not importable")
+    @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
     def test_cleanup_policy_is_preserved(self) -> None:
         python_result = run_simulation(_finite_noise_1q_config("python_dense"))
         rust_result = run_simulation(_finite_noise_1q_config("rust_dense_preview"))

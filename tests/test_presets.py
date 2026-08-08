@@ -42,7 +42,7 @@ class PresetsTest(unittest.TestCase):
             with self.subTest(path=path.name):
                 data = json.loads(path.read_text(encoding="utf-8"))
                 self.assertEqual(data["schema_version"], "1.0")
-                self.assertEqual(data["kind"], "quanta_scope.comparison_config")
+                self.assertEqual(data["kind"], "yuragi_strider.comparison_config")
 
 
 if __name__ == "__main__":

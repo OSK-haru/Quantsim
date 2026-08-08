@@ -89,12 +89,34 @@
 }
 
 .gate-inspector__reveal,
+.gate-inspector__reverse,
 .gate-inspector__delete {
   padding: 7px 11px;
   border-radius: 999px;
   cursor: pointer;
   font: inherit;
   white-space: nowrap;
+}
+
+.gate-inspector__reverse {
+  border: 1px solid rgba(167, 139, 250, 0.38);
+  background: rgba(76, 29, 149, 0.2);
+  color: #ddd6fe;
+}
+
+.gate-inspector__reverse:hover {
+  border-color: rgba(167, 139, 250, 0.68);
+  background: rgba(76, 29, 149, 0.3);
+}
+
+.gate-inspector__note {
+  display: block;
+  margin-top: 4px;
+  max-width: 34ch;
+  color: #a5b4fc;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: normal;
 }
 
 .gate-inspector__reveal {

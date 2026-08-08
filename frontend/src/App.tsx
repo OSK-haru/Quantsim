@@ -4,6 +4,7 @@ import { type SimulationDiagnostics } from './components/DiagnosticsCard'
 import { type MockSimulationResult } from './types/simulation'
 import type { GateDurationDefaults } from './types/simulation'
 import { CircuitProvider } from './context/CircuitContext'
+import { AlgorithmLibraryPage } from './pages/AlgorithmLibraryPage'
 import { CircuitStudioPage } from './pages/CircuitStudioPage'
 import { HomePage } from './pages/HomePage'
 import { HelpPage } from './pages/HelpPage'
@@ -65,6 +66,8 @@ const initialGateDurationDefaults: GateDurationDefaults = {
   SWAP: 0.2,
   CP: 0.2,
   CCX: 0.4,
+  QFT: 0.2,
+  ORACLE: 0.2,
   MEASURE: 0.0,
   MESSAGE: 0.04,
   RECEIVED: 0.0,
@@ -84,6 +87,9 @@ function navigationDomainForRoute(route: NavigationRoute): 'home' | 'gate-aware'
 function screenFromPath(pathname: string): Screen {
   if (pathname === '/simulate') {
     return 'simulate'
+  }
+  if (pathname === '/algorithm-library') {
+    return 'algorithm-library'
   }
   if (pathname === '/circuit-studio') {
     return 'circuit-studio'
@@ -106,6 +112,9 @@ function screenFromPath(pathname: string): Screen {
 function pathFromScreen(screen: Screen) {
   if (screen === 'simulate') {
     return '/simulate'
+  }
+  if (screen === 'algorithm-library') {
+    return '/algorithm-library'
   }
   if (screen === 'circuit-studio') {
     return '/circuit-studio'
@@ -217,6 +226,10 @@ function App() {
       <CircuitProvider gateDurationDefaults={gateDurationDefaults}>
       {screen === 'help' ? (
         <HelpPage />
+      ) : null}
+
+      {screen === 'algorithm-library' ? (
+        <AlgorithmLibraryPage onOpenSimulation={() => navigate('simulate')} />
       ) : null}
 
       {screen === 'circuit-studio' ? (

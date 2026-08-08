@@ -49,7 +49,7 @@ class ConfigIoTest(unittest.TestCase):
         encoded = config_to_dict(SimulationConfig())
 
         self.assertEqual(encoded["schema_version"], "1.1")
-        self.assertEqual(encoded["kind"], "quanta_scope.config")
+        self.assertEqual(encoded["kind"], "yuragi_strider.config")
         self.assertIn("circuit", encoded)
         self.assertIn("environment", encoded)
         self.assertIn("normalized", encoded["environment"])

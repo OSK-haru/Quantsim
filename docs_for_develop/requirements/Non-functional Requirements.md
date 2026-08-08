@@ -271,7 +271,7 @@ U-22提出や第三者レビューのため、環境構築・起動・デモ再�
 
 ## 概要
 
-QuantaScope は、初期実装では Python / Streamlit を中心に開発するが、将来的に Godot UI、FastAPI 連携、Rust backend、QuTiP optional backend などへ拡張できる構造を維持する。
+Yuragi-Strider は、初期実装では Python / Streamlit を中心に開発するが、将来的に Godot UI、FastAPI 連携、Rust backend、QuTiP optional backend などへ拡張できる構造を維持する。
 
 本要件は、現在の本開発必達範囲に Godot や Rust backend を含めるものではない。
 ただし、将来拡張時に既存の core / UI / データ形式を大きく破壊しないよう、設計上の制約を定義する。

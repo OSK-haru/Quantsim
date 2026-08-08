@@ -9,7 +9,7 @@ from typing import Any
 
 REGISTRY_SCHEMA_VERSION = 1
 REGISTRY_ID = "phase3b_hardware_dataset_registry_v1"
-PRIMARY_DATASET_ID = "quantascope_hardware_audit_dataset_v1"
+PRIMARY_DATASET_ID = "yuragi_strider_hardware_audit_dataset_v1"
 FORBIDDEN_SECRET_KEYS = {
     "api_key",
     "password",
@@ -30,7 +30,7 @@ REQUIRED_PROVENANCE_FIELDS = {
     "shot_count",
     "raw_counts",
     "software_versions",
-    "quantascope_commit",
+    "yuragi_strider_commit",
 }
 
 

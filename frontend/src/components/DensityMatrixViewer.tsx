@@ -239,7 +239,7 @@ export function DensityMatrixViewer({
           </div>
 
           <p className="density-matrix-viewer__note">
-            基底ラベルは QuantaScope の q0 -&gt; qN-1 の順序に従います。
+            基底ラベルは Yuragi-Strider の q0 -&gt; qN-1 の順序に従います。
           </p>
         </>
       )}

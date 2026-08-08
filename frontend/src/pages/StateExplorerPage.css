@@ -111,37 +111,108 @@
   min-width: 0;
 }
 
-.state-explorer-page__panel-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
+.state-explorer-page__panel-menu {
+  position: relative;
   margin: 12px 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(113, 162, 214, 0.25);
-  border-radius: 14px;
-  background: rgba(14, 28, 48, 0.72);
+  width: max-content;
 }
 
-.state-explorer-page__panel-toolbar > span {
-  color: #9bb7d8;
-  font-size: 0.8rem;
-  margin-right: 4px;
-}
-
-.state-explorer-page__panel-toolbar button {
-  border: 1px solid rgba(121, 163, 211, 0.32);
+.state-explorer-page__panel-menu-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(113, 162, 214, 0.32);
   border-radius: 999px;
-  padding: 6px 10px;
-  color: #b8cbe4;
-  background: rgba(20, 40, 66, 0.7);
+  background: rgba(14, 28, 48, 0.82);
+  color: #d9e8fb;
+  font-size: 0.86rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.state-explorer-page__panel-toolbar button.is-active {
-  color: #071321;
-  background: #61d7c1;
-  border-color: #61d7c1;
+.state-explorer-page__panel-menu-toggle:hover {
+  border-color: rgba(97, 215, 193, 0.6);
+}
+
+.state-explorer-page__panel-menu-icon {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 14px;
+  height: 11px;
+}
+
+.state-explorer-page__panel-menu-icon span {
+  height: 2px;
+  border-radius: 2px;
+  background: #9bb7d8;
+}
+
+.state-explorer-page__panel-menu-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(97, 215, 193, 0.16);
+  color: #61d7c1;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.state-explorer-page__panel-menu-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  display: grid;
+  gap: 4px;
+  min-width: 240px;
+  padding: 10px;
+  border: 1px solid rgba(113, 162, 214, 0.3);
+  border-radius: 14px;
+  background: rgba(10, 22, 39, 0.98);
+  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.5);
+}
+
+.state-explorer-page__panel-menu-actions {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(113, 162, 214, 0.2);
+}
+
+.state-explorer-page__panel-menu-actions button {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid rgba(121, 163, 211, 0.32);
+  border-radius: 999px;
+  background: rgba(20, 40, 66, 0.7);
+  color: #b8cbe4;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.state-explorer-page__panel-menu-actions button:hover {
+  border-color: rgba(97, 215, 193, 0.6);
+}
+
+.state-explorer-page__panel-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  color: #d9e8fb;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.state-explorer-page__panel-menu-item:hover {
+  background: rgba(97, 215, 193, 0.1);
+}
+
+.state-explorer-page__panel-menu-item input {
+  accent-color: #61d7c1;
 }
 
 .state-explorer-panel {

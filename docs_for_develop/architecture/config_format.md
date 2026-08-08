@@ -1,13 +1,13 @@
-# QuantaScope Config Format
+# Yuragi-Strider Config Format
 
-QuantaScope circuit files use `.qscope.json`.
+Yuragi-Strider circuit files use `.qscope.json`.
 
 ## Envelope
 
 Required top-level fields:
 
 - `schema_version`: format version, currently `1.1`
-- `kind`: `quanta_scope.config`
+- `kind`: `yuragi_strider.config`
 - `metadata`: user-facing name, description, or tags
 - `circuit`: serialized `CircuitConfig`
 - `environment`: serialized `EnvironmentConfig`
@@ -23,11 +23,23 @@ Required top-level fields:
 - `columns`: ordered gate columns with `step` and `gates`
 
 Supported gate types are `I`, `H`, `X`, `Y`, `Z`, `S`, `T`, `RX`, `RY`, `RZ`,
-`CNOT`, `CZ`, `CP`, `CCX`, `SWAP`, `MEASURE`, and `MESSAGE`.
+`CNOT`, `CZ`, `CP`, `CCX`, `SWAP`, `QFT`, `ORACLE`, `MEASURE`, and `MESSAGE`.
 For basis labels, `q0` is the most significant bit.
 
+`QFT` and `ORACLE` are the gates with a variable operand count. They take no
+controls and list their whole register in `targets`, most significant first, so
+the qubits they span need be neither contiguous nor ascending. Their default
+`duration_us` is `0.2` per spanned qubit rather than a single fixed value.
+
+`ORACLE` additionally carries `params.marked_index`: the single computational
+basis state whose phase it flips, given as an integer in `0 .. 2**len(targets)-1`
+and read against the register's own bit order. Marking several states is done by
+placing several oracles in sequence, since diagonal gates commute.
+
 The React Circuit Studio import/export format is intentionally narrower:
-2-4 qubits and initial states `0` or `1`. The FastAPI `circuit_config`
+2-5 qubits and initial states `0` or `1`. The editor stops at 5 because that is
+the core's noisy density-matrix ceiling, so anything editable can also be run
+under the gate-aware model. The FastAPI `circuit_config`
 boundary accepts the same 1-18 range and `0`/`1`/`+`/`-` initial states as
 the core config format; noisy density-matrix evolution is limited to 5
 qubits, with ideal measurement-free circuits above that using the

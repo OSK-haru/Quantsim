@@ -28,15 +28,21 @@ export function HomePage({
   return (
     <main className={`home-page${activeAction ? ' home-page--activated' : ''}`}>
       <section className="home-page__hero">
-        <div className="home-page__eyebrow">QuantaScope</div>
-        <h1>QuantaScope</h1>
+        <div className="home-page__eyebrow">Yuragi-Strider</div>
+        <h1>Yuragi-Strider</h1>
         <p className="home-page__subtitle">
-          物理環境を考慮した量子回路シミュレーター
+          量子ビットの&ldquo;ゆらぎ&rdquo;を、その場で見て確かめる
         </p>
         <p className="home-page__lede">
-          ゲート操作と環境ノイズが量子状態に与える影響を、視覚的に学べる
-          教育向けシミュレーターです。Python を標準とし、Rust は任意の preview backend です。
+          理想的なゲート操作でも、現実の量子ビットは温度や磁束ノイズの影響で少しずつ状態がずれていきます。
+          回路を組んでノイズの強さを変えるだけで、その&ldquo;ズレ&rdquo;がどれだけ・なぜ起きるのかをその場で確認できます。
         </p>
+
+        <ul className="home-page__features">
+          <li>回路を組んで、ノイズを変えて、結果を比較する</li>
+          <li>理想状態と現実の状態のズレをBloch球・密度行列で可視化</li>
+          <li>T1緩和・位相緩和など、物理モデルに基づくノイズ</li>
+        </ul>
 
         <div className="home-page__actions">
           <button
@@ -58,9 +64,13 @@ export function HomePage({
             type="button"
             onClick={() => triggerAction('pulse', onOpenPulseLab)}
           >
-            Pulse Lab / Experimental
+            Pulseラボ / 実験的
           </button>
         </div>
+
+        <p className="home-page__footnote">
+          計算エンジン: Python（標準） / Rust（実験的な preview backend）
+        </p>
       </section>
     </main>
   )

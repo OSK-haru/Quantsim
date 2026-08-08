@@ -3,12 +3,12 @@ import unittest
 
 
 try:
-    import quantascope_rust
+    import yuragi_strider_rust
 except Exception:  # pragma: no cover - optional local Rust extension.
-    quantascope_rust = None
+    yuragi_strider_rust = None
 
 
-@unittest.skipIf(quantascope_rust is None, "quantascope_rust is not importable")
+@unittest.skipIf(yuragi_strider_rust is None, "yuragi_strider_rust is not importable")
 class RustRk4KernelTest(unittest.TestCase):
     def test_zero_rhs_leaves_rho_unchanged(self) -> None:
         rho = [
@@ -17,7 +17,7 @@ class RustRk4KernelTest(unittest.TestCase):
         ]
         hamiltonian = _zero_matrix(2)
 
-        result = quantascope_rust.rk4_evolve_flat(
+        result = yuragi_strider_rust.rk4_evolve_flat(
             _flatten(rho),
             _flatten(hamiltonian),
             [],
@@ -39,7 +39,7 @@ class RustRk4KernelTest(unittest.TestCase):
             [0.3 + 0.2j, -0.5 + 0.0j],
         ]
 
-        result = quantascope_rust.rk4_evolve_flat(
+        result = yuragi_strider_rust.rk4_evolve_flat(
             _flatten(rho),
             _flatten(hamiltonian),
             [],
@@ -63,7 +63,7 @@ class RustRk4KernelTest(unittest.TestCase):
             [0.0 + 0.0j, -0.2 + 0.0j],
         ]
 
-        result = quantascope_rust.rk4_evolve_flat(
+        result = yuragi_strider_rust.rk4_evolve_flat(
             _flatten(rho),
             _flatten(hamiltonian),
             _flatten(collapse),
@@ -87,7 +87,7 @@ class RustRk4KernelTest(unittest.TestCase):
             [0.0 + 0.0j, 0.0 + 0.0j],
         ]
 
-        result = quantascope_rust.rk4_evolve_flat(
+        result = yuragi_strider_rust.rk4_evolve_flat(
             _flatten(rho),
             _flatten(hamiltonian),
             _flatten(sigma_minus),
@@ -119,7 +119,7 @@ class RustRk4KernelTest(unittest.TestCase):
         ]
         collapse_ops = [sigma_minus, dephasing_z]
 
-        result = quantascope_rust.rk4_evolve_flat(
+        result = yuragi_strider_rust.rk4_evolve_flat(
             _flatten(rho),
             _flatten(hamiltonian),
             _flatten_many(collapse_ops),
@@ -145,25 +145,25 @@ class RustRk4KernelTest(unittest.TestCase):
         ])
 
         with self.assertRaises(ValueError):
-            quantascope_rust.rk4_evolve_flat([1.0, 0.0], valid, [], 0, 2, 0.01, 1)
+            yuragi_strider_rust.rk4_evolve_flat([1.0, 0.0], valid, [], 0, 2, 0.01, 1)
 
         with self.assertRaises(ValueError):
-            quantascope_rust.rk4_evolve_flat(valid, [1.0, 0.0], [], 0, 2, 0.01, 1)
+            yuragi_strider_rust.rk4_evolve_flat(valid, [1.0, 0.0], [], 0, 2, 0.01, 1)
 
         with self.assertRaises(ValueError):
-            quantascope_rust.rk4_evolve_flat(valid, valid, [1.0, 0.0], 1, 2, 0.01, 1)
+            yuragi_strider_rust.rk4_evolve_flat(valid, valid, [1.0, 0.0], 1, 2, 0.01, 1)
 
         with self.assertRaises(ValueError):
-            quantascope_rust.rk4_evolve_flat([], [], [], 0, 0, 0.01, 1)
+            yuragi_strider_rust.rk4_evolve_flat([], [], [], 0, 0, 0.01, 1)
 
         with self.assertRaises(ValueError):
-            quantascope_rust.rk4_evolve_flat(valid, valid, [], 0, 2, 0.01, 0)
+            yuragi_strider_rust.rk4_evolve_flat(valid, valid, [], 0, 2, 0.01, 0)
 
         with self.assertRaises(ValueError):
-            quantascope_rust.rk4_evolve_flat(valid, valid, [], 0, 2, math.nan, 1)
+            yuragi_strider_rust.rk4_evolve_flat(valid, valid, [], 0, 2, math.nan, 1)
 
         with self.assertRaises(ValueError):
-            quantascope_rust.rk4_evolve_flat(valid, valid, [], 0, 2, math.inf, 1)
+            yuragi_strider_rust.rk4_evolve_flat(valid, valid, [], 0, 2, math.inf, 1)
 
 
 def _flatten(matrix: list[list[complex]]) -> list[float]:

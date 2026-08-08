@@ -11,7 +11,21 @@ from dataclasses import dataclass
 from typing import Any
 
 from core.circuit_model import CircuitConfig, GateOperation
-from core.gates import H, I, S, T, X, Y, Z, rx_matrix, ry_matrix, rz_matrix
+from core.gates import (
+    H,
+    I,
+    S,
+    T,
+    X,
+    Y,
+    Z,
+    oracle_marked_index,
+    oracle_register,
+    qft_register,
+    rx_matrix,
+    ry_matrix,
+    rz_matrix,
+)
 
 
 Vector = tuple[complex, ...]
@@ -147,6 +161,16 @@ def _apply_gate(vector: Vector, gate: GateOperation, n_qubits: int) -> Vector:
         return _apply_swap(vector, gate.targets[0], gate.targets[1], n_qubits)
     if gate_type == "CCX":
         return _apply_toffoli(vector, gate.controls[0], gate.controls[1], gate.targets[0], n_qubits)
+    if gate_type == "QFT":
+        return _apply_qft(vector, qft_register(gate.targets), n_qubits)
+    if gate_type == "ORACLE":
+        register = oracle_register(gate.targets)
+        return _apply_phase_oracle(
+            vector,
+            register,
+            oracle_marked_index(gate.params, len(register)),
+            n_qubits,
+        )
     if gate_type in {"CP"}:
         import cmath
         theta = float((gate.params or {}).get("theta_rad", 3.141592653589793 / 2))
@@ -199,6 +223,41 @@ def _apply_swap(vector, first, second, n_qubits):
             partner = index ^ first_mask ^ second_mask
             values[index] = vector[partner]
     return tuple(values)
+
+
+def _apply_qft(vector, register, n_qubits):
+    """Apply the QFT ladder in place of a 2**n x 2**n matrix multiplication."""
+
+    import cmath
+
+    size = len(register)
+    for position, target in enumerate(register):
+        vector = _apply_single(vector, H, target, n_qubits)
+        for offset in range(1, size - position):
+            phase = cmath.exp(1j * cmath.pi / float(2 ** offset))
+            vector = _apply_controlled_phase(
+                vector, register[position + offset], target, n_qubits, phase,
+            )
+    for index in range(size // 2):
+        vector = _apply_swap(vector, register[index], register[size - 1 - index], n_qubits)
+    return vector
+
+
+def _apply_phase_oracle(vector, register, marked_index, n_qubits):
+    """Negate every amplitude whose register bits equal the marked value."""
+
+    size = len(register)
+    mask = 0
+    marked_mask = 0
+    for position, qubit in enumerate(register):
+        bit = 1 << (n_qubits - 1 - qubit)
+        mask |= bit
+        if (marked_index >> (size - 1 - position)) & 1:
+            marked_mask |= bit
+    return tuple(
+        -amplitude if (index & mask) == marked_mask else amplitude
+        for index, amplitude in enumerate(vector)
+    )
 
 
 def _apply_toffoli(vector, control_a, control_b, target, n_qubits):

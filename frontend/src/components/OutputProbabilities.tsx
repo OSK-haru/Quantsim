@@ -9,6 +9,7 @@ import {
 type OutputProbabilitiesProps = {
   outputProbabilities: OutputProbabilities
   qubitCount?: number | null
+  defaultOpen?: boolean
 }
 
 function formatProbability(value: number) {
@@ -18,6 +19,7 @@ function formatProbability(value: number) {
 export function OutputProbabilities({
   outputProbabilities,
   qubitCount,
+  defaultOpen = false,
 }: OutputProbabilitiesProps) {
   const { qubitCount: resolvedQubitCount, rows } = buildOutputProbabilityRows(
     outputProbabilities,
@@ -31,7 +33,7 @@ export function OutputProbabilities({
       title="出力確率"
       icon="bars"
       description={`計算基底の確率: 量子ビット ${resolvedQubitCount} 個、状態数 ${basisStateCount}。`}
-      defaultOpen={false}
+      defaultOpen={defaultOpen}
     >
       {rows.length === 0 ? (
         <p className="output-probabilities__empty">出力確率を利用できません。</p>

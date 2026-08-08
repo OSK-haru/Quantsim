@@ -100,7 +100,7 @@ class PulseCPTPApiIntegrationTests(unittest.TestCase):
 
     @unittest.skipUnless(
         is_rust_kernel_available(),
-        "quantascope_rust is not importable",
+        "yuragi_strider_rust is not importable",
     )
     def test_rust_explicit_cptp_is_selectable_through_api(self) -> None:
         payload = _qubit_payload()

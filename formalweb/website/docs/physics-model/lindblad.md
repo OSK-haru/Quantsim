@@ -5,7 +5,7 @@ sidebar_position: 4
 
 # Lindblad方程式
 
-QuantaScopeの時間発展は、開放量子系の標準的な記述であるGKSL(Gorini–Kossakowski–Sudarshan–Lindblad)方程式に従います。
+Yuragi-Striderの時間発展は、開放量子系の標準的な記述であるGKSL(Gorini–Kossakowski–Sudarshan–Lindblad)方程式に従います。
 
 ## 方程式の形
 
@@ -26,7 +26,7 @@ $$
 
 ## 時間区間ごとの定数化
 
-QuantaScopeは回路を**時間区間の列**に分解し、各区間内でハミルトニアンを定数として扱います。
+Yuragi-Striderは回路を**時間区間の列**に分解し、各区間内でハミルトニアンを定数として扱います。
 
 ```text
 回路 → ゲート列 → 時間区間の列 → 各区間で H_k を構成 → 積分

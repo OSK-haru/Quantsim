@@ -1,4 +1,4 @@
-# QuantaScope 開発・物理モデル確定 進捗報告書
+# Yuragi-Strider 開発・物理モデル確定 進捗報告書
 
 **報告基準日:** 2026年7月29日
 **文書区分:** 正式計画照合済み修正版
@@ -7,9 +7,9 @@
 ## 0. 監査基準
 
 本書は、次の正式資料と現在のリポジトリ状態を基準として、
-`quantascope_status_report_2026-07-29.md` の内容を修正したものである。
+`yuragi_strider_status_report_2026-07-29.md` の内容を修正したものである。
 
-- [物理モデル最終化計画](../../requirements/quantascope_physical_model_finalization_plan.md)
+- [物理モデル最終化計画](../../requirements/yuragi_strider_physical_model_finalization_plan.md)
 - [Physical Model Finalization Execution Index](README.md)
 - [Phase 2: Explicit CPTP Path](phase2-explicit-cptp-path.md)
 - [Explicit CPTP Model Freeze](../../validation/cptp-model-freeze.md)
@@ -237,7 +237,7 @@ PASS WITH RESTRICTIONS
 Reference tag:
 
 ```text
-quantascope-python-reference-pulse-b-v1
+yuragi-strider-python-reference-pulse-b-v1
 ```
 
 これはfreeze実行時点のPython参照実装を固定する履歴的なtagである。
@@ -273,7 +273,7 @@ Pulse APIの既定値は`python`である。
 ### 5.1 Frozen mathematical contract
 
 ```text
-freeze_id: quantascope_explicit_cptp_v1
+freeze_id: yuragi_strider_explicit_cptp_v1
 public_evolution_method: explicit_cptp
 evolution_method_id: explicit_cptp_midpoint_gksl_v1
 Choi convention: unnormalized_input_output_row_major_v1
@@ -393,7 +393,7 @@ PASS WITH RESTRICTIONS
 Freeze tag:
 
 ```text
-quantascope-explicit-cptp-v1
+yuragi-strider-explicit-cptp-v1
 ```
 
 ---
@@ -463,7 +463,7 @@ QuTiPとのshared-equation comparisonが存在する。
 - Model discrepancyの分類
 - 不一致結果を含む全artifactの保存
 
-主datasetにはQuantaScope専用に事前登録して収集する`QHAD-v1`を採用した。
+主datasetにはYuragi-Strider専用に事前登録して収集する`QHAD-v1`を採用した。
 NPL公開datasetをmodel-discrepancy stress、Aalto公開datasetをT1/Ramsey/SPAM
 補助証拠として分離した。dataset contractはfreeze済みだが、実機jobは未送信である。
 
@@ -474,7 +474,7 @@ NPL公開datasetをmodel-discrepancy stress、Aalto公開datasetをT1/Ramsey/SPA
 Phase 3の証拠を統合した後にのみ、最終model version、適用範囲、limitations、
 public-facing explanationを確定する。
 
-Explicit CPTP model freezeの完了は、QuantaScope全物理モデルの最終freeze完了を
+Explicit CPTP model freezeの完了は、Yuragi-Strider全物理モデルの最終freeze完了を
 意味しない。
 
 ---
@@ -587,7 +587,7 @@ Freeze時のsource commitとtagは次のとおりである。
 ```text
 source commit: 06d1c46
 manifest commit: 4a82e75
-tag: quantascope-explicit-cptp-v1
+tag: yuragi-strider-explicit-cptp-v1
 ```
 
 ただし、2026年7月29日の照合時点では、CPTP freezeとは無関係な未commit変更が
@@ -605,7 +605,7 @@ tree全体がcleanであるという意味では使用しない。
 
 ## 12. 結論
 
-QuantaScopeは、gate-aware Hamiltonian-Lindblad model、two-level/qutrit Pulse
+Yuragi-Striderは、gate-aware Hamiltonian-Lindblad model、two-level/qutrit Pulse
 model、leakage、DRAG、Python/Rust backend、fixed-step RK4、explicit CPTP
 GKSL exponential path、Choi auditを統合した小規模な教育・研究用シミュレーター
 として、Phase 3Aまで完了している。Phase 3Bはdataset contract freezeまで進んだ。

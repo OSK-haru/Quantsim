@@ -4,7 +4,7 @@
 
 ## 1. Goal
 
-Establish a defensible internal-step policy and compare QuantaScope with QuTiP
+Establish a defensible internal-step policy and compare Yuragi-Strider with QuTiP
 for identical two-level time-dependent open-system problems.
 
 ## 2. Prerequisites
@@ -89,7 +89,7 @@ L_k,
 t_j
 $$
 
-to QuantaScope and QuTiP.
+to Yuragi-Strider and QuTiP.
 
 Required cases:
 
@@ -132,7 +132,7 @@ docs/validation/pulse-qutip-2level-comparison.md
 
 - The convergence trend and observed order are documented.
 - The default internal-step policy is derived from evidence.
-- QuantaScope and QuTiP agree within fixed tolerances for all required cases.
+- Yuragi-Strider and QuTiP agree within fixed tolerances for all required cases.
 - Raw physicality remains acceptable at the recommended step policy.
 - The report clearly separates solver validation from physical-model
   calibration.
@@ -149,7 +149,7 @@ scripts/validate_pulse_convergence_2level.py
 scripts/validate_pulse_qutip_2level.py
 ```
 
-The QuTiP adapter evaluates the exact QuantaScope Hamiltonian provider inside
+The QuTiP adapter evaluates the exact Yuragi-Strider Hamiltonian provider inside
 `qutip.mesolve`. It does not rebuild an approximately equivalent waveform.
 The same collapse-operator matrices and requested output times are used by
 both solvers.

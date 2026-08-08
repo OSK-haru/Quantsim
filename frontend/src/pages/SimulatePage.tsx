@@ -3,13 +3,10 @@ import './SimulatePage.css'
 import { CircuitSummaryCard } from '../components/CircuitSummaryCard'
 import { DensityMatrixSummaryCard } from '../components/DensityMatrixSummaryCard'
 import { DiagnosticsCard, type SimulationDiagnostics } from '../components/DiagnosticsCard'
-import { MetricTimeline } from '../components/MetricTimeline'
-import { MeasurementResults } from '../components/MeasurementResults'
-import { ModelInfoPanel } from '../components/ModelInfoPanel'
-import { OutputProbabilities } from '../components/OutputProbabilities'
 import { ParameterPanel } from '../components/ParameterPanel'
 import { RunPanel } from '../components/RunPanel'
 import { ResultDrawer } from '../components/ResultDrawer'
+import { SectionHeader } from '../components/SectionHeader'
 import { SimulationSummary } from '../components/SimulationSummary'
 import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
 import { uiResponseExample } from '../mock/uiResponseExample'
@@ -240,6 +237,8 @@ function validateGateDurationDefaults(gateDurations: GateDurationDefaults): {
   validatePositive('RZ', 'RZ gate duration')
   validatePositive('CP', 'CP gate duration')
   validatePositive('CCX', 'CCX gate duration')
+  validatePositive('QFT', 'QFT gate duration per qubit')
+  validatePositive('ORACLE', 'ORACLE gate duration per qubit')
   validatePositive('MESSAGE', 'MESSAGE gate duration')
 
   const firstMessage = Object.values(errors)[0] ?? null
@@ -343,7 +342,7 @@ export function SimulatePage({
   previousResponse,
   onSuccessfulResponse,
 }: SimulatePageProps) {
-  const { circuitState, handleLoadCircuitPreset } = useCircuitContext()
+  const { circuitState } = useCircuitContext()
   const [response, setResponse] = useState<SimulationResponse>(
     () => previousResponse ?? uiResponseExample,
   )
@@ -698,12 +697,13 @@ export function SimulatePage({
     durationUs: simulationParameters.duration_us,
     circuitGateCount,
     circuitColumnCount,
+    evolutionMethod,
   })
   return (
     <main className="simulate-page">
       <header className="simulate-page__header">
         <div>
-          <div className="simulate-page__eyebrow">QuantaScope</div>
+          <div className="simulate-page__eyebrow">Yuragi-Strider</div>
           <h1>シミュレーションワークスペース</h1>
           <p className="simulate-page__lede">
             現在のバックエンドとシミュレーション結果を確認できます。
@@ -717,163 +717,150 @@ export function SimulatePage({
           actionLabel="回路スタジオで編集"
           onAction={onOpenCircuitStudio}
         />
-        <section className="simulate-page__snapshot-controls" aria-labelledby="algorithm-presets-title">
-          <div className="simulate-page__snapshot-heading">
-            <div>
-              <span className="simulate-page__section-eyebrow">アルゴリズム</span>
-              <h2 id="algorithm-presets-title">量子誤り訂正を試す</h2>
-            </div>
-          </div>
-          <p className="simulate-page__snapshot-help">
-            3量子ビット反復符号は q1 に X故障を注入し、2ビットのシンドロームから補正します。
-            回路を読み込んだ後、「シミュレーションを実行」で結果を確認できます。
-          </p>
-          <div className="simulate-page__snapshot-grid">
-            <button
-              type="button"
-              className="simulate-page__preset-button"
-              onClick={() => handleLoadCircuitPreset('bit_flip_repetition')}
-            >
-              反復符号を読み込む
-            </button>
-            <button
-              type="button"
-              className="simulate-page__preset-button"
-              onClick={() => handleLoadCircuitPreset('teleportation')}
-            >
-              テレポーテーションを読み込む
-            </button>
-          </div>
-        </section>
-        <ParameterPanel
-          parameters={response.parameters}
-          editableParameters={simulationParameters}
-          gateDurationDefaults={gateDurationDefaults}
-          validationMessages={parameterErrors}
-          gateDurationValidationMessages={gateDurationErrors}
-          onEditableParametersChange={handleSimulationParametersChange}
-          onGateDurationDefaultsChange={handleGateDurationDefaultsChange}
-        />
-        <section className="simulate-page__snapshot-controls" aria-labelledby="measurement-controls-title">
-          <div className="simulate-page__snapshot-heading">
-            <div>
-              <span className="simulate-page__section-eyebrow">測定</span>
-              <h2 id="measurement-controls-title">最終読み出しのshots</h2>
-            </div>
-          </div>
-          <p className="simulate-page__snapshot-help">
-            最終状態を計算基底で有限回測定します。同じseedでは同じカウントを再現できます。
-            回路中のMゲートは、結果を保存しない非選択測定として密度行列へ作用します。
-          </p>
-          <div className="simulate-page__snapshot-grid">
-            <label>
-              shots
-              <input
-                type="number"
-                min={1}
-                max={100000}
-                step={1}
-                value={measurementOptions.shots}
-                onChange={(event) => setMeasurementOptions((current) => ({
-                  ...current,
-                  shots: clampInteger(event.currentTarget.valueAsNumber, 1, 100000),
-                }))}
-              />
-            </label>
-            <label>
-              seed
-              <input
-                type="number"
-                min={0}
-                max={4294967295}
-                step={1}
-                value={measurementOptions.seed}
-                onChange={(event) => setMeasurementOptions((current) => ({
-                  ...current,
-                  seed: clampInteger(event.currentTarget.valueAsNumber, 0, 4294967295),
-                }))}
-              />
-            </label>
-          </div>
-        </section>
-        <section className="simulate-page__snapshot-controls" aria-labelledby="snapshot-controls-title">
-          <div className="simulate-page__snapshot-heading">
-            <div>
-              <span className="simulate-page__section-eyebrow">サンプリング</span>
-              <h2 id="snapshot-controls-title">スナップショットのサンプリング</h2>
-            </div>
-            <label className="simulate-page__snapshot-toggle">
-              <input
-                type="checkbox"
-                checked={snapshotOptions.enabled}
-                onChange={(event) =>
-                  setSnapshotOptions((current) => ({
-                    ...current,
-                    enabled: event.target.checked,
-                  }))
-                }
-              />
-              有効
-            </label>
-          </div>
-          <p className="simulate-page__snapshot-help">
-            初期状態・列の境界・最終状態などのイベントスナップショットを保持しながら、時刻サンプルを指定します。
-          </p>
-          <div className="simulate-page__snapshot-grid">
-            <label>
-              均等サンプル数
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                value={snapshotOptions.uniform_count}
-                onChange={(event) =>
-                  setSnapshotOptions((current) => ({
-                    ...current,
-                    uniform_count: Number(event.target.value),
-                  }))
-                }
-              />
-            </label>
-            <label>
-              カスタム時刻 [us]
-              <input
-                type="text"
-                value={customSnapshotTimesInput}
-                placeholder="0.5, 1.25"
-                onChange={(event) => setCustomSnapshotTimesInput(event.target.value)}
-              />
-            </label>
-          </div>
-          <div className="simulate-page__snapshot-checks">
-            {([
-              ['include_initial', '初期状態'],
-              ['include_final', '最終状態'],
-              ['include_column_boundaries', '列の境界'],
-              ['include_after_circuit', '回路の後'],
-            ] as const).map(([key, label]) => (
-              <label key={key}>
-                <input
-                  type="checkbox"
-                  checked={snapshotOptions[key]}
-                  onChange={(event) =>
-                    setSnapshotOptions((current) => ({
+        <details className="simulate-page__advanced">
+          <summary className="simulate-page__advanced-summary">
+            <SectionHeader
+              className="simulate-page__advanced-header"
+              icon="wrench"
+              eyebrow="詳細設定"
+              title="計算パラメーター・測定・スナップショット"
+              description="通常は既定値のままで実行できます。上級者向けの調整はここから行えます。"
+              headingLevel="h2"
+            />
+            <span className="simulate-page__advanced-toggle" aria-hidden="true" />
+          </summary>
+
+          <div className="simulate-page__advanced-body">
+            <ParameterPanel
+              editableParameters={simulationParameters}
+              gateDurationDefaults={gateDurationDefaults}
+              validationMessages={parameterErrors}
+              gateDurationValidationMessages={gateDurationErrors}
+              onEditableParametersChange={handleSimulationParametersChange}
+              onGateDurationDefaultsChange={handleGateDurationDefaultsChange}
+            />
+            <section className="simulate-page__snapshot-controls" aria-labelledby="measurement-controls-title">
+              <div className="simulate-page__snapshot-heading">
+                <div>
+                  <span className="simulate-page__section-eyebrow">測定</span>
+                  <h2 id="measurement-controls-title">最終読み出しのshots</h2>
+                </div>
+              </div>
+              <p className="simulate-page__snapshot-help">
+                最終状態を計算基底で有限回測定します。同じseedでは同じカウントを再現できます。
+                回路中のMゲートは、結果を保存しない非選択測定として密度行列へ作用します。
+              </p>
+              <div className="simulate-page__snapshot-grid">
+                <label>
+                  shots
+                  <input
+                    type="number"
+                    min={1}
+                    max={100000}
+                    step={1}
+                    value={measurementOptions.shots}
+                    onChange={(event) => setMeasurementOptions((current) => ({
                       ...current,
-                      [key]: event.target.checked,
-                    }))
-                  }
-                />
-                {label}
-              </label>
-            ))}
+                      shots: clampInteger(event.currentTarget.valueAsNumber, 1, 100000),
+                    }))}
+                  />
+                </label>
+                <label>
+                  seed
+                  <input
+                    type="number"
+                    min={0}
+                    max={4294967295}
+                    step={1}
+                    value={measurementOptions.seed}
+                    onChange={(event) => setMeasurementOptions((current) => ({
+                      ...current,
+                      seed: clampInteger(event.currentTarget.valueAsNumber, 0, 4294967295),
+                    }))}
+                  />
+                </label>
+              </div>
+            </section>
+            <section className="simulate-page__snapshot-controls" aria-labelledby="snapshot-controls-title">
+              <div className="simulate-page__snapshot-heading">
+                <div>
+                  <span className="simulate-page__section-eyebrow">サンプリング</span>
+                  <h2 id="snapshot-controls-title">スナップショットのサンプリング</h2>
+                </div>
+                <label className="simulate-page__snapshot-toggle">
+                  <input
+                    type="checkbox"
+                    checked={snapshotOptions.enabled}
+                    onChange={(event) =>
+                      setSnapshotOptions((current) => ({
+                        ...current,
+                        enabled: event.target.checked,
+                      }))
+                    }
+                  />
+                  有効
+                </label>
+              </div>
+              <p className="simulate-page__snapshot-help">
+                初期状態・列の境界・最終状態などのイベントスナップショットを保持しながら、時刻サンプルを指定します。
+              </p>
+              <div className="simulate-page__snapshot-grid">
+                <label>
+                  均等サンプル数
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={snapshotOptions.uniform_count}
+                    onChange={(event) =>
+                      setSnapshotOptions((current) => ({
+                        ...current,
+                        uniform_count: Number(event.target.value),
+                      }))
+                    }
+                  />
+                </label>
+                <label>
+                  カスタム時刻 [us]
+                  <input
+                    type="text"
+                    value={customSnapshotTimesInput}
+                    placeholder="0.5, 1.25"
+                    onChange={(event) => setCustomSnapshotTimesInput(event.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="simulate-page__snapshot-checks">
+                {([
+                  ['include_initial', '初期状態'],
+                  ['include_final', '最終状態'],
+                  ['include_column_boundaries', '列の境界'],
+                  ['include_after_circuit', '回路の後'],
+                ] as const).map(([key, label]) => (
+                  <label key={key}>
+                    <input
+                      type="checkbox"
+                      checked={snapshotOptions[key]}
+                      onChange={(event) =>
+                        setSnapshotOptions((current) => ({
+                          ...current,
+                          [key]: event.target.checked,
+                        }))
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              {snapshotOptionsError ? (
+                <p className="simulate-page__snapshot-error" role="alert">
+                  {snapshotOptionsError}
+                </p>
+              ) : null}
+            </section>
           </div>
-          {snapshotOptionsError ? (
-            <p className="simulate-page__snapshot-error" role="alert">
-              {snapshotOptionsError}
-            </p>
-          ) : null}
-        </section>
+        </details>
         <RunPanel
           run={response.run}
           costEstimate={costEstimate}
@@ -902,14 +889,9 @@ export function SimulatePage({
           }}
         />
         <SimulationSummary summary={response.summary} />
-        <MetricTimeline timeline={response.timeline} stateSnapshots={response.state_snapshots} />
       </div>
 
       <div className="simulate-page__drawer-stack">
-        <ModelInfoPanel
-          simulationModelId={response.diagnostics.simulation_model}
-          evolutionModeId={response.diagnostics.evolution_mode}
-        />
         {hasAlerts ? (
           <ResultDrawer
             eyebrow="アラート"
@@ -956,14 +938,6 @@ export function SimulatePage({
             ) : null}
           </ResultDrawer>
         ) : null}
-        <OutputProbabilities
-          outputProbabilities={response.output_probabilities}
-          qubitCount={response.circuit.qubit_count}
-        />
-        <MeasurementResults
-          measurement={response.measurement}
-          qubitCount={response.circuit.qubit_count}
-        />
         <DensityMatrixSummaryCard
           response={response}
           onOpenStateExplorer={onOpenStateExplorer}

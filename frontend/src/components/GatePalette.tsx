@@ -1,6 +1,14 @@
 import './GatePalette.css'
 import type { GateType } from '../types/circuit'
 import { setCircuitDragPreview } from '../utils/dragPreview'
+import {
+  isControlledGateType,
+  isPairGateType,
+  isRegisterGateType,
+  MIN_REGISTER_GATE_QUBITS,
+} from '../utils/circuitEditing'
+import { GateInfoCard } from './GateInfoCard'
+import { gateReference } from '../utils/gateReference'
 
 type GatePaletteProps = {
   selectedGateType: GateType | null
@@ -16,7 +24,7 @@ const singleQubitGateTypes: GateType[] = [
 ]
 const draggableGateTypes = new Set<GateType>([
   'H', 'X', 'Y', 'Z', 'S', 'T', 'RX', 'RY', 'RZ', 'MEASURE',
-  'CNOT', 'CZ', 'CP', 'CCX', 'SWAP', 'MESSAGE', 'RECEIVED',
+  'CNOT', 'CZ', 'CP', 'CCX', 'SWAP', 'QFT', 'ORACLE', 'MESSAGE', 'RECEIVED',
 ])
 
 export function GatePalette({
@@ -29,36 +37,59 @@ export function GatePalette({
 }: GatePaletteProps) {
   function renderGateButton(gateType: GateType) {
     const isSelected = selectedGateType === gateType
-    const isUnavailable = gateType === 'CCX' && logicalQubits < 3
+    const isRegisterType = isRegisterGateType(gateType)
+    const isUnavailable =
+      (gateType === 'CCX' && logicalQubits < 3) ||
+      (isRegisterType && logicalQubits < MIN_REGISTER_GATE_QUBITS)
     const isDraggable = draggableGateTypes.has(gateType) && !isUnavailable
+    const isStretchType = isControlledGateType(gateType) || isPairGateType(gateType)
     const label = gateType === 'MEASURE' ? 'M' : gateType
+    const entry = gateReference[gateType]
+    const title = isUnavailable
+      ? gateType === 'CCX'
+        ? 'CCXには3量子ビット以上が必要です'
+        : `${gateType}には${MIN_REGISTER_GATE_QUBITS}量子ビット以上が必要です`
+      : isRegisterType
+        ? `${gateType} を選択し、量子ビットをビット0(最下位)から順にクリックしてレジスタを作成（選択済みをもう一度クリックで確定）。ドラッグすると落とした行から下を一括で指定`
+          + (gateType === 'ORACLE' ? '。配置後にインスペクタでマークする状態を指定します' : '')
+        : isStretchType
+          ? `${gateType} を選択し、量子ビットをクリックしてから接続先をクリック、またはドラッグして配置`
+          : `${gateType} をパレットからドラッグして配置`
 
     return (
-      <button
+      <div
         key={gateType}
-        type="button"
-        className={`gate-palette__button${
-          isSelected ? ' gate-palette__button--selected' : ''
-        }${isDraggable ? ' gate-palette__button--draggable' : ''}`}
-        aria-pressed={isSelected}
-        disabled={isUnavailable}
-        draggable={isDraggable}
-        title={isUnavailable ? 'CCXには3量子ビット以上が必要です' : `${gateType} をクリックまたはドラッグ`}
-        onDragStart={(event) => {
-          if (!isDraggable) {
-            event.preventDefault()
-            return
-          }
-          event.dataTransfer.effectAllowed = 'copy'
-          event.dataTransfer.setData('text/plain', `palette:${gateType}`)
-          setCircuitDragPreview(event, gateType, 'palette')
-          onGateDragStart(gateType)
-        }}
-        onDragEnd={onGateDragEnd}
-        onClick={() => onSelectGateType(gateType)}
+        className="gate-palette__item"
+        data-family={entry.family}
       >
-        {label}
-      </button>
+        <button
+          type="button"
+          className={`gate-palette__button${
+            isSelected ? ' gate-palette__button--selected' : ''
+          }${isDraggable ? ' gate-palette__button--draggable' : ''}`}
+          aria-pressed={isSelected}
+          disabled={isUnavailable}
+          draggable={isDraggable}
+          title={title}
+          onDragStart={(event) => {
+            if (!isDraggable) {
+              event.preventDefault()
+              return
+            }
+            event.dataTransfer.effectAllowed = 'copy'
+            event.dataTransfer.setData('text/plain', `palette:${gateType}`)
+            setCircuitDragPreview(event, gateType, 'palette')
+            onGateDragStart(gateType)
+          }}
+          onDragEnd={onGateDragEnd}
+          onClick={() => onSelectGateType(gateType)}
+        >
+          {label}
+        </button>
+        <div className="gate-palette__popover">
+          <GateInfoCard gateLabel={gateType} entry={entry} />
+        </div>
+      </div>
     )
   }
 
@@ -67,7 +98,7 @@ export function GatePalette({
       <div className="gate-palette__group" role="radiogroup" aria-label="論理量子ビット">
         <span className="gate-palette__label">量子ビット</span>
         <div className="gate-palette__qubit-selector-buttons">
-          {[2, 3, 4].map((count) => {
+          {[2, 3, 4, 5].map((count) => {
             const isSelected = logicalQubits === count
             return (
               <button
@@ -106,6 +137,13 @@ export function GatePalette({
           {renderGateButton('CP')}
           {renderGateButton('CCX')}
           {renderGateButton('SWAP')}
+        </div>
+      </div>
+      <div className="gate-palette__group" role="toolbar" aria-label="レジスタゲート">
+        <span className="gate-palette__label">レジスタ</span>
+        <div className="gate-palette__buttons">
+          {renderGateButton('QFT')}
+          {renderGateButton('ORACLE')}
         </div>
       </div>
       <div className="gate-palette__group" role="toolbar" aria-label="Teleportation display markers">

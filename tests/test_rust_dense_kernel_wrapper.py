@@ -59,7 +59,7 @@ class RustDenseKernelWrapperConversionTest(unittest.TestCase):
         )
 
 
-@unittest.skipUnless(is_rust_kernel_available(), "quantascope_rust is not importable")
+@unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
 class RustDenseKernelWrapperCallTest(unittest.TestCase):
     def test_wrapper_zero_rhs_leaves_rho_unchanged(self) -> None:
         rho = (

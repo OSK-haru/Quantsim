@@ -114,7 +114,7 @@ exponential maps and does not apply density-matrix cleanup.
 The coupled-pair contract accepts `fixed_step_rk4` and audited `explicit_cptp`
 with Python, Rust, or automatic backend resolution.
 
-The C10 freeze ID is `quantascope_explicit_cptp_v1`. The public API value
+The C10 freeze ID is `yuragi_strider_explicit_cptp_v1`. The public API value
 `explicit_cptp` resolves to `explicit_cptp_midpoint_gksl_v1`.
 
 ## Preview Backend

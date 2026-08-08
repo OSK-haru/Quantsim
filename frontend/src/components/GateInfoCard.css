@@ -1,0 +1,105 @@
+.gate-info-card {
+  display: grid;
+  gap: 8px;
+  width: 240px;
+}
+
+.gate-info-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gate-info-card__header strong {
+  color: #f8fafc;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.gate-info-card__family {
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.gate-info-card__family--rotation {
+  border-color: rgba(103, 232, 249, 0.4);
+  background: rgba(103, 232, 249, 0.12);
+  color: #67e8f9;
+}
+
+.gate-info-card__family--phase {
+  border-color: rgba(196, 181, 253, 0.4);
+  background: rgba(196, 181, 253, 0.12);
+  color: #c4b5fd;
+}
+
+.gate-info-card__family--control {
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+.gate-info-card__family--measurement {
+  border-color: rgba(251, 113, 133, 0.4);
+  background: rgba(251, 113, 133, 0.12);
+  color: #fb7185;
+}
+
+.gate-info-card__family--annotation {
+  border-color: rgba(148, 163, 184, 0.32);
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+.gate-info-card__description {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.gate-info-card__matrix-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gate-info-card__matrix-prefix {
+  color: #93c5fd;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gate-info-card__matrix {
+  display: grid;
+  gap: 3px 14px;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.5);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.5);
+  border-left: 2px solid rgba(148, 163, 184, 0.5);
+  border-right: 2px solid rgba(148, 163, 184, 0.5);
+  border-radius: 2px;
+  font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: #f0fdff;
+}
+
+.gate-info-card__matrix-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.gate-info-card__note {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
