@@ -58,7 +58,7 @@ Choi規約  : unnormalized_input_output_row_major_v1
 
 ## 時間依存性の扱い
 
-:::warning 厳密なCPTP積分ではない
+:::warning[厳密なCPTP積分ではない]
 CPTP性が保証されるのは、**区間内でGKSL生成子が定数である**という前提のもとでのみです。
 
 時間依存のパルスに対しては、区間の中点における生成子を用いた区分定数近似(`midpoint_piecewise_constant_v1`)が適用されます。したがって、連続的な時間依存問題に対する厳密なCPTP積分ではありません。

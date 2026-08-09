@@ -4,31 +4,29 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 6px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.46);
+  border: 1px solid rgba(163, 163, 163, 0.12);
+  background: rgba(10, 10, 10, 0.46);
 }
 
 .circuit-column-navigator__jump {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   font-size: 0.82rem;
 }
 
 .circuit-column-navigator__jump input {
   width: 58px;
   padding: 7px 8px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 999px;
-  background: rgba(2, 6, 23, 0.32);
-  color: #e2e8f0;
+  border: 1px solid rgba(163, 163, 163, 0.24);
+  background: rgba(10, 10, 10, 0.32);
+  color: var(--tt-ink);
   font: inherit;
 }
 
 .circuit-column-navigator__range {
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   font-size: 0.84rem;
   white-space: nowrap;
 }

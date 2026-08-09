@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './PhysicalTimelinePlayback.css'
 import { CircuitPreview } from './CircuitPreview'
+import { useAnimationSettings } from '../context/useAnimationSettings'
 import type { CircuitEditorState } from '../types/circuit'
 import type { GateDurationDefaults, MeasurementResult, PhysicalTimeline, StateSnapshot } from '../types/simulation'
 import { activePhysicalTimelineEvent, clampSimulationTime, nearestSnapshotIndex } from '../utils/physicalTimeline'
@@ -28,10 +29,11 @@ export function PhysicalTimelinePlayback({
   noisySnapshots = [],
   idealSnapshots = [],
 }: PhysicalTimelinePlaybackProps) {
-  const [playing, setPlaying] = useState(false)
+  const { animationsEnabled } = useAnimationSettings()
+  const [playing, setPlaying] = useState(animationsEnabled)
   const animationFrameRef = useRef<number | null>(null)
-  const playbackStartWallTimeRef = useRef(0)
-  const playbackStartSimulationTimeRef = useRef(0)
+  const playbackStartWallTimeRef = useRef(window.performance.now())
+  const playbackStartSimulationTimeRef = useRef(simulationTimeUs)
   const totalDurationUs = physicalTimeline?.total_duration_us ?? 0
   const boundedSimulationTimeUs = clampSimulationTime(simulationTimeUs, totalDurationUs)
   const activeEvent = useMemo(

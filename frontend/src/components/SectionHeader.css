@@ -1,8 +1,15 @@
+/* ============================================================================
+   SECTION HEADER // OPERATIONAL UNIT MARKER
+   ========================================================================= */
+
 .section-header {
+  position: relative;
   display: flex;
   min-width: 0;
   align-items: flex-start;
   gap: 12px;
+  padding-left: 14px;
+  border-left: 3px solid var(--tt-accent);
 }
 
 .section-header__copy {
@@ -11,22 +18,37 @@
 
 .section-header__eyebrow {
   margin-bottom: 6px;
-  color: #93c5fd;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+}
+
+.section-header__eyebrow::before {
+  content: '[ ';
+}
+
+.section-header__eyebrow::after {
+  content: ' ]';
 }
 
 .section-header__title {
   margin: 0;
-  color: #f8fafc;
-  font-size: 1.35rem;
-  line-height: 1.2;
+  color: var(--tt-ink);
+  font-family: var(--tt-macro);
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
 }
 
 .section-header__description {
   margin: 8px 0 0;
   max-width: 52ch;
-  color: #94a3b8;
-  line-height: 1.55;
+  color: var(--tt-ink-mid);
+  font-size: 0.84rem;
+  line-height: 1.6;
 }

@@ -5,12 +5,8 @@
   display: grid;
   align-content: start;
   gap: 20px;
-  background:
-    radial-gradient(circle at 13% 0%, rgba(38, 156, 140, 0.18), transparent 28%),
-    radial-gradient(circle at 92% 16%, rgba(221, 132, 68, 0.12), transparent 25%),
-    repeating-linear-gradient(90deg, transparent 0 79px, rgba(137, 183, 184, 0.025) 79px 80px),
-    linear-gradient(145deg, #071118 0%, #0a1b22 48%, #071016 100%);
-  color: #e9f6f3;
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(163, 163, 163, 0.025) 79px 80px), rgba(30, 30, 30, 0.18);
+  color: var(--tt-ink);
 }
 
 .state-explorer-page__header,
@@ -30,7 +26,7 @@
 }
 
 .state-explorer-page__eyebrow {
-  color: #5dd6c0;
+  color: var(--tt-ink-mid);
   font-size: 0.74rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -38,8 +34,8 @@
 
 .state-explorer-page h1 {
   margin: 8px 0 0;
-  color: #e9f6f3;
-  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
   font-weight: 500;
   font-size: clamp(2rem, 5vw, 3.3rem);
   letter-spacing: -0.05em;
@@ -48,7 +44,7 @@
 .state-explorer-page__scope {
   max-width: 660px;
   margin: 10px 0 0;
-  color: #8ca5a9;
+  color: var(--tt-ink-mid);
   font-size: 0.88rem;
   line-height: 1.55;
 }
@@ -63,16 +59,15 @@
 .state-explorer-page__actions button,
 .state-explorer-page__empty button {
   padding: 10px 14px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.84);
-  color: #e2e8f0;
+  border: 1px solid rgba(163, 163, 163, 0.28);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
   cursor: pointer;
 }
 
 .state-explorer-page__actions button:hover,
 .state-explorer-page__empty button:hover {
-  border-color: rgba(96, 165, 250, 0.7);
+  border-color: var(--tt-ink-mid);
 }
 
 .state-explorer-page__summary {
@@ -83,20 +78,17 @@
 
 .state-explorer-page__summary span {
   padding: 7px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.72);
-  color: #cbd5e1;
+  border: 1px solid rgba(163, 163, 163, 0.2);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
   font-size: 0.84rem;
 }
 
 .state-explorer-page__workspace {
   min-width: 0;
   padding: 22px;
-  border: 1px solid rgba(99, 173, 177, 0.2);
-  border-radius: 20px;
-  background: rgba(9, 24, 32, 0.86);
-  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.35);
+  border: 1px solid rgba(77, 77, 77, 0.2);
+  background: var(--tt-void);
 }
 
 .state-explorer-page .density-matrix-viewer__matrix-scroll {
@@ -122,17 +114,16 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border: 1px solid rgba(113, 162, 214, 0.32);
-  border-radius: 999px;
-  background: rgba(14, 28, 48, 0.82);
-  color: #d9e8fb;
+  border: 1px solid rgba(163, 163, 163, 0.32);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
   font-size: 0.86rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .state-explorer-page__panel-menu-toggle:hover {
-  border-color: rgba(97, 215, 193, 0.6);
+  border-color: var(--tt-ink-mid);
 }
 
 .state-explorer-page__panel-menu-icon {
@@ -145,15 +136,13 @@
 
 .state-explorer-page__panel-menu-icon span {
   height: 2px;
-  border-radius: 2px;
-  background: #9bb7d8;
+  background: var(--tt-ink-mid);
 }
 
 .state-explorer-page__panel-menu-count {
   padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(97, 215, 193, 0.16);
-  color: #61d7c1;
+  background: rgba(163, 163, 163, 0.16);
+  color: var(--tt-ink-mid);
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -167,10 +156,8 @@
   gap: 4px;
   min-width: 240px;
   padding: 10px;
-  border: 1px solid rgba(113, 162, 214, 0.3);
-  border-radius: 14px;
-  background: rgba(10, 22, 39, 0.98);
-  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.5);
+  border: 1px solid rgba(163, 163, 163, 0.3);
+  background: var(--tt-panel);
 }
 
 .state-explorer-page__panel-menu-actions {
@@ -178,22 +165,21 @@
   gap: 6px;
   padding-bottom: 8px;
   margin-bottom: 4px;
-  border-bottom: 1px solid rgba(113, 162, 214, 0.2);
+  border-bottom: 1px solid rgba(163, 163, 163, 0.2);
 }
 
 .state-explorer-page__panel-menu-actions button {
   flex: 1;
   padding: 6px 8px;
-  border: 1px solid rgba(121, 163, 211, 0.32);
-  border-radius: 999px;
-  background: rgba(20, 40, 66, 0.7);
-  color: #b8cbe4;
+  border: 1px solid rgba(163, 163, 163, 0.32);
+  background: var(--tt-panel-2);
+  color: var(--tt-ink);
   font-size: 0.76rem;
   cursor: pointer;
 }
 
 .state-explorer-page__panel-menu-actions button:hover {
-  border-color: rgba(97, 215, 193, 0.6);
+  border-color: var(--tt-ink-mid);
 }
 
 .state-explorer-page__panel-menu-item {
@@ -201,26 +187,24 @@
   align-items: center;
   gap: 10px;
   padding: 7px 8px;
-  border-radius: 8px;
-  color: #d9e8fb;
+  color: var(--tt-ink);
   font-size: 0.86rem;
   cursor: pointer;
 }
 
 .state-explorer-page__panel-menu-item:hover {
-  background: rgba(97, 215, 193, 0.1);
+  background: rgba(163, 163, 163, 0.1);
 }
 
 .state-explorer-page__panel-menu-item input {
-  accent-color: #61d7c1;
+  accent-color: var(--tt-ink-mid);
 }
 
 .state-explorer-panel {
   margin: 12px 0;
-  border: 1px solid rgba(113, 162, 214, 0.24);
-  border-radius: 16px;
+  border: 1px solid rgba(163, 163, 163, 0.24);
   overflow: hidden;
-  background: rgba(8, 21, 37, 0.5);
+  background: rgba(10, 10, 10, 0.5);
 }
 
 .state-explorer-panel__toggle {
@@ -230,8 +214,8 @@
   align-items: center;
   padding: 11px 15px;
   border: 0;
-  color: #d9e8fb;
-  background: rgba(20, 43, 69, 0.75);
+  color: var(--tt-ink);
+  background: var(--tt-panel-2);
   font: inherit;
   font-weight: 700;
   text-align: left;
@@ -239,7 +223,7 @@
 }
 
 .state-explorer-panel__toggle:hover {
-  background: rgba(35, 68, 103, 0.85);
+  background: var(--tt-rule);
 }
 
 .state-explorer-panel__body {
@@ -247,7 +231,7 @@
 }
 
 .state-explorer-panel--collapsed {
-  background: rgba(8, 21, 37, 0.3);
+  background: rgba(10, 10, 10, 0.3);
 }
 
 .state-explorer-page__comparison-grid {
@@ -260,26 +244,25 @@
 .state-explorer-page__comparison-panel {
   min-width: 0;
   padding: 16px;
-  border: 1px solid rgba(99, 173, 177, 0.18);
-  border-radius: 16px;
-  background: rgba(5, 18, 25, 0.42);
+  border: 1px solid rgba(77, 77, 77, 0.18);
+  background: rgba(10, 10, 10, 0.42);
 }
 
 .state-explorer-page__comparison-panel--ideal {
-  border-color: rgba(243, 199, 107, 0.28);
-  background: rgba(37, 30, 19, 0.24);
+  border-color: rgba(230, 25, 25, 0.28);
+  background: rgba(10, 10, 10, 0.24);
 }
 
 .state-explorer-page__comparison-panel h2,
 .state-explorer-page__comparison-panel h3 {
   margin: 0 0 12px;
-  color: #e9f6f3;
+  color: var(--tt-ink);
   font-size: 1.05rem;
 }
 
 .state-explorer-page__comparison-panel--ideal h2,
 .state-explorer-page__comparison-panel--ideal h3 {
-  color: #f3c76b;
+  color: var(--tt-accent);
 }
 
 .state-explorer-page__section-heading {
@@ -291,14 +274,14 @@
 
 .state-explorer-page__section-heading h2 {
   margin: 5px 0 0;
-  color: #f8fafc;
+  color: var(--tt-ink-max);
   font-size: 1.5rem;
 }
 
 .state-explorer-page__section-heading p {
   max-width: 620px;
   margin: 0;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   line-height: 1.6;
 }
 
@@ -306,27 +289,26 @@
 .state-explorer-page__unavailable {
   box-sizing: border-box;
   padding: 28px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.78);
-  color: #cbd5e1;
+  border: 1px solid rgba(163, 163, 163, 0.2);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
 }
 
 .state-explorer-page__empty h2 {
   margin: 10px 0 0;
-  color: #f8fafc;
+  color: var(--tt-ink-max);
   font-size: 1.25rem;
 }
 
 .state-explorer-page__empty p {
   margin: 8px 0 18px;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
 }
 
 .state-explorer-page__empty button {
-  border-color: rgba(96, 165, 250, 0.44);
-  background: rgba(30, 64, 175, 0.46);
-  color: #dbeafe;
+  border-color: rgba(163, 163, 163, 0.44);
+  background: rgba(42, 42, 42, 0.46);
+  color: var(--tt-ink);
 }
 
 @media (max-width: 640px) {
@@ -349,4 +331,50 @@
   .state-explorer-page__section-heading {
     flex-direction: column;
   }
+}
+
+/* --- TELEMETRY SHELL NORMALISATION --------------------- */
+
+.state-explorer-page {
+  background:
+    repeating-linear-gradient(90deg, var(--tt-blueprint) 0 1px, transparent 1px 80px),
+    var(--tt-void);
+  color: var(--tt-ink);
+}
+
+.state-explorer-page__header {
+  padding-bottom: 16px;
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+}
+
+.state-explorer-page__eyebrow {
+  display: inline-block;
+  padding: 0;
+  margin-bottom: 10px;
+  border: 0;
+  background: none;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.state-explorer-page__eyebrow::before {
+  content: '[ ';
+}
+
+.state-explorer-page__eyebrow::after {
+  content: ' ]';
+}
+
+.state-explorer-page__header h1 {
+  color: var(--tt-ink);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.9rem, 4.5vw, 3.2rem);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
 }

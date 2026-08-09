@@ -1,4 +1,8 @@
 import type { CircuitConfig } from './circuitConfig'
+import {
+  MAX_SUPPORTED_LOGICAL_QUBITS,
+  MIN_SUPPORTED_LOGICAL_QUBITS,
+} from './circuitEditing'
 
 export type CircuitValidationResult = {
   valid: boolean
@@ -22,10 +26,16 @@ function hasDuplicateQubits(values: number[]) {
 }
 
 export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValidationResult {
-  if (!isFiniteInteger(config.logical_qubits) || config.logical_qubits < 2 || config.logical_qubits > 5) {
+  if (
+    !isFiniteInteger(config.logical_qubits) ||
+    config.logical_qubits < MIN_SUPPORTED_LOGICAL_QUBITS ||
+    config.logical_qubits > MAX_SUPPORTED_LOGICAL_QUBITS
+  ) {
     return {
       valid: false,
-      message: formatValidationFailure('Logical qubits must be between 2 and 5.'),
+      message: formatValidationFailure(
+        `Logical qubits must be between ${MIN_SUPPORTED_LOGICAL_QUBITS} and ${MAX_SUPPORTED_LOGICAL_QUBITS}.`,
+      ),
     }
   }
 

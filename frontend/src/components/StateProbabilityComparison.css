@@ -3,15 +3,13 @@
   box-sizing: border-box;
   margin: 0 auto;
   padding: 22px;
-  border: 1px solid rgba(99, 173, 177, 0.24);
-  border-radius: 20px;
-  background: rgba(9, 24, 32, 0.88);
-  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.3);
+  border: 1px solid rgba(77, 77, 77, 0.24);
+  background: var(--tt-void);
 }
 
 .state-probability-comparison__description {
   margin: 10px 0 14px;
-  color: #91a9ac;
+  color: var(--tt-ink-mid);
   font-size: 0.84rem;
   line-height: 1.55;
 }
@@ -20,16 +18,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #bce9df;
+  color: var(--tt-ink);
   font-size: 0.78rem;
 }
 
 .state-probability-comparison__selector select {
   padding: 7px 10px;
-  border: 1px solid rgba(93, 214, 192, 0.3);
-  border-radius: 8px;
-  background: #0f2430;
-  color: #effbf8;
+  border: 1px solid rgba(163, 163, 163, 0.3);
+  background: var(--tt-panel);
+  color: var(--tt-ink-max);
 }
 
 .state-probability-comparison__legend {
@@ -37,7 +34,7 @@
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
-  color: #a8c2c2;
+  color: var(--tt-ink-mid);
   font-size: 0.78rem;
 }
 
@@ -47,10 +44,11 @@
   align-items: center;
 }
 
-.state-probability-comparison__legend strong { margin-left: auto; color: #effbf8; }
-.state-probability-comparison__swatch { width: 22px; height: 3px; border-radius: 999px; }
-.state-probability-comparison__swatch--ideal { background: #56d6a8; }
-.state-probability-comparison__swatch--noisy { background: #66a9f7; }
+.state-probability-comparison__legend strong { margin-left: auto; color: var(--tt-ink-max); }
+.state-probability-comparison__swatch { width: 22px; height: 3px; }
+/* 凡例はバー本体と同じ割り当てにする。 */
+.state-probability-comparison__swatch--ideal { background: var(--tt-accent); }
+.state-probability-comparison__swatch--noisy { background: var(--tt-ink-mid); }
 
 .state-probability-comparison__chart-wrap {
   margin-top: 8px;
@@ -58,18 +56,18 @@
 }
 
 .state-probability-comparison__chart { display: block; width: 100%; min-width: 520px; height: 250px; }
-.state-probability-comparison__grid { stroke: rgba(148, 163, 184, 0.12); stroke-width: 1; }
-.state-probability-comparison__axis { stroke: rgba(148, 163, 184, 0.34); stroke-width: 1; }
+.state-probability-comparison__grid { stroke: rgba(163, 163, 163, 0.12); stroke-width: 1; }
+.state-probability-comparison__axis { stroke: rgba(163, 163, 163, 0.34); stroke-width: 1; }
 .state-probability-comparison__line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.state-probability-comparison__line--ideal { stroke: #56d6a8; }
-.state-probability-comparison__line--noisy { stroke: #66a9f7; }
-.state-probability-comparison__axis-label { fill: #829da0; font-size: 11px; }
-.state-probability-comparison__cursor line { stroke:#f8d477; stroke-width:2; }
-.state-probability-comparison__cursor circle { stroke:#091820; stroke-width:2; }
-.state-probability-comparison__cursor circle[data-series='noisy'] { fill:#66a9f7; }
-.state-probability-comparison__cursor circle[data-series='ideal'] { fill:#56d6a8; }
-.state-probability-comparison__footer { display: flex; flex-wrap: wrap; gap: 18px; color: #bce9df; font-size: 0.8rem; }
-.state-probability-comparison__empty { color: #91a9ac; }
+.state-probability-comparison__line--ideal { stroke: var(--tt-ink-dim); }
+.state-probability-comparison__line--noisy { stroke: var(--tt-ink-mid); }
+.state-probability-comparison__axis-label { fill: var(--tt-ink-dim); font-size: 11px; }
+.state-probability-comparison__cursor line { stroke: var(--tt-accent); stroke-width: 2; }
+.state-probability-comparison__cursor circle { stroke: var(--tt-void); stroke-width: 2; }
+.state-probability-comparison__cursor circle[data-series='noisy'] { fill: var(--tt-ink-mid); }
+.state-probability-comparison__cursor circle[data-series='ideal'] { fill: var(--tt-ink-dim); }
+.state-probability-comparison__footer { display: flex; flex-wrap: wrap; gap: 18px; color: var(--tt-ink); font-size: 0.8rem; }
+.state-probability-comparison__empty { color: var(--tt-ink-mid); }
 
 @media (max-width: 640px) {
   .state-probability-comparison__heading { flex-direction: column; }
@@ -91,7 +89,7 @@
 }
 
 .state-probability-comparison__eyebrow {
-  color: #5dd6c0;
+  color: var(--tt-ink-mid);
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -100,8 +98,8 @@
 
 .state-probability-comparison__heading h2 {
   margin: 5px 0 0;
-  color: #f2fbf9;
-  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--tt-ink-max);
+  font-family: var(--tt-mono);
   font-size: 1.55rem;
   font-weight: 500;
   white-space: nowrap;
@@ -111,7 +109,7 @@
   min-width: 0;
   max-width: 590px;
   margin: 0;
-  color: #9ab0b3;
+  color: var(--tt-ink-mid);
   font-size: 0.88rem;
   line-height: 1.65;
 }
@@ -138,8 +136,8 @@
   top: 0;
   z-index: 1;
   padding: 0 8px 12px;
-  background: #091820;
-  color: #81999d;
+  background: var(--tt-void);
+  color: var(--tt-ink-dim);
   font-size: 0.78rem;
 }
 
@@ -147,24 +145,24 @@
   display: grid;
   gap: 3px;
   padding-left: 10px;
-  border-left: 2px solid rgba(96, 165, 250, 0.7);
+  border-left: 2px solid var(--tt-ink-mid);
 }
 
 .state-probability-comparison__column-heading[data-kind='ideal'] {
-  border-left-color: #f3c76b;
+  border-left-color: var(--tt-accent);
 }
 
 .state-probability-comparison__column-heading[data-kind='completion'] {
-  border-left-color: #46d8ba;
+  border-left-color: var(--tt-ink-dim);
 }
 
 .state-probability-comparison__column-heading strong {
-  color: #e9f6f3;
+  color: var(--tt-ink);
   font-size: 0.88rem;
 }
 
 .state-probability-comparison__column-heading small {
-  color: #7f989c;
+  color: var(--tt-ink-dim);
   font-size: 0.7rem;
   font-weight: 400;
 }
@@ -172,12 +170,12 @@
 .state-probability-comparison__row {
   min-height: 42px;
   padding: 5px 8px;
-  border-top: 1px solid rgba(137, 183, 184, 0.1);
+  border-top: 1px solid rgba(163, 163, 163, 0.1);
 }
 
 .state-probability-comparison__row code {
-  color: #b8d6d5;
-  font-family: 'SFMono-Regular', Consolas, monospace;
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
   font-size: 0.9rem;
 }
 
@@ -190,7 +188,7 @@
 }
 
 .state-probability-comparison__cell strong {
-  color: #dbeae8;
+  color: var(--tt-ink);
   font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   text-align: right;
@@ -199,23 +197,21 @@
 .state-probability-comparison__bar {
   height: 7px;
   overflow: hidden;
-  border-radius: 999px;
-  background: rgba(126, 151, 155, 0.15);
+  background: rgba(77, 77, 77, 0.15);
 }
 
 .state-probability-comparison__fill {
   display: block;
   height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #5ea7ec, #7bb8ee);
+  background: var(--tt-ink-mid);
 }
 
 .state-probability-comparison__cell[data-kind='ideal'] .state-probability-comparison__fill {
-  background: linear-gradient(90deg, #c9943b, #f3c76b);
+  background: var(--tt-accent);
 }
 
 .state-probability-comparison__cell[data-kind='completion'] .state-probability-comparison__fill {
-  background: linear-gradient(90deg, #27a98d, #46d8ba);
+  background: var(--tt-rule-strong);
 }
 
 @media (max-width: 960px) {

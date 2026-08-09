@@ -11,7 +11,9 @@ disagrees with this page.
 - React 19 / TypeScript / Vite frontend.
 - FastAPI application on port 8001 in the documented local setup.
 - Home, Simulation, Circuit Studio, State Explorer, Pulse Lab, and Help views.
-- Circuit Studio editor for 2-4 logical qubits.
+- Circuit Studio editor and fixed-step RK4 noisy density-matrix execution for
+  2-8 logical qubits. Measurement-free ideal circuits above 5 qubits continue
+  to use the statevector path; explicit CPTP remains limited to 5 noisy qubits.
 - H, X, Z, CNOT, and MEASURE placement.
 - Click placement, drag-and-drop placement and movement, drag-out deletion,
   Delete-key deletion, Clear, Undo, and Redo.

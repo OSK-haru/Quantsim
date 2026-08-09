@@ -1,41 +1,106 @@
+/* ============================================================================
+   GLOBAL NAVIGATION // ACCESS PANEL
+   ========================================================================= */
+
 .app-navigation {
-  position: fixed;
-  top: 18px;
-  right: 18px;
+  position: sticky;
+  top: 0;
   z-index: 1200;
+}
+
+/* --- Instrument rail: identity, position and machine state --------------- */
+
+.app-navigation__rail {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: stretch;
+  gap: 0 20px;
+  height: 40px;
+  padding-left: 24px;
+  border-bottom: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-void);
+  font-family: var(--tt-mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.app-navigation__rail > span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.app-navigation__mark {
+  color: var(--tt-ink);
+  font-weight: 700;
+}
+
+.app-navigation__mark sup {
+  font-size: 0.7em;
+  vertical-align: super;
+}
+
+.app-navigation__route {
+  padding-left: 20px;
+  border-left: var(--tt-hair) solid var(--tt-rule);
+  color: var(--tt-accent);
+  font-weight: 700;
+}
+
+.app-navigation__rev {
+  color: var(--tt-ink-faint);
+}
+
+.app-navigation__status {
+  gap: 8px;
+  margin-left: auto;
+  padding-right: 16px;
+  color: var(--tt-ink-dim);
+}
+
+.app-navigation__status i {
+  width: 7px;
+  height: 7px;
+  background: var(--tt-signal);
+  animation: app-navigation-beacon 1.6s steps(1, end) infinite;
+}
+
+@keyframes app-navigation-beacon {
+  50% {
+    opacity: 0.15;
+  }
 }
 
 .app-navigation__toggle {
   position: relative;
   z-index: 3;
   display: grid;
-  width: 46px;
-  height: 46px;
-  padding: 12px 10px;
+  width: 40px;
+  height: 40px;
+  padding: 11px 9px;
   gap: 5px;
   place-content: center;
-  border: 1px solid rgba(125, 211, 252, 0.42);
-  border-radius: 15px;
-  background: rgba(15, 23, 42, 0.88);
-  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.28);
-  color: #e0f2fe;
+  border: 0;
+  border-left: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-void);
+  color: var(--tt-ink);
   cursor: pointer;
-  backdrop-filter: blur(14px);
 }
 
 .app-navigation__toggle:hover,
 .app-navigation__toggle--open {
-  border-color: rgba(103, 232, 249, 0.82);
-  background: rgba(14, 116, 144, 0.32);
+  border-color: var(--tt-accent);
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
 }
 
 .app-navigation__toggle span {
   display: block;
   width: 22px;
   height: 2px;
-  border-radius: 99px;
   background: currentColor;
-  transition: transform 180ms ease, opacity 180ms ease;
+  transition: transform 120ms linear, opacity 120ms linear;
 }
 
 .app-navigation__toggle--open span:nth-child(1) {
@@ -54,111 +119,132 @@
   position: fixed;
   inset: 0;
   z-index: 1;
+  padding: 0;
   border: 0;
-  background: rgba(2, 6, 23, 0.42);
+  background: rgba(10, 10, 10, 0.82);
   cursor: default;
-  backdrop-filter: blur(3px);
+}
+
+.app-navigation__scrim:hover {
+  border: 0;
+  background: rgba(10, 10, 10, 0.82);
 }
 
 .app-navigation__menu {
   position: absolute;
-  top: 56px;
+  top: 40px;
   right: 0;
   z-index: 2;
   display: grid;
   align-content: start;
-  width: min(320px, calc(100vw - 28px));
-  max-height: calc(100vh - 96px);
-  gap: 6px;
-  padding: 12px;
-  border: 1px solid rgba(125, 211, 252, 0.32);
-  border-radius: 22px 16px 24px 18px;
-  background: rgba(8, 20, 40, 0.96);
-  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.56), 0 0 32px rgba(34, 211, 238, 0.12);
+  width: min(340px, 100vw);
+  max-height: calc(100vh - 40px);
+  gap: var(--tt-hair);
+  padding: 0;
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  border-top: 0;
+  border-right: 0;
+  background: var(--tt-rule);
   opacity: 0;
   pointer-events: none;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(103, 232, 249, 0.4) transparent;
-  transform: translateY(-8px) scale(0.96);
-  transform-origin: top right;
-  transition: opacity 180ms ease, transform 180ms ease;
-  backdrop-filter: blur(18px);
-}
-
-.app-navigation__menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.app-navigation__menu::-webkit-scrollbar-thumb {
-  background: rgba(103, 232, 249, 0.35);
-  border-radius: 999px;
+  transform: translateY(-4px);
+  transition: opacity 120ms linear, transform 120ms linear;
 }
 
 .app-navigation__menu--open {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
 }
 
 .app-navigation__menu-header {
   display: grid;
-  gap: 3px;
-  padding: 8px 10px 10px;
-  color: #67e8f9;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  gap: 4px;
+  padding: 14px 16px;
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+  background: var(--tt-void);
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
 }
 
 .app-navigation__menu-header small {
-  color: #94a3b8;
-  font-size: 0.76rem;
-  font-weight: 500;
-  letter-spacing: 0;
+  color: var(--tt-ink-dim);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
 }
 
 .app-navigation__item {
   display: grid;
   gap: 3px;
-  padding: 11px 12px;
-  border: 1px solid transparent;
-  border-radius: 13px 17px 12px 16px;
-  background: rgba(30, 41, 59, 0.5);
-  color: #e2e8f0;
-  text-align: left;
-  cursor: pointer;
+  padding: 12px 16px;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: var(--tt-panel);
+  color: var(--tt-ink);
   font: inherit;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  cursor: pointer;
 }
 
 .app-navigation__item:hover,
 .app-navigation__item:focus-visible,
 .app-navigation__item--current {
-  border-color: rgba(103, 232, 249, 0.54);
-  background: rgba(14, 116, 144, 0.24);
-  color: #f8fafc;
+  border-left-color: var(--tt-accent);
+  background: var(--tt-panel-3);
+  color: var(--tt-ink-max);
   outline: none;
 }
 
+.app-navigation__item--current {
+  background: var(--tt-accent-wash);
+}
+
 .app-navigation__item span {
-  font-size: 0.92rem;
+  font-family: var(--tt-sans);
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
 .app-navigation__item small {
-  color: #94a3b8;
-  font-size: 0.72rem;
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-@media (max-width: 640px) {
-  .app-navigation {
-    top: 12px;
-    right: 12px;
+.app-navigation__item--current small {
+  color: var(--tt-accent);
+}
+
+@media (max-width: 720px) {
+  .app-navigation__rail {
+    gap: 0 12px;
+    padding-left: 16px;
+    font-size: 0.56rem;
+    letter-spacing: 0.12em;
   }
 
-  .app-navigation__menu {
-    max-height: calc(100vh - 88px);
+  .app-navigation__route {
+    padding-left: 12px;
+  }
+
+  /* 幅が足りないときは機体情報から先に落とす。 */
+  .app-navigation__rev,
+  .app-navigation__status {
+    display: none;
+  }
+
+  .app-navigation__toggle {
+    margin-left: auto;
   }
 }
 

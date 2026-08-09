@@ -7,7 +7,8 @@ from core.rust_dense_kernel import is_rust_kernel_available
 from core.simulator import run_simulation
 
 
-TOLERANCE = 1e-9
+ABS_TOLERANCE = 1e-10
+REL_TOLERANCE = 5e-8
 
 
 class RustDensePreviewIntegrationTest(unittest.TestCase):
@@ -252,16 +253,28 @@ def _finite_environment() -> EnvironmentConfig:
 def _assert_results_close(test_case: unittest.TestCase, left, right) -> None:
     test_case.assertEqual(len(left.times), len(right.times))
     for left_value, right_value in zip(left.fidelity, right.fidelity):
-        test_case.assertAlmostEqual(left_value, right_value, delta=TOLERANCE)
+        _assert_backend_close(test_case, left_value, right_value)
     for left_value, right_value in zip(left.purity, right.purity):
-        test_case.assertAlmostEqual(left_value, right_value, delta=TOLERANCE)
+        _assert_backend_close(test_case, left_value, right_value)
     test_case.assertEqual(set(left.output_probabilities), set(right.output_probabilities))
     for state in left.output_probabilities:
-        test_case.assertAlmostEqual(
+        _assert_backend_close(
+            test_case,
             left.output_probabilities[state],
             right.output_probabilities[state],
-            delta=TOLERANCE,
         )
+
+
+def _assert_backend_close(
+    test_case: unittest.TestCase,
+    left: float,
+    right: float,
+) -> None:
+    # Optimized SIMD GEMM can accumulate products in a different order from
+    # NumPy. Keep the same mixed tolerance as the dense-backend regression
+    # suite while retaining a tight absolute bound near zero.
+    tolerance = ABS_TOLERANCE + REL_TOLERANCE * abs(left)
+    test_case.assertAlmostEqual(left, right, delta=tolerance)
 
 
 def _assert_batchability_diagnostics_consistent(

@@ -1,15 +1,71 @@
+/* ============================================================================
+   YURAGI-STRIDER // TACTICAL TELEMETRY SUBSTRATE
+   Archetype: Tactical Telemetry & CRT Terminal (dark substrate, committed).
+   No gradients. No border-radius. No soft shadows. No translucent glass.
+   Single accent: aviation hazard red. Single signal: terminal green (status only).
+   ========================================================================= */
+
 :root {
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    sans-serif;
+  /* -- Substrate -------------------------------------------------------- */
+  --tt-void: #0a0a0a;
+  --tt-panel: #121212;
+  --tt-panel-2: #171717;
+  --tt-panel-3: #1e1e1e;
+
+  /* -- Structure -------------------------------------------------------- */
+  --tt-rule: #2a2a2a;
+  --tt-rule-mid: #383838;
+  --tt-rule-strong: #4d4d4d;
+
+  /* -- Phosphor --------------------------------------------------------- */
+  --tt-ink: #eaeaea;
+  --tt-ink-max: #ffffff;
+  --tt-ink-mid: #a3a3a3;
+  --tt-ink-dim: #6e6e6e;
+  --tt-ink-faint: #4a4a4a;
+
+  /* -- Accent (aviation / hazard red) — the ONLY accent ------------------ */
+  --tt-accent: #e61919;
+  --tt-accent-hot: #ff2a2a;
+  --tt-accent-deep: #7a0f0f;
+  --tt-accent-wash: #24090a;
+
+  /* -- Signal (terminal green) — reserved for live-run status ONLY ------- */
+  --tt-signal: #4af626;
+
+  /* -- Blueprint column rule, drawn across every workspace substrate ----- */
+  --tt-blueprint: rgba(234, 234, 234, 0.035);
+
+  /* -- Typography ------------------------------------------------------- */
+  /*
+   * Archivo Black carries no CJK glyphs, so Japanese headings fall through to
+   * the next stack entry. Those faces DO ship a bold weight — hence the 900
+   * request on macro headings below. `font-synthesis: none` keeps the Latin
+   * master from being smeared into a fake bold on the way past.
+   */
+  --tt-macro:
+    'Archivo Black', Inter, 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP',
+    Meiryo, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --tt-sans: Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --tt-mono:
+    'JetBrains Mono', 'IBM Plex Mono', 'SFMono-Regular', Consolas,
+    'Liberation Mono', Menlo, monospace;
+
+  /* -- Grid metrics ----------------------------------------------------- */
+  --tt-hair: 1px;
+  --tt-bar: 2px;
+  --tt-unit: 8px;
+
+  font-family: var(--tt-sans);
   line-height: 1.5;
   font-weight: 400;
-  color: #e5e7eb;
-  background: #0f172a;
+  color: var(--tt-ink);
+  background: var(--tt-void);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
 }
 
 html,
@@ -21,11 +77,18 @@ body,
 
 body {
   min-height: 100vh;
-  background: #0f172a;
+  background: var(--tt-void);
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* --- Geometry directive: 90 degrees, everywhere -------------------------- */
+*,
+*::before,
+*::after {
+  border-radius: 0;
 }
 
 a {
@@ -38,12 +101,248 @@ input,
 textarea,
 select {
   font: inherit;
+  border-radius: 0;
 }
+
+/* --- Micro-typography: all metadata is uppercase monospace --------------- */
+small,
+label,
+legend,
+th,
+code,
+samp,
+kbd,
+output,
+data,
+figcaption {
+  font-family: var(--tt-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+code,
+samp,
+kbd,
+output,
+data {
+  text-transform: none;
+}
+
+/* --- Macro-typography: structural headers are architectural blocks ------- */
+h1,
+h2,
+h3 {
+  font-family: var(--tt-macro);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+h4,
+h5,
+h6 {
+  font-family: var(--tt-mono);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+hr {
+  height: 0;
+  border: 0;
+  border-top: var(--tt-hair) solid var(--tt-rule);
+  margin: 0;
+}
+
+::selection {
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
+}
+
+:focus-visible {
+  outline: var(--tt-bar) solid var(--tt-accent);
+  outline-offset: 1px;
+}
+
+/* --- Scrollbars as mechanical tracks ------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tt-rule-strong) var(--tt-void);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--tt-void);
+  border-left: var(--tt-hair) solid var(--tt-rule);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--tt-rule-strong);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--tt-accent);
+}
+
+/* ============================================================================
+   ANALOG DEGRADATION LAYER
+   Two fixed, non-interactive planes over the whole DOM: CRT scanline sweep
+   and mechanical noise grain.
+   ========================================================================= */
+
+body::before,
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  content: '';
+  pointer-events: none;
+}
+
+/* Scanlines: horizontal electron beam sweep. */
+body::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 2px,
+    rgba(0, 0, 0, 0.11) 2px 4px
+  );
+  mix-blend-mode: multiply;
+}
+
+/* Mechanical noise: unified physical grain. */
+body::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.05;
+}
+
+/* ============================================================================
+   TELEMETRY PRIMITIVES
+   Shared structural classes consumed across pages.
+   ========================================================================= */
+
+/* Blueprint grid: 1px gaps over a rule-coloured parent render as hairlines. */
+.tt-grid {
+  display: grid;
+  gap: var(--tt-hair);
+  background: var(--tt-rule);
+  border: var(--tt-hair) solid var(--tt-rule);
+}
+
+.tt-grid > * {
+  background: var(--tt-panel);
+}
+
+/* Compartment: a bordered operational unit. */
+.tt-panel {
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-panel);
+}
+
+/* Bracketed label: [ DELIVERY SYSTEMS ] */
+.tt-bracket::before {
+  content: '[ ';
+}
+
+.tt-bracket::after {
+  content: ' ]';
+}
+
+/* Directional run-in marker. */
+.tt-vector::before {
+  content: '>>> ';
+  color: var(--tt-accent);
+}
+
+/* Registration mark used as a structural glyph, not legal text. */
+.tt-reg {
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+}
+
+/* Micro label: unit IDs, coordinates, field names. */
+.tt-meta {
+  font-family: var(--tt-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tt-ink-dim);
+}
+
+/* Numeric readout. */
+.tt-readout {
+  font-family: var(--tt-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--tt-ink);
+}
+
+/* Hazard stripe: thick diagonal warning band. */
+.tt-hazard {
+  height: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--tt-accent) 0 8px,
+    var(--tt-void) 8px 16px
+  );
+}
+
+/* Barcode: repeating vertical rules used as a structural filler. */
+.tt-barcode {
+  width: 168px;
+  height: 20px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--tt-ink) 0 1px,
+    transparent 1px 3px,
+    var(--tt-ink) 3px 5px,
+    transparent 5px 8px
+  );
+  opacity: 0.55;
+}
+
+/* Crosshair anchored at a grid intersection. */
+.tt-crosshair {
+  position: relative;
+}
+
+.tt-crosshair::after {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.75rem;
+  line-height: 1;
+  content: '+';
+  pointer-events: none;
+}
+
+/* ============================================================================
+   MOTION
+   ========================================================================= */
 
 html[data-animations='off'] *,
 html[data-animations='off'] *::before,
 html[data-animations='off'] *::after {
   transition-duration: 0.001ms !important;
   transition-delay: 0ms !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

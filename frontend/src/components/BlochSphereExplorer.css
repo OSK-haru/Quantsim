@@ -3,7 +3,7 @@
   gap: 18px;
   min-width: 0;
   padding-bottom: 24px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  border-bottom: 1px solid rgba(163, 163, 163, 0.18);
 }
 
 .bloch-sphere-explorer__heading,
@@ -17,7 +17,7 @@
 .bloch-sphere-explorer__heading h2,
 .bloch-sphere-explorer__details-heading h3 {
   margin: 5px 0 0;
-  color: #f8fafc;
+  color: var(--tt-ink-max);
 }
 
 .bloch-sphere-explorer__heading h2 {
@@ -31,12 +31,12 @@
 .bloch-sphere-explorer__heading p {
   max-width: 620px;
   margin: 0;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   line-height: 1.6;
 }
 
 .bloch-sphere-explorer__eyebrow {
-  color: #93c5fd;
+  color: var(--tt-ink);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.13em;
@@ -58,10 +58,9 @@
 
 .bloch-sphere-explorer__snapshot-buttons button {
   padding: 8px 12px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 999px;
-  background: rgba(2, 6, 23, 0.34);
-  color: #e2e8f0;
+  border: 1px solid rgba(163, 163, 163, 0.24);
+  background: rgba(10, 10, 10, 0.34);
+  color: var(--tt-ink);
   cursor: pointer;
 }
 
@@ -72,12 +71,12 @@
 
 .bloch-sphere-explorer__snapshot-buttons button:not(:disabled):hover,
 .bloch-sphere-explorer__snapshot-buttons button:focus-visible {
-  border-color: rgba(96, 165, 250, 0.7);
+  border-color: var(--tt-ink-mid);
 }
 
 .bloch-sphere-explorer__snapshot-buttons span {
   min-width: 64px;
-  color: #f8fafc;
+  color: var(--tt-ink-max);
   font-size: 0.88rem;
   font-weight: 700;
   text-align: center;
@@ -88,13 +87,13 @@
   grid-template-columns: auto minmax(140px, 1fr);
   gap: 12px;
   align-items: center;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   font-size: 0.84rem;
 }
 
 .bloch-sphere-explorer__snapshot-controls input {
   width: 100%;
-  accent-color: #60a5fa;
+  accent-color: var(--tt-ink-mid);
 }
 
 .bloch-sphere-explorer__snapshot-meta {
@@ -106,10 +105,9 @@
 .bloch-sphere-explorer__snapshot-meta span,
 .bloch-sphere-explorer__vector {
   padding: 6px 9px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 999px;
-  background: rgba(2, 6, 23, 0.28);
-  color: #cbd5e1;
+  border: 1px solid rgba(163, 163, 163, 0.16);
+  background: rgba(10, 10, 10, 0.28);
+  color: var(--tt-ink);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
 }
@@ -126,33 +124,31 @@
   justify-items: center;
   min-width: 0;
   padding: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.58), rgba(2, 6, 23, 0.34));
-  color: #e2e8f0;
+  border: 1px solid rgba(163, 163, 163, 0.18);
+  background: rgba(18, 18, 18, 0.58);
+  color: var(--tt-ink);
   cursor: pointer;
 }
 
 .bloch-sphere-explorer__sphere-button:hover {
-  border-color: rgba(96, 165, 250, 0.52);
+  border-color: rgba(163, 163, 163, 0.52);
 }
 
 .bloch-sphere-explorer__sphere-button:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.78);
+  outline: 2px solid var(--tt-ink-mid);
   outline-offset: 2px;
 }
 
 .bloch-sphere-explorer__sphere-button[data-selected='true'] {
-  border-color: rgba(96, 165, 250, 0.88);
-  background: linear-gradient(180deg, rgba(30, 64, 175, 0.24), rgba(2, 6, 23, 0.4));
-  box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.18);
+  border-color: var(--tt-ink-mid);
+  background: rgba(42, 42, 42, 0.24);
 }
 
 .bloch-sphere-explorer__qubit-label {
   position: absolute;
   top: 12px;
   left: 14px;
-  color: #dbeafe;
+  color: var(--tt-ink);
   font-size: 0.86rem;
   font-weight: 800;
 }
@@ -165,14 +161,14 @@
 }
 
 .bloch-sphere-explorer__sphere-fill {
-  fill: rgba(59, 130, 246, 0.07);
+  fill: rgba(77, 77, 77, 0.07);
 }
 
 .bloch-sphere-explorer__sphere-outline,
 .bloch-sphere-explorer__great-circle,
 .bloch-sphere-explorer__axis {
   fill: none;
-  stroke: rgba(148, 163, 184, 0.38);
+  stroke: rgba(163, 163, 163, 0.38);
   stroke-width: 1;
 }
 
@@ -181,31 +177,29 @@
 }
 
 .bloch-sphere-explorer__axis {
-  stroke: rgba(203, 213, 225, 0.42);
+  stroke: rgba(234, 234, 234, 0.42);
 }
 
 .bloch-sphere-explorer__axis-label {
-  fill: #94a3b8;
+  fill: var(--tt-ink-mid);
   font-size: 8px;
   font-weight: 800;
 }
 
 .bloch-sphere-explorer__state-vector {
-  stroke: #60a5fa;
+  stroke: var(--tt-ink-mid);
   stroke-width: 3;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 5px rgba(96, 165, 250, 0.52));
 }
 
 .bloch-sphere-explorer__state-point {
-  fill: #34d399;
-  stroke: #d1fae5;
+  fill: var(--tt-ink-dim);
+  stroke: var(--tt-ink);
   stroke-width: 1.5;
-  filter: drop-shadow(0 0 5px rgba(52, 211, 153, 0.5));
 }
 
 .bloch-sphere-explorer__radius-label {
-  color: #93c5fd;
+  color: var(--tt-ink);
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
@@ -214,13 +208,12 @@
   display: grid;
   gap: 14px;
   padding: 16px;
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  border-radius: 16px;
-  background: rgba(2, 6, 23, 0.28);
+  border: 1px solid rgba(163, 163, 163, 0.22);
+  background: rgba(10, 10, 10, 0.28);
 }
 
 .bloch-sphere-explorer__vector {
-  color: #dbeafe;
+  color: var(--tt-ink);
 }
 
 .bloch-sphere-explorer__metrics {
@@ -233,19 +226,19 @@
 .bloch-sphere-explorer__metrics div {
   min-width: 0;
   padding: 10px 12px;
-  border-left: 2px solid rgba(96, 165, 250, 0.48);
-  background: rgba(15, 23, 42, 0.42);
+  border-left: 2px solid rgba(163, 163, 163, 0.48);
+  background: rgba(10, 10, 10, 0.42);
 }
 
 .bloch-sphere-explorer__metrics dt {
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   font-size: 0.74rem;
 }
 
 .bloch-sphere-explorer__metrics dd {
   margin: 5px 0 0;
   overflow-wrap: anywhere;
-  color: #f8fafc;
+  color: var(--tt-ink-max);
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
 }
@@ -253,7 +246,7 @@
 .bloch-sphere-explorer__phase-note,
 .bloch-sphere-explorer__empty {
   margin: 0;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   line-height: 1.55;
 }
 

@@ -34,6 +34,18 @@ const pulseItems: NavigationItem[] = [
   { route: 'pulse-circuit-studio', label: 'Pulse 回路スタジオ', detail: 'Pulseシーケンスエディター' },
 ]
 
+/* レール左側に出す、現在地の機械的な呼称。 */
+const routeDesignations: Record<NavigationRoute, string> = {
+  home: 'IDX / PRIMARY TERMINAL',
+  simulate: 'SIM / GATE-AWARE',
+  'algorithm-library': 'LIB / ALGORITHMS',
+  'circuit-studio': 'EDT / CIRCUIT',
+  'state-explorer': 'OBS / STATE VECTOR',
+  'pulse-lab': 'PLS / WAVEFORM LAB',
+  'pulse-circuit-studio': 'PLS / SEQUENCE EDITOR',
+  help: 'DOC / GUIDE',
+}
+
 type NavigationDomain = 'home' | 'gate-aware' | 'pulse'
 
 function navigationDomainForRoute(route: NavigationRoute): NavigationDomain {
@@ -86,18 +98,33 @@ export function AppNavigation({ currentRoute, onNavigate }: AppNavigationProps) 
           onClick={() => setIsOpen(false)}
         />
       ) : null}
-      <button
-        className={`app-navigation__toggle${isOpen ? ' app-navigation__toggle--open' : ''}`}
-        type="button"
-        aria-label={isOpen ? 'ナビゲーションを閉じる' : 'ナビゲーションを開く'}
-        aria-expanded={isOpen}
-        aria-controls="global-navigation-menu"
-        onClick={() => setIsOpen((open) => !open)}
-      >
-        <span aria-hidden="true" />
-        <span aria-hidden="true" />
-        <span aria-hidden="true" />
-      </button>
+
+      {/* 全ページ共通の計器レール。現在地と機体情報をここに集約する。 */}
+      <div className="app-navigation__rail">
+        <span className="app-navigation__mark">
+          YURAGI&ndash;STRIDER<sup className="tt-reg">&reg;</sup>
+        </span>
+        <span className="app-navigation__route">{routeDesignations[currentRoute]}</span>
+        <span className="app-navigation__rev">REV 2.6</span>
+        <span className="app-navigation__status">
+          {/* インターフェイス唯一のターミナルグリーン。 */}
+          <i aria-hidden="true" />
+          SYS ONLINE
+        </span>
+
+        <button
+          className={`app-navigation__toggle${isOpen ? ' app-navigation__toggle--open' : ''}`}
+          type="button"
+          aria-label={isOpen ? 'ナビゲーションを閉じる' : 'ナビゲーションを開く'}
+          aria-expanded={isOpen}
+          aria-controls="global-navigation-menu"
+          onClick={() => setIsOpen((open) => !open)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+      </div>
       <nav
         id="global-navigation-menu"
         className={`app-navigation__menu${isOpen ? ' app-navigation__menu--open' : ''}`}

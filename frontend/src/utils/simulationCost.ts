@@ -65,7 +65,8 @@ export function estimateSimulationCost({
   // Measured on python_dense: 4 qubits ~14 s, 5 qubits over 10 minutes. Flag it
   // before the run rather than letting the request hang.
   const cptpAtFiveQubits = evolutionMethod === 'explicit_cptp' && qubits >= 5
-  if (cptpAtFiveQubits) {
+  const largeNoisyDensityMatrix = qubits >= 6
+  if (cptpAtFiveQubits || largeNoisyDensityMatrix) {
     level = 'very_high'
   }
 
@@ -75,9 +76,13 @@ export function estimateSimulationCost({
     message: cptpAtFiveQubits
       ? `量子ビット ${qubits} 個で Explicit CPTP を選ぶと、区間ごとに ${4 ** qubits} 次元の超演算子を構築・監査します。`
         + ' python_dense では10分以上かかる見込みです。'
+      : largeNoisyDensityMatrix
+        ? `量子ビット ${qubits} 個のノイズあり密度行列は ${2 ** qubits}x${2 ** qubits} です。実行に数十秒〜分単位かかる場合があります。`
       : buildMessage(qubits, steps, duration, level),
     suggestion: cptpAtFiveQubits
       ? '5量子ビットでは Fixed-step RK4 を使ってください（同条件で数秒です）。'
+      : largeNoisyDensityMatrix
+        ? 'Fixed-step RK4を選び、time_steps 3〜11、duration_us 0.1〜0.5から試してください。Rust previewも選択できます。'
       : buildSuggestion(qubits, level),
   }
 }

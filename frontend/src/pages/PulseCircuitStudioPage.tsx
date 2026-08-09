@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import './PulseCircuitStudioPage.css'
 import { PulseBlockEditor } from '../components/PulseBlockEditor'
+import { QuantumPet } from '../components/QuantumPet'
 import type { PulseLabForm } from '../types/pulse'
 import type {
   PulseCircuitState,
@@ -16,6 +17,7 @@ import {
   resizePulseCircuit,
 } from '../utils/pulseCircuit'
 import { matchingPulseDeviceProfile } from '../utils/pulseDeviceProfiles'
+import { pulseCircuitStudioTips } from '../utils/quantumPetTips'
 
 type PulseCircuitStudioPageProps = {
   circuit: PulseCircuitState
@@ -327,6 +329,8 @@ export function PulseCircuitStudioPage({
           ) : null}
         </section>
       </section>
+      {/* ここは実行しない編集ページなので、ペットはガイド役だけ。 */}
+      <QuantumPet phase="idle" tips={pulseCircuitStudioTips} />
     </main>
   )
 }

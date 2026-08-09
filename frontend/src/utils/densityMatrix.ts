@@ -28,8 +28,8 @@ export type DensityMatrixValidationResult =
   | { valid: true; matrix: ValidatedDensityMatrix }
   | { valid: false; message: string }
 
-// Matches the core's noisy ceiling (MAX_DENSITY_MATRIX_QUBITS), so a 5-qubit
-// run's 32x32 matrix still renders instead of being rejected as malformed.
+// Keep the interactive grid bounded even though the simulator can evolve
+// larger density matrices. Rendering 64x64-256x256 cells is not useful UI.
 const MAX_RENDERABLE_QUBITS = 5
 
 export function inferQubitCountFromDimension(dimension: number): number | null {
@@ -133,7 +133,7 @@ export function validateDensityMatrixSnapshot(
   if (qubitCount === null) {
     return {
       valid: false,
-      message: '密度行列の次元は 4x4、8x8、または 16x16 である必要があります。',
+      message: '密度行列グリッドは5量子ビット以下の結果で表示できます。',
     }
   }
 

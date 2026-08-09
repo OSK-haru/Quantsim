@@ -1,16 +1,12 @@
 .pulse-circuit-studio {
-  --pulse-ink: #e9f6f3;
-  --pulse-muted: #8ca5a9;
-  --pulse-teal: #5dd6c0;
-  --pulse-orange: #ee9c58;
+  --pulse-ink: var(--tt-ink);
+  --pulse-muted: var(--tt-ink-mid);
+  --pulse-teal: var(--tt-ink-mid);
+  --pulse-orange: var(--tt-accent);
   min-height: 100vh;
   box-sizing: border-box;
   padding: 34px clamp(18px, 4vw, 58px) 70px;
-  background:
-    radial-gradient(circle at 13% 0%, rgba(38, 156, 140, 0.18), transparent 28%),
-    radial-gradient(circle at 92% 16%, rgba(221, 132, 68, 0.12), transparent 25%),
-    repeating-linear-gradient(90deg, transparent 0 79px, rgba(137, 183, 184, 0.025) 79px 80px),
-    linear-gradient(145deg, #071118 0%, #0a1b22 48%, #071016 100%);
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(163, 163, 163, 0.025) 79px 80px), rgba(30, 30, 30, 0.18);
   color: var(--pulse-ink);
 }
 
@@ -42,7 +38,7 @@
 
 .pulse-circuit-studio h1 {
   margin: 5px 0 10px;
-  font: 500 clamp(2.5rem, 6vw, 4.8rem)/0.98 Georgia, 'Times New Roman', serif;
+  font: var(--tt-mono);
   letter-spacing: -0.045em;
 }
 
@@ -58,9 +54,8 @@
 .pulse-circuit-studio__environment,
 .pulse-circuit-studio__palette,
 .pulse-circuit-studio__sequence {
-  border: 1px solid rgba(93, 214, 192, 0.2);
-  background: rgba(7, 22, 29, 0.78);
-  box-shadow: 0 20px 46px rgba(1, 7, 11, 0.28);
+  border: 1px solid rgba(163, 163, 163, 0.2);
+  background: var(--tt-void);
 }
 
 .pulse-circuit-studio__summary {
@@ -68,7 +63,6 @@
   gap: 6px;
   min-width: 150px;
   padding: 15px 17px;
-  border-radius: 14px;
 }
 
 .pulse-circuit-studio__summary span,
@@ -82,9 +76,8 @@
   box-sizing: border-box;
   margin-bottom: 18px;
   padding: 13px 16px;
-  border-color: rgba(238, 156, 88, 0.25);
-  border-radius: 12px;
-  color: #efbd92;
+  border-color: rgba(230, 25, 25, 0.25);
+  color: var(--tt-accent-hot);
 }
 
 .pulse-circuit-studio__environment {
@@ -95,7 +88,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  border-radius: 14px;
 }
 
 .pulse-circuit-studio__environment > div {
@@ -128,9 +120,8 @@
 .pulse-circuit-studio__transmon-count select {
   min-width: 110px;
   padding: 8px 10px;
-  border: 1px solid rgba(93, 214, 192, 0.26);
-  border-radius: 9px;
-  background: #091820;
+  border: 1px solid rgba(163, 163, 163, 0.26);
+  background: var(--tt-void);
   color: var(--pulse-ink);
 }
 
@@ -139,8 +130,7 @@
   gap: 2px;
   min-width: 96px;
   padding: 7px 9px;
-  border-radius: 9px;
-  background: rgba(8, 28, 35, 0.86);
+  background: var(--tt-void);
 }
 
 .pulse-circuit-studio__environment dt {
@@ -163,7 +153,6 @@
 .pulse-circuit-studio__sequence {
   box-sizing: border-box;
   padding: 18px;
-  border-radius: 18px;
 }
 
 .pulse-circuit-studio h2 {
@@ -181,9 +170,8 @@
 .pulse-circuit-studio__clear,
 .pulse-circuit-studio__step-actions button,
 .pulse-circuit-studio__inspector button {
-  border: 1px solid rgba(93, 214, 192, 0.22);
-  border-radius: 10px;
-  background: rgba(10, 32, 39, 0.9);
+  border: 1px solid rgba(163, 163, 163, 0.22);
+  background: var(--tt-panel);
   color: var(--pulse-ink);
   cursor: pointer;
 }
@@ -223,7 +211,7 @@
   grid-template-columns: 76px minmax(0, 1fr);
   min-height: 150px;
   align-items: center;
-  border-block: 1px solid rgba(140, 165, 169, 0.12);
+  border-block: 1px solid rgba(163, 163, 163, 0.12);
 }
 
 .pulse-circuit-studio__lanes {
@@ -233,8 +221,8 @@
 }
 
 .pulse-circuit-studio__track[data-active='true'] {
-  border-color: rgba(93, 214, 192, 0.34);
-  background: rgba(16, 46, 51, 0.2);
+  border-color: rgba(163, 163, 163, 0.34);
+  background: rgba(10, 10, 10, 0.2);
 }
 
 .pulse-circuit-studio__line-label {
@@ -261,13 +249,12 @@
   gap: 16px;
   align-items: end;
   padding: 18px;
-  border: 1px solid rgba(182, 136, 255, 0.34);
-  border-radius: 15px;
-  background: linear-gradient(145deg, rgba(30, 22, 48, 0.88), rgba(12, 22, 29, 0.96));
+  border: 1px solid rgba(234, 234, 234, 0.34);
+  background: var(--tt-panel);
 }
 
 .pulse-circuit-studio__virtual-z-editor span {
-  color: #c6a5ff;
+  color: var(--tt-ink);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -286,16 +273,15 @@
 .pulse-circuit-studio__virtual-z-editor label {
   display: grid;
   gap: 6px;
-  color: #c8d9da;
+  color: var(--tt-ink);
   font-size: 0.78rem;
 }
 
 .pulse-circuit-studio__virtual-z-editor input {
   min-height: 40px;
   padding: 8px 10px;
-  border: 1px solid rgba(182, 136, 255, 0.32);
-  border-radius: 9px;
-  background: #0b1520;
+  border: 1px solid rgba(234, 234, 234, 0.32);
+  background: var(--tt-void);
   color: var(--pulse-ink);
 }
 
@@ -309,10 +295,9 @@
 .pulse-circuit-studio__virtual-z-presets button,
 .pulse-circuit-studio__virtual-z-save {
   padding: 8px 11px;
-  border: 1px solid rgba(182, 136, 255, 0.32);
-  border-radius: 9px;
-  background: rgba(52, 35, 78, 0.72);
-  color: #e5d6ff;
+  border: 1px solid rgba(234, 234, 234, 0.32);
+  background: var(--tt-panel-3);
+  color: var(--tt-ink);
   cursor: pointer;
 }
 
@@ -338,25 +323,22 @@
 
 .pulse-circuit-studio__step {
   flex: 0 0 116px;
-  border: 1px solid rgba(93, 214, 192, 0.2);
-  border-radius: 12px;
+  border: 1px solid rgba(163, 163, 163, 0.2);
   overflow: hidden;
-  background: rgba(12, 38, 45, 0.8);
+  background: var(--tt-panel);
 }
 
 .pulse-circuit-studio__step[data-selected='true'] {
   border-color: var(--pulse-orange);
-  box-shadow: 0 0 0 2px rgba(238, 156, 88, 0.13);
 }
 
 .pulse-circuit-studio__step[data-operation='virtual_z'] {
-  border-color: rgba(182, 136, 255, 0.42);
-  background: rgba(45, 31, 67, 0.72);
+  border-color: rgba(234, 234, 234, 0.42);
+  background: var(--tt-panel-3);
 }
 
 .pulse-circuit-studio__step[data-operation='virtual_z'][data-selected='true'] {
-  border-color: #c6a5ff;
-  box-shadow: 0 0 0 2px rgba(182, 136, 255, 0.16);
+  border-color: var(--tt-ink);
 }
 
 .pulse-circuit-studio__step-main {
@@ -385,7 +367,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   padding: 6px;
-  border-top: 1px solid rgba(93, 214, 192, 0.12);
+  border-top: 1px solid rgba(163, 163, 163, 0.12);
 }
 
 .pulse-circuit-studio__step-actions button {
@@ -439,4 +421,50 @@
   .pulse-circuit-studio__palette > div {
     grid-column: 1 / -1;
   }
+}
+
+/* --- TELEMETRY SHELL NORMALISATION --------------------- */
+
+.pulse-circuit-studio {
+  background:
+    repeating-linear-gradient(90deg, var(--tt-blueprint) 0 1px, transparent 1px 80px),
+    var(--tt-void);
+  color: var(--tt-ink);
+}
+
+.pulse-circuit-studio__header {
+  padding-bottom: 16px;
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+}
+
+.pulse-circuit-studio__eyebrow {
+  display: inline-block;
+  padding: 0;
+  margin-bottom: 10px;
+  border: 0;
+  background: none;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.pulse-circuit-studio__eyebrow::before {
+  content: '[ ';
+}
+
+.pulse-circuit-studio__eyebrow::after {
+  content: ' ]';
+}
+
+.pulse-circuit-studio__header h1 {
+  color: var(--tt-ink);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.9rem, 4.5vw, 3.2rem);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
 }

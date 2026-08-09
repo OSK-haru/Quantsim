@@ -1,133 +1,166 @@
-.shell {
-  min-height: 100vh;
-  padding: 56px 24px;
-  box-sizing: border-box;
-  display: grid;
-  gap: 28px;
-  align-content: start;
-  background:
-    radial-gradient(circle at top, rgba(148, 163, 184, 0.18), transparent 38%),
-    linear-gradient(180deg, #0b1020 0%, #0f172a 100%);
-  color: #e5e7eb;
+/* ============================================================================
+   GLOBAL CONTROL PRIMITIVES
+   Element-level defaults only — every component class outranks these, so this
+   layer just guarantees that anything unstyled still reads as instrumentation.
+   ========================================================================= */
+
+button {
+  padding: 10px 16px;
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  background: var(--tt-panel-2);
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms linear, border-color 120ms linear, color 120ms linear;
 }
 
-.hero {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 28px 28px 10px;
+button:hover:not(:disabled) {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink-max);
 }
+
+button:active:not(:disabled) {
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
+}
+
+button:disabled {
+  border-color: var(--tt-rule);
+  background: var(--tt-panel);
+  color: var(--tt-ink-faint);
+  cursor: not-allowed;
+}
+
+input,
+select,
+textarea {
+  padding: 8px 10px;
+  border: var(--tt-hair) solid var(--tt-rule-mid);
+  background: var(--tt-void);
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--tt-accent);
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--tt-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/*
+ * スライダーは既定のままだと明るいトラックが画面内で一番目立ってしまう。
+ * レールは沈めて、掴む所だけをハザードレッドで示す。
+ */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  padding: 0;
+  border: 0;
+  background: var(--tt-rule-mid);
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 11px;
+  height: 16px;
+  border: 0;
+  background: var(--tt-accent);
+  cursor: pointer;
+}
+
+input[type='range']::-moz-range-track {
+  height: 4px;
+  background: var(--tt-rule-mid);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 11px;
+  height: 16px;
+  border: 0;
+  border-radius: 0;
+  background: var(--tt-accent);
+  cursor: pointer;
+}
+
+input[type='range']:disabled {
+  background: var(--tt-rule);
+  cursor: not-allowed;
+}
+
+input[type='range']:disabled::-webkit-slider-thumb {
+  background: var(--tt-ink-faint);
+}
+
+input[type='range']:disabled::-moz-range-thumb {
+  background: var(--tt-ink-faint);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--tt-accent);
+}
+
+/* --- Tabular telemetry ---------------------------------------------------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--tt-mono);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  padding: 6px 10px;
+  border: var(--tt-hair) solid var(--tt-rule);
+  text-align: left;
+}
+
+th {
+  background: var(--tt-panel-2);
+  color: var(--tt-ink-mid);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* --- Shared eyebrow: bracketed unit identifier ---------------------------- */
 
 .eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  margin-bottom: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.75);
-  color: #93c5fd;
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
+  display: inline-block;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
-.hero h1 {
-  margin: 0;
-  font-size: clamp(2.8rem, 7vw, 5rem);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
-  color: #f8fafc;
+.eyebrow::before {
+  content: '[ ';
 }
 
-.subtitle {
-  margin: 14px 0 0;
-  font-size: clamp(1.05rem, 2vw, 1.25rem);
-  color: #cbd5e1;
-}
-
-.lede {
-  margin: 14px 0 0;
-  max-width: 64ch;
-  color: #94a3b8;
-  line-height: 1.7;
-}
-
-.status-grid {
-  max-width: 960px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 28px 36px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 16px;
-  box-sizing: border-box;
-}
-
-.info-grid {
-  max-width: 960px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 28px 48px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
-  box-sizing: border-box;
-}
-
-.diagnostics-card,
-.simulation-summary {
-  width: min(960px, calc(100% - 56px));
-}
-
-.status-card {
-  padding: 18px 18px 20px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.78);
-  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.35);
-  backdrop-filter: blur(12px);
-}
-
-.status-label {
-  display: block;
-  margin-bottom: 10px;
-  color: #94a3b8;
-  font-size: 0.84rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.status-value {
-  display: block;
-  color: #f8fafc;
-  font-size: 1.02rem;
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-@media (max-width: 640px) {
-  .shell {
-    padding: 28px 16px 20px;
-    gap: 20px;
-  }
-
-  .hero {
-    padding: 16px 8px 0;
-  }
-
-  .status-grid {
-    padding: 0 8px 24px;
-    grid-template-columns: 1fr;
-  }
-
-  .info-grid {
-    padding: 0 8px 28px;
-    grid-template-columns: 1fr;
-  }
-
-  .diagnostics-card,
-  .simulation-summary {
-    width: 100%;
-  }
+.eyebrow::after {
+  content: ' ]';
 }

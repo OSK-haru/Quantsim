@@ -47,7 +47,8 @@ SUPPORTED_GATES = frozenset({
     "CNOT", "CZ", "CP", "CCX", "SWAP", "QFT", "ORACLE", "MEASURE", "MESSAGE",
 })
 MAX_LOGICAL_QUBITS = 18
-MAX_DENSITY_MATRIX_QUBITS = 5
+MAX_DENSITY_MATRIX_QUBITS = 8
+STATEVECTOR_AUTO_SWITCH_QUBITS = 5
 MAX_STATEVECTOR_QUBITS = 18
 
 
@@ -70,5 +71,6 @@ def core_capabilities() -> dict[str, object]:
         "supported_gates": sorted(SUPPORTED_GATES),
         "max_logical_qubits": MAX_LOGICAL_QUBITS,
         "max_density_matrix_qubits": MAX_DENSITY_MATRIX_QUBITS,
+        "statevector_auto_switch_qubits": STATEVECTOR_AUTO_SWITCH_QUBITS,
         "max_statevector_qubits": MAX_STATEVECTOR_QUBITS,
     }

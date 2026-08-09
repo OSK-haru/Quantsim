@@ -113,7 +113,7 @@ $$
 \gamma_\phi^{\text{flux}} = 0.05 \times \frac{\Phi_{\text{noise}}}{\Phi_{\max}}
 $$
 
-:::warning 磁束ノイズの外挿について
+:::warning[磁束ノイズの外挿について]
 $\Phi_{\text{noise}}/\Phi_{\max}$ の比には**上限のクランプがありません**。`flux_noise_phi0` が $\Phi_{\max} = 10^{-5}$ を超える値を指定した場合、線形に外挿されます。プロファイルが想定する範囲を超えた領域の結果は物理的な裏付けを持ちません。
 :::
 
@@ -147,7 +147,7 @@ $$
 | `n_th` | 熱占有数 |
 | `t1_effective_us` / `t2_effective_us` / `tphi_effective_us` | 実効時間 |
 
-:::note 非推奨のエイリアス
+:::note[非推奨のエイリアス]
 `gamma1_per_us` は `gamma_down_per_us` の読み取り専用エイリアスとして残っていますが、**合計の $1/T_1$ ではありません**。混同を避けるため新規の利用では正準名を使ってください。ほかに `gammaphi_per_us`、`t1_base_us`、`tphi_base_us`、`gamma_phi_total_per_us`、`t1_us`、`t2_us` も非推奨です。
 :::
 

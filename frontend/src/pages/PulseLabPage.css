@@ -1,15 +1,11 @@
 .pulse-lab {
-  --pulse-ink: #e9f6f3;
-  --pulse-muted: #8ca5a9;
-  --pulse-teal: #5dd6c0;
-  --pulse-orange: #ee9c58;
+  --pulse-ink: var(--tt-ink);
+  --pulse-muted: var(--tt-ink-mid);
+  --pulse-teal: var(--tt-ink-mid);
+  --pulse-orange: var(--tt-accent);
   min-height: 100vh;
   padding: 34px clamp(18px, 4vw, 58px) 70px;
-  background:
-    radial-gradient(circle at 13% 0%, rgba(38, 156, 140, 0.18), transparent 28%),
-    radial-gradient(circle at 92% 16%, rgba(221, 132, 68, 0.12), transparent 25%),
-    repeating-linear-gradient(90deg, transparent 0 79px, rgba(137, 183, 184, 0.025) 79px 80px),
-    linear-gradient(145deg, #071118 0%, #0a1b22 48%, #071016 100%);
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(163, 163, 163, 0.025) 79px 80px), rgba(30, 30, 30, 0.18);
   color: var(--pulse-ink);
 }
 
@@ -36,7 +32,7 @@
 
 .pulse-lab__header h1 {
   margin: 4px 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--tt-mono);
   font-size: clamp(2.7rem, 7vw, 5.2rem);
   font-weight: 500;
   letter-spacing: -0.045em;
@@ -46,11 +42,11 @@
 .pulse-lab__header p {
   max-width: 68ch;
   margin: 13px 0 0;
-  color: #9cb0b2;
+  color: var(--tt-ink-mid);
 }
 
 .pulse-lab__header p strong {
-  color: #f0b27c;
+  color: var(--tt-accent);
 }
 
 .pulse-lab__nav {
@@ -64,16 +60,15 @@
 .pulse-lab__nav button,
 .pulse-lab__run button {
   padding: 9px 13px;
-  border: 1px solid rgba(92, 202, 184, 0.28);
-  border-radius: 8px;
-  background: rgba(8, 24, 31, 0.82);
-  color: #c8dddb;
+  border: 1px solid rgba(77, 77, 77, 0.28);
+  background: var(--tt-void);
+  color: var(--tt-ink);
   cursor: pointer;
 }
 
 .pulse-lab__nav button:hover {
   border-color: var(--pulse-teal);
-  color: #fff;
+  color: var(--tt-ink-max);
 }
 
 .pulse-lab__scope-note {
@@ -84,18 +79,16 @@
   padding: 11px 14px;
   align-items: baseline;
   gap: 8px;
-  border: 1px solid rgba(238, 156, 88, 0.24);
-  border-radius: 10px;
-  background: rgba(55, 36, 25, 0.46);
-  color: #9fb1b2;
+  border: 1px solid rgba(230, 25, 25, 0.24);
+  background: rgba(18, 18, 18, 0.46);
+  color: var(--tt-ink-mid);
   font-size: 0.82rem;
   line-height: 1.5;
 }
 
-
 .pulse-lab__scope-note strong {
   flex: 0 0 auto;
-  color: #f0b27c;
+  color: var(--tt-accent);
 }
 
 .pulse-lab__identity,
@@ -106,9 +99,8 @@
   margin: 0 auto;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid rgba(99, 173, 177, 0.18);
-  border-radius: 13px;
-  background: rgba(102, 167, 170, 0.18);
+  border: 1px solid rgba(77, 77, 77, 0.18);
+  background: rgba(77, 77, 77, 0.18);
 }
 
 .pulse-lab__identity {
@@ -121,7 +113,7 @@
   display: grid;
   gap: 5px;
   padding: 13px 16px;
-  background: #091820;
+  background: var(--tt-void);
 }
 
 .pulse-lab__identity strong,
@@ -141,9 +133,8 @@
   grid-template-columns: 1fr auto;
   gap: 12px 20px;
   padding: 19px 22px;
-  border: 1px solid rgba(238, 156, 88, 0.23);
-  border-radius: 15px;
-  background: linear-gradient(110deg, rgba(42, 29, 22, 0.8), rgba(9, 22, 28, 0.96));
+  border: 1px solid rgba(230, 25, 25, 0.23);
+  background: var(--tt-panel);
 }
 
 .pulse-lab__run h2,
@@ -153,31 +144,31 @@
 
 .pulse-lab__run p {
   margin: 0;
-  color: #93a6a8;
+  color: var(--tt-ink-mid);
   font-size: 0.84rem;
 }
 
 .pulse-lab__run p[data-level='elevated'] {
-  color: #e9b071;
+  color: var(--tt-accent);
 }
 
 .pulse-lab__run p[data-level='blocked'],
 .pulse-lab__run-error {
-  color: #ef8e76 !important;
+  color: var(--tt-accent) !important;
 }
 
 .pulse-lab__run button {
   min-width: 190px;
-  border-color: #64d6c1;
-  background: linear-gradient(135deg, #1a927e, #176b66);
+  border-color: var(--tt-ink-mid);
+  background: var(--tt-rule-mid);
   color: white;
   font-weight: 800;
 }
 
 .pulse-lab__run button:disabled {
-  border-color: rgba(120, 146, 149, 0.22);
-  background: #26383c;
-  color: #71878a;
+  border-color: rgba(77, 77, 77, 0.22);
+  background: var(--tt-panel-3);
+  color: var(--tt-ink-dim);
   cursor: not-allowed;
 }
 
@@ -197,23 +188,23 @@
   display: grid;
   min-height: 106px;
   padding: 17px;
-  background: #091820;
+  background: var(--tt-void);
   align-content: space-between;
 }
 
 .pulse-lab__summary strong {
-  color: #e8fbf7;
-  font-family: 'IBM Plex Mono', 'Cascadia Code', monospace;
+  color: var(--tt-ink-max);
+  font-family: var(--tt-mono);
   font-size: 1.35rem;
 }
 
 .pulse-lab__summary small {
-  color: #889da0;
+  color: var(--tt-ink-dim);
 }
 
 .pulse-lab__summary--leakage span,
 .pulse-lab__summary--leakage strong {
-  color: #ef9a76;
+  color: var(--tt-accent);
 }
 
 .pulse-lab__drawers {
@@ -225,20 +216,19 @@
   max-height: 420px;
   padding: 15px;
   overflow: auto;
-  border-radius: 9px;
-  background: #061118;
-  color: #b9d2d0;
-  font-family: 'IBM Plex Mono', 'Cascadia Code', monospace;
+  background: var(--tt-void);
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
   font-size: 0.76rem;
   line-height: 1.55;
 }
 
 .pulse-lab__scope {
-  color: #a7babb;
+  color: var(--tt-ink-mid);
 }
 
 .pulse-lab__scope p {
-  color: #efad82;
+  color: var(--tt-accent-hot);
 }
 
 .pulse-lab__scope li + li {
@@ -247,10 +237,9 @@
 
 .pulse-lab__empty {
   padding: 38px;
-  border: 1px dashed rgba(102, 190, 180, 0.26);
-  border-radius: 17px;
+  border: 1px dashed rgba(77, 77, 77, 0.26);
   text-align: center;
-  background: rgba(8, 20, 27, 0.64);
+  background: var(--tt-void);
 }
 
 .pulse-lab__empty p {
@@ -271,7 +260,6 @@
     display: grid;
     gap: 3px;
   }
-
 
   .pulse-lab__identity {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -295,4 +283,50 @@
   .pulse-lab__run button {
     width: 100%;
   }
+}
+
+/* --- TELEMETRY SHELL NORMALISATION --------------------- */
+
+.pulse-lab {
+  background:
+    repeating-linear-gradient(90deg, var(--tt-blueprint) 0 1px, transparent 1px 80px),
+    var(--tt-void);
+  color: var(--tt-ink);
+}
+
+.pulse-lab__header {
+  padding-bottom: 16px;
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+}
+
+.pulse-lab__eyebrow {
+  display: inline-block;
+  padding: 0;
+  margin-bottom: 10px;
+  border: 0;
+  background: none;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.pulse-lab__eyebrow::before {
+  content: '[ ';
+}
+
+.pulse-lab__eyebrow::after {
+  content: ' ]';
+}
+
+.pulse-lab__header h1 {
+  color: var(--tt-ink);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.9rem, 4.5vw, 3.2rem);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
 }

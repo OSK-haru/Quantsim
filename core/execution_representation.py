@@ -10,7 +10,10 @@ from __future__ import annotations
 
 from typing import Literal
 
-from core.capabilities import MAX_DENSITY_MATRIX_QUBITS
+from core.capabilities import (
+    MAX_DENSITY_MATRIX_QUBITS,
+    STATEVECTOR_AUTO_SWITCH_QUBITS,
+)
 ExecutionRepresentation = Literal["statevector", "density_matrix", "trajectory"]
 
 
@@ -24,7 +27,11 @@ def select_execution_representation(
 ) -> ExecutionRepresentation:
     """Select the cheapest representation with currently audited semantics."""
 
-    if environment_is_ideal and not has_measurements and logical_qubits > MAX_DENSITY_MATRIX_QUBITS:
+    if (
+        environment_is_ideal
+        and not has_measurements
+        and logical_qubits > STATEVECTOR_AUTO_SWITCH_QUBITS
+    ):
         return "statevector"
     # The trajectory slot is reserved for the stochastic noisy engine. Until
     # its jump statistics are audited, retain the density-matrix authority.

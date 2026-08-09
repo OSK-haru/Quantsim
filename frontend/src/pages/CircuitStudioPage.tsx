@@ -1,12 +1,18 @@
 import './CircuitStudioPage.css'
 import { useState } from 'react'
 import { CircuitWorkspace } from '../components/CircuitWorkspace'
+import { QuantumPet } from '../components/QuantumPet'
 import type { CircuitEditorState } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
 import { useCircuitContext } from '../context/useCircuitContext'
 import { circuitEditorStateToConfig } from '../utils/circuitConfig'
 import { isMultiQubitGateType } from '../utils/circuitEditing'
 import { validateCircuitConfigForRun } from '../utils/circuitValidation'
+import {
+  circuitStudioTips,
+  gatePlacementGuide,
+  gatePlacementProgressGuide,
+} from '../utils/quantumPetTips'
 
 type CircuitStudioPageProps = {
   gateDurationDefaults: GateDurationDefaults
@@ -59,6 +65,19 @@ export function CircuitStudioPage({
         : formatStudioValidationMessage(validation.message),
     )
   }
+
+  /*
+   * ペットの案内は、いま手を動かしている対象に合わせる。
+   * 配置の途中 → 選択中のゲート → パレットで選んだ種類 → 一般的な操作、の順。
+   */
+  const petMessage =
+    circuit.pendingCnotControl !== null && circuit.selectedGateType !== null
+      ? gatePlacementProgressGuide(circuit.selectedGateType)
+      : circuit.selectedGateId !== null
+        ? '選択中のゲートは、Delete か Backspace で消せるよ。回路の外へドラッグして放してもいいよ。'
+        : circuit.selectedGateType !== null
+          ? gatePlacementGuide(circuit.selectedGateType)
+          : null
 
   return (
     <main className="circuit-studio-page">
@@ -120,6 +139,8 @@ export function CircuitStudioPage({
           validationStatus={validationStatus}
         />
       </div>
+      {/* ここは実行しない編集ページなので、ペットはガイド役だけ。 */}
+      <QuantumPet phase="idle" message={petMessage} tips={circuitStudioTips} />
     </main>
   )
 }

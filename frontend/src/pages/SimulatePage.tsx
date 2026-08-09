@@ -4,6 +4,7 @@ import { CircuitSummaryCard } from '../components/CircuitSummaryCard'
 import { DensityMatrixSummaryCard } from '../components/DensityMatrixSummaryCard'
 import { DiagnosticsCard, type SimulationDiagnostics } from '../components/DiagnosticsCard'
 import { ParameterPanel } from '../components/ParameterPanel'
+import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { RunPanel } from '../components/RunPanel'
 import { ResultDrawer } from '../components/ResultDrawer'
 import { SectionHeader } from '../components/SectionHeader'
@@ -12,6 +13,7 @@ import { SimulationCompletionPopup } from '../components/SimulationCompletionPop
 import { uiResponseExample } from '../mock/uiResponseExample'
 import { circuitEditorStateToConfig, type CircuitConfig } from '../utils/circuitConfig'
 import { validateCircuitConfigForRun } from '../utils/circuitValidation'
+import { simulateTips } from '../utils/quantumPetTips'
 import { estimateSimulationCost } from '../utils/simulationCost'
 import { useCircuitContext } from '../context/useCircuitContext'
 import type {
@@ -58,6 +60,7 @@ type CompletionNotice = {
   detail: string
 }
 const API_EXAMPLE_TIMEOUT_MS = 10000
+const PET_CELEBRATION_MS = 7000
 const RUN_REQUEST_MIN_TIMEOUT_MS = 15000
 const RUN_REQUEST_TIMEOUT_PER_STEP_MS = 25
 
@@ -383,6 +386,7 @@ export function SimulatePage({
   const [snapshotOptionsError, setSnapshotOptionsError] = useState<string | null>(null)
   const [requestErrorKind, setRequestErrorKind] = useState<RequestErrorKind>('none')
   const [completionNotice, setCompletionNotice] = useState<CompletionNotice | null>(null)
+  const [petCelebrating, setPetCelebrating] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const requestIdRef = useRef(0)
   const mountedRef = useRef(true)
@@ -432,7 +436,7 @@ export function SimulatePage({
     const timeoutId = window.setTimeout(() => controller.abort(), API_EXAMPLE_TIMEOUT_MS)
 
     setLoadStatus('loading')
-    setActiveRequestLabel('GET /api/simulation/example')
+    setActiveRequestLabel('サンプル API')
     setLastFetchUrl(url)
     setLastFetchStartedAt(startedAt)
     setLastFetchResult('pending')
@@ -522,7 +526,7 @@ export function SimulatePage({
       snapshotValidationMessage
     if (firstValidationMessage !== null) {
       setLoadStatus('error')
-      setActiveRequestLabel('POST /api/simulate')
+      setActiveRequestLabel('シミュレーション API')
       setLastFetchUrl('not requested - validation failed')
       setLastFetchStartedAt(new Date().toISOString())
       setLastFetchResult('validation failed')
@@ -537,7 +541,7 @@ export function SimulatePage({
     const circuitValidation = validateCircuitConfigForRun(circuitConfig)
     if (!circuitValidation.valid) {
       setLoadStatus('error')
-      setActiveRequestLabel('POST /api/simulate')
+      setActiveRequestLabel('シミュレーション API')
       setLastFetchUrl('not requested - validation failed')
       setLastFetchStartedAt(new Date().toISOString())
       setLastFetchResult('validation failed')
@@ -560,7 +564,7 @@ export function SimulatePage({
     const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
 
     setLoadStatus('loading')
-    setActiveRequestLabel('POST /api/simulate')
+    setActiveRequestLabel('シミュレーション API')
     setLastFetchUrl(url)
     setLastFetchStartedAt(startedAt)
     setLastFetchResult('pending')
@@ -615,7 +619,7 @@ export function SimulatePage({
       setResponse(parsed as SimulationResponse)
       onSuccessfulResponse(parsed as SimulationResponse, circuitConfig)
       setLoadStatus('api')
-      setLatestSourceLabel('POST /api/simulate')
+      setLatestSourceLabel('シミュレーション API')
       setLastFetchResult('success')
       setErrorMessage(null)
       setRequestErrorKind('none')
@@ -625,6 +629,7 @@ export function SimulatePage({
         title: 'シミュレーションが完了しました',
         detail: `${parsed.run.selected_backend} / ${evolutionMethod}`,
       })
+      setPetCelebrating(true)
     } catch (error) {
       if (!mountedRef.current || requestId !== requestIdRef.current) {
         return
@@ -642,6 +647,7 @@ export function SimulatePage({
       setLastFetchResult('failed')
       setErrorMessage(message)
       setRequestErrorKind('api')
+      setPetCelebrating(false)
       setFrontendRunFinishedAt(new Date().toISOString())
       setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
     } finally {
@@ -660,6 +666,18 @@ export function SimulatePage({
       abortControllerRef.current?.abort()
     }
   }, [])
+
+  /*
+   * ペットは完了色（菫）をしばらく保ってから、基本色（緑）へ戻る。
+   */
+  useEffect(() => {
+    if (!petCelebrating) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => setPetCelebrating(false), PET_CELEBRATION_MS)
+    return () => window.clearTimeout(timeoutId)
+  }, [petCelebrating])
 
   const connectionLabel =
     loadStatus === 'loading'
@@ -686,6 +704,22 @@ export function SimulatePage({
             : `前回の結果を保持中（${latestSourceLabel}）`
           : '静的フィクスチャ'
   const hasAlerts = response.warnings.length > 0 || response.issues.length > 0
+
+  const petPhase: QuantumPetPhase =
+    loadStatus === 'loading' ? 'running' : petCelebrating ? 'done' : 'idle'
+
+  const petMessage =
+    petPhase === 'running'
+      ? null
+      : petPhase === 'done'
+        ? response.summary.final_fidelity !== null
+          ? `完了！最終忠実度は ${(response.summary.final_fidelity * 100).toFixed(2)}% だったよ。`
+          : 'シミュレーションが完了したよ。結果を見てみよう。'
+        : loadStatus === 'error' && errorMessage !== null
+          ? requestErrorKind === 'validation'
+            ? `送信できなかったよ：${errorMessage}`
+            : `APIでつまずいたみたい：${errorMessage}`
+          : null
   const circuitGateCount = circuitState.columns.reduce(
     (count, column) => count + column.gates.length,
     0,
@@ -952,6 +986,7 @@ export function SimulatePage({
           onDismiss={() => setCompletionNotice(null)}
         />
       ) : null}
+      <QuantumPet phase={petPhase} message={petMessage} tips={simulateTips} />
     </main>
   )
 }
@@ -972,9 +1007,19 @@ function getRunRequestTimeoutMs(
     RUN_REQUEST_MIN_TIMEOUT_MS,
     timeSteps * RUN_REQUEST_TIMEOUT_PER_STEP_MS,
   )
-  // 3/4-qubit dense runs need a larger floor while we measure where time is spent.
-  const qubitBudget =
-    logicalQubits >= 4 ? 60000 : logicalQubits === 3 ? 30000 : RUN_REQUEST_MIN_TIMEOUT_MS
+  // Noisy dense cost grows as 4**n. Preserve enough time for bounded 6-8Q
+  // runs while the cost notice steers users toward small step counts.
+  const qubitBudget = logicalQubits >= 8
+    ? Math.max(900000, Math.min(1800000, timeSteps * 20000))
+    : logicalQubits === 7
+      ? Math.max(300000, timeSteps * 6000)
+      : logicalQubits === 6
+        ? Math.max(120000, timeSteps * 2500)
+        : logicalQubits >= 4
+          ? 60000
+          : logicalQubits === 3
+            ? 30000
+            : RUN_REQUEST_MIN_TIMEOUT_MS
   const evolutionBudget = evolutionMethod === 'explicit_cptp' ? 120000 : 0
   return Math.max(stepBudget, qubitBudget, evolutionBudget)
 }

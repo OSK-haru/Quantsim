@@ -68,6 +68,25 @@ class RustMatmulKernelTest(unittest.TestCase):
 
         _assert_flat_close(self, result, expected)
 
+    def test_matmul_complex_flat_matches_python_for_asymmetric_4x4_matrix(self) -> None:
+        left = [
+            [complex(row + column / 10.0, row - column / 3.0) for column in range(4)]
+            for row in range(4)
+        ]
+        right = [
+            [complex(2.0 * row - column, row / 5.0 + column) for column in range(4)]
+            for row in range(4)
+        ]
+
+        result = yuragi_strider_rust.matmul_complex_flat(
+            _flatten(left),
+            _flatten(right),
+            4,
+        )
+        expected = _flatten(_python_matmul(left, right))
+
+        _assert_flat_close(self, result, expected)
+
     def test_matmul_complex_flat_rejects_bad_lengths(self) -> None:
         with self.assertRaises(ValueError):
             yuragi_strider_rust.matmul_complex_flat([1.0, 0.0], [1.0, 0.0], 2)

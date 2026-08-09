@@ -2,9 +2,8 @@
 .pulse-population,
 .pulse-density {
   padding: 22px;
-  border: 1px solid rgba(87, 161, 169, 0.2);
-  border-radius: 18px;
-  background: rgba(9, 19, 27, 0.94);
+  border: 1px solid rgba(77, 77, 77, 0.2);
+  background: var(--tt-void);
 }
 
 .pulse-waveform__heading,
@@ -20,7 +19,7 @@
 .pulse-waveform__heading span,
 .pulse-population__heading span,
 .pulse-density__heading span {
-  color: #5fd8c2;
+  color: var(--tt-ink-mid);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.15em;
@@ -37,7 +36,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 11px;
-  color: #9bb1b5;
+  color: var(--tt-ink-mid);
   font-size: 0.78rem;
 }
 
@@ -47,13 +46,12 @@
   width: 9px;
   height: 9px;
   margin-right: 6px;
-  border-radius: 50%;
-  background: var(--series-color, #fff);
+  background: var(--series-color, var(--tt-ink-max));
   content: '';
 }
 
-.pulse-waveform__legend [data-series='x'] { --series-color: #5edbc4; }
-.pulse-waveform__legend [data-series='y'] { --series-color: #f2a25c; }
+.pulse-waveform__legend [data-series='x'] { --series-color: var(--tt-ink-mid); }
+.pulse-waveform__legend [data-series='y'] { --series-color: var(--tt-accent); }
 
 .pulse-waveform svg,
 .pulse-population svg {
@@ -64,19 +62,19 @@
 
 .pulse-waveform svg text,
 .pulse-population svg text {
-  fill: #758f96;
+  fill: var(--tt-ink-dim);
   font-size: 11px;
 }
 
 .pulse-waveform__axis,
 .pulse-population__axis,
 .pulse-population__grid {
-  stroke: rgba(133, 165, 170, 0.23);
+  stroke: rgba(77, 77, 77, 0.23);
   stroke-width: 1;
 }
 
 .pulse-waveform__boundary {
-  stroke: rgba(242, 162, 92, 0.45);
+  stroke: rgba(230, 25, 25, 0.45);
   stroke-dasharray: 4 5;
 }
 
@@ -87,11 +85,11 @@
   vector-effect: non-scaling-stroke;
 }
 
-.pulse-waveform__line--x { stroke: #5edbc4; }
-.pulse-waveform__line--y { stroke: #f2a25c; }
+.pulse-waveform__line--x { stroke: var(--tt-ink-mid); }
+.pulse-waveform__line--y { stroke: var(--tt-accent); }
 
 .pulse-waveform p {
   margin: 8px 0 0;
-  color: #7f989e;
+  color: var(--tt-ink-dim);
   font-size: 0.82rem;
 }

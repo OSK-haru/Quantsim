@@ -9,7 +9,10 @@ __pycache__/
 *.key
 secrets/
 .DS_Store
+# Agent tooling (local only)
+.claude/
 # Build outputs
 build/
 validation_hardware/processed/
 validation_results/
+validation_results/*.csv

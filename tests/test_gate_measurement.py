@@ -254,11 +254,11 @@ class GateAwareMeasurementApiTests(unittest.TestCase):
         )
         self.assertAlmostEqual(data_one, 1.0, delta=1e-8)
 
-    def test_ideal_statevector_path_scales_past_density_limit(self) -> None:
+    def test_ideal_statevector_path_scales_to_editor_limit(self) -> None:
         config = SimulationConfig(
             circuit=CircuitConfig(
-                logical_qubits=6,
-                initial_states=["0"] * 6,
+                logical_qubits=8,
+                initial_states=["0"] * 8,
                 columns=[GateColumn(0, [GateOperation("H", [0])])],
             ),
             environment=EnvironmentConfig(input_mode="physical", ideal_reference=True),
@@ -268,8 +268,8 @@ class GateAwareMeasurementApiTests(unittest.TestCase):
         result = run_simulation(config)
         self.assertFalse(result.issues)
         self.assertEqual(result.diagnostics["execution_representation"], "statevector")
-        self.assertAlmostEqual(result.output_probabilities["000000"], 0.5, delta=1e-12)
-        self.assertAlmostEqual(result.output_probabilities["100000"], 0.5, delta=1e-12)
+        self.assertAlmostEqual(result.output_probabilities["00000000"], 0.5, delta=1e-12)
+        self.assertAlmostEqual(result.output_probabilities["10000000"], 0.5, delta=1e-12)
 
     def test_api_preserves_shots_and_seed(self) -> None:
         request = SimulateRequest(**_api_payload(shots=2048, seed=123))

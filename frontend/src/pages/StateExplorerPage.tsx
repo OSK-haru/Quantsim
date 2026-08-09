@@ -7,10 +7,12 @@ import { MetricTimeline } from '../components/MetricTimeline'
 import { PhysicalTimelinePlayback } from '../components/PhysicalTimelinePlayback'
 import { MeasurementResults } from '../components/MeasurementResults'
 import { OutputProbabilities } from '../components/OutputProbabilities'
+import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { StateProbabilityComparison } from '../components/StateProbabilityComparison'
 import { useCircuitContext } from '../context/useCircuitContext'
 import type { GateDurationDefaults, SimulationResponse } from '../types/simulation'
 import { nearestSnapshotIndex } from '../utils/physicalTimeline'
+import { stateExplorerTips } from '../utils/quantumPetTips'
 import {
   circuitConfigSignature,
   circuitEditorStateToConfig,
@@ -149,7 +151,7 @@ export function StateExplorerPage({
   const [snapshotIndex, setSnapshotIndex] = useState(() => preferredSnapshotIndex(snapshots))
   const [playbackSimulationTimeUs, setPlaybackSimulationTimeUs] = useState(0)
   const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
-    physical: true, metrics: true, probabilities: true, output: true, measurement: true, bloch: true, density: true, transfer: true,
+    physical: false, metrics: false, probabilities: true, output: false, measurement: false, bloch: true, density: false, transfer: false,
   })
   const togglePanel = useCallback((panelKey: ExplorerPanelKey) => {
     setOpenPanels((current) => ({ ...current, [panelKey]: !current[panelKey] }))
@@ -200,6 +202,17 @@ export function StateExplorerPage({
     }
   }, [snapshots])
 
+  /*
+   * ここは計算をしないページなので、黄（計算中）は出てこない。
+   * 完了した結果を見ている状態を菫、結果がない状態を緑とする。
+   */
+  const petPhase: QuantumPetPhase = activeResponse === null ? 'idle' : 'done'
+  const petMessage = activeResponse !== null
+    ? null
+    : staleResult
+      ? '回路が変わったみたい。もう一度実行すると、ここに結果が戻ってくるよ。'
+      : 'まだ結果がないよ。先にGate-awareシミュレーションを実行してね。'
+
   return (
     <main className="state-explorer-page">
       <header className="state-explorer-page__header">
@@ -207,7 +220,7 @@ export function StateExplorerPage({
           <span className="state-explorer-page__eyebrow">Yuragi-Strider / Gate-aware results</span>
           <h1>Gate-aware 状態エクスプローラー</h1>
           <p className="state-explorer-page__scope">
-            `/api/simulate` の回路スナップショット専用です。Pulse Labの結果は
+            Gate-awareシミュレーションの回路スナップショット専用です。Pulse Labの結果は
             Pulse Lab内で表示され、ここには読み込まれません。
           </p>
         </div>
@@ -279,6 +292,9 @@ export function StateExplorerPage({
             <OutputProbabilities
               outputProbabilities={activeResponse.output_probabilities}
               qubitCount={qubitCount}
+              snapshots={snapshots}
+              snapshotIndex={activeSnapshotIndex}
+              onSnapshotIndexChange={handleSnapshotIndexChange}
               defaultOpen
             />
           </CollapsiblePanel>
@@ -366,6 +382,7 @@ export function StateExplorerPage({
           </section>
         </>
       )}
+      <QuantumPet phase={petPhase} message={petMessage} tips={stateExplorerTips} />
     </main>
   )
 }

@@ -21,6 +21,7 @@ from core.capabilities import (
     DEFAULT_SIMULATION_MODEL,
     GATE_AWARE_HAMILTONIAN_LINDBLAD_MODEL,
     GATE_AWARE_SPLIT_STEP_MODEL,
+    MAX_DENSITY_MATRIX_QUBITS,
     POST_CIRCUIT_DEGRADATION_MODEL,
 )
 from core.complexity import complexity_diagnostics
@@ -418,6 +419,8 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
     result.diagnostics.update(
         representation_diagnostics(representation, config.circuit.logical_qubits)
     )
+    if representation == "density_matrix" and config.circuit.logical_qubits > 5:
+        result.diagnostics["large_density_matrix_execution"] = True
     if representation == "statevector":
         try:
             statevector = execute_statevector_branches(config.circuit)
@@ -510,6 +513,12 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
     diagnostic_issues = diagnose_simulation_result(result)
     result.issues = diagnostic_issues
     result.warnings = _issue_warnings(diagnostic_issues)
+    if representation == "density_matrix" and config.circuit.logical_qubits > 5:
+        result.warnings.append(
+            "6-8 qubit noisy simulation uses the exact dense density-matrix path; "
+            "runtime and response size grow exponentially. Start with fixed-step "
+            "RK4, a short duration, and a small time-step count."
+        )
     if _has_classical_conditions(config):
         if representation == "statevector":
             result.warnings.append(
@@ -884,12 +893,35 @@ def _runtime_issues(config: SimulationConfig) -> list[ValidationIssue]:
             f"Received model={config.environment.model!r}",
             f"Use {UNIFIED_ENVIRONMENT_MODEL!r}.",
         ))
-    if config.circuit.logical_qubits > 5 and not _environment_is_ideal(config):
+    if (
+        config.circuit.logical_qubits > MAX_DENSITY_MATRIX_QUBITS
+        and not _environment_is_ideal(config)
+    ):
         issues.append(_runtime_error(
             "UNSUPPORTED_QUBIT_COUNT",
-            "Noisy density-matrix simulation currently supports up to 5 logical qubits.",
+            (
+                "Noisy density-matrix simulation currently supports up to "
+                f"{MAX_DENSITY_MATRIX_QUBITS} logical qubits."
+            ),
             f"Received logical_qubits={config.circuit.logical_qubits}",
-            "Use an ideal statevector circuit or reduce the noisy circuit to 5 qubits.",
+            (
+                "Use an ideal statevector circuit or reduce the noisy circuit to "
+                f"{MAX_DENSITY_MATRIX_QUBITS} qubits."
+            ),
+        ))
+    if (
+        config.circuit.logical_qubits > 5
+        and config.evolution_method == EXPLICIT_CPTP
+        and not _environment_is_ideal(config)
+    ):
+        issues.append(_runtime_error(
+            "UNSUPPORTED_EVOLUTION_METHOD",
+            "Noisy circuits above 5 qubits require fixed-step RK4.",
+            (
+                "Explicit CPTP materializes a superoperator whose dimension grows "
+                "as 4**logical_qubits."
+            ),
+            "Select fixed_step_rk4 for 6-8 qubit noisy simulation.",
         ))
     return issues
 

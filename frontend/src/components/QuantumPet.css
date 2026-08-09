@@ -1,0 +1,399 @@
+/*
+ * 画面右下に常駐する、シミュレーション状況の監視ユニット。
+ *
+ * 以前はまるいアメーバだったが、Tactical Telemetry の作法に合わせて
+ * 角ばった計器に置き換えた。輪郭のゆらぎは SVG の feDisplacementMap を
+ * そのまま使い、信号ノイズとして残している。センサー（黒目）だけは
+ * フィルターのかからない別レイヤーに置き、輪郭が歪んでも表示は崩れない。
+ */
+.quantum-pet {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: 1050;
+
+  display: flex;
+  align-items: flex-end;
+  gap: var(--tt-hair);
+
+  /* 背後のUIを塞がないよう、子要素だけで受ける。 */
+  pointer-events: none;
+}
+
+/* 待機：計器は無色、電源のみ入っている状態。 */
+.quantum-pet--idle {
+  --pet-rim: var(--tt-rule-strong);
+  --pet-core: var(--tt-panel-3);
+  --pet-sensor: var(--tt-ink-mid);
+  --pet-accent: var(--tt-ink-dim);
+}
+
+/* 実行中：ハザードレッドで警戒状態を示す。 */
+.quantum-pet--running {
+  --pet-rim: var(--tt-accent);
+  --pet-core: var(--tt-accent-wash);
+  --pet-sensor: var(--tt-accent-hot);
+  --pet-accent: var(--tt-accent);
+}
+
+/* 完了：白リン表示に切り替わる。 */
+.quantum-pet--done {
+  --pet-rim: var(--tt-ink);
+  --pet-core: var(--tt-panel-3);
+  --pet-sensor: var(--tt-ink-max);
+  --pet-accent: var(--tt-ink);
+}
+
+/* --- 計器本体 -------------------------------------------------------------- */
+
+.quantum-pet__stage {
+  position: relative;
+
+  width: 92px;
+  height: 92px;
+  padding: 0;
+
+  border: var(--tt-hair) solid var(--pet-rim);
+  border-right: 0;
+  border-bottom: 0;
+
+  background: var(--tt-void);
+
+  cursor: pointer;
+  pointer-events: auto;
+
+  transition: border-color 120ms linear;
+}
+
+.quantum-pet__stage:hover {
+  border-color: var(--tt-accent);
+  background: var(--tt-void);
+}
+
+.quantum-pet__stage:focus-visible {
+  outline: var(--tt-bar) solid var(--tt-accent);
+  outline-offset: -4px;
+}
+
+/* つついたときは一度だけ反転する。 */
+.quantum-pet--poked .quantum-pet__stage {
+  animation: quantum-pet-poke 620ms steps(2, end);
+}
+
+/*
+ * 体。矩形の塗りに feDisplacementMap をかけ、
+ * 輪郭が信号ノイズで崩れているように見せる。
+ */
+.quantum-pet__body {
+  position: absolute;
+  inset: 10px;
+  overflow: hidden;
+
+  background: var(--pet-core);
+  border: var(--tt-hair) solid var(--pet-rim);
+
+  filter: url('#quantum-pet-wobble');
+
+  animation: quantum-pet-morph 7.5s steps(4, end) infinite;
+
+  transition: background 700ms linear, border-color 700ms linear;
+
+  will-change: transform;
+}
+
+/* 走査線。上から下へ一定速度で流れる。 */
+.quantum-pet__body::before {
+  position: absolute;
+  right: 0;
+  left: 0;
+
+  height: 2px;
+
+  background: var(--pet-sensor);
+  opacity: 0.7;
+
+  content: '';
+
+  animation: quantum-pet-organelle 3.2s linear infinite;
+}
+
+/* 下端の警戒帯。 */
+.quantum-pet__body::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  height: 4px;
+
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--pet-rim) 0 4px,
+    transparent 4px 8px
+  );
+
+  content: '';
+
+  animation: quantum-pet-gloss 7.5s steps(1, end) infinite;
+}
+
+/* 照準ブラケット。四隅だけを描く。 */
+.quantum-pet__aura {
+  position: absolute;
+  inset: 4px;
+
+  border: var(--tt-hair) solid var(--pet-accent);
+  clip-path: polygon(
+    0 0, 30% 0, 30% 2px, 2px 2px, 2px 30%, 0 30%,
+    0 70%, 2px 70%, 2px calc(100% - 2px), 30% calc(100% - 2px), 30% 100%, 0 100%,
+    70% 100%, 70% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px),
+    calc(100% - 2px) 70%, 100% 70%, 100% 30%, calc(100% - 2px) 30%,
+    calc(100% - 2px) 2px, 70% 2px, 70% 0
+  );
+
+  animation: quantum-pet-aura 4.6s steps(2, end) infinite alternate;
+
+  pointer-events: none;
+}
+
+/*
+ * センサー面。体と同じ描画位置にあるが、
+ * SVGフィルターはかけない。
+ */
+.quantum-pet__face {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  animation: quantum-pet-face 7.5s steps(4, end) infinite;
+
+  pointer-events: none;
+}
+
+.quantum-pet__eyes {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  /* センサーはポインタの方向へ少しだけ寄る。 */
+  transform: translate3d(var(--pet-eye-x, 0), var(--pet-eye-y, 0), 0);
+
+  transition: transform 180ms linear;
+}
+
+.quantum-pet__eye {
+  position: relative;
+
+  width: 12px;
+  height: 16px;
+
+  border: var(--tt-hair) solid var(--pet-sensor);
+  background: var(--tt-void);
+
+  animation: quantum-pet-blink 6.2s steps(1, end) infinite;
+
+  transition: height 320ms steps(2, end);
+}
+
+/* 検出インジケーター。 */
+.quantum-pet__eye::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+
+  width: 4px;
+  height: 4px;
+
+  background: var(--pet-sensor);
+
+  content: '';
+}
+
+.quantum-pet--running .quantum-pet__body {
+  animation-duration: 2.4s;
+}
+
+.quantum-pet--running .quantum-pet__face {
+  animation-duration: 2.4s;
+}
+
+.quantum-pet--running .quantum-pet__aura {
+  animation-duration: 1.2s;
+}
+
+.quantum-pet--running .quantum-pet__eye {
+  height: 12px;
+}
+
+.quantum-pet--done .quantum-pet__eye {
+  height: 6px;
+}
+
+.quantum-pet--done .quantum-pet__eye::after {
+  opacity: 0;
+}
+
+.quantum-pet--done .quantum-pet__stage {
+  animation: quantum-pet-cheer 900ms steps(3, end);
+}
+
+/* --- 読み出しパネル -------------------------------------------------------- */
+
+.quantum-pet__bubble {
+  display: grid;
+  gap: 5px;
+
+  width: min(272px, calc(100vw - 128px));
+  padding: 10px 12px;
+
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 3px solid var(--pet-accent);
+
+  background: var(--tt-panel);
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(6px);
+
+  transition: opacity 120ms linear, transform 120ms linear;
+}
+
+.quantum-pet--open .quantum-pet__bubble {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.quantum-pet__bubble-eyebrow {
+  color: var(--pet-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.quantum-pet__bubble-eyebrow::before {
+  content: '[ ';
+}
+
+.quantum-pet__bubble-eyebrow::after {
+  content: ' ]';
+}
+
+.quantum-pet__bubble-text {
+  color: var(--tt-ink);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.quantum-pet__bubble-meta {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.14em;
+}
+
+/* --- 動き ------------------------------------------------------------------ */
+
+/* 機械的な微小ドリフト。生き物のような揺れはさせない。 */
+@keyframes quantum-pet-morph {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes quantum-pet-face {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+/* 走査線の縦移動。 */
+@keyframes quantum-pet-organelle {
+  0% {
+    top: 0;
+  }
+
+  100% {
+    top: 100%;
+  }
+}
+
+/* 警戒帯の明滅。 */
+@keyframes quantum-pet-gloss {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* 照準ブラケットの点滅。 */
+@keyframes quantum-pet-aura {
+  0% {
+    opacity: 0.85;
+  }
+
+  100% {
+    opacity: 0.25;
+  }
+}
+
+/* センサーの瞬断。 */
+@keyframes quantum-pet-blink {
+  0%,
+  92%,
+  100% {
+    opacity: 1;
+  }
+
+  94%,
+  98% {
+    opacity: 0.15;
+  }
+}
+
+/* つつかれたときの反転。 */
+@keyframes quantum-pet-poke {
+  50% {
+    background: var(--tt-accent);
+    border-color: var(--tt-accent);
+  }
+}
+
+/* 完了時の確認フラッシュ。 */
+@keyframes quantum-pet-cheer {
+  0%,
+  100% {
+    border-color: var(--pet-rim);
+  }
+
+  50% {
+    border-color: var(--tt-ink-max);
+  }
+}
+
+@media (max-width: 640px) {
+  .quantum-pet__bubble {
+    width: min(220px, calc(100vw - 116px));
+  }
+}

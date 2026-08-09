@@ -18,10 +18,9 @@
 
 .density-matrix-viewer__button,
 .density-matrix-viewer__mode {
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 999px;
-  background: rgba(2, 6, 23, 0.34);
-  color: #e2e8f0;
+  border: 1px solid rgba(163, 163, 163, 0.24);
+  background: rgba(10, 10, 10, 0.34);
+  color: var(--tt-ink);
   cursor: pointer;
 }
 
@@ -36,7 +35,7 @@
 
 .density-matrix-viewer__button:not(:disabled):hover,
 .density-matrix-viewer__mode:hover {
-  border-color: rgba(96, 165, 250, 0.42);
+  border-color: rgba(163, 163, 163, 0.42);
 }
 
 .density-matrix-viewer__button:focus-visible,
@@ -44,13 +43,13 @@
 .density-matrix-viewer__slider:focus-visible,
 .density-matrix-viewer__cell:focus-visible,
 .density-matrix-viewer__matrix-scroll:focus-visible {
-  outline: 2px solid rgba(96, 165, 250, 0.72);
+  outline: 2px solid var(--tt-ink-mid);
   outline-offset: 2px;
 }
 
 .density-matrix-viewer__position {
   min-width: 64px;
-  color: #f8fafc;
+  color: var(--tt-ink-max);
   font-size: 0.9rem;
   font-weight: 700;
   text-align: center;
@@ -61,13 +60,13 @@
   grid-template-columns: auto minmax(160px, 1fr);
   gap: 12px;
   align-items: center;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   font-size: 0.86rem;
 }
 
 .density-matrix-viewer__slider {
   width: 100%;
-  accent-color: #60a5fa;
+  accent-color: var(--tt-ink-mid);
 }
 
 .density-matrix-viewer__modes {
@@ -81,9 +80,9 @@
 }
 
 .density-matrix-viewer__mode[data-active='true'] {
-  border-color: rgba(52, 211, 153, 0.54);
-  background: rgba(20, 83, 45, 0.42);
-  color: #dcfce7;
+  border-color: rgba(77, 77, 77, 0.54);
+  background: rgba(18, 18, 18, 0.42);
+  color: var(--tt-ink);
 }
 
 .density-matrix-viewer__metadata,
@@ -100,16 +99,15 @@
 .density-matrix-viewer__details span,
 .density-matrix-viewer__details strong {
   padding: 6px 9px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 999px;
-  background: rgba(2, 6, 23, 0.28);
-  color: #cbd5e1;
+  border: 1px solid rgba(163, 163, 163, 0.16);
+  background: rgba(10, 10, 10, 0.28);
+  color: var(--tt-ink);
   font-size: 0.82rem;
   line-height: 1.2;
 }
 
 .density-matrix-viewer__details strong {
-  color: #f8fafc;
+  color: var(--tt-ink-max);
 }
 
 .density-matrix-viewer__caption {
@@ -120,10 +118,8 @@
   max-width: 100%;
   max-height: 520px;
   overflow: auto;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.38));
+  border: 1px solid rgba(163, 163, 163, 0.18);
+  background: var(--tt-panel);
 }
 
 .density-matrix-viewer__matrix {
@@ -140,10 +136,10 @@
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
-  background: rgba(15, 23, 42, 0.94);
+  background: var(--tt-panel);
   z-index: 1;
 }
 
@@ -165,19 +161,19 @@
 
 .density-matrix-viewer__axis-label--row {
   z-index: 2;
-  border-right: 1px solid rgba(148, 163, 184, 0.16);
+  border-right: 1px solid rgba(163, 163, 163, 0.16);
 }
 
 .density-matrix-viewer__axis-label--column {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  border-bottom: 1px solid rgba(163, 163, 163, 0.16);
 }
 
 .density-matrix-viewer__cell {
   width: var(--density-cell-size);
   height: var(--density-cell-size);
   box-sizing: border-box;
-  border: 1px solid rgba(15, 23, 42, 0.72);
-  color: #f8fafc;
+  border: 1px solid var(--tt-panel);
+  color: var(--tt-ink-max);
   cursor: crosshair;
   font-size: 0.66rem;
   font-variant-numeric: tabular-nums;
@@ -193,23 +189,18 @@
 }
 
 .density-matrix-viewer__cell[data-sign='zero'] {
-  background: rgba(148, 163, 184, 0.08);
+  background: rgba(163, 163, 163, 0.08);
 }
 
 .density-matrix-viewer__cell:hover,
 .density-matrix-viewer__cell:focus-visible {
-  border-color: rgba(248, 250, 252, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(248, 250, 252, 0.6);
-}
-
-.density-matrix-viewer__cell-value {
-  filter: drop-shadow(0 1px 1px rgba(2, 6, 23, 0.8));
+  border-color: var(--tt-ink-max);
 }
 
 .density-matrix-viewer__empty,
 .density-matrix-viewer__note {
   margin: 0;
-  color: #94a3b8;
+  color: var(--tt-ink-mid);
   line-height: 1.6;
 }
 

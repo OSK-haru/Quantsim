@@ -1,9 +1,7 @@
 .pulse-parameters {
   padding: 22px;
-  border: 1px solid rgba(89, 191, 178, 0.28);
-  border-radius: 18px;
-  background: linear-gradient(145deg, rgba(15, 31, 38, 0.96), rgba(10, 20, 27, 0.98));
-  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(77, 77, 77, 0.28);
+  background: var(--tt-panel);
 }
 
 .pulse-parameters__heading,
@@ -20,7 +18,7 @@
 }
 
 .pulse-parameters__heading span {
-  color: #62d7c3;
+  color: var(--tt-ink-mid);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -35,7 +33,7 @@
 .pulse-parameters__heading p,
 .pulse-parameters__environment p {
   max-width: 52ch;
-  color: #8ea7ad;
+  color: var(--tt-ink-mid);
   font-size: 0.86rem;
 }
 
@@ -43,7 +41,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   padding-bottom: 18px;
   margin-bottom: 18px;
-  border-bottom: 1px solid rgba(116, 167, 173, 0.16);
+  border-bottom: 1px solid rgba(77, 77, 77, 0.16);
 }
 
 .pulse-parameters__grid {
@@ -54,7 +52,7 @@
 .pulse-parameters__field {
   display: grid;
   gap: 7px;
-  color: #c8d9da;
+  color: var(--tt-ink);
   font-size: 0.79rem;
   font-weight: 700;
 }
@@ -64,46 +62,44 @@
   width: 100%;
   min-height: 42px;
   padding: 8px 11px;
-  border: 1px solid rgba(121, 173, 177, 0.28);
-  border-radius: 9px;
+  border: 1px solid rgba(77, 77, 77, 0.28);
   outline: none;
-  background: #09151c;
-  color: #effcfa;
+  background: var(--tt-void);
+  color: var(--tt-ink-max);
 }
 
 .pulse-parameters input:focus,
 .pulse-parameters select:focus {
-  border-color: #59cdb9;
-  box-shadow: 0 0 0 3px rgba(89, 205, 185, 0.12);
+  border-color: var(--tt-ink-dim);
 }
 
 .pulse-parameters input[aria-invalid='true'] {
-  border-color: #e98268;
+  border-color: var(--tt-accent);
 }
 
 .pulse-parameters small {
-  color: #7f989e;
+  color: var(--tt-ink-dim);
   font-weight: 400;
 }
 
 .pulse-parameters__error {
-  color: #f19a83 !important;
+  color: var(--tt-accent-hot) !important;
 }
 
 .pulse-parameters__environment {
   padding-top: 20px;
   margin-top: 20px;
-  border-top: 1px solid rgba(116, 167, 173, 0.16);
+  border-top: 1px solid rgba(77, 77, 77, 0.16);
 }
 
 .pulse-parameters__environment h3 {
   margin-bottom: 5px;
-  color: #e2f3f0;
+  color: var(--tt-ink);
 }
 
 .pulse-parameters__model-note {
   margin: 8px 0 0;
-  color: #8fa8aa;
+  color: var(--tt-ink-mid);
   font-size: 0.82rem;
   line-height: 1.6;
 }
@@ -122,23 +118,23 @@
 
 .pulse-parameters__device-profile p {
   margin: 0 0 10px;
-  color: #8fa8aa;
+  color: var(--tt-ink-mid);
   font-size: 0.82rem;
   line-height: 1.55;
 }
 
 .pulse-parameters__device-profile strong {
-  color: #e1b776;
+  color: var(--tt-accent);
 }
 
 .pulse-parameters__expert {
   padding-top: 18px;
   margin-top: 18px;
-  border-top: 1px solid rgba(116, 167, 173, 0.16);
+  border-top: 1px solid rgba(77, 77, 77, 0.16);
 }
 
 .pulse-parameters__expert summary {
-  color: #9fc1c0;
+  color: var(--tt-ink-mid);
   cursor: pointer;
 }
 

@@ -1,6 +1,6 @@
 .pulse-density__heading p {
   margin: 0;
-  color: #819ba0;
+  color: var(--tt-ink-dim);
   font-size: 0.82rem;
 }
 
@@ -16,35 +16,24 @@
   display: grid;
   min-height: 110px;
   padding: 13px;
-  border: 1px solid rgba(111, 181, 177, 0.18);
-  border-radius: 11px;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(74, 202, 184, calc(var(--cell-strength) * 0.36)),
-      rgba(9, 20, 28, 0.96) 72%
-    );
+  border: 1px solid rgba(77, 77, 77, 0.18);
+  background: var(--tt-void);
   align-content: space-between;
 }
 
 .pulse-density__cell[data-tone='negative'] {
-  background:
-    linear-gradient(
-      145deg,
-      rgba(234, 124, 92, calc(var(--cell-strength) * 0.38)),
-      rgba(9, 20, 28, 0.96) 72%
-    );
+  background: var(--tt-void);
 }
 
 .pulse-density__cell span,
 .pulse-density__cell small {
-  color: #80999f;
+  color: var(--tt-ink-dim);
   font-size: 0.72rem;
 }
 
 .pulse-density__cell strong {
-  color: #e7f5f2;
-  font-family: 'IBM Plex Mono', 'Cascadia Code', monospace;
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
   font-size: clamp(0.7rem, 1.4vw, 0.86rem);
   font-weight: 600;
 }

@@ -3,10 +3,8 @@
   box-sizing: border-box;
   margin: 0 auto;
   padding: 22px;
-  border: 1px solid rgba(70, 216, 186, 0.24);
-  border-radius: 20px;
-  background: rgba(9, 24, 32, 0.88);
-  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.28);
+  border: 1px solid rgba(77, 77, 77, 0.24);
+  background: var(--tt-void);
 }
 
 .measurement-results__heading {
@@ -17,7 +15,7 @@
 }
 
 .measurement-results__eyebrow {
-  color: #5dd6c0;
+  color: var(--tt-ink-mid);
   font-size: 0.72rem;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -25,8 +23,8 @@
 
 .measurement-results__heading h2 {
   margin: 5px 0 0;
-  color: #effbf8;
-  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--tt-ink-max);
+  font-family: var(--tt-mono);
   font-size: 1.45rem;
   font-weight: 500;
 }
@@ -40,15 +38,14 @@
 
 .measurement-results__meta span {
   padding: 6px 9px;
-  border: 1px solid rgba(93, 214, 192, 0.2);
-  border-radius: 999px;
-  color: #bce9df;
+  border: 1px solid rgba(163, 163, 163, 0.2);
+  color: var(--tt-ink);
   font-size: 0.76rem;
 }
 
 .measurement-results__note,
 .measurement-results__constraint {
-  color: #91a9ac;
+  color: var(--tt-ink-mid);
   font-size: 0.84rem;
   line-height: 1.6;
 }
@@ -56,7 +53,7 @@
 .measurement-results__branches {
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid rgba(137, 183, 184, 0.14);
+  border-top: 1px solid rgba(163, 163, 163, 0.14);
 }
 
 .measurement-results__subheading {
@@ -68,13 +65,13 @@
 
 .measurement-results__subheading h3 {
   margin: 0;
-  color: #dcecea;
+  color: var(--tt-ink);
   font-size: 0.95rem;
   font-weight: 600;
 }
 
 .measurement-results__subheading span {
-  color: #82a5a6;
+  color: var(--tt-ink-dim);
   font-size: 0.75rem;
 }
 
@@ -89,18 +86,18 @@
   gap: 10px;
   align-items: center;
   min-height: 32px;
-  border-top: 1px solid rgba(137, 183, 184, 0.08);
-  color: #a8c2c2;
+  border-top: 1px solid rgba(163, 163, 163, 0.08);
+  color: var(--tt-ink-mid);
   font-size: 0.78rem;
 }
 
 .measurement-results__branch-row span:nth-child(3) {
-  color: #6dddc6;
+  color: var(--tt-ink-mid);
   text-align: right;
 }
 
 .measurement-results__branch-row span:last-child {
-  color: #7f9b9c;
+  color: var(--tt-ink-dim);
   text-align: right;
 }
 
@@ -119,9 +116,8 @@
 
 .measurement-results__shot-chip {
   padding: 4px 7px;
-  border: 1px solid rgba(93, 214, 192, 0.18);
-  border-radius: 999px;
-  color: #bce9df;
+  border: 1px solid rgba(163, 163, 163, 0.18);
+  color: var(--tt-ink);
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
 }
@@ -132,7 +128,7 @@
 
 .measurement-results__constraint {
   margin: 15px 0 0;
-  color: #d8b46a;
+  color: var(--tt-accent);
 }
 
 .measurement-results__table {
@@ -148,13 +144,13 @@
   align-items: center;
   min-height: 40px;
   padding: 3px 6px;
-  border-top: 1px solid rgba(137, 183, 184, 0.1);
+  border-top: 1px solid rgba(163, 163, 163, 0.1);
 }
 
 .measurement-results__row code,
 .measurement-results__row strong,
 .measurement-results__row > span:last-child {
-  color: #dcecea;
+  color: var(--tt-ink);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
 }
@@ -167,15 +163,13 @@
 .measurement-results__bar {
   height: 8px;
   overflow: hidden;
-  border-radius: 999px;
-  background: rgba(126, 151, 155, 0.15);
+  background: rgba(77, 77, 77, 0.15);
 }
 
 .measurement-results__fill {
   display: block;
   height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #26a68b, #6dddc6);
+  background: var(--tt-rule-strong);
 }
 
 @media (max-width: 640px) {

@@ -182,6 +182,17 @@ class ApiSimulateQubitCountsTest(unittest.TestCase):
         request = SimulateRequest(**payload)
         self.assertEqual(request.circuit_config.logical_qubits, 5)
 
+    def test_eight_qubit_valid_circuit_is_accepted_by_request_schema(self) -> None:
+        payload = self._base_request()
+        payload["circuit_config"] = {
+            "logical_qubits": 8,
+            "initial_states": [0] * 8,
+            "columns": [],
+        }
+
+        request = SimulateRequest(**payload)
+        self.assertEqual(request.circuit_config.logical_qubits, 8)
+
     def test_invalid_three_qubit_initial_state_length_is_rejected(self) -> None:
         payload = self._base_request()
         payload["circuit_config"] = {

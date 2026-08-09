@@ -15,15 +15,11 @@
   transform: translate(-50%, calc(100% + 32px)) scale(0.96);
 
   border: 0;
-  border-radius:
-    24px 34px 20px 38px /
-    28px 22px 34px 24px;
 
-  color: #f8fafc;
+  color: var(--tt-ink-max);
   opacity: 0;
 
-  animation:
-    simulation-completion-popup-in
+  animation: simulation-completion-popup-in
     4.2s
     ease
     forwards;
@@ -41,31 +37,7 @@
   width: 100%;
   overflow: hidden;
 
-  border-radius: inherit;
-
-  background:
-    radial-gradient(
-      circle at 8% 130%,
-      rgba(34, 211, 238, 0.25),
-      transparent 42%
-    ),
-    radial-gradient(
-      circle at 92% -30%,
-      rgba(59, 130, 246, 0.22),
-      transparent 44%
-    ),
-    linear-gradient(
-      135deg,
-      rgba(8, 20, 40, 0.97),
-      rgba(15, 23, 42, 0.93)
-    );
-
-  box-shadow:
-    0 22px 55px rgba(2, 6, 23, 0.48),
-    0 0 28px rgba(56, 189, 248, 0.16);
-
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: rgba(77, 77, 77, 0.25);
 }
 
 /*
@@ -82,17 +54,9 @@
    */
   inset: -5px;
   z-index: 2;
-
-  border-radius: inherit;
   padding: 5px;
 
-  background:
-    linear-gradient(
-      125deg,
-      rgba(103, 232, 249, 0.95),
-      rgba(56, 189, 248, 0.3) 48%,
-      rgba(186, 230, 253, 0.78)
-    );
+  background: var(--tt-ink-mid);
 
   content: '';
   pointer-events: none;
@@ -100,15 +64,13 @@
   /*
    * 中央を透明にし、縁だけを残す。
    */
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
+  -webkit-mask: linear-gradient(var(--tt-void) 0 0) content-box,
+    linear-gradient(var(--tt-void) 0 0);
 
   -webkit-mask-composite: xor;
 
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
+  mask: linear-gradient(var(--tt-void) 0 0) content-box,
+    linear-gradient(var(--tt-void) 0 0);
 
   mask-composite: exclude;
 
@@ -116,21 +78,17 @@
    * 輪郭の細かな凹凸はSVGフィルター、
    * 大きな形状変化はborder-radiusで作る。
    */
-  filter:
-    url('#simulation-completion-wobble')
-    drop-shadow(0 0 6px rgba(103, 232, 249, 0.48));
+  filter: url('#simulation-completion-wobble');
 
   transform-origin: center;
 
-  animation:
-    simulation-completion-frame
+  animation: simulation-completion-frame
     5.3s
     cubic-bezier(0.45, 0.05, 0.25, 0.96)
     infinite
     alternate;
 
-  will-change:
-    transform,
+  will-change: transform,
     border-radius,
     filter;
 }
@@ -138,40 +96,13 @@
 /* パルスシミュレーション版 */
 .simulation-completion-popup--pulse
 .simulation-completion-popup__inner {
-  background:
-    radial-gradient(
-      circle at 8% 130%,
-      rgba(192, 132, 252, 0.26),
-      transparent 42%
-    ),
-    radial-gradient(
-      circle at 92% -30%,
-      rgba(236, 72, 153, 0.2),
-      transparent 44%
-    ),
-    linear-gradient(
-      135deg,
-      rgba(21, 15, 48, 0.97),
-      rgba(30, 27, 59, 0.93)
-    );
-
-  box-shadow:
-    0 22px 55px rgba(2, 6, 23, 0.48),
-    0 0 28px rgba(167, 139, 250, 0.2);
+  background: rgba(234, 234, 234, 0.26);
 }
 
 .simulation-completion-popup--pulse::before {
-  background:
-    linear-gradient(
-      125deg,
-      rgba(221, 214, 254, 0.95),
-      rgba(167, 139, 250, 0.3) 48%,
-      rgba(244, 114, 182, 0.78)
-    );
+  background: var(--tt-ink);
 
-  filter:
-    url('#simulation-completion-wobble')
-    drop-shadow(0 0 6px rgba(196, 181, 253, 0.52));
+  filter: url('#simulation-completion-wobble');
 }
 
 .simulation-completion-popup__glow {
@@ -182,16 +113,11 @@
   width: 180px;
   height: 130px;
 
-  border-radius: 50%;
-
-  background: rgba(34, 211, 238, 0.22);
-
-  filter: blur(30px);
+  background: rgba(77, 77, 77, 0.22);
 
   pointer-events: none;
 
-  animation:
-    simulation-completion-liquid
+  animation: simulation-completion-liquid
     4.2s
     ease-in-out
     infinite
@@ -200,7 +126,7 @@
 
 .simulation-completion-popup--pulse
 .simulation-completion-popup__glow {
-  background: rgba(167, 139, 250, 0.24);
+  background: rgba(234, 234, 234, 0.24);
 }
 
 .simulation-completion-popup__fluctuation {
@@ -208,41 +134,21 @@
   inset: -55%;
   z-index: -1;
 
-  background:
-    radial-gradient(
-      circle at 24% 38%,
-      rgba(103, 232, 249, 0.24) 0 1px,
-      transparent 2px
-    ),
-    radial-gradient(
-      circle at 67% 62%,
-      rgba(186, 230, 253, 0.22) 0 1px,
-      transparent 2px
-    ),
-    radial-gradient(
-      circle at 82% 27%,
-      rgba(56, 189, 248, 0.2) 0 1px,
-      transparent 2px
-    ),
-    repeating-radial-gradient(
+  background: repeating-radial-gradient(
       ellipse at 50% 50%,
       transparent 0 28px,
-      rgba(103, 232, 249, 0.08) 29px 30px,
+      rgba(163, 163, 163, 0.08) 29px 30px,
       transparent 31px 58px
-    );
+    ), rgba(163, 163, 163, 0.24);
 
-  background-size:
-    170px 130px,
+  background-size: 170px 130px,
     230px 180px,
     190px 150px,
     100% 100%;
 
   opacity: 0.7;
 
-  filter: blur(0.2px);
-
-  animation:
-    simulation-completion-fluctuation
+  animation: simulation-completion-fluctuation
     7s
     linear
     infinite;
@@ -252,31 +158,14 @@
 
 .simulation-completion-popup--pulse
 .simulation-completion-popup__fluctuation {
-  background:
-    radial-gradient(
-      circle at 24% 38%,
-      rgba(221, 214, 254, 0.24) 0 1px,
-      transparent 2px
-    ),
-    radial-gradient(
-      circle at 67% 62%,
-      rgba(216, 180, 254, 0.22) 0 1px,
-      transparent 2px
-    ),
-    radial-gradient(
-      circle at 82% 27%,
-      rgba(244, 114, 182, 0.2) 0 1px,
-      transparent 2px
-    ),
-    repeating-radial-gradient(
+  background: repeating-radial-gradient(
       ellipse at 50% 50%,
       transparent 0 28px,
-      rgba(196, 181, 253, 0.08) 29px 30px,
+      rgba(234, 234, 234, 0.08) 29px 30px,
       transparent 31px 58px
-    );
+    ), rgba(234, 234, 234, 0.24);
 
-  background-size:
-    170px 130px,
+  background-size: 170px 130px,
     230px 180px,
     190px 150px,
     100% 100%;
@@ -293,7 +182,7 @@
 }
 
 .simulation-completion-popup__eyebrow {
-  color: #67e8f9;
+  color: var(--tt-ink-mid);
 
   font-size: 0.7rem;
   font-weight: 800;
@@ -302,7 +191,7 @@
 
 .simulation-completion-popup--pulse
 .simulation-completion-popup__eyebrow {
-  color: #c4b5fd;
+  color: var(--tt-ink);
 }
 
 .simulation-completion-popup__content strong {
@@ -310,7 +199,7 @@
 }
 
 .simulation-completion-popup__content > span:last-child {
-  color: #cbd5e1;
+  color: var(--tt-ink);
 
   font-size: 0.82rem;
   line-height: 1.45;
@@ -330,10 +219,9 @@
   padding: 0;
 
   border: 0;
-  border-radius: 50%;
 
-  background: rgba(148, 163, 184, 0.14);
-  color: #cbd5e1;
+  background: rgba(163, 163, 163, 0.14);
+  color: var(--tt-ink);
 
   font: inherit;
   font-size: 1.25rem;
@@ -341,35 +229,33 @@
 
   cursor: pointer;
 
-  transition:
-    background 160ms ease,
+  transition: background 160ms ease,
     color 160ms ease,
     transform 160ms ease;
 }
 
 .simulation-completion-popup__close:hover {
-  background: rgba(148, 163, 184, 0.26);
-  color: #fff;
+  background: rgba(163, 163, 163, 0.26);
+  color: var(--tt-ink-max);
 
   transform: scale(1.08);
 }
 
 .simulation-completion-popup__close:focus-visible {
-  outline: 2px solid #67e8f9;
+  outline: 2px solid var(--tt-ink-mid);
   outline-offset: 2px;
 }
 
 .simulation-completion-popup--pulse
 .simulation-completion-popup__close:focus-visible {
-  outline-color: #c4b5fd;
+  outline-color: var(--tt-ink);
 }
 
 @keyframes simulation-completion-popup-in {
   0% {
     opacity: 0;
 
-    transform:
-      translate(-50%, calc(100% + 32px))
+    transform: translate(-50%, calc(100% + 32px))
       scale(0.96);
   }
 
@@ -377,31 +263,27 @@
   82% {
     opacity: 1;
 
-    transform:
-      translate(-50%, 0)
+    transform: translate(-50%, 0)
       scale(1);
   }
 
   100% {
     opacity: 0;
 
-    transform:
-      translate(-50%, calc(100% + 32px))
+    transform: translate(-50%, calc(100% + 32px))
       scale(0.98);
   }
 }
 
 @keyframes simulation-completion-liquid {
   0% {
-    transform:
-      translate3d(-16px, 8px, 0)
+    transform: translate3d(-16px, 8px, 0)
       scale(0.92)
       rotate(-5deg);
   }
 
   100% {
-    transform:
-      translate3d(40px, -18px, 0)
+    transform: translate3d(40px, -18px, 0)
       scale(1.18)
       rotate(8deg);
   }
@@ -412,60 +294,40 @@
  */
 @keyframes simulation-completion-frame {
   0% {
-    border-radius:
-      18% 31% 22% 37% /
-      35% 19% 31% 24%;
 
-    transform:
-      translate3d(-1px, 1px, 0)
+    transform: translate3d(-1px, 1px, 0)
       rotate(-0.35deg)
       scaleX(1.006)
       scaleY(0.994);
   }
 
   23% {
-    border-radius:
-      34% 19% 38% 21% /
-      20% 36% 18% 33%;
 
-    transform:
-      translate3d(2px, -1px, 0)
+    transform: translate3d(2px, -1px, 0)
       rotate(0.28deg)
       scaleX(0.996)
       scaleY(1.008);
   }
 
   49% {
-    border-radius:
-      23% 42% 17% 35% /
-      38% 21% 34% 18%;
 
-    transform:
-      translate3d(-2px, 0, 0)
+    transform: translate3d(-2px, 0, 0)
       rotate(-0.18deg)
       scaleX(1.008)
       scaleY(0.998);
   }
 
   72% {
-    border-radius:
-      39% 23% 32% 18% /
-      19% 33% 22% 40%;
 
-    transform:
-      translate3d(1px, 1px, 0)
+    transform: translate3d(1px, 1px, 0)
       rotate(0.34deg)
       scaleX(0.998)
       scaleY(1.006);
   }
 
   100% {
-    border-radius:
-      20% 37% 27% 34% /
-      32% 18% 40% 23%;
 
-    transform:
-      translate3d(0, -1px, 0)
+    transform: translate3d(0, -1px, 0)
       rotate(-0.25deg)
       scaleX(1.005)
       scaleY(0.996);
@@ -474,22 +336,19 @@
 
 @keyframes simulation-completion-fluctuation {
   0% {
-    transform:
-      translate3d(-3%, -2%, 0)
+    transform: translate3d(-3%, -2%, 0)
       rotate(0deg)
       scale(1);
   }
 
   50% {
-    transform:
-      translate3d(3%, 2%, 0)
+    transform: translate3d(3%, 2%, 0)
       rotate(8deg)
       scale(1.06);
   }
 
   100% {
-    transform:
-      translate3d(-2%, 4%, 0)
+    transform: translate3d(-2%, 4%, 0)
       rotate(16deg)
       scale(1.02);
   }
@@ -497,8 +356,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .simulation-completion-popup {
-    animation:
-      simulation-completion-popup-reduced
+    animation: simulation-completion-popup-reduced
       4.2s
       ease
       forwards;
@@ -510,18 +368,6 @@
     animation: none;
   }
 
-  /*
-   * reduced-motionではSVGの揺らぎも無効化する。
-   */
-  .simulation-completion-popup::before {
-    filter:
-      drop-shadow(0 0 6px rgba(103, 232, 249, 0.42));
-  }
-
-  .simulation-completion-popup--pulse::before {
-    filter:
-      drop-shadow(0 0 6px rgba(196, 181, 253, 0.46));
-  }
 }
 
 /*
@@ -529,8 +375,7 @@
  * OSのprefers-reduced-motionと同じ抑制を適用する。
  */
 html[data-animations='off'] .simulation-completion-popup {
-  animation:
-    simulation-completion-popup-reduced
+  animation: simulation-completion-popup-reduced
     4.2s
     ease
     forwards;
@@ -540,16 +385,6 @@ html[data-animations='off'] .simulation-completion-popup::before,
 html[data-animations='off'] .simulation-completion-popup__glow,
 html[data-animations='off'] .simulation-completion-popup__fluctuation {
   animation: none;
-}
-
-html[data-animations='off'] .simulation-completion-popup::before {
-  filter:
-    drop-shadow(0 0 6px rgba(103, 232, 249, 0.42));
-}
-
-html[data-animations='off'] .simulation-completion-popup--pulse::before {
-  filter:
-    drop-shadow(0 0 6px rgba(196, 181, 253, 0.46));
 }
 
 @keyframes simulation-completion-popup-reduced {

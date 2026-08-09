@@ -87,10 +87,11 @@ export function isMultiQubitGateType(gateType: GateType) {
 export const MIN_REGISTER_GATE_QUBITS = 2
 
 export const DEFAULT_EDITOR_COLUMN_COUNT = 4
-const MIN_SUPPORTED_LOGICAL_QUBITS = 2
-// 5 is the core's noisy density-matrix ceiling (MAX_DENSITY_MATRIX_QUBITS), so
-// editing beyond it would build circuits the gate-aware path cannot run.
-const MAX_SUPPORTED_LOGICAL_QUBITS = 5
+export const MIN_SUPPORTED_LOGICAL_QUBITS = 2
+// The editor may describe larger ideal circuits than the noisy density-matrix
+// runner can execute. The API selects statevector execution above 5 qubits
+// for measurement-free ideal circuits; noisy simulation remains capped at 5.
+export const MAX_SUPPORTED_LOGICAL_QUBITS = 8
 
 export function createEmptyCircuitColumn(step: number): CircuitColumn {
   return {

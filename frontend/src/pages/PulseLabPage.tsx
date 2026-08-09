@@ -3,8 +3,10 @@ import { PulseDensityMatrixHeatmap } from '../components/PulseDensityMatrixHeatm
 import { PulseEnvironmentPanel } from '../components/PulseEnvironmentPanel'
 import { PulsePopulationTimeline } from '../components/PulsePopulationTimeline'
 import { PulseWaveform } from '../components/PulseWaveform'
+import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { ResultDrawer } from '../components/ResultDrawer'
 import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
+import { pulseLabTips, pulseRunningStages } from '../utils/quantumPetTips'
 import {
   isQutritPulseResponse,
   isCoupledTransmonPairResponse,
@@ -36,6 +38,8 @@ import './PulseLabPage.css'
 
 type RequestStatus = 'idle' | 'loading' | 'success' | 'error'
 
+const PET_CELEBRATION_MS = 7000
+
 type PulseLabPageProps = {
   form: PulseLabForm
   onFormChange: (form: PulseLabForm) => void
@@ -60,6 +64,7 @@ export function PulseLabPage({
   const [lastRequestPayload, setLastRequestPayload] = useState<Record<string, unknown> | null>(null)
   const [lastResponseAt, setLastResponseAt] = useState<string | null>(null)
   const [showCompletionPopup, setShowCompletionPopup] = useState(false)
+  const [petCelebrating, setPetCelebrating] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
   const executionPlan = sequenceExecutionPlan(form, sequence, executionConstraints)
@@ -105,6 +110,29 @@ export function PulseLabPage({
       abortRef.current?.abort()
     }
   }, [])
+
+  /*
+   * ペットは完了色（菫）をしばらく保ってから、基本色（緑）へ戻る。
+   */
+  useEffect(() => {
+    if (!petCelebrating) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => setPetCelebrating(false), PET_CELEBRATION_MS)
+    return () => window.clearTimeout(timeoutId)
+  }, [petCelebrating])
+
+  const petPhase: QuantumPetPhase =
+    status === 'loading' ? 'running' : petCelebrating ? 'done' : 'idle'
+  const petMessage =
+    petPhase === 'running'
+      ? null
+      : petPhase === 'done'
+        ? 'パルスシミュレーションが完了したよ。占有数の変化を見てみよう。'
+        : status === 'error' && errorMessage !== null
+          ? `つまずいたみたい：${errorMessage}`
+          : null
 
   async function runPulseSimulation() {
     if (!canRun) {
@@ -217,11 +245,13 @@ export function PulseLabPage({
       setErrorMessage(null)
       setLastResponseAt(new Date().toISOString())
       setShowCompletionPopup(true)
+      setPetCelebrating(true)
     } catch (error) {
       if (!mountedRef.current || abortRef.current !== controller) {
         return
       }
       setStatus('error')
+      setPetCelebrating(false)
       setErrorMessage(
         error instanceof Error && error.name === 'AbortError'
           ? 'Pulseリクエストがタイムアウトしました。前回の有効な結果を表示しています。'
@@ -445,6 +475,12 @@ export function PulseLabPage({
           onDismiss={() => setShowCompletionPopup(false)}
         />
       ) : null}
+      <QuantumPet
+        phase={petPhase}
+        message={petMessage}
+        tips={pulseLabTips}
+        stages={pulseRunningStages}
+      />
     </main>
   )
 }

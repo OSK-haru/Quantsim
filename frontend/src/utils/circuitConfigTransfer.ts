@@ -6,7 +6,11 @@ import type {
   InitialQubitState,
 } from '../types/circuit'
 import { circuitEditorStateToConfig } from './circuitConfig'
-import { findColumnCollision } from './circuitEditing'
+import {
+  findColumnCollision,
+  MAX_SUPPORTED_LOGICAL_QUBITS,
+  MIN_SUPPORTED_LOGICAL_QUBITS,
+} from './circuitEditing'
 
 export type CircuitConfigGate = {
   type: GateType
@@ -37,8 +41,6 @@ export type CircuitConfigBundle = {
   circuit_config: CircuitConfig
 }
 
-const MIN_SUPPORTED_QUBITS = 2
-const MAX_SUPPORTED_QUBITS = 5
 const WRAPPER_KIND = 'quantscope_circuit_config'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -213,8 +215,14 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
   }
 
   const logicalQubits = candidate.logical_qubits
-  if (!isFiniteInteger(logicalQubits) || logicalQubits < MIN_SUPPORTED_QUBITS || logicalQubits > MAX_SUPPORTED_QUBITS) {
-    throw new Error('Import failed: logical_qubits must be an integer from 2 to 5.')
+  if (
+    !isFiniteInteger(logicalQubits) ||
+    logicalQubits < MIN_SUPPORTED_LOGICAL_QUBITS ||
+    logicalQubits > MAX_SUPPORTED_LOGICAL_QUBITS
+  ) {
+    throw new Error(
+      `Import failed: logical_qubits must be an integer from ${MIN_SUPPORTED_LOGICAL_QUBITS} to ${MAX_SUPPORTED_LOGICAL_QUBITS}.`,
+    )
   }
 
   const initialStates = candidate.initial_states

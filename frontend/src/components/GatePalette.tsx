@@ -5,6 +5,8 @@ import {
   isControlledGateType,
   isPairGateType,
   isRegisterGateType,
+  MAX_SUPPORTED_LOGICAL_QUBITS,
+  MIN_SUPPORTED_LOGICAL_QUBITS,
   MIN_REGISTER_GATE_QUBITS,
 } from '../utils/circuitEditing'
 import { GateInfoCard } from './GateInfoCard'
@@ -26,6 +28,10 @@ const draggableGateTypes = new Set<GateType>([
   'H', 'X', 'Y', 'Z', 'S', 'T', 'RX', 'RY', 'RZ', 'MEASURE',
   'CNOT', 'CZ', 'CP', 'CCX', 'SWAP', 'QFT', 'ORACLE', 'MESSAGE', 'RECEIVED',
 ])
+const logicalQubitOptions = Array.from(
+  { length: MAX_SUPPORTED_LOGICAL_QUBITS - MIN_SUPPORTED_LOGICAL_QUBITS + 1 },
+  (_, index) => MIN_SUPPORTED_LOGICAL_QUBITS + index,
+)
 
 export function GatePalette({
   selectedGateType,
@@ -98,7 +104,7 @@ export function GatePalette({
       <div className="gate-palette__group" role="radiogroup" aria-label="論理量子ビット">
         <span className="gate-palette__label">量子ビット</span>
         <div className="gate-palette__qubit-selector-buttons">
-          {[2, 3, 4, 5].map((count) => {
+          {logicalQubitOptions.map((count) => {
             const isSelected = logicalQubits === count
             return (
               <button
@@ -115,6 +121,11 @@ export function GatePalette({
             )
           })}
         </div>
+        {logicalQubits > 5 ? (
+          <p className="gate-palette__qubit-limit-note" role="status">
+            6〜8量子ビットのノイズありシミュレーションは高コストです。少ない時間ステップから試してください。
+          </p>
+        ) : null}
       </div>
 
       <div className="gate-palette__group" role="toolbar" aria-label="1量子ビットゲート">

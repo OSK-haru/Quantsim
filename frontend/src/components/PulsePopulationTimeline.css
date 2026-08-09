@@ -4,7 +4,7 @@
 
 .pulse-population__note {
   margin: 8px 0 0;
-  color: #91a8ac;
+  color: var(--tt-ink-mid);
   font-size: 0.82rem;
 }
 

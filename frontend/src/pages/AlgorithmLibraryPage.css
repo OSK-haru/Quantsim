@@ -5,12 +5,8 @@
   display: grid;
   align-content: start;
   gap: 28px;
-  background:
-    radial-gradient(circle at 13% 0%, rgba(38, 156, 140, 0.18), transparent 28%),
-    radial-gradient(circle at 92% 16%, rgba(221, 132, 68, 0.12), transparent 25%),
-    repeating-linear-gradient(90deg, transparent 0 79px, rgba(137, 183, 184, 0.025) 79px 80px),
-    linear-gradient(145deg, #071118 0%, #0a1b22 48%, #071016 100%);
-  color: #e9f6f3;
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(163, 163, 163, 0.025) 79px 80px), rgba(30, 30, 30, 0.18);
+  color: var(--tt-ink);
 }
 
 .algorithm-library-page__header,
@@ -20,7 +16,7 @@
 }
 
 .algorithm-library-page__eyebrow {
-  color: #5dd6c0;
+  color: var(--tt-ink-mid);
   font-size: 0.74rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -28,8 +24,8 @@
 
 .algorithm-library-page h1 {
   margin: 8px 0 0;
-  color: #e9f6f3;
-  font-family: Georgia, 'Times New Roman', serif;
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
   font-weight: 500;
   font-size: clamp(2rem, 5vw, 3.3rem);
   letter-spacing: -0.05em;
@@ -38,7 +34,7 @@
 .algorithm-library-page__lede {
   max-width: 66ch;
   margin: 10px 0 0;
-  color: #8ca5a9;
+  color: var(--tt-ink-mid);
   font-size: 0.92rem;
   line-height: 1.6;
 }
@@ -54,15 +50,13 @@
   align-content: start;
   gap: 14px;
   padding: 22px;
-  border: 1px solid rgba(99, 173, 177, 0.2);
-  border-radius: 20px;
-  background: rgba(9, 24, 32, 0.86);
-  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.28);
+  border: 1px solid rgba(77, 77, 77, 0.2);
+  background: var(--tt-void);
 }
 
 .algorithm-library-page__description {
   margin: 0;
-  color: #b7ccce;
+  color: var(--tt-ink);
   font-size: 0.9rem;
   line-height: 1.65;
 }
@@ -75,27 +69,30 @@
 
 .algorithm-library-page__tags span {
   padding: 6px 10px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.72);
-  color: #9bd8ce;
+  border: 1px solid rgba(163, 163, 163, 0.24);
+  background: var(--tt-panel);
+  color: var(--tt-ink-mid);
   font-size: 0.76rem;
 }
 
 .algorithm-library-page__button {
   justify-self: start;
-  padding: 11px 18px;
-  border: 1px solid rgba(97, 215, 193, 0.5);
-  border-radius: 999px;
-  background: linear-gradient(180deg, #35c9ac 0%, #1f8f79 100%);
-  color: #04231d;
-  font-size: 0.92rem;
+  padding: 12px 18px;
+  border: var(--tt-hair) solid var(--tt-accent);
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
+  font-family: var(--tt-mono);
+  font-size: 0.72rem;
   font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   cursor: pointer;
 }
 
 .algorithm-library-page__button:hover {
-  filter: brightness(1.08);
+  border-color: var(--tt-accent-hot);
+  background: var(--tt-accent-hot);
+  color: var(--tt-ink-max);
 }
 
 @media (max-width: 640px) {
@@ -106,4 +103,56 @@
   .algorithm-library-page__card {
     padding: 18px;
   }
+}
+
+/* --- TELEMETRY SHELL NORMALISATION --------------------- */
+
+.algorithm-library-page {
+  background:
+    repeating-linear-gradient(90deg, var(--tt-blueprint) 0 1px, transparent 1px 80px),
+    var(--tt-void);
+  color: var(--tt-ink);
+}
+
+.algorithm-library-page__header {
+  padding-bottom: 16px;
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+}
+
+.algorithm-library-page__eyebrow {
+  display: inline-block;
+  padding: 0;
+  margin-bottom: 10px;
+  border: 0;
+  background: none;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.algorithm-library-page__eyebrow::before {
+  content: '[ ';
+}
+
+.algorithm-library-page__eyebrow::after {
+  content: ' ]';
+}
+
+.algorithm-library-page__header h1 {
+  color: var(--tt-ink);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.9rem, 4.5vw, 3.2rem);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
+.algorithm-library-page__lede {
+  color: var(--tt-ink-mid);
+  font-size: 0.86rem;
+  line-height: 1.7;
 }
