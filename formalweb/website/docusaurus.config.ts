@@ -18,7 +18,7 @@ const config: Config = {
 
   // 本番URL。og:url / og:image / canonical はここから絶対URLが組まれるので、
   // 実際の配信ドメインと一致していないと SNS のカードが読み込めない。
-  url: 'https://yuragi-strider.pages.dev',
+  url: 'https://yuragi-strider.23sam55781.workers.dev',
   baseUrl: '/',
 
   onBrokenLinks: 'throw',
