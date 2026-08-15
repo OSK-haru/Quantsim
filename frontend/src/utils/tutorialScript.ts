@@ -68,8 +68,6 @@ const firstCircuitBeats: TutorialBeat[] = [
     chapterTitle: 'このアプリのこと',
     route: 'home',
     mood: 'point',
-    anchors: ['home-capabilities'],
-    anchorLabel: 'できること',
     text: 'ここでは、その「ゆらぎ」まで物理の式にしたがって計算する。だから「理想の答え」と「現実に出てくる答え」を並べて見比べられるんだ。',
   },
 

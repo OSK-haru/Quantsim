@@ -10,24 +10,6 @@ type HomePageProps = {
   onOpenPulseLab: () => void
 }
 
-const capabilities = [
-  {
-    id: '01',
-    title: '回路を組んで、ノイズを変えて、結果を比較する',
-    unit: 'CIRCUIT / NOISE SWEEP',
-  },
-  {
-    id: '02',
-    title: '理想状態と現実の状態のズレをBloch球・密度行列で可視化',
-    unit: 'BLOCH / DENSITY MATRIX',
-  },
-  {
-    id: '03',
-    title: 'T1緩和・位相緩和など、物理モデルに基づくノイズ',
-    unit: 'T1 / TPHI LINDBLAD',
-  },
-]
-
 export function HomePage({ onStartSimulation, onOpenPulseLab }: HomePageProps) {
   const [activeMode, setActiveMode] = useState<'gate-aware' | 'pulse' | null>(null)
   const tutorial = useTutorial()
@@ -79,24 +61,6 @@ export function HomePage({ onStartSimulation, onOpenPulseLab }: HomePageProps) {
             </div>
           </dl>
         </div>
-      </section>
-
-      <section
-        className="home-page__capabilities"
-        aria-label="主な機能"
-        data-tutorial-anchor="home-capabilities"
-      >
-        <ul className="home-page__features">
-          {capabilities.map((capability) => (
-            <li key={capability.id}>
-              <data className="home-page__feature-index" value={capability.id}>
-                {capability.id}
-              </data>
-              <span className="home-page__feature-unit">{capability.unit}</span>
-              <p className="home-page__feature-title">{capability.title}</p>
-            </li>
-          ))}
-        </ul>
       </section>
 
       {/*

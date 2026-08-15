@@ -99,55 +99,6 @@
   text-align: right;
 }
 
-/* --- Capability grid: hairline compartments ------------------------------- */
-
-.home-page__capabilities {
-  padding: 48px 24px 0;
-}
-
-.home-page__features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--tt-hair);
-  padding: 0;
-  margin: 0;
-  border: var(--tt-hair) solid var(--tt-rule);
-  background: var(--tt-rule);
-  list-style: none;
-}
-
-.home-page__features li {
-  display: grid;
-  align-content: start;
-  gap: 8px;
-  padding: 20px 18px 24px;
-  background: var(--tt-panel);
-}
-
-.home-page__feature-index {
-  color: var(--tt-accent);
-  font-family: var(--tt-macro);
-  font-weight: 900;
-  font-size: 2.4rem;
-  line-height: 0.8;
-  letter-spacing: -0.04em;
-}
-
-.home-page__feature-unit {
-  color: var(--tt-ink-dim);
-  font-family: var(--tt-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.home-page__feature-title {
-  margin: 0;
-  color: var(--tt-ink);
-  font-size: 0.85rem;
-  line-height: 1.6;
-}
-
 /* --- Mode selection ------------------------------------------------------- */
 
 /* 2つのモードは対等な入口なので、幅も中身の段組みも左右で揃える。 */
@@ -394,7 +345,6 @@
     padding: 28px 16px 0;
   }
 
-  .home-page__capabilities,
   .home-page__actions {
     padding-inline: 16px;
   }
