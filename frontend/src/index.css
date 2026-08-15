@@ -33,6 +33,24 @@
   /* -- Signal (terminal green) — reserved for live-run status ONLY ------- */
   --tt-signal: #4af626;
 
+  /* Channel triplets, for compositing a token colour at a variable alpha. */
+  --tt-ink-rgb: 234 234 234;
+  --tt-accent-rgb: 230 25 25;
+
+  /*
+   * -- Gate family hues ---------------------------------------------------
+   * ここだけは単色主義から外れる。パレットには20種近いゲートが並び、
+   * 無彩色のままでは「回転か位相か、1量子ビットか複数か」を字面で読むしかない。
+   * 系統ごとに1色を割り当てて、形ではなく色で分類が伝わるようにする。
+   * どれも --tt-void 上で本文コントラスト比 4.5:1 以上。
+   */
+  --gate-rotation-rgb: 74 168 255;
+  --gate-phase-rgb: 245 165 36;
+  --gate-control-rgb: 180 140 255;
+  --gate-register-rgb: 47 191 143;
+  --gate-measurement-rgb: 255 77 77;
+  --gate-annotation-rgb: 163 163 163;
+
   /* -- Blueprint column rule, drawn across every workspace substrate ----- */
   --tt-blueprint: rgba(234, 234, 234, 0.035);
 
@@ -55,6 +73,13 @@
   --tt-hair: 1px;
   --tt-bar: 2px;
   --tt-unit: 8px;
+
+  /*
+   * 角丸。skill §5 は直角のみを求めているので、既定は 0 のまま。
+   * 明示的に角を落としたい箇所だけがこのトークンを取りに来る。
+   * 全体を丸めたくなったら、ここを変えて opt-in 側を広げる。
+   */
+  --tt-radius: 6px;
 
   font-family: var(--tt-sans);
   line-height: 1.5;

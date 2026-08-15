@@ -49,11 +49,13 @@ It should not drift toward:
 The original 1-week MVP (1 qubit, single H gate, no CNOT, no persistence —
 recorded historically in `SPEC_MVP.md`) is complete. The product has since
 expanded well beyond that scope: React/FastAPI, 1-18 logical qubits (noisy
-density-matrix evolution up to 5, statevector path above that), a 2-4 qubit
-Circuit Studio with CNOT and other multi-qubit gates, circuit JSON
-import/export, Pulse Baseline A, and the qutrit and coupled transmon-pair
-pulse extensions. See `docs_for_develop/README.md` for current implementation
-status; do not treat the original MVP non-goals as current scope limits.
+density-matrix evolution up to 8, explicit CPTP up to 5, statevector path for
+ideal measurement-free circuits above 5), a 2-8 qubit Circuit Studio with
+CNOT and other multi-qubit gates, projective measurement with classical
+feed-forward, circuit JSON import/export, Pulse Baseline A, and the qutrit and
+coupled transmon-pair pulse extensions. See `docs_for_develop/README.md` for
+current implementation status; do not treat the original MVP non-goals as
+current scope limits.
 
 The MVP validated:
 1. whether the internal model is understandable,

@@ -69,6 +69,292 @@ def flatten_collapse_ops(
     return flat
 
 
+class RustDenseSession:
+    """Persistent Rust RK4 state with prepared operators and reusable buffers."""
+
+    def __init__(
+        self,
+        rho: Sequence[Sequence[complex]],
+        collapse_ops: Sequence[Sequence[Sequence[complex]]],
+    ) -> None:
+        dimension = _validate_square_matrix(rho, "rho")
+        for index, operator in enumerate(collapse_ops):
+            if _validate_square_matrix(operator, f"collapse_ops[{index}]") != dimension:
+                raise ValueError("collapse operators must match rho dimension")
+        rust_module = _load_rust_module()
+        self._dimension = dimension
+        self._session = rust_module.DenseRk4Session(
+            flatten_complex_matrix(rho),
+            flatten_collapse_ops(collapse_ops),
+            len(collapse_ops),
+            dimension,
+        )
+        self._synced_state = _as_matrix(rho)
+        self._synced_ideal_state = _as_matrix(rho)
+        self._hamiltonian_ids: dict[Matrix, int] = {}
+
+    @classmethod
+    def from_local_rates(
+        cls,
+        rho: Sequence[Sequence[complex]],
+        n_qubits: int,
+        gamma_down_per_us: float,
+        gamma_up_per_us: float,
+        gamma_phi_per_us: float,
+    ) -> "RustDenseSession":
+        """Create a session while constructing local noise operators in Rust."""
+
+        dimension = _validate_square_matrix(rho, "rho")
+        if int(n_qubits) != n_qubits or int(n_qubits) < 0:
+            raise ValueError("n_qubits must be a non-negative integer")
+        if dimension != 1 << int(n_qubits):
+            raise ValueError("rho dimension must equal 2 ** n_qubits")
+        rust_module = _load_rust_module()
+        instance = cls.__new__(cls)
+        instance._dimension = dimension
+        instance._session = rust_module.DenseRk4Session.from_local_rates(
+            flatten_complex_matrix(rho),
+            int(n_qubits),
+            float(gamma_down_per_us),
+            float(gamma_up_per_us),
+            float(gamma_phi_per_us),
+        )
+        instance._synced_state = _as_matrix(rho)
+        instance._synced_ideal_state = _as_matrix(rho)
+        instance._hamiltonian_ids = {}
+        return instance
+
+    def _sync_state(self, rho: Sequence[Sequence[complex]]) -> None:
+        state = _as_matrix(rho)
+        if state != self._synced_state:
+            if len(state) != self._dimension:
+                raise ValueError("rho dimension changed during a Rust session")
+            self._session.set_state(flatten_complex_matrix(state))
+            self._synced_state = state
+
+    def evolve_cleaned(
+        self,
+        rho: Sequence[Sequence[complex]],
+        hamiltonian: Sequence[Sequence[complex]],
+        dt: float,
+        substeps: int,
+    ) -> Matrix:
+        states = self.evolve_piecewise_cleaned_samples(
+            rho, [hamiltonian], [dt], [substeps]
+        )
+        return states[-1]
+
+    def evolve_piecewise_cleaned_samples(
+        self,
+        rho: Sequence[Sequence[complex]],
+        hamiltonians: Sequence[Sequence[Sequence[complex]]],
+        dts: Sequence[float],
+        substeps: Sequence[int],
+    ) -> tuple[Matrix, ...]:
+        self._sync_state(rho)
+        if not hamiltonians or len(hamiltonians) != len(dts) or len(dts) != len(substeps):
+            raise ValueError("hamiltonians, dts, and substeps must have the same non-zero length")
+        checked_dts: list[float] = []
+        checked_substeps: list[int] = []
+        for index, (hamiltonian, dt, count) in enumerate(zip(hamiltonians, dts, substeps)):
+            if _validate_square_matrix(hamiltonian, f"hamiltonians[{index}]") != self._dimension:
+                raise ValueError("hamiltonians must match the session dimension")
+            value = float(dt)
+            if not math.isfinite(value):
+                raise ValueError("dts must be finite")
+            if int(count) != count or int(count) <= 0:
+                raise ValueError("substeps entries must be positive integers")
+            checked_dts.append(value)
+            checked_substeps.append(int(count))
+        result = self._session.evolve_registered_cleaned_samples(
+            self._registered_hamiltonian_ids(hamiltonians),
+            checked_dts,
+            checked_substeps,
+        )
+        matrix_size = 2 * self._dimension * self._dimension
+        expected = len(hamiltonians) * matrix_size
+        if len(result) != expected:
+            raise RuntimeError("yuragi_strider_rust returned an unexpected piecewise output length")
+        states = tuple(
+            unflatten_complex_matrix(result[start:start + matrix_size], self._dimension)
+            for start in range(0, expected, matrix_size)
+        )
+        self._synced_state = states[-1]
+        return states
+
+    def evolve_paired_piecewise_metrics(
+        self,
+        rho: Sequence[Sequence[complex]],
+        ideal_state: Sequence[Sequence[complex]],
+        hamiltonians: Sequence[Sequence[Sequence[complex]]],
+        dts: Sequence[float],
+        substeps: Sequence[int],
+    ) -> tuple[tuple[Matrix, ...], tuple[Matrix, ...], tuple[tuple[float, float, float, float], ...]]:
+        """Evolve noisy and ideal trajectories and compute metrics in one Rust call."""
+
+        self._sync_state(rho)
+        ideal = _as_matrix(ideal_state)
+        if ideal != self._synced_ideal_state:
+            if len(ideal) != self._dimension:
+                raise ValueError("ideal_state dimension changed during a Rust session")
+            self._session.set_ideal_state(flatten_complex_matrix(ideal))
+            self._synced_ideal_state = ideal
+        flat_hamiltonians, checked_dts, checked_substeps = self._prepare_piecewise_inputs(
+            hamiltonians, dts, substeps
+        )
+        noisy_flat, ideal_flat, metrics_flat = self._session.evolve_paired_piecewise_metrics(
+            flat_hamiltonians, checked_dts, checked_substeps
+        )
+        matrix_size = 2 * self._dimension * self._dimension
+        expected = len(hamiltonians) * matrix_size
+        if len(noisy_flat) != expected or len(ideal_flat) != expected:
+            raise RuntimeError("yuragi_strider_rust returned an unexpected paired output length")
+        if len(metrics_flat) != 4 * len(hamiltonians):
+            raise RuntimeError("yuragi_strider_rust returned an unexpected metrics length")
+        noisy_states = tuple(
+            unflatten_complex_matrix(noisy_flat[start:start + matrix_size], self._dimension)
+            for start in range(0, expected, matrix_size)
+        )
+        ideal_states = tuple(
+            unflatten_complex_matrix(ideal_flat[start:start + matrix_size], self._dimension)
+            for start in range(0, expected, matrix_size)
+        )
+        metrics = tuple(
+            (
+                float(metrics_flat[index]),
+                float(metrics_flat[index + 1]),
+                float(metrics_flat[index + 2]),
+                float(metrics_flat[index + 3]),
+            )
+            for index in range(0, len(metrics_flat), 4)
+        )
+        self._synced_state = noisy_states[-1]
+        self._synced_ideal_state = ideal_states[-1]
+        return noisy_states, ideal_states, metrics
+
+    def evolve_paired_registered_compact(
+        self,
+        rho: Sequence[Sequence[complex]],
+        ideal_state: Sequence[Sequence[complex]],
+        hamiltonians: Sequence[Sequence[Sequence[complex]]],
+        dts: Sequence[float],
+        substeps: Sequence[int],
+        capture_flags: Sequence[bool],
+    ) -> tuple[
+        dict[int, tuple[Matrix, Matrix]],
+        tuple[tuple[float, float, float, float], ...],
+    ]:
+        """Return metrics for every point and matrices only where required."""
+
+        self._sync_state(rho)
+        ideal = _as_matrix(ideal_state)
+        if ideal != self._synced_ideal_state:
+            if len(ideal) != self._dimension:
+                raise ValueError("ideal_state dimension changed during a Rust session")
+            self._session.set_ideal_state(flatten_complex_matrix(ideal))
+            self._synced_ideal_state = ideal
+        checked_dts, checked_substeps = self._validate_piecewise_schedule(
+            hamiltonians, dts, substeps
+        )
+        if len(capture_flags) != len(hamiltonians):
+            raise ValueError("capture_flags must match hamiltonians length")
+        hamiltonian_ids = self._registered_hamiltonian_ids(hamiltonians)
+        indices, noisy_flat, ideal_flat, metrics_flat = (
+            self._session.evolve_paired_registered_compact(
+                hamiltonian_ids,
+                checked_dts,
+                checked_substeps,
+                [bool(flag) for flag in capture_flags],
+            )
+        )
+        matrix_size = 2 * self._dimension * self._dimension
+        if len(noisy_flat) != len(indices) * matrix_size or len(ideal_flat) != len(noisy_flat):
+            raise RuntimeError("yuragi_strider_rust returned an unexpected compact state length")
+        if len(metrics_flat) != 4 * len(hamiltonians):
+            raise RuntimeError("yuragi_strider_rust returned an unexpected compact metrics length")
+        captured: dict[int, tuple[Matrix, Matrix]] = {}
+        for offset, raw_index in enumerate(indices):
+            index = int(raw_index)
+            start = offset * matrix_size
+            captured[index] = (
+                unflatten_complex_matrix(noisy_flat[start:start + matrix_size], self._dimension),
+                unflatten_complex_matrix(ideal_flat[start:start + matrix_size], self._dimension),
+            )
+        metrics = tuple(
+            tuple(float(metrics_flat[index + delta]) for delta in range(4))
+            for index in range(0, len(metrics_flat), 4)
+        )
+        final_pair = captured[len(hamiltonians) - 1]
+        self._synced_state, self._synced_ideal_state = final_pair
+        return captured, metrics
+
+    def _registered_hamiltonian_ids(
+        self,
+        hamiltonians: Sequence[Sequence[Sequence[complex]]],
+    ) -> list[int]:
+        identifiers: list[int] = []
+        for hamiltonian in hamiltonians:
+            matrix = _as_matrix(hamiltonian)
+            identifier = self._hamiltonian_ids.get(matrix)
+            if identifier is None:
+                identifier = int(
+                    self._session.register_hamiltonian(flatten_complex_matrix(matrix))
+                )
+                self._hamiltonian_ids[matrix] = identifier
+            identifiers.append(identifier)
+        return identifiers
+
+    def _validate_piecewise_schedule(
+        self,
+        hamiltonians: Sequence[Sequence[Sequence[complex]]],
+        dts: Sequence[float],
+        substeps: Sequence[int],
+    ) -> tuple[list[float], list[int]]:
+        if not hamiltonians or len(hamiltonians) != len(dts) or len(dts) != len(substeps):
+            raise ValueError("hamiltonians, dts, and substeps must have the same non-zero length")
+        checked_dts: list[float] = []
+        checked_substeps: list[int] = []
+        for index, (hamiltonian, dt, count) in enumerate(zip(hamiltonians, dts, substeps)):
+            if _validate_square_matrix(hamiltonian, f"hamiltonians[{index}]") != self._dimension:
+                raise ValueError("hamiltonians must match the session dimension")
+            value = float(dt)
+            if not math.isfinite(value):
+                raise ValueError("dts must be finite")
+            if int(count) != count or int(count) <= 0:
+                raise ValueError("substeps entries must be positive integers")
+            checked_dts.append(value)
+            checked_substeps.append(int(count))
+        return checked_dts, checked_substeps
+
+    def _prepare_piecewise_inputs(
+        self,
+        hamiltonians: Sequence[Sequence[Sequence[complex]]],
+        dts: Sequence[float],
+        substeps: Sequence[int],
+    ) -> tuple[list[float], list[float], list[int]]:
+        if not hamiltonians or len(hamiltonians) != len(dts) or len(dts) != len(substeps):
+            raise ValueError("hamiltonians, dts, and substeps must have the same non-zero length")
+        flat_hamiltonians: list[float] = []
+        checked_dts: list[float] = []
+        checked_substeps: list[int] = []
+        for index, (hamiltonian, dt, count) in enumerate(zip(hamiltonians, dts, substeps)):
+            if _validate_square_matrix(hamiltonian, f"hamiltonians[{index}]") != self._dimension:
+                raise ValueError("hamiltonians must match the session dimension")
+            value = float(dt)
+            if not math.isfinite(value):
+                raise ValueError("dts must be finite")
+            if int(count) != count or int(count) <= 0:
+                raise ValueError("substeps entries must be positive integers")
+            flat_hamiltonians.extend(flatten_complex_matrix(hamiltonian))
+            checked_dts.append(value)
+            checked_substeps.append(int(count))
+        return flat_hamiltonians, checked_dts, checked_substeps
+
+
+def _as_matrix(matrix: Sequence[Sequence[complex]]) -> Matrix:
+    return tuple(tuple(complex(value) for value in row) for row in matrix)
+
+
 def rust_lindblad_rhs(
     rho: Sequence[Sequence[complex]],
     hamiltonian: Sequence[Sequence[complex]],

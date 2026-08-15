@@ -392,8 +392,509 @@
   }
 }
 
+/* ==========================================================================
+   チュートリアル案内モード
+   ページ常駐のヒント役から、会話する案内役へ切り替わったときの見た目。
+   暗転幕より前に出し、読ませる文章量に合わせて計器も吹き出しも大きくする。
+   ========================================================================== */
+
+.quantum-pet--tutorial {
+  z-index: 1340;
+}
+
+.quantum-pet--tutorial .quantum-pet__stage {
+  width: 116px;
+  height: 116px;
+}
+
+.quantum-pet--tutorial .quantum-pet__bubble {
+  width: min(430px, calc(100vw - 168px));
+  padding: 14px 16px 12px;
+
+  border-left-width: 4px;
+
+  /* 幕の上に浮くので、背景は不透明のまま一段明るくする。 */
+  background: var(--tt-panel-2);
+}
+
+.quantum-pet--tutorial .quantum-pet__bubble-text {
+  font-size: 0.86rem;
+  line-height: 1.85;
+
+  cursor: pointer;
+}
+
+/* 打鍵カーソル。文字送りの最中だけ出る。 */
+.quantum-pet__caret {
+  display: inline-block;
+
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+
+  background: var(--pet-accent);
+
+  vertical-align: -0.14em;
+
+  animation: quantum-pet-caret 700ms steps(1, end) infinite;
+}
+
+.quantum-pet__bubble-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tt-hair);
+  align-items: center;
+
+  margin-top: 4px;
+  padding-top: 10px;
+
+  border-top: var(--tt-hair) solid var(--tt-rule);
+}
+
+/* 会話を進めるボタン。主動線は塗り、補助は枠だけ。 */
+.quantum-pet__action {
+  padding: 7px 16px;
+
+  border: var(--tt-hair) solid var(--tt-accent);
+  background: var(--tt-accent);
+
+  color: var(--tt-ink-max);
+  font-family: var(--tt-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+
+  cursor: pointer;
+
+  transition: background 120ms linear, color 120ms linear;
+}
+
+.quantum-pet__action:hover {
+  background: var(--tt-accent-hot);
+}
+
+.quantum-pet__action:focus-visible {
+  outline: var(--tt-bar) solid var(--tt-ink-max);
+  outline-offset: 2px;
+}
+
+.quantum-pet__action--quiet {
+  border-color: var(--tt-rule-strong);
+  background: var(--tt-void);
+
+  color: var(--tt-ink-mid);
+}
+
+.quantum-pet__action--quiet:hover {
+  border-color: var(--tt-ink);
+  background: var(--tt-void);
+
+  color: var(--tt-ink);
+}
+
+/* 待機中の一言。ボタンの代わりにここが主役になる。 */
+.quantum-pet__waiting {
+  flex: 1;
+
+  min-width: 8em;
+
+  color: var(--tt-accent-hot);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+
+  animation: quantum-pet-waiting 1600ms steps(2, end) infinite;
+}
+
+.quantum-pet__waiting::before {
+  content: '>> ';
+}
+
+@keyframes quantum-pet-waiting {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes quantum-pet-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+/* --- 表情 ------------------------------------------------------------------
+   口は案内モードだけに出す発光バー。センサー（目）の下に絶対配置するので、
+   既存ページのペットのレイアウトには一切影響しない。
+   -------------------------------------------------------------------------- */
+
+.quantum-pet__mouth {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+
+  width: 18px;
+  height: 3px;
+
+  background: var(--pet-sensor);
+  opacity: 0.85;
+
+  transform: translateX(-50%);
+
+  transition: width 200ms steps(2, end), height 200ms steps(2, end);
+}
+
+/* 喋っているあいだは口が開閉する。 */
+.quantum-pet--speaking .quantum-pet__mouth {
+  animation: quantum-pet-talk 260ms steps(2, end) infinite;
+}
+
+@keyframes quantum-pet-talk {
+  0%,
+  100% {
+    height: 3px;
+  }
+
+  50% {
+    height: 9px;
+  }
+}
+
+/* --- 気分ごとの動きと色 ---------------------------------------------------- */
+
+/* ようこそ・呼びかけ：跳ねて存在を示す。 */
+.quantum-pet--mood-greet {
+  --pet-rim: var(--tt-ink);
+  --pet-sensor: var(--tt-ink-max);
+  --pet-accent: var(--tt-ink);
+}
+
+.quantum-pet--mood-greet .quantum-pet__stage {
+  animation: quantum-pet-hop 1500ms steps(4, end) infinite;
+}
+
+.quantum-pet--mood-greet .quantum-pet__eye {
+  height: 19px;
+}
+
+/* 説明中：ゆっくり左右に傾いて、話している間を作る。 */
+.quantum-pet--mood-explain .quantum-pet__stage {
+  animation: quantum-pet-sway 3600ms ease-in-out infinite;
+}
+
+/* 考えごと：浮いたまま目を細める。 */
+.quantum-pet--mood-think {
+  --pet-sensor: var(--tt-ink-mid);
+}
+
+.quantum-pet--mood-think .quantum-pet__stage {
+  animation: quantum-pet-float 4200ms ease-in-out infinite;
+}
+
+.quantum-pet--mood-think .quantum-pet__eye {
+  height: 5px;
+}
+
+.quantum-pet--mood-think .quantum-pet__eye::after {
+  opacity: 0;
+}
+
+.quantum-pet--mood-think .quantum-pet__mouth {
+  width: 8px;
+}
+
+/* 指し示す：強調枠のほうへ身を乗り出す。唯一ハザードレッドを使う気分。 */
+.quantum-pet--mood-point {
+  --pet-rim: var(--tt-accent);
+  --pet-sensor: var(--tt-accent-hot);
+  --pet-accent: var(--tt-accent);
+  --pet-core: var(--tt-accent-wash);
+}
+
+.quantum-pet--mood-point .quantum-pet__stage {
+  animation: quantum-pet-nudge 1100ms steps(3, end) infinite;
+}
+
+.quantum-pet--mood-point .quantum-pet__aura {
+  animation-duration: 900ms;
+}
+
+/* 片目だけ細める。狙いを定めている顔。 */
+.quantum-pet--mood-point .quantum-pet__eye:first-child {
+  height: 9px;
+}
+
+.quantum-pet--mood-point .quantum-pet__eye:last-child {
+  height: 19px;
+}
+
+/* よろこぶ：大きく跳ねて白リンで光る。 */
+.quantum-pet--mood-cheer {
+  --pet-rim: var(--tt-ink-max);
+  --pet-sensor: var(--tt-ink-max);
+  --pet-accent: var(--tt-ink-max);
+  --pet-core: var(--tt-panel-3);
+}
+
+.quantum-pet--mood-cheer .quantum-pet__stage {
+  animation: quantum-pet-jump 760ms steps(4, end) infinite;
+}
+
+/* 笑った目。左右に傾けた細い線にする。 */
+.quantum-pet--mood-cheer .quantum-pet__eye {
+  height: 5px;
+
+  background: var(--pet-sensor);
+}
+
+.quantum-pet--mood-cheer .quantum-pet__eye::after {
+  opacity: 0;
+}
+
+.quantum-pet--mood-cheer .quantum-pet__eye:first-child {
+  transform: rotate(-14deg);
+}
+
+.quantum-pet--mood-cheer .quantum-pet__eye:last-child {
+  transform: rotate(14deg);
+}
+
+.quantum-pet--mood-cheer .quantum-pet__mouth {
+  width: 24px;
+  height: 8px;
+}
+
+/* 不思議がる：傾いたまま止まり、目線が上へ行く。 */
+.quantum-pet--mood-wonder .quantum-pet__stage {
+  animation: quantum-pet-cock 2600ms ease-in-out infinite;
+}
+
+.quantum-pet--mood-wonder .quantum-pet__eyes {
+  animation: quantum-pet-look-up 2600ms ease-in-out infinite;
+}
+
+.quantum-pet--mood-wonder .quantum-pet__eye:first-child {
+  height: 19px;
+  width: 14px;
+}
+
+/* うなずく：縦に細かく頷いて同意を返す。 */
+.quantum-pet--mood-nod .quantum-pet__stage {
+  animation: quantum-pet-nod 900ms steps(3, end) infinite;
+}
+
+/* 待っている：視線を左右に往復させ、手持ち無沙汰にする。 */
+.quantum-pet--mood-wait {
+  --pet-rim: var(--tt-rule-strong);
+  --pet-accent: var(--tt-ink-mid);
+}
+
+.quantum-pet--mood-wait .quantum-pet__stage {
+  animation: quantum-pet-float 5200ms ease-in-out infinite;
+}
+
+.quantum-pet--mood-wait .quantum-pet__eyes {
+  animation: quantum-pet-scan 2400ms steps(2, end) infinite;
+}
+
+.quantum-pet--mood-wait .quantum-pet__mouth {
+  width: 10px;
+}
+
+/* お別れ：大きく揺れて見送る。片目をつぶる。 */
+.quantum-pet--mood-farewell {
+  --pet-rim: var(--tt-ink);
+  --pet-sensor: var(--tt-ink-max);
+  --pet-accent: var(--tt-ink);
+}
+
+.quantum-pet--mood-farewell .quantum-pet__stage {
+  animation: quantum-pet-wave 1400ms ease-in-out infinite;
+}
+
+.quantum-pet--mood-farewell .quantum-pet__eye:first-child {
+  height: 4px;
+
+  background: var(--pet-sensor);
+}
+
+.quantum-pet--mood-farewell .quantum-pet__eye:first-child::after {
+  opacity: 0;
+}
+
+.quantum-pet--mood-farewell .quantum-pet__mouth {
+  width: 22px;
+  height: 6px;
+}
+
+/* 表情つきのときは、体のドリフトを止めて動きを重ねない。 */
+.quantum-pet--expressive .quantum-pet__body,
+.quantum-pet--expressive .quantum-pet__face {
+  animation: none;
+}
+
+/* 動きを切っている環境では、姿勢だけ残して揺らさない。 */
+.quantum-pet--still .quantum-pet__stage,
+.quantum-pet--still .quantum-pet__eyes,
+.quantum-pet--still .quantum-pet__mouth,
+.quantum-pet--still .quantum-pet__waiting,
+.quantum-pet--still .quantum-pet__caret {
+  animation: none;
+}
+
+/* --- 気分の動き ------------------------------------------------------------ */
+
+@keyframes quantum-pet-hop {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes quantum-pet-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg) translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: rotate(2.5deg) translate3d(0, -3px, 0);
+  }
+}
+
+@keyframes quantum-pet-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes quantum-pet-nudge {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  40% {
+    transform: translate3d(-12px, 0, 0);
+  }
+
+  70% {
+    transform: translate3d(-5px, 0, 0);
+  }
+}
+
+@keyframes quantum-pet-jump {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  35% {
+    transform: translate3d(0, -18px, 0) scale(1.04);
+  }
+
+  70% {
+    transform: translate3d(0, -4px, 0) scale(0.98);
+  }
+}
+
+@keyframes quantum-pet-cock {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+
+  50% {
+    transform: rotate(-1deg);
+  }
+}
+
+@keyframes quantum-pet-look-up {
+  0%,
+  100% {
+    transform: translate3d(2px, -3px, 0);
+  }
+
+  50% {
+    transform: translate3d(-2px, -1px, 0);
+  }
+}
+
+@keyframes quantum-pet-nod {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, 6px, 0);
+  }
+}
+
+@keyframes quantum-pet-scan {
+  0%,
+  100% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+@keyframes quantum-pet-wave {
+  0%,
+  100% {
+    transform: rotate(-9deg) translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: rotate(9deg) translate3d(0, -4px, 0);
+  }
+}
+
 @media (max-width: 640px) {
   .quantum-pet__bubble {
     width: min(220px, calc(100vw - 116px));
+  }
+}
+
+/*
+ * 案内モードは読ませる文章が長いので、横並びが苦しくなる幅で
+ * 吹き出しを計器の上へ回す。
+ */
+@media (max-width: 760px) {
+  .quantum-pet--tutorial {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .quantum-pet--tutorial .quantum-pet__bubble {
+    width: min(430px, calc(100vw - 24px));
+
+    border-right: var(--tt-hair) solid var(--tt-rule-strong);
+  }
+
+  .quantum-pet--tutorial .quantum-pet__stage {
+    width: 88px;
+    height: 88px;
   }
 }

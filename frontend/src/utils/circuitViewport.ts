@@ -6,7 +6,6 @@ export const CIRCUIT_TOP_PADDING = 56
 export const CIRCUIT_MIN_ZOOM = 0.5
 export const CIRCUIT_MAX_ZOOM = 1.8
 export const CIRCUIT_ZOOM_STEP = 0.1
-export const CIRCUIT_NAV_GROUP_SIZE = 4
 
 export type VisibleColumnRange = {
   start: number

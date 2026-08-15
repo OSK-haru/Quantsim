@@ -176,6 +176,16 @@
   grid-column: 1 / -1;
 }
 
+/* 管理者モードでのみ出る技術詳細。本文より一段落とす。 */
+.pulse-lab__run-error-detail {
+  display: block;
+  margin-top: 4px;
+  opacity: 0.75;
+  font-size: 0.72rem;
+  font-family: var(--tt-font-mono, monospace);
+  word-break: break-all;
+}
+
 .pulse-lab__result-banner {
   grid-template-columns: 2fr 1fr 1fr;
 }

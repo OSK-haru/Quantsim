@@ -43,7 +43,18 @@ fn lindblad_rhs_flat(
         )));
     }
 
-    Ok(lindblad_rhs_raw(&rho, &h, &collapse_ops, num_ops, d))
+    let (collapse_adjoints, collapse_products) =
+        prepare_collapse_operators_raw(&collapse_ops, num_ops, d);
+    Ok(lindblad_rhs_raw(
+        &rho,
+        &h,
+        &collapse_ops,
+        &collapse_adjoints,
+        &collapse_products,
+        num_ops,
+        d,
+        is_zero_matrix(&h),
+    ))
 }
 
 #[pyfunction]
@@ -66,7 +77,16 @@ fn gksl_exponential_superoperator_flat(
         ));
     }
 
-    let generator = gksl_liouvillian_superoperator_raw(&h, &collapse_ops, num_ops, d);
+    let (collapse_adjoints, collapse_products) =
+        prepare_collapse_operators_raw(&collapse_ops, num_ops, d);
+    let generator = gksl_liouvillian_superoperator_raw(
+        &h,
+        &collapse_ops,
+        &collapse_adjoints,
+        &collapse_products,
+        num_ops,
+        d,
+    );
     matrix_exponential_pade13(&scale_flat(&generator, duration_us), d * d)
         .map_err(PyValueError::new_err)
 }
@@ -105,6 +125,8 @@ fn gksl_piecewise_superoperator_flat(
 
     let superoperator_dimension = d * d;
     let mut composed = identity_flat(superoperator_dimension);
+    let (collapse_adjoints, collapse_products) =
+        prepare_collapse_operators_raw(&collapse_ops, num_ops, d);
     for (interval_index, duration) in interval_durations_us.iter().enumerate() {
         if !duration.is_finite() || *duration <= 0.0 {
             return Err(PyValueError::new_err(
@@ -115,7 +137,14 @@ fn gksl_piecewise_superoperator_flat(
         let end = start + element_count;
         let hamiltonian = &hamiltonians[start..end];
         validate_hermitian(hamiltonian, d)?;
-        let generator = gksl_liouvillian_superoperator_raw(hamiltonian, &collapse_ops, num_ops, d);
+        let generator = gksl_liouvillian_superoperator_raw(
+            hamiltonian,
+            &collapse_ops,
+            &collapse_adjoints,
+            &collapse_products,
+            num_ops,
+            d,
+        );
         let interval_map =
             matrix_exponential_pade13(&scale_flat(&generator, *duration), superoperator_dimension)
                 .map_err(PyValueError::new_err)?;
@@ -145,20 +174,22 @@ fn rk4_evolve_flat(
         return Err(PyValueError::new_err("dt must be finite"));
     }
 
+    let (collapse_adjoints, collapse_products) =
+        prepare_collapse_operators_raw(&collapse_ops, num_ops, d);
+    let hamiltonian_is_zero = is_zero_matrix(&h);
     let mut evolved = rho;
     for _ in 0..substeps {
-        let k1 = lindblad_rhs_raw(&evolved, &h, &collapse_ops, num_ops, d);
-        let k2_state = add_scaled_flat(&evolved, &k1, 0.5 * dt);
-        let k2 = lindblad_rhs_raw(&k2_state, &h, &collapse_ops, num_ops, d);
-        let k3_state = add_scaled_flat(&evolved, &k2, 0.5 * dt);
-        let k3 = lindblad_rhs_raw(&k3_state, &h, &collapse_ops, num_ops, d);
-        let k4_state = add_scaled_flat(&evolved, &k3, dt);
-        let k4 = lindblad_rhs_raw(&k4_state, &h, &collapse_ops, num_ops, d);
-
-        for index in 0..element_count {
-            evolved[index] +=
-                dt / 6.0 * (k1[index] + 2.0 * k2[index] + 2.0 * k3[index] + k4[index]);
-        }
+        evolved = rk4_step_raw(
+            &evolved,
+            &h,
+            &collapse_ops,
+            &collapse_adjoints,
+            &collapse_products,
+            num_ops,
+            d,
+            dt,
+            hamiltonian_is_zero,
+        );
     }
 
     Ok(evolved)
@@ -187,8 +218,21 @@ fn rk4_time_dependent_stages_flat(
         d,
         dt,
     )?;
-    let (k1, k2, k3, k4) =
-        rk4_time_dependent_stages_raw(&rho, &h1, &h2, &h3, &h4, &collapse_ops, num_ops, d, dt);
+    let (collapse_adjoints, collapse_products) =
+        prepare_collapse_operators_raw(&collapse_ops, num_ops, d);
+    let (k1, k2, k3, k4) = rk4_time_dependent_stages_raw(
+        &rho,
+        &h1,
+        &h2,
+        &h3,
+        &h4,
+        &collapse_ops,
+        &collapse_adjoints,
+        &collapse_products,
+        num_ops,
+        d,
+        dt,
+    );
     let mut stages = Vec::with_capacity(4 * element_count);
     stages.extend_from_slice(&k1);
     stages.extend_from_slice(&k2);
@@ -210,8 +254,21 @@ fn rk4_time_dependent_step_flat(
     dt: f64,
 ) -> PyResult<Vec<f64>> {
     validate_time_dependent_rk4_inputs(&rho, &h1, &h2, &h3, &h4, &collapse_ops, num_ops, d, dt)?;
-    let (k1, k2, k3, k4) =
-        rk4_time_dependent_stages_raw(&rho, &h1, &h2, &h3, &h4, &collapse_ops, num_ops, d, dt);
+    let (collapse_adjoints, collapse_products) =
+        prepare_collapse_operators_raw(&collapse_ops, num_ops, d);
+    let (k1, k2, k3, k4) = rk4_time_dependent_stages_raw(
+        &rho,
+        &h1,
+        &h2,
+        &h3,
+        &h4,
+        &collapse_ops,
+        &collapse_adjoints,
+        &collapse_products,
+        num_ops,
+        d,
+        dt,
+    );
     let mut evolved = rho;
     for index in 0..evolved.len() {
         evolved[index] += dt / 6.0 * (k1[index] + 2.0 * k2[index] + 2.0 * k3[index] + k4[index]);
@@ -240,10 +297,25 @@ fn rk4_evolve_cleaned_flat(
         return Err(PyValueError::new_err("dt must be finite"));
     }
 
+    let prepared = prepare_structured_collapse_operators(&collapse_ops, num_ops, d);
+    let hamiltonian_is_zero = is_zero_matrix(&h);
     let mut evolved = rho;
+    let mut next = vec![0.0; element_count];
+    let mut workspace = Rk4Workspace::new(d);
     for _ in 0..substeps {
-        evolved = rk4_step_raw(&evolved, &h, &collapse_ops, num_ops, d, dt);
-        clean_density_flat(&mut evolved, d)?;
+        rk4_step_prepared_into(
+            &evolved,
+            &h,
+            None,
+            &prepared,
+            d,
+            dt,
+            hamiltonian_is_zero,
+            &mut next,
+            &mut workspace,
+        );
+        clean_density_flat(&mut next, d)?;
+        std::mem::swap(&mut evolved, &mut next);
     }
 
     Ok(evolved)
@@ -281,12 +353,27 @@ fn rk4_evolve_cleaned_samples_flat(
         .len()
         .checked_mul(element_count)
         .ok_or_else(|| PyValueError::new_err("sample output length is too large"))?;
+    let prepared = prepare_structured_collapse_operators(&collapse_ops, num_ops, d);
+    let hamiltonian_is_zero = is_zero_matrix(&h);
     let mut evolved = rho;
+    let mut next = vec![0.0; element_count];
+    let mut workspace = Rk4Workspace::new(d);
     let mut samples = Vec::with_capacity(total_output_len);
     for substeps in sample_substeps {
         for _ in 0..substeps {
-            evolved = rk4_step_raw(&evolved, &h, &collapse_ops, num_ops, d, dt);
-            clean_density_flat(&mut evolved, d)?;
+            rk4_step_prepared_into(
+                &evolved,
+                &h,
+                None,
+                &prepared,
+                d,
+                dt,
+                hamiltonian_is_zero,
+                &mut next,
+                &mut workspace,
+            );
+            clean_density_flat(&mut next, d)?;
+            std::mem::swap(&mut evolved, &mut next);
         }
         samples.extend_from_slice(&evolved);
     }
@@ -294,35 +381,954 @@ fn rk4_evolve_cleaned_samples_flat(
     Ok(samples)
 }
 
+#[pyclass]
+struct DenseRk4Session {
+    d: usize,
+    state: Vec<f64>,
+    prepared: Vec<PreparedCollapseOperator>,
+    workspace: Rk4Workspace,
+    next: Vec<f64>,
+    ideal_state: Vec<f64>,
+    ideal_workspace: Rk4Workspace,
+    ideal_next: Vec<f64>,
+    hamiltonians: Vec<PreparedHamiltonian>,
+}
+
+#[pymethods]
+impl DenseRk4Session {
+    #[new]
+    fn new(rho: Vec<f64>, collapse_ops: Vec<f64>, num_ops: usize, d: usize) -> PyResult<Self> {
+        let element_count = matrix_element_count(d)?;
+        validate_matrix_len("rho", rho.len(), element_count, d)?;
+        validate_collapse_ops_len(collapse_ops.len(), num_ops, element_count, d)?;
+        validate_finite_matrix("rho", &rho)?;
+        validate_finite_matrix("collapse_ops", &collapse_ops)?;
+        Ok(Self {
+            d,
+            ideal_state: rho.clone(),
+            state: rho,
+            prepared: prepare_structured_collapse_operators(&collapse_ops, num_ops, d),
+            workspace: Rk4Workspace::new(d),
+            next: vec![0.0; element_count],
+            ideal_workspace: Rk4Workspace::new(d),
+            ideal_next: vec![0.0; element_count],
+            hamiltonians: Vec::new(),
+        })
+    }
+
+    #[staticmethod]
+    fn from_local_rates(
+        rho: Vec<f64>,
+        n_qubits: usize,
+        gamma_down: f64,
+        gamma_up: f64,
+        gamma_phi: f64,
+    ) -> PyResult<Self> {
+        if n_qubits >= usize::BITS as usize {
+            return Err(PyValueError::new_err("n_qubits is too large"));
+        }
+        let d = 1usize << n_qubits;
+        let element_count = matrix_element_count(d)?;
+        validate_matrix_len("rho", rho.len(), element_count, d)?;
+        validate_finite_matrix("rho", &rho)?;
+        for (name, rate) in [
+            ("gamma_down", gamma_down),
+            ("gamma_up", gamma_up),
+            ("gamma_phi", gamma_phi),
+        ] {
+            if !rate.is_finite() || rate < 0.0 {
+                return Err(PyValueError::new_err(format!(
+                    "{name} must be finite and non-negative"
+                )));
+            }
+        }
+        Ok(Self {
+            d,
+            ideal_state: rho.clone(),
+            state: rho,
+            prepared: prepare_local_collapse_operators(n_qubits, gamma_down, gamma_up, gamma_phi),
+            workspace: Rk4Workspace::new(d),
+            next: vec![0.0; element_count],
+            ideal_workspace: Rk4Workspace::new(d),
+            ideal_next: vec![0.0; element_count],
+            hamiltonians: Vec::new(),
+        })
+    }
+
+    fn register_hamiltonian(&mut self, h: Vec<f64>) -> PyResult<usize> {
+        let element_count = matrix_element_count(self.d)?;
+        validate_matrix_len("h", h.len(), element_count, self.d)?;
+        validate_finite_matrix("h", &h)?;
+        if let Some(index) = self.hamiltonians.iter().position(|known| known.dense == h) {
+            return Ok(index);
+        }
+        self.hamiltonians.push(PreparedHamiltonian::new(h, self.d));
+        Ok(self.hamiltonians.len() - 1)
+    }
+
+    fn set_state(&mut self, rho: Vec<f64>) -> PyResult<()> {
+        let element_count = matrix_element_count(self.d)?;
+        validate_matrix_len("rho", rho.len(), element_count, self.d)?;
+        validate_finite_matrix("rho", &rho)?;
+        self.state = rho;
+        Ok(())
+    }
+
+    fn state(&self) -> Vec<f64> {
+        self.state.clone()
+    }
+
+    fn set_ideal_state(&mut self, rho: Vec<f64>) -> PyResult<()> {
+        let element_count = matrix_element_count(self.d)?;
+        validate_matrix_len("ideal_state", rho.len(), element_count, self.d)?;
+        validate_finite_matrix("ideal_state", &rho)?;
+        self.ideal_state = rho;
+        Ok(())
+    }
+
+    fn evolve_cleaned(&mut self, h: Vec<f64>, dt: f64, substeps: usize) -> PyResult<Vec<f64>> {
+        let element_count = matrix_element_count(self.d)?;
+        validate_matrix_len("h", h.len(), element_count, self.d)?;
+        if substeps == 0 || !dt.is_finite() {
+            return Err(PyValueError::new_err(
+                "substeps must be positive and dt must be finite",
+            ));
+        }
+        let hamiltonian_is_zero = is_zero_matrix(&h);
+        for _ in 0..substeps {
+            rk4_step_prepared_into(
+                &self.state,
+                &h,
+                None,
+                &self.prepared,
+                self.d,
+                dt,
+                hamiltonian_is_zero,
+                &mut self.next,
+                &mut self.workspace,
+            );
+            clean_density_flat(&mut self.next, self.d)?;
+            std::mem::swap(&mut self.state, &mut self.next);
+        }
+        Ok(self.state.clone())
+    }
+
+    fn evolve_piecewise_cleaned_samples(
+        &mut self,
+        hamiltonians: Vec<f64>,
+        dts: Vec<f64>,
+        substeps: Vec<usize>,
+    ) -> PyResult<Vec<f64>> {
+        let segment_count = dts.len();
+        if segment_count == 0 || substeps.len() != segment_count {
+            return Err(PyValueError::new_err(
+                "dts and substeps must have the same non-zero length",
+            ));
+        }
+        let element_count = matrix_element_count(self.d)?;
+        if hamiltonians.len() != segment_count * element_count {
+            return Err(PyValueError::new_err(
+                "hamiltonians length must equal segment_count * 2 * d * d",
+            ));
+        }
+        let mut samples = Vec::with_capacity(segment_count * element_count);
+        for segment in 0..segment_count {
+            let dt = dts[segment];
+            let count = substeps[segment];
+            if count == 0 || !dt.is_finite() {
+                return Err(PyValueError::new_err(
+                    "substeps must be positive and dts must be finite",
+                ));
+            }
+            let start = segment * element_count;
+            let h = &hamiltonians[start..start + element_count];
+            let hamiltonian_is_zero = is_zero_matrix(h);
+            for _ in 0..count {
+                rk4_step_prepared_into(
+                    &self.state,
+                    h,
+                    None,
+                    &self.prepared,
+                    self.d,
+                    dt,
+                    hamiltonian_is_zero,
+                    &mut self.next,
+                    &mut self.workspace,
+                );
+                clean_density_flat(&mut self.next, self.d)?;
+                std::mem::swap(&mut self.state, &mut self.next);
+            }
+            samples.extend_from_slice(&self.state);
+        }
+        Ok(samples)
+    }
+
+    fn evolve_registered_cleaned_samples(
+        &mut self,
+        hamiltonian_ids: Vec<usize>,
+        dts: Vec<f64>,
+        substeps: Vec<usize>,
+    ) -> PyResult<Vec<f64>> {
+        let segment_count = dts.len();
+        if segment_count == 0
+            || hamiltonian_ids.len() != segment_count
+            || substeps.len() != segment_count
+        {
+            return Err(PyValueError::new_err(
+                "hamiltonian_ids, dts, and substeps must have the same non-zero length",
+            ));
+        }
+        let element_count = matrix_element_count(self.d)?;
+        let mut samples = Vec::with_capacity(segment_count * element_count);
+        for segment in 0..segment_count {
+            let dt = dts[segment];
+            let count = substeps[segment];
+            if count == 0 || !dt.is_finite() {
+                return Err(PyValueError::new_err(
+                    "substeps must be positive and dts must be finite",
+                ));
+            }
+            let h = self
+                .hamiltonians
+                .get(hamiltonian_ids[segment])
+                .ok_or_else(|| {
+                    PyValueError::new_err("hamiltonian_ids contains an unregistered id")
+                })?;
+            for _ in 0..count {
+                rk4_step_prepared_into(
+                    &self.state,
+                    &h.dense,
+                    h.sparse_if_beneficial(),
+                    &self.prepared,
+                    self.d,
+                    dt,
+                    h.is_zero,
+                    &mut self.next,
+                    &mut self.workspace,
+                );
+                clean_density_flat(&mut self.next, self.d)?;
+                std::mem::swap(&mut self.state, &mut self.next);
+            }
+            samples.extend_from_slice(&self.state);
+        }
+        Ok(samples)
+    }
+
+    fn evolve_paired_piecewise_metrics(
+        &mut self,
+        hamiltonians: Vec<f64>,
+        dts: Vec<f64>,
+        substeps: Vec<usize>,
+    ) -> PyResult<(Vec<f64>, Vec<f64>, Vec<f64>)> {
+        let segment_count = dts.len();
+        if segment_count == 0 || substeps.len() != segment_count {
+            return Err(PyValueError::new_err(
+                "dts and substeps must have the same non-zero length",
+            ));
+        }
+        let element_count = matrix_element_count(self.d)?;
+        if hamiltonians.len() != segment_count * element_count {
+            return Err(PyValueError::new_err(
+                "hamiltonians length must equal segment_count * 2 * d * d",
+            ));
+        }
+        let mut noisy_samples = Vec::with_capacity(segment_count * element_count);
+        let mut ideal_samples = Vec::with_capacity(segment_count * element_count);
+        let mut metrics = Vec::with_capacity(segment_count * 4);
+        let no_collapse_ops: [PreparedCollapseOperator; 0] = [];
+        for segment in 0..segment_count {
+            let dt = dts[segment];
+            let count = substeps[segment];
+            if count == 0 || !dt.is_finite() {
+                return Err(PyValueError::new_err(
+                    "substeps must be positive and dts must be finite",
+                ));
+            }
+            let start = segment * element_count;
+            let h = &hamiltonians[start..start + element_count];
+            let hamiltonian_is_zero = is_zero_matrix(h);
+            for _ in 0..count {
+                rk4_step_prepared_into(
+                    &self.state,
+                    h,
+                    None,
+                    &self.prepared,
+                    self.d,
+                    dt,
+                    hamiltonian_is_zero,
+                    &mut self.next,
+                    &mut self.workspace,
+                );
+                clean_density_flat(&mut self.next, self.d)?;
+                std::mem::swap(&mut self.state, &mut self.next);
+                rk4_step_prepared_into(
+                    &self.ideal_state,
+                    h,
+                    None,
+                    &no_collapse_ops,
+                    self.d,
+                    dt,
+                    hamiltonian_is_zero,
+                    &mut self.ideal_next,
+                    &mut self.ideal_workspace,
+                );
+                clean_density_flat(&mut self.ideal_next, self.d)?;
+                std::mem::swap(&mut self.ideal_state, &mut self.ideal_next);
+            }
+            noisy_samples.extend_from_slice(&self.state);
+            ideal_samples.extend_from_slice(&self.ideal_state);
+            metrics.push(probability_roundoff_guard(trace_product_real(
+                &self.state,
+                &self.ideal_state,
+                self.d,
+            )));
+            metrics.push(probability_roundoff_guard(trace_product_real(
+                &self.state,
+                &self.state,
+                self.d,
+            )));
+            metrics.push(trace_error_flat(&self.state, self.d));
+            metrics.push(probability_roundoff_guard(trace_product_real(
+                &self.ideal_state,
+                &self.ideal_state,
+                self.d,
+            )));
+        }
+        Ok((noisy_samples, ideal_samples, metrics))
+    }
+
+    fn evolve_paired_registered_compact(
+        &mut self,
+        hamiltonian_ids: Vec<usize>,
+        dts: Vec<f64>,
+        substeps: Vec<usize>,
+        capture_flags: Vec<bool>,
+    ) -> PyResult<(Vec<usize>, Vec<f64>, Vec<f64>, Vec<f64>)> {
+        let segment_count = dts.len();
+        if segment_count == 0
+            || hamiltonian_ids.len() != segment_count
+            || substeps.len() != segment_count
+            || capture_flags.len() != segment_count
+        {
+            return Err(PyValueError::new_err(
+                "hamiltonian_ids, dts, substeps, and capture_flags must have the same non-zero length",
+            ));
+        }
+        let element_count = matrix_element_count(self.d)?;
+        let mut captured_indices = Vec::new();
+        let mut noisy_samples = Vec::new();
+        let mut ideal_samples = Vec::new();
+        let mut metrics = Vec::with_capacity(segment_count * 4);
+        let no_collapse_ops: [PreparedCollapseOperator; 0] = [];
+        for segment in 0..segment_count {
+            let dt = dts[segment];
+            let count = substeps[segment];
+            if count == 0 || !dt.is_finite() {
+                return Err(PyValueError::new_err(
+                    "substeps must be positive and dts must be finite",
+                ));
+            }
+            let h = self
+                .hamiltonians
+                .get(hamiltonian_ids[segment])
+                .ok_or_else(|| {
+                    PyValueError::new_err("hamiltonian_ids contains an unregistered id")
+                })?;
+            for _ in 0..count {
+                rk4_step_prepared_into(
+                    &self.state,
+                    &h.dense,
+                    h.sparse_if_beneficial(),
+                    &self.prepared,
+                    self.d,
+                    dt,
+                    h.is_zero,
+                    &mut self.next,
+                    &mut self.workspace,
+                );
+                clean_density_flat(&mut self.next, self.d)?;
+                std::mem::swap(&mut self.state, &mut self.next);
+                rk4_step_prepared_into(
+                    &self.ideal_state,
+                    &h.dense,
+                    h.sparse_if_beneficial(),
+                    &no_collapse_ops,
+                    self.d,
+                    dt,
+                    h.is_zero,
+                    &mut self.ideal_next,
+                    &mut self.ideal_workspace,
+                );
+                clean_density_flat(&mut self.ideal_next, self.d)?;
+                std::mem::swap(&mut self.ideal_state, &mut self.ideal_next);
+            }
+            let fidelity = probability_roundoff_guard(trace_product_real(
+                &self.state,
+                &self.ideal_state,
+                self.d,
+            ));
+            let purity =
+                probability_roundoff_guard(trace_product_real(&self.state, &self.state, self.d));
+            let trace_error = trace_error_flat(&self.state, self.d);
+            let ideal_purity = probability_roundoff_guard(trace_product_real(
+                &self.ideal_state,
+                &self.ideal_state,
+                self.d,
+            ));
+            metrics.extend_from_slice(&[fidelity, purity, trace_error, ideal_purity]);
+            let must_capture = capture_flags[segment]
+                || segment + 1 == segment_count
+                || (ideal_purity - 1.0).abs() > 1e-8;
+            if must_capture {
+                captured_indices.push(segment);
+                noisy_samples.extend_from_slice(&self.state);
+                ideal_samples.extend_from_slice(&self.ideal_state);
+            }
+        }
+        debug_assert_eq!(noisy_samples.len(), captured_indices.len() * element_count);
+        Ok((captured_indices, noisy_samples, ideal_samples, metrics))
+    }
+}
+
+fn trace_product_real(left: &[f64], right: &[f64], d: usize) -> f64 {
+    let mut result = 0.0;
+    for row in 0..d {
+        for column in 0..d {
+            let left_index = 2 * (row * d + column);
+            let right_index = 2 * (column * d + row);
+            result += left[left_index] * right[right_index]
+                - left[left_index + 1] * right[right_index + 1];
+        }
+    }
+    result
+}
+
+fn trace_error_flat(state: &[f64], d: usize) -> f64 {
+    let mut real = -1.0;
+    let mut imag = 0.0;
+    for index in 0..d {
+        let diagonal = 2 * (index * d + index);
+        real += state[diagonal];
+        imag += state[diagonal + 1];
+    }
+    real.hypot(imag)
+}
+
+fn probability_roundoff_guard(value: f64) -> f64 {
+    if value < 0.0 && value > -1e-7 {
+        0.0
+    } else if value > 1.0 && value < 1.0 + 1e-7 {
+        1.0
+    } else {
+        value
+    }
+}
+
+fn prepare_collapse_operators_raw(
+    collapse_ops: &[f64],
+    num_ops: usize,
+    d: usize,
+) -> (Vec<f64>, Vec<f64>) {
+    let element_count = 2 * d * d;
+    let mut adjoints = Vec::with_capacity(num_ops * element_count);
+    let mut products = Vec::with_capacity(num_ops * element_count);
+    for op_index in 0..num_ops {
+        let start = op_index * element_count;
+        let end = start + element_count;
+        let collapse_op = &collapse_ops[start..end];
+        let adjoint = conjugate_transpose_flat(collapse_op, d);
+        let product = matmul_flat(&adjoint, collapse_op, d);
+        adjoints.extend_from_slice(&adjoint);
+        products.extend_from_slice(&product);
+    }
+    (adjoints, products)
+}
+
+fn is_zero_matrix(matrix: &[f64]) -> bool {
+    matrix.iter().all(|value| *value == 0.0)
+}
+
+#[derive(Clone)]
+struct SparseEntry {
+    row: usize,
+    column: usize,
+    real: f64,
+    imag: f64,
+}
+
+struct PreparedHamiltonian {
+    dense: Vec<f64>,
+    sparse: Vec<SparseEntry>,
+    is_zero: bool,
+    use_sparse: bool,
+}
+
+impl PreparedHamiltonian {
+    fn new(dense: Vec<f64>, d: usize) -> Self {
+        let sparse = sparse_entries(&dense, d);
+        let is_zero = sparse.is_empty();
+        let use_sparse = !is_zero && sparse.len() < d * d;
+        Self {
+            dense,
+            sparse,
+            is_zero,
+            use_sparse,
+        }
+    }
+
+    fn sparse_if_beneficial(&self) -> Option<&[SparseEntry]> {
+        self.use_sparse.then_some(self.sparse.as_slice())
+    }
+}
+
+struct PreparedCollapseOperator {
+    operator: Vec<f64>,
+    adjoint: Vec<f64>,
+    product: Vec<f64>,
+    operator_sparse: Vec<SparseEntry>,
+    adjoint_sparse: Vec<SparseEntry>,
+    product_sparse: Vec<SparseEntry>,
+    use_sparse: bool,
+}
+
+fn sparse_entries(matrix: &[f64], d: usize) -> Vec<SparseEntry> {
+    let mut entries = Vec::new();
+    for row in 0..d {
+        for column in 0..d {
+            let index = 2 * (row * d + column);
+            let real = matrix[index];
+            let imag = matrix[index + 1];
+            if real != 0.0 || imag != 0.0 {
+                entries.push(SparseEntry {
+                    row,
+                    column,
+                    real,
+                    imag,
+                });
+            }
+        }
+    }
+    entries
+}
+
+fn prepare_structured_collapse_operators(
+    collapse_ops: &[f64],
+    num_ops: usize,
+    d: usize,
+) -> Vec<PreparedCollapseOperator> {
+    let element_count = 2 * d * d;
+    (0..num_ops)
+        .map(|op_index| {
+            let start = op_index * element_count;
+            let operator = collapse_ops[start..start + element_count].to_vec();
+            let adjoint = conjugate_transpose_flat(&operator, d);
+            let product = matmul_flat(&adjoint, &operator, d);
+            let operator_sparse = sparse_entries(&operator, d);
+            let adjoint_sparse = sparse_entries(&adjoint, d);
+            let product_sparse = sparse_entries(&product, d);
+            let sparse_work =
+                operator_sparse.len() + adjoint_sparse.len() + 2 * product_sparse.len();
+            let dense_work = 4 * d * d;
+            PreparedCollapseOperator {
+                operator,
+                adjoint,
+                product,
+                operator_sparse,
+                adjoint_sparse,
+                product_sparse,
+                use_sparse: sparse_work < dense_work,
+            }
+        })
+        .collect()
+}
+
+fn prepared_from_sparse(
+    d: usize,
+    operator_sparse: Vec<SparseEntry>,
+    adjoint_sparse: Vec<SparseEntry>,
+    product_sparse: Vec<SparseEntry>,
+) -> PreparedCollapseOperator {
+    let mut operator = vec![0.0; 2 * d * d];
+    let mut adjoint = vec![0.0; 2 * d * d];
+    let mut product = vec![0.0; 2 * d * d];
+    for (entries, dense) in [
+        (&operator_sparse, &mut operator),
+        (&adjoint_sparse, &mut adjoint),
+        (&product_sparse, &mut product),
+    ] {
+        for entry in entries {
+            let index = 2 * (entry.row * d + entry.column);
+            dense[index] = entry.real;
+            dense[index + 1] = entry.imag;
+        }
+    }
+    PreparedCollapseOperator {
+        operator,
+        adjoint,
+        product,
+        operator_sparse,
+        adjoint_sparse,
+        product_sparse,
+        use_sparse: true,
+    }
+}
+
+fn prepare_local_collapse_operators(
+    n_qubits: usize,
+    gamma_down: f64,
+    gamma_up: f64,
+    gamma_phi: f64,
+) -> Vec<PreparedCollapseOperator> {
+    let d = 1usize << n_qubits;
+    let mut prepared = Vec::with_capacity(3 * n_qubits);
+    for (kind, rate) in [
+        (0usize, gamma_down),
+        (1usize, gamma_up),
+        (2usize, gamma_phi),
+    ] {
+        if rate <= 0.0 {
+            continue;
+        }
+        let amplitude = if kind == 2 {
+            (rate / 2.0).sqrt()
+        } else {
+            rate.sqrt()
+        };
+        for qubit in 0..n_qubits {
+            let mask = 1usize << (n_qubits - qubit - 1);
+            let mut operator = Vec::with_capacity(d);
+            let mut adjoint = Vec::with_capacity(d);
+            let mut product = Vec::with_capacity(d);
+            for basis in 0..d {
+                let bit_set = basis & mask != 0;
+                match kind {
+                    0 if bit_set => {
+                        operator.push(SparseEntry {
+                            row: basis ^ mask,
+                            column: basis,
+                            real: amplitude,
+                            imag: 0.0,
+                        });
+                        adjoint.push(SparseEntry {
+                            row: basis,
+                            column: basis ^ mask,
+                            real: amplitude,
+                            imag: 0.0,
+                        });
+                        product.push(SparseEntry {
+                            row: basis,
+                            column: basis,
+                            real: rate,
+                            imag: 0.0,
+                        });
+                    }
+                    1 if !bit_set => {
+                        operator.push(SparseEntry {
+                            row: basis ^ mask,
+                            column: basis,
+                            real: amplitude,
+                            imag: 0.0,
+                        });
+                        adjoint.push(SparseEntry {
+                            row: basis,
+                            column: basis ^ mask,
+                            real: amplitude,
+                            imag: 0.0,
+                        });
+                        product.push(SparseEntry {
+                            row: basis,
+                            column: basis,
+                            real: rate,
+                            imag: 0.0,
+                        });
+                    }
+                    2 => {
+                        let signed = if bit_set { -amplitude } else { amplitude };
+                        operator.push(SparseEntry {
+                            row: basis,
+                            column: basis,
+                            real: signed,
+                            imag: 0.0,
+                        });
+                        adjoint.push(SparseEntry {
+                            row: basis,
+                            column: basis,
+                            real: signed,
+                            imag: 0.0,
+                        });
+                        product.push(SparseEntry {
+                            row: basis,
+                            column: basis,
+                            real: rate / 2.0,
+                            imag: 0.0,
+                        });
+                    }
+                    _ => {}
+                }
+            }
+            prepared.push(prepared_from_sparse(d, operator, adjoint, product));
+        }
+    }
+    prepared
+}
+
+struct Rk4Workspace {
+    k1: Vec<f64>,
+    k2: Vec<f64>,
+    k3: Vec<f64>,
+    k4: Vec<f64>,
+    stage: Vec<f64>,
+    scratch1: Vec<f64>,
+    scratch2: Vec<f64>,
+}
+
+impl Rk4Workspace {
+    fn new(d: usize) -> Self {
+        let len = 2 * d * d;
+        Self {
+            k1: vec![0.0; len],
+            k2: vec![0.0; len],
+            k3: vec![0.0; len],
+            k4: vec![0.0; len],
+            stage: vec![0.0; len],
+            scratch1: vec![0.0; len],
+            scratch2: vec![0.0; len],
+        }
+    }
+}
+
+fn sparse_left_mul_into(entries: &[SparseEntry], right: &[f64], out: &mut [f64], d: usize) {
+    out.fill(0.0);
+    for entry in entries {
+        for column in 0..d {
+            let source = 2 * (entry.column * d + column);
+            let target = 2 * (entry.row * d + column);
+            let right_real = right[source];
+            let right_imag = right[source + 1];
+            out[target] += entry.real * right_real - entry.imag * right_imag;
+            out[target + 1] += entry.real * right_imag + entry.imag * right_real;
+        }
+    }
+}
+
+fn sparse_right_mul_into(left: &[f64], entries: &[SparseEntry], out: &mut [f64], d: usize) {
+    out.fill(0.0);
+    for entry in entries {
+        for row in 0..d {
+            let source = 2 * (row * d + entry.row);
+            let target = 2 * (row * d + entry.column);
+            let left_real = left[source];
+            let left_imag = left[source + 1];
+            out[target] += left_real * entry.real - left_imag * entry.imag;
+            out[target + 1] += left_real * entry.imag + left_imag * entry.real;
+        }
+    }
+}
+
+fn matmul_into(a: &[f64], b: &[f64], out: &mut [f64], d: usize) {
+    out.fill(0.0);
+    let parallelism = if d >= 32 {
+        Parallelism::Rayon(0)
+    } else {
+        Parallelism::None
+    };
+    unsafe {
+        gemm(
+            d,
+            d,
+            d,
+            out.as_mut_ptr() as *mut c64,
+            1,
+            d as isize,
+            false,
+            a.as_ptr() as *const c64,
+            1,
+            d as isize,
+            b.as_ptr() as *const c64,
+            1,
+            d as isize,
+            c64::new(0.0, 0.0),
+            c64::new(1.0, 0.0),
+            false,
+            false,
+            false,
+            parallelism,
+        );
+    }
+}
+
+fn lindblad_rhs_prepared_into(
+    rho: &[f64],
+    h: &[f64],
+    h_sparse: Option<&[SparseEntry]>,
+    collapse_ops: &[PreparedCollapseOperator],
+    d: usize,
+    hamiltonian_is_zero: bool,
+    derivative: &mut [f64],
+    scratch1: &mut [f64],
+    scratch2: &mut [f64],
+) {
+    derivative.fill(0.0);
+    if !hamiltonian_is_zero {
+        if let Some(entries) = h_sparse {
+            sparse_left_mul_into(entries, rho, scratch1, d);
+            sparse_right_mul_into(rho, entries, scratch2, d);
+        } else {
+            matmul_into(h, rho, scratch1, d);
+            matmul_into(rho, h, scratch2, d);
+        }
+        for index in (0..derivative.len()).step_by(2) {
+            let commutator_real = scratch1[index] - scratch2[index];
+            let commutator_imag = scratch1[index + 1] - scratch2[index + 1];
+            derivative[index] += commutator_imag;
+            derivative[index + 1] -= commutator_real;
+        }
+    }
+    for collapse in collapse_ops {
+        if collapse.use_sparse {
+            sparse_left_mul_into(&collapse.operator_sparse, rho, scratch1, d);
+            sparse_right_mul_into(scratch1, &collapse.adjoint_sparse, scratch2, d);
+            for index in 0..derivative.len() {
+                derivative[index] += scratch2[index];
+            }
+            sparse_left_mul_into(&collapse.product_sparse, rho, scratch1, d);
+            for index in 0..derivative.len() {
+                derivative[index] -= 0.5 * scratch1[index];
+            }
+            sparse_right_mul_into(rho, &collapse.product_sparse, scratch2, d);
+            for index in 0..derivative.len() {
+                derivative[index] -= 0.5 * scratch2[index];
+            }
+        } else {
+            matmul_into(&collapse.operator, rho, scratch1, d);
+            matmul_into(scratch1, &collapse.adjoint, scratch2, d);
+            for index in 0..derivative.len() {
+                derivative[index] += scratch2[index];
+            }
+            matmul_into(&collapse.product, rho, scratch1, d);
+            for index in 0..derivative.len() {
+                derivative[index] -= 0.5 * scratch1[index];
+            }
+            matmul_into(rho, &collapse.product, scratch2, d);
+            for index in 0..derivative.len() {
+                derivative[index] -= 0.5 * scratch2[index];
+            }
+        }
+    }
+}
+
+fn rk4_step_prepared_into(
+    rho: &[f64],
+    h: &[f64],
+    h_sparse: Option<&[SparseEntry]>,
+    collapse_ops: &[PreparedCollapseOperator],
+    d: usize,
+    dt: f64,
+    hamiltonian_is_zero: bool,
+    evolved: &mut [f64],
+    workspace: &mut Rk4Workspace,
+) {
+    let Rk4Workspace {
+        k1,
+        k2,
+        k3,
+        k4,
+        stage,
+        scratch1,
+        scratch2,
+    } = workspace;
+    lindblad_rhs_prepared_into(
+        rho,
+        h,
+        h_sparse,
+        collapse_ops,
+        d,
+        hamiltonian_is_zero,
+        k1,
+        scratch1,
+        scratch2,
+    );
+    for i in 0..rho.len() {
+        stage[i] = rho[i] + 0.5 * dt * k1[i];
+    }
+    lindblad_rhs_prepared_into(
+        stage,
+        h,
+        h_sparse,
+        collapse_ops,
+        d,
+        hamiltonian_is_zero,
+        k2,
+        scratch1,
+        scratch2,
+    );
+    for i in 0..rho.len() {
+        stage[i] = rho[i] + 0.5 * dt * k2[i];
+    }
+    lindblad_rhs_prepared_into(
+        stage,
+        h,
+        h_sparse,
+        collapse_ops,
+        d,
+        hamiltonian_is_zero,
+        k3,
+        scratch1,
+        scratch2,
+    );
+    for i in 0..rho.len() {
+        stage[i] = rho[i] + dt * k3[i];
+    }
+    lindblad_rhs_prepared_into(
+        stage,
+        h,
+        h_sparse,
+        collapse_ops,
+        d,
+        hamiltonian_is_zero,
+        k4,
+        scratch1,
+        scratch2,
+    );
+    for i in 0..rho.len() {
+        evolved[i] = rho[i] + dt / 6.0 * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i]);
+    }
+}
+
 fn lindblad_rhs_raw(
     rho: &[f64],
     h: &[f64],
     collapse_ops: &[f64],
+    collapse_adjoints: &[f64],
+    collapse_products: &[f64],
     num_ops: usize,
     d: usize,
+    hamiltonian_is_zero: bool,
 ) -> Vec<f64> {
     let element_count = 2 * d * d;
-    let h_rho = matmul_flat(h, rho, d);
-    let rho_h = matmul_flat(rho, h, d);
     let mut derivative = vec![0.0_f64; element_count];
 
-    for index in (0..element_count).step_by(2) {
-        let commutator_real = h_rho[index] - rho_h[index];
-        let commutator_imag = h_rho[index + 1] - rho_h[index + 1];
-        derivative[index] += commutator_imag;
-        derivative[index + 1] += -commutator_real;
+    if !hamiltonian_is_zero {
+        let h_rho = matmul_flat(h, rho, d);
+        let rho_h = matmul_flat(rho, h, d);
+        for index in (0..element_count).step_by(2) {
+            let commutator_real = h_rho[index] - rho_h[index];
+            let commutator_imag = h_rho[index + 1] - rho_h[index + 1];
+            derivative[index] += commutator_imag;
+            derivative[index + 1] += -commutator_real;
+        }
     }
 
     for op_index in 0..num_ops {
         let start = op_index * element_count;
         let end = start + element_count;
         let collapse_op = &collapse_ops[start..end];
-        let collapse_adjoint = conjugate_transpose_flat(collapse_op, d);
-        let ldl = matmul_flat(&collapse_adjoint, collapse_op, d);
+        let collapse_adjoint = &collapse_adjoints[start..end];
+        let ldl = &collapse_products[start..end];
         let l_rho = matmul_flat(collapse_op, &rho, d);
-        let term1 = matmul_flat(&l_rho, &collapse_adjoint, d);
-        let term2 = matmul_flat(&ldl, &rho, d);
-        let term3 = matmul_flat(&rho, &ldl, d);
+        let term1 = matmul_flat(&l_rho, collapse_adjoint, d);
+        let term2 = matmul_flat(ldl, &rho, d);
+        let term3 = matmul_flat(&rho, ldl, d);
 
         for index in 0..element_count {
             derivative[index] += term1[index] - 0.5 * (term2[index] + term3[index]);
@@ -335,18 +1341,30 @@ fn lindblad_rhs_raw(
 fn gksl_liouvillian_superoperator_raw(
     h: &[f64],
     collapse_ops: &[f64],
+    collapse_adjoints: &[f64],
+    collapse_products: &[f64],
     num_ops: usize,
     d: usize,
 ) -> Vec<f64> {
     let superoperator_dimension = d * d;
     let mut generator = vec![0.0_f64; 2 * superoperator_dimension * superoperator_dimension];
+    let hamiltonian_is_zero = is_zero_matrix(h);
 
     for input_column in 0..d {
         for input_row in 0..d {
             let vectorized_column = input_row + input_column * d;
             let mut basis = vec![0.0_f64; 2 * d * d];
             basis[2 * (input_row * d + input_column)] = 1.0;
-            let derivative = lindblad_rhs_raw(&basis, h, collapse_ops, num_ops, d);
+            let derivative = lindblad_rhs_raw(
+                &basis,
+                h,
+                collapse_ops,
+                collapse_adjoints,
+                collapse_products,
+                num_ops,
+                d,
+                hamiltonian_is_zero,
+            );
 
             for output_column in 0..d {
                 for output_row in 0..d {
@@ -621,18 +1639,57 @@ fn rk4_step_raw(
     rho: &[f64],
     h: &[f64],
     collapse_ops: &[f64],
+    collapse_adjoints: &[f64],
+    collapse_products: &[f64],
     num_ops: usize,
     d: usize,
     dt: f64,
+    hamiltonian_is_zero: bool,
 ) -> Vec<f64> {
     let element_count = 2 * d * d;
-    let k1 = lindblad_rhs_raw(rho, h, collapse_ops, num_ops, d);
+    let k1 = lindblad_rhs_raw(
+        rho,
+        h,
+        collapse_ops,
+        collapse_adjoints,
+        collapse_products,
+        num_ops,
+        d,
+        hamiltonian_is_zero,
+    );
     let k2_state = add_scaled_flat(rho, &k1, 0.5 * dt);
-    let k2 = lindblad_rhs_raw(&k2_state, h, collapse_ops, num_ops, d);
+    let k2 = lindblad_rhs_raw(
+        &k2_state,
+        h,
+        collapse_ops,
+        collapse_adjoints,
+        collapse_products,
+        num_ops,
+        d,
+        hamiltonian_is_zero,
+    );
     let k3_state = add_scaled_flat(rho, &k2, 0.5 * dt);
-    let k3 = lindblad_rhs_raw(&k3_state, h, collapse_ops, num_ops, d);
+    let k3 = lindblad_rhs_raw(
+        &k3_state,
+        h,
+        collapse_ops,
+        collapse_adjoints,
+        collapse_products,
+        num_ops,
+        d,
+        hamiltonian_is_zero,
+    );
     let k4_state = add_scaled_flat(rho, &k3, dt);
-    let k4 = lindblad_rhs_raw(&k4_state, h, collapse_ops, num_ops, d);
+    let k4 = lindblad_rhs_raw(
+        &k4_state,
+        h,
+        collapse_ops,
+        collapse_adjoints,
+        collapse_products,
+        num_ops,
+        d,
+        hamiltonian_is_zero,
+    );
 
     let mut evolved = rho.to_vec();
     for index in 0..element_count {
@@ -648,17 +1705,55 @@ fn rk4_time_dependent_stages_raw(
     h3: &[f64],
     h4: &[f64],
     collapse_ops: &[f64],
+    collapse_adjoints: &[f64],
+    collapse_products: &[f64],
     num_ops: usize,
     d: usize,
     dt: f64,
 ) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
-    let k1 = lindblad_rhs_raw(rho, h1, collapse_ops, num_ops, d);
+    let k1 = lindblad_rhs_raw(
+        rho,
+        h1,
+        collapse_ops,
+        collapse_adjoints,
+        collapse_products,
+        num_ops,
+        d,
+        is_zero_matrix(h1),
+    );
     let k2_state = add_scaled_flat(rho, &k1, 0.5 * dt);
-    let k2 = lindblad_rhs_raw(&k2_state, h2, collapse_ops, num_ops, d);
+    let k2 = lindblad_rhs_raw(
+        &k2_state,
+        h2,
+        collapse_ops,
+        collapse_adjoints,
+        collapse_products,
+        num_ops,
+        d,
+        is_zero_matrix(h2),
+    );
     let k3_state = add_scaled_flat(rho, &k2, 0.5 * dt);
-    let k3 = lindblad_rhs_raw(&k3_state, h3, collapse_ops, num_ops, d);
+    let k3 = lindblad_rhs_raw(
+        &k3_state,
+        h3,
+        collapse_ops,
+        collapse_adjoints,
+        collapse_products,
+        num_ops,
+        d,
+        is_zero_matrix(h3),
+    );
     let k4_state = add_scaled_flat(rho, &k3, dt);
-    let k4 = lindblad_rhs_raw(&k4_state, h4, collapse_ops, num_ops, d);
+    let k4 = lindblad_rhs_raw(
+        &k4_state,
+        h4,
+        collapse_ops,
+        collapse_adjoints,
+        collapse_products,
+        num_ops,
+        d,
+        is_zero_matrix(h4),
+    );
     (k1, k2, k3, k4)
 }
 
@@ -785,7 +1880,7 @@ fn validate_time_dependent_rk4_inputs(
 
 fn matmul_flat(a: &[f64], b: &[f64], d: usize) -> Vec<f64> {
     let mut c = vec![0.0_f64; 2 * d * d];
-    let parallelism = if d >= 64 {
+    let parallelism = if d >= 32 {
         Parallelism::Rayon(0)
     } else {
         Parallelism::None
@@ -843,6 +1938,7 @@ fn conjugate_transpose_flat(matrix: &[f64], d: usize) -> Vec<f64> {
 
 #[pymodule]
 fn yuragi_strider_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<DenseRk4Session>()?;
     m.add_function(wrap_pyfunction!(backend_name, m)?)?;
     m.add_function(wrap_pyfunction!(add_f64, m)?)?;
     m.add_function(wrap_pyfunction!(matmul_complex_flat, m)?)?;

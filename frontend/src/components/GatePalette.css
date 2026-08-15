@@ -60,6 +60,11 @@
   white-space: nowrap;
 }
 
+.gate-palette__control-symbol {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 .gate-palette__button {
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -94,31 +99,63 @@
 .gate-palette__item {
   position: relative;
   display: inline-flex;
-  --gate-accent: rgba(163, 163, 163, 0.55);
+  --gate-accent-rgb: var(--tt-ink-rgb);
 }
 
 .gate-palette__item[data-family='rotation'] {
-  --gate-accent: var(--tt-ink-mid);
+  --gate-accent-rgb: var(--gate-rotation-rgb);
 }
 
 .gate-palette__item[data-family='phase'] {
-  --gate-accent: var(--tt-ink);
+  --gate-accent-rgb: var(--gate-phase-rgb);
 }
 
 .gate-palette__item[data-family='control'] {
-  --gate-accent: var(--tt-accent);
+  --gate-accent-rgb: var(--gate-control-rgb);
 }
 
 .gate-palette__item[data-family='register'] {
-  --gate-accent: var(--tt-ink);
+  --gate-accent-rgb: var(--gate-register-rgb);
 }
 
 .gate-palette__item[data-family='measurement'] {
-  --gate-accent: var(--tt-accent);
+  --gate-accent-rgb: var(--gate-measurement-rgb);
 }
 
 .gate-palette__item[data-family='annotation'] {
-  --gate-accent: rgba(163, 163, 163, 0.55);
+  --gate-accent-rgb: var(--gate-annotation-rgb);
+}
+
+/* 系統色は枠と文字に載せる。地は暗いままにして、並んだときの明度差を保つ。 */
+.gate-palette__item .gate-palette__button {
+  border-color: rgb(var(--gate-accent-rgb) / 0.45);
+  background: rgb(var(--gate-accent-rgb) / 0.08);
+  color: rgb(var(--gate-accent-rgb));
+}
+
+.gate-palette__item .gate-palette__button:hover:not(:disabled) {
+  border-color: rgb(var(--gate-accent-rgb) / 0.8);
+  background: rgb(var(--gate-accent-rgb) / 0.18);
+}
+
+/* 選択中は塗りつぶす。いま手に持っているゲートは一目で分かる必要がある。 */
+.gate-palette__item .gate-palette__button--selected {
+  border-color: rgb(var(--gate-accent-rgb));
+  background: rgb(var(--gate-accent-rgb));
+  color: var(--tt-void);
+}
+
+/* 量子ビット数が足りないゲートは、系統色を落として無効だと分かるようにする。 */
+.gate-palette__item .gate-palette__button:disabled {
+  border-color: rgba(163, 163, 163, 0.16);
+  background: rgba(10, 10, 10, 0.3);
+  color: var(--tt-ink-faint);
+  cursor: not-allowed;
+}
+
+.gate-palette__item .gate-palette__button:focus-visible {
+  outline: 2px solid rgb(var(--gate-accent-rgb));
+  outline-offset: 2px;
 }
 
 .gate-palette__popover {

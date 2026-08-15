@@ -83,6 +83,12 @@ function validateGateParams(params: unknown, gateLabel: string) {
   if ('theta_rad' in params && !isFiniteNumber(params.theta_rad)) {
     throw new Error(`Import failed: ${gateLabel} params.theta_rad must be finite.`)
   }
+  if ('control_value' in params && params.control_value !== 0 && params.control_value !== 1) {
+    throw new Error(`Import failed: ${gateLabel} params.control_value must be 0 or 1.`)
+  }
+  if ('control_state' in params && (!isFiniteInteger(params.control_state) || params.control_state < 0)) {
+    throw new Error(`Import failed: ${gateLabel} params.control_state must be a non-negative integer.`)
+  }
 }
 
 function validateGateShape(gate: Record<string, unknown>, logicalQubits: number, step: number, index: number) {
@@ -123,11 +129,27 @@ function validateGateShape(gate: Record<string, unknown>, logicalQubits: number,
     if (new Set([...gate.controls, gate.targets[0]]).size !== 3) {
       throw new Error('Import failed: CCX controls and target must differ.')
     }
-  } else if (gateType === 'CNOT' || gateType === 'CZ' || gateType === 'CP') {
+  } else if (gateType === 'CNOT') {
     if (!Array.isArray(gate.controls)) {
       throw new Error(`Import failed: ${gateType} controls must be an array at step ${step}.`)
     }
-    if (gate.controls.length !== 1) {
+    if (gate.controls.length < 1) {
+      throw new Error('Import failed: CNOT requires at least one control qubit.')
+    }
+    if (gate.targets.length !== 1) {
+      throw new Error('Import failed: CNOT requires exactly one target qubit.')
+    }
+    if (new Set(gate.controls).size !== gate.controls.length || gate.controls.includes(gate.targets[0])) {
+      throw new Error('Import failed: CNOT controls and target must all be different.')
+    }
+    if (isRecord(gate.params) && gate.params.control_state !== undefined) {
+      const state = gate.params.control_state
+      if (!isFiniteInteger(state) || state < 0 || state >= 2 ** gate.controls.length) {
+        throw new Error('Import failed: CNOT control_state is outside the control-bit range.')
+      }
+    }
+  } else if (gateType === 'CZ' || gateType === 'CP') {
+    if (!Array.isArray(gate.controls) || gate.controls.length !== 1) {
       throw new Error(`Import failed: ${gateType} requires exactly one control qubit.`)
     }
     if (gate.targets.length !== 1) {
@@ -185,7 +207,7 @@ function validateGateShape(gate: Record<string, unknown>, logicalQubits: number,
     }
   }
 
-  if ((gateType === 'CNOT' || gateType === 'CZ' || gateType === 'CP') && controls[0] === targets[0]) {
+  if ((gateType === 'CNOT' || gateType === 'CZ' || gateType === 'CP') && controls.includes(targets[0])) {
     throw new Error(`Import failed: ${gateType} control and target must differ.`)
   }
 

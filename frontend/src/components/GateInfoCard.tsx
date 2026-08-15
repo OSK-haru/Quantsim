@@ -48,6 +48,8 @@ function familyLabel(family: GateReferenceEntry['family']) {
       return '位相ゲート'
     case 'control':
       return '複数量子ビット'
+    case 'register':
+      return 'レジスタ'
     case 'measurement':
       return '測定'
     case 'annotation':

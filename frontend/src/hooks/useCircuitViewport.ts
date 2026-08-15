@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  CIRCUIT_NAV_GROUP_SIZE,
   CIRCUIT_ZOOM_STEP,
   clampZoom,
   getColumnScrollLeft,
@@ -145,16 +144,6 @@ export function useCircuitViewport({
     scrollToColumn(Math.max(0, columnCount - 1), { highlight: true })
   }, [columnCount, scrollToColumn])
 
-  const goPreviousGroup = useCallback(() => {
-    scrollToColumn(Math.max(0, visibleRange.start - 1 - CIRCUIT_NAV_GROUP_SIZE), { highlight: true })
-  }, [scrollToColumn, visibleRange.start])
-
-  const goNextGroup = useCallback(() => {
-    scrollToColumn(Math.min(columnCount - 1, visibleRange.start - 1 + CIRCUIT_NAV_GROUP_SIZE), {
-      highlight: true,
-    })
-  }, [columnCount, scrollToColumn, visibleRange.start])
-
   useEffect(() => {
     updateVisibleRange()
   }, [updateVisibleRange])
@@ -215,10 +204,14 @@ export function useCircuitViewport({
     }
   }, [])
 
+  /*
+   * visibleRange は内部で「選択した列が画面外なら送る」判定に使うだけになった。
+   * 列ナビゲーターを外したので、範囲そのものと group 送りは公開しない。
+   * goFirst / goLast は Home / End のショートカットが今も使う。
+   */
   return {
     viewportRef,
     zoom,
-    visibleRange,
     highlightedColumnIndex,
     updateVisibleRange,
     setZoomValue,
@@ -232,9 +225,5 @@ export function useCircuitViewport({
         scrollToColumn(selectedColumnIndex, { highlight: true })
       }
     },
-    goFirst,
-    goPreviousGroup,
-    goNextGroup,
-    goLast,
   }
 }

@@ -124,7 +124,7 @@
 
 .density-matrix-viewer__matrix {
   --density-label-size: 58px;
-  --density-cell-size: clamp(28px, 4.4vw, 42px);
+  --density-cell-size: clamp(34px, 4.4vw, 44px);
   display: grid;
   width: max-content;
   min-width: 100%;
@@ -169,23 +169,42 @@
 }
 
 .density-matrix-viewer__cell {
+  display: grid;
+  place-items: center;
   width: var(--density-cell-size);
   height: var(--density-cell-size);
+  padding: 0;
+  overflow: hidden;
   box-sizing: border-box;
   border: 1px solid var(--tt-panel);
-  color: var(--tt-ink-max);
+  color: var(--density-cell-ink, var(--tt-ink-max));
   cursor: crosshair;
-  font-size: 0.66rem;
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
   line-height: 1;
+  text-transform: none;
+}
+
+.density-matrix-viewer__cell-value {
+  /* 桁が枠を越えたら切り、隣のセルへはみ出させない。 */
+  max-width: 100%;
+  overflow: hidden;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .density-matrix-viewer__cell[data-sign='positive'] {
-  background: rgba(52, 211, 153, var(--density-cell-alpha));
+  background: rgb(var(--tt-ink-rgb) / var(--density-cell-alpha));
 }
 
 .density-matrix-viewer__cell[data-sign='negative'] {
-  background: rgba(248, 113, 113, var(--density-cell-alpha));
+  background: rgb(var(--tt-accent-rgb) / var(--density-cell-alpha));
 }
 
 .density-matrix-viewer__cell[data-sign='zero'] {
@@ -194,7 +213,8 @@
 
 .density-matrix-viewer__cell:hover,
 .density-matrix-viewer__cell:focus-visible {
-  border-color: var(--tt-ink-max);
+  border-color: var(--tt-accent);
+  outline: none;
 }
 
 .density-matrix-viewer__empty,
@@ -227,6 +247,6 @@
 
   .density-matrix-viewer__matrix {
     --density-label-size: 48px;
-    --density-cell-size: 30px;
+    --density-cell-size: 34px;
   }
 }

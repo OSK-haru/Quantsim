@@ -3,10 +3,10 @@
 > **Status: Completed and retained as implementation history**
 >
 > UI-3A through UI-3G and arbitrary `circuit_config` submission are now
-> implemented. Circuit Studio supports 2-5 qubits, click and drag-and-drop
-> placement, CNOT, movement, deletion, Clear, Undo/Redo, and JSON
-> import/export. Statements below that describe a fixed Bell-only circuit or
-> future API integration are obsolete.
+> implemented. Circuit Studio supports 2-8 qubits, click and drag-and-drop
+> placement, multi-qubit and register gates, movement, deletion, Clear,
+> Undo/Redo, and JSON import/export. Statements below that describe a fixed
+> Bell-only circuit or future API integration are obsolete.
 
 ## 目的
 

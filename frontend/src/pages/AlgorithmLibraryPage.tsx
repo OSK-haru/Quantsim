@@ -32,6 +32,17 @@ const algorithmPresets: AlgorithmPreset[] = [
     highlights: ['振幅増幅', 'オラクル', '拡散変換'],
   },
   {
+    key: 'grover_4qubit',
+    icon: 'chart',
+    category: '探索アルゴリズム',
+    title: 'Grover探索（4量子ビット）',
+    qubits: 4,
+    difficulty: '中級',
+    description:
+      '16通りの状態から|0100>を探索します。位相オラクルの後に、H⁴・X⁴・多重制御X・X⁴・H⁴で構成した拡散変換を3回実行し、解の振幅を増幅します。制御点を追加した多重制御Xが、探索回路でどう働くかを確認できます。',
+    highlights: ['16状態', '3回反復', '多重制御X', '拡散変換'],
+  },
+  {
     key: 'teleportation',
     icon: 'atom',
     category: '量子通信プロトコル',

@@ -22,7 +22,7 @@ The top-level request contains:
 
 | Field | Meaning |
 |---|---|
-| `model_id` | Must be `driven_two_level_rwa_experimental_v1` |
+| `model_id` | One of the three `model_ids` above. It selects the contract version, and the accepted `pulse`/`environment` fields follow from it. |
 | `initial_state` | `"0"` or `"1"` |
 | `pulse` | Envelope, amplitude, phase, and detuning |
 | `total_simulation_time_us` | Pulse plus optional observation/idle time |

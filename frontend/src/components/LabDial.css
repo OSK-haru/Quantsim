@@ -33,17 +33,21 @@
 
 .lab-dial__track {
   fill: none;
-  stroke: rgba(163, 163, 163, 0.22);
+  stroke: rgba(163, 163, 163, 0.16);
   stroke-width: 9;
   stroke-linecap: round;
 }
 
+/*
+ * 針と同じ弧を丸ごと引いたうえで、破線オフセットで見せる長さを決める。
+ * 変わるのは stroke-dashoffset だけなので、途中経過も必ず目盛りに乗る。
+ */
 .lab-dial__value-arc {
   fill: none;
-  stroke: var(--tt-ink-mid);
+  stroke: var(--tt-ink);
   stroke-width: 9;
   stroke-linecap: round;
-  transition: d 140ms ease;
+  transition: stroke-dashoffset 140ms ease;
 }
 
 .lab-dial__tick {
@@ -52,10 +56,10 @@
 }
 
 .lab-dial__needle {
-  stroke: var(--tt-ink-mid);
+  stroke: var(--tt-ink-max);
   stroke-width: 3;
   stroke-linecap: round;
-  transition: x2 140ms ease, y2 140ms ease;
+  transition: transform 140ms ease;
 }
 
 .lab-dial__hub {
@@ -64,10 +68,14 @@
   stroke-width: 2;
 }
 
+/*
+ * 読み値は目盛りが開いている真下の 90 度へ落とす。中央に置くと軸と針に
+ * かぶさって、いま針がどこを指しているのかが読めなくなる。
+ */
 .lab-dial__readout {
   position: absolute;
   left: 50%;
-  top: 68%;
+  top: 88%;
   transform: translate(-50%, -50%);
   display: flex;
 }
@@ -85,7 +93,7 @@
   font-size: 0.86rem;
   font-weight: 700;
   letter-spacing: 0.01em;
-  cursor: text;
+  cursor: pointer;
   white-space: nowrap;
 }
 

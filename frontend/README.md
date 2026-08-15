@@ -40,9 +40,11 @@ routing dependency:
 
 - Physical environment parameter editing.
 - Editable gate-duration defaults.
-- 2-4 qubit circuit editor.
+- 2-8 qubit circuit editor.
+- Gate palette: H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX, SWAP, QFT,
+  ORACLE, MEASURE, and the MESSAGE/RECEIVED annotation pair.
 - Click and drag-and-drop gate placement.
-- CNOT placement and movement.
+- Multi-qubit and variable-width register gate placement and movement.
 - Delete, drag-out deletion, Clear, Undo, and Redo.
 - Circuit JSON import/export.
 - Arbitrary `circuit_config` submission to `POST /api/simulate`.
@@ -68,7 +70,7 @@ The responsibility boundary is explicit:
 Pulse Extension B is frozen as
 `driven_transmon_qutrit_rwa_experimental_v1` /
 `pulse-extension-b-v1` with the restrictions documented in
-[`../docs/validation/pulse-extension-b-report.md`](../docs/validation/pulse-extension-b-report.md).
+[`../docs_for_develop/validation/pulse-extension-b-report.md`](../docs_for_develop/validation/pulse-extension-b-report.md).
 
 ## Checks
 

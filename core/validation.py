@@ -132,16 +132,16 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                         "Set controls to qubit indices from 0 to logical_qubits - 1.",
                     ))
 
-            if gate_type in {"CNOT", "CZ", "CP"}:
-                if len(gate.controls or []) != 1:
+            if gate_type == "CNOT":
+                if len(gate.controls or []) < 1:
                     issues.append(_error(
                         f"{gate_type}_REQUIRES_CONTROL",
-                        f"{gate_type} requires exactly one control qubit.",
+                        f"{gate_type} requires at least one control qubit.",
                         (
                             f"Gate {gate_type} at step {column.step} has controls "
                             f"{gate.controls!r}."
                         ),
-                        f"Set exactly one control qubit for {gate_type}.",
+                        f"Set one or more control qubits for {gate_type}.",
                     ))
                 if len(gate.targets) != 1:
                     issues.append(_error(
@@ -162,6 +162,36 @@ def validate_simulation_config(config: SimulationConfig) -> list[ValidationIssue
                                 f"Gate {gate_type} at step {column.step} uses qubit "
                                 f"{control} as both control and target."
                             ),
+                            f"Choose different qubit indices for {gate_type} control and target.",
+                        ))
+                if len(set(gate.controls or [])) != len(gate.controls or []):
+                    issues.append(_error(
+                        "CNOT_CONTROLS_MUST_DIFFER",
+                        "CNOT control qubits must all be different.",
+                        f"Gate CNOT at step {column.step} has controls {gate.controls!r}.",
+                        "Choose each control qubit once.",
+                    ))
+            elif gate_type in {"CZ", "CP"}:
+                if len(gate.controls or []) != 1:
+                    issues.append(_error(
+                        f"{gate_type}_REQUIRES_CONTROL",
+                        f"{gate_type} requires exactly one control qubit.",
+                        f"Gate {gate_type} at step {column.step} has controls {gate.controls!r}.",
+                        f"Set exactly one control qubit for {gate_type}.",
+                    ))
+                if len(gate.targets) != 1:
+                    issues.append(_error(
+                        f"{gate_type}_REQUIRES_TARGET",
+                        f"{gate_type} requires exactly one target qubit.",
+                        f"Gate {gate_type} at step {column.step} has targets {gate.targets!r}.",
+                        f"Set exactly one target qubit for {gate_type}.",
+                    ))
+                for control in gate.controls or []:
+                    if control in gate.targets:
+                        issues.append(_error(
+                            f"{gate_type}_CONTROL_EQUALS_TARGET",
+                            f"{gate_type} control and target must be different qubits.",
+                            f"Gate {gate_type} at step {column.step} uses qubit {control} as both control and target.",
                             f"Choose different qubit indices for {gate_type} control and target.",
                         ))
             elif gate_type == "CCX":

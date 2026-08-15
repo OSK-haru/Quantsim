@@ -2,8 +2,9 @@
 > **Historical analysis plan**
 >
 > Current complexity documentation is
-> `docs/architecture/complexity.md`. Statements below about future 3-4 qubit
-> support predate the implemented 1-4 qubit core/API.
+> `docs_for_develop/architecture/complexity.md`. Statements below about future
+> 3-4 qubit support predate the implemented 1-18 qubit core/API (noisy density
+> matrix up to 8, explicit CPTP up to 5).
 
 ---
 

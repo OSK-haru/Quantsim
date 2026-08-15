@@ -16,6 +16,7 @@ import type {
 import type { GateDurationDefaults } from '../types/simulation'
 import {
   formatThetaLabel,
+  controlValuesForGate,
   gateThetaRad,
   getGateIdAtSlot,
   isControlledGateType,
@@ -38,13 +39,16 @@ import { setCircuitDragPreview } from '../utils/dragPreview'
 type PendingCnotControl = {
   columnIndex: number
   qubitIndex: number
+  controlValue?: 0 | 1
   additionalQubits?: number[]
+  additionalControlValues?: Array<0 | 1>
 }
 
 type CircuitPreviewProps = {
   circuit: CircuitEditorState
   gateDurationDefaults?: GateDurationDefaults
   selectedGateType?: GateType | null
+  selectedControlValue?: 0 | 1 | null
   selectedGateId?: string | null
   pendingCnotControl?: PendingCnotControl | null
   dragPayload?: DragGatePayload | null
@@ -115,10 +119,24 @@ function getCnotGateAtQubit(cnotGates: CircuitGate[], qubitIndex: number) {
   return cnotGates.find((gate) => getCnotQubits(gate).includes(qubitIndex)) ?? null
 }
 
+function isInsideCnotControlLine(cnotGates: CircuitGate[], qubitIndex: number) {
+  return cnotGates.some((gate) => {
+    if (gate.type !== 'CNOT') return false
+    const qubits = getCnotQubits(gate)
+    return (
+      qubits.length >= 2 &&
+      qubitIndex > Math.min(...qubits) &&
+      qubitIndex < Math.max(...qubits) &&
+      !qubits.includes(qubitIndex)
+    )
+  })
+}
+
 export function CircuitPreview({
   circuit,
   gateDurationDefaults,
   selectedGateType,
+  selectedControlValue = null,
   selectedGateId,
   pendingCnotControl,
   dragPayload,
@@ -164,6 +182,7 @@ export function CircuitPreview({
       isRegisterGateType(selectedGateType)
     ),
   )
+  const isControlMarkerTool = selectedControlValue !== null
   const isHighlightedGate = (gate: CircuitGate) => {
     const qubits = [...(gate.controls ?? []), ...gate.targets].sort((left, right) => left - right)
     return highlightedGateSignatures.includes(`${gate.type}:${qubits.join(',')}`)
@@ -258,6 +277,7 @@ export function CircuitPreview({
     <section
       className={`circuit-preview${isCircuitDragActive ? ' circuit-preview--dragging' : ''}`}
       aria-label="Circuit preview"
+      data-tutorial-anchor="circuit-canvas"
     >
       <div
         className="circuit-preview__viewport"
@@ -517,13 +537,17 @@ export function CircuitPreview({
                           }`}
                         />
                       ) : null}
-                      {(cnotGate.controls ?? []).map((control) => (
+                      {(cnotGate.controls ?? []).map((control, index) => (
                         <circle
                           key={`${cnotGate.id}-control-${control}`}
                           cx={cnotX}
                           cy={yForQubit(control)}
                           r="8"
                           className={`circuit-preview__control-dot${
+                            cnotGate.type === 'CNOT' && controlValuesForGate(cnotGate)[index] === 0
+                              ? ' circuit-preview__control-dot--open'
+                              : ''
+                          }${
                             isSelectedCnot ? ' circuit-preview__control-dot--selected' : ''
                           }`}
                         />
@@ -654,23 +678,52 @@ export function CircuitPreview({
 
                 {pendingCnotControl &&
                 pendingCnotControl.columnIndex === columnIndex &&
-                selectedGateType &&
                 (
-                  isControlledGateType(selectedGateType) ||
-                  isPairGateType(selectedGateType) ||
-                  isRegisterGateType(selectedGateType)
+                  isControlMarkerTool ||
+                  (selectedGateType && (
+                    isControlledGateType(selectedGateType) ||
+                    isPairGateType(selectedGateType) ||
+                    isRegisterGateType(selectedGateType)
+                  ))
                 ) &&
                 hoveredQubitSlot &&
                 hoveredQubitSlot.columnIndex === columnIndex &&
-                hoveredQubitSlot.qubitIndex !== pendingCnotControl.qubitIndex ? (
+                ![pendingCnotControl.qubitIndex, ...(pendingCnotControl.additionalQubits ?? [])]
+                  .includes(hoveredQubitSlot.qubitIndex) ? (
                   <line
                     x1={x}
-                    y1={yForQubit(pendingCnotControl.qubitIndex)}
+                    y1={Math.min(...[
+                      pendingCnotControl.qubitIndex,
+                      ...(pendingCnotControl.additionalQubits ?? []),
+                      hoveredQubitSlot.qubitIndex,
+                    ].map(yForQubit))}
                     x2={x}
-                    y2={yForQubit(hoveredQubitSlot.qubitIndex)}
+                    y2={Math.max(...[
+                      pendingCnotControl.qubitIndex,
+                      ...(pendingCnotControl.additionalQubits ?? []),
+                      hoveredQubitSlot.qubitIndex,
+                    ].map(yForQubit))}
                     className="circuit-preview__draw-preview-line"
                     style={{ pointerEvents: 'none' }}
                   />
+                ) : null}
+
+                {pendingCnotControl?.columnIndex === columnIndex && isControlMarkerTool ? (
+                  <g style={{ pointerEvents: 'none' }}>
+                    {[pendingCnotControl.qubitIndex, ...(pendingCnotControl.additionalQubits ?? [])]
+                      .map((control, index) => (
+                        <circle
+                          key={`pending-control-${control}`}
+                          cx={x}
+                          cy={yForQubit(control)}
+                          r="8"
+                          className={`circuit-preview__control-dot${[
+                            pendingCnotControl.controlValue ?? 1,
+                            ...(pendingCnotControl.additionalControlValues ?? []),
+                          ][index] === 0 ? ' circuit-preview__control-dot--open' : ''}`}
+                        />
+                      ))}
+                  </g>
                 ) : null}
 
                 {Array.from({ length: circuit.logical_qubits }).map((_, qubitIndex) => {
@@ -699,17 +752,24 @@ export function CircuitPreview({
                   const isDraggedCnot =
                     dragPayload?.source === 'circuit' && dragPayload.gateId === cnotGateAtSlot?.id
                   const isDropTarget = Boolean(dragPayload && onSlotDrop)
+                  const isControlMarkerDrop =
+                    dragPayload?.source === 'palette' && dragPayload.controlValue !== undefined
+                  const isControlLineInsertionTarget =
+                    isControlMarkerDrop && !gate && isInsideCnotControlLine(cnotGates, qubitIndex)
                   const isDropHovered =
                     dragHoverSlot?.columnIndex === columnIndex &&
                     dragHoverSlot.qubitIndex === qubitIndex
                   const isSameDraggedGate =
                     dragPayload?.source === 'circuit' && dragPayload.gateId === gateIdAtSlot
                   const isInvalidDropTarget =
-                    isDropTarget && Boolean(gate || hasCnotOccupancy) && !isSameDraggedGate
+                    isDropTarget && Boolean(gate || hasCnotOccupancy) &&
+                    !isSameDraggedGate && !isControlLineInsertionTarget
                   // Only CNOT/CZ/CP/SWAP place gates by clicking the grid (the
                   // two-click "stretch" flow); every other gate type is
                   // drag-only, so clicking their empty slots does nothing.
-                  const interactive = Boolean(selectedGateType && onSlotClick && isDrawableGateType)
+                  const interactive = Boolean(
+                    onSlotClick && (isControlMarkerTool || (selectedGateType && isDrawableGateType)),
+                  )
                   const isStretchEligible =
                     !gate &&
                     !hasCnotOccupancy &&
@@ -761,6 +821,8 @@ export function CircuitPreview({
                       }${
                         isInvalidDropTarget ? ' circuit-preview__slot-group--invalid-drop-target' : ''
                       }${
+                        isControlLineInsertionTarget ? ' circuit-preview__slot-group--control-line-drop' : ''
+                      }${
                         isDropHovered ? ' circuit-preview__slot-group--drop-hovered' : ''
                       }${
                         isSelectedGate ? ' circuit-preview__slot-group--selected' : ''
@@ -798,14 +860,18 @@ export function CircuitPreview({
                           : undefined
                       }
                       onClick={
-                        selectable && gateIdAtSlot && onGateSelect
+                        isControlMarkerTool && interactive
+                          ? () => handleSlotClick(columnIndex, qubitIndex)
+                          : selectable && gateIdAtSlot && onGateSelect
                           ? () => onGateSelect(gateIdAtSlot)
                           : interactive
                             ? () => handleSlotClick(columnIndex, qubitIndex)
                             : undefined
                       }
                       onKeyDown={
-                        selectable && gateIdAtSlot && onGateSelect
+                        isControlMarkerTool && interactive
+                          ? (event) => handleSlotKeyDown(event, columnIndex, qubitIndex)
+                          : selectable && gateIdAtSlot && onGateSelect
                           ? (event) => {
                               if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault()
@@ -854,6 +920,8 @@ export function CircuitPreview({
                           isDropTarget ? ' circuit-preview__slot--drop-target' : ''
                         }${
                           isInvalidDropTarget ? ' circuit-preview__slot--invalid-drop-target' : ''
+                        }${
+                          isControlLineInsertionTarget ? ' circuit-preview__slot--control-line-drop' : ''
                         }${
                           isDropHovered ? ' circuit-preview__slot--drop-hovered' : ''
                         }${

@@ -1,7 +1,7 @@
 {
   "validation": "CPTP-MODEL-FREEZE-C10",
   "freeze_schema_version": 1,
-  "generated_at_utc": "2026-08-07T02:37:29.158271+00:00",
+  "generated_at_utc": "2026-08-13T00:34:32.565940+00:00",
   "decision": "PASS WITH RESTRICTIONS",
   "overall_pass": true,
   "frozen_contract": {
@@ -110,9 +110,9 @@
         "cptp_guaranteed_by_construction": true,
         "cleanup_applied": false,
         "all_maps_cptp": true,
-        "minimum_choi_eigenvalue": -2.6455989644771977e-16,
-        "maximum_tp_frobenius_error": 3.3009303617866928e-15,
-        "maximum_state_trace_error": 2.6645375178539443e-15,
+        "minimum_choi_eigenvalue": -3.130620770501822e-16,
+        "maximum_tp_frobenius_error": 3.233018248352212e-15,
+        "maximum_state_trace_error": 3.3306690738754696e-15,
         "minimum_state_eigenvalue": 0.0
       },
       "qutrit": {
@@ -123,9 +123,9 @@
         "cptp_guaranteed_by_construction": true,
         "cleanup_applied": false,
         "all_maps_cptp": true,
-        "minimum_choi_eigenvalue": 1.5218036605309864e-14,
-        "maximum_tp_frobenius_error": 3.104895054565698e-14,
-        "maximum_state_trace_error": 2.5757192957128887e-14,
+        "minimum_choi_eigenvalue": 1.521803682382996e-14,
+        "maximum_tp_frobenius_error": 3.124602339217192e-14,
+        "maximum_state_trace_error": 2.1538345907961954e-14,
         "minimum_state_eigenvalue": 0.0
       }
     }
@@ -143,8 +143,8 @@
     }
   },
   "source_revision": {
-    "git_commit": "c801424b257beab6b905a456b69b7f807a441e51",
-    "critical_source_tree_sha256": "2e47792c22c0281dd4d04b5b81de3c8802e55d2131845a25d30f49fde2d0a102",
+    "git_commit": "bd3c2c093c9ae7f1455f1a974a7e7ed414561aa5",
+    "critical_source_tree_sha256": "8482cd00257e33fdf4202527e166aad479e0e07883a08271ae0f1820d755d905",
     "files": [
       {
         "file": "core/cptp.py",
@@ -189,12 +189,12 @@
       {
         "file": "core/rust_dense_kernel.py",
         "exists": true,
-        "sha256": "76ba1725994b5573d93cbe0ce898b6903275cad6dcd2fd5b09615d3d072cf37d"
+        "sha256": "16de3e6707c2f34dcd6186ed706039eae7f45e873dfed57b9b0306692cb99fb6"
       },
       {
         "file": "rust_kernels/yuragi_strider_rust/src/lib.rs",
         "exists": true,
-        "sha256": "5931883d143c7d1e06b81d2577ba7f1a0dfe91c02c4ac4e2611a6b4a5bcf0a3d"
+        "sha256": "0495afcedc53e2f795b0f6012ae33e877931dce8034469d540f216f46d8bf66e"
       },
       {
         "file": "api/pulse_models.py",
@@ -229,7 +229,7 @@
       {
         "file": "frontend/src/pages/PulseLabPage.tsx",
         "exists": true,
-        "sha256": "b0b0493c16118d771c9ee3134a197231898283896f16bb74fa3bc41356aaf064"
+        "sha256": "d5a595f7ae4a16674450787b8881b77e91a9088d149afa87e361e3e96bdba863"
       },
       {
         "file": "tests/test_cptp_qubit_channels.py",

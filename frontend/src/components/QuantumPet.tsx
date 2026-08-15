@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import './QuantumPet.css'
 import { useAnimationSettings } from '../context/useAnimationSettings'
 import { usePetSettings } from '../context/usePetSettings'
+import { useOptionalTutorial } from '../context/useTutorial'
+import type { PetMood } from '../context/TutorialContextCore'
 import {
   gateAwareRunningStages,
   simulateTips,
@@ -17,6 +19,17 @@ type QuantumPetProps = {
   tips?: string[]
   /* 実行中に経過時間へ応じて出す文言も、ページごとに差し替える。 */
   stages?: QuantumPetStage[]
+  /* 表情と動きの指定。チュートリアルの語り口に合わせて切り替える。 */
+  mood?: PetMood
+  /* 吹き出しの見出し。既定は状態ラベル。 */
+  eyebrow?: string
+  /* 吹き出しの下に置くボタン列。 */
+  actions?: ReactNode
+  /*
+   * チュートリアル用のインスタンス。吹き出しを閉じさせず、
+   * 表示設定にも左右されない。案内中はこの1体だけを残す。
+   */
+  role?: 'guide' | 'tutorial'
 }
 
 const phaseLabels: Record<QuantumPetPhase, string> = {
@@ -30,6 +43,12 @@ const IDLE_TIP_INTERVAL_MS = 9000
 const POKE_DURATION_MS = 620
 const EYE_TRACK_RADIUS_PX = 3.6
 const EYE_TRACK_FALLOFF_PX = 260
+/* 1文字あたりの表示間隔。会話らしく見せるための速さ。 */
+const TYPE_INTERVAL_MS = 22
+/* つついたときの反応が続く長さ。 */
+const REACTION_DURATION_MS = 1400
+/* つつくたびに順番に出す反応。毎回同じ動きにはしない。 */
+const reactionMoods: PetMood[] = ['nod', 'cheer', 'wonder', 'greet', 'think']
 
 /*
  * 設定で非表示にしているあいだは中身ごと外し、
@@ -37,7 +56,15 @@ const EYE_TRACK_FALLOFF_PX = 260
  */
 export function QuantumPet(props: QuantumPetProps) {
   const { petVisible } = usePetSettings()
-  if (!petVisible) {
+  const tutorial = useOptionalTutorial()
+  const isTutorialPet = props.role === 'tutorial'
+
+  /* 案内中は、各ページの常駐ペットを引っ込めて案内役へ一本化する。 */
+  if (tutorial?.isActive === true && !isTutorialPet) {
+    return null
+  }
+
+  if (!petVisible && !isTutorialPet) {
     return null
   }
 
@@ -49,6 +76,10 @@ function QuantumPetBody({
   message = null,
   tips = simulateTips,
   stages = gateAwareRunningStages,
+  mood,
+  eyebrow,
+  actions,
+  role = 'guide',
 }: QuantumPetProps) {
   const { animationsEnabled } = useAnimationSettings()
   const [reducedMotion, setReducedMotion] = useState(
@@ -59,10 +90,17 @@ function QuantumPetBody({
   const [tipIndex, setTipIndex] = useState(0)
   const [bubbleOpen, setBubbleOpen] = useState(true)
   const [poked, setPoked] = useState(false)
+  const [reaction, setReaction] = useState<PetMood | null>(null)
+  const [typedText, setTypedText] = useState<{ text: string; count: number }>({
+    text: '',
+    count: 0,
+  })
   const stageRef = useRef<HTMLButtonElement | null>(null)
   const eyesRef = useRef<HTMLSpanElement | null>(null)
+  const reactionCountRef = useRef(0)
 
   const motionEnabled = animationsEnabled && !reducedMotion
+  const isTutorialPet = role === 'tutorial'
 
   /*
    * 状態が変わったら経過時間をリセットし、
@@ -118,6 +156,16 @@ function QuantumPetBody({
     const timeoutId = window.setTimeout(() => setPoked(false), POKE_DURATION_MS)
     return () => window.clearTimeout(timeoutId)
   }, [poked])
+
+  /* つつかれた反応は、しばらくしたら本来の表情へ戻す。 */
+  useEffect(() => {
+    if (reaction === null) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => setReaction(null), REACTION_DURATION_MS)
+    return () => window.clearTimeout(timeoutId)
+  }, [reaction])
 
   /*
    * 黒目でポインタを追う。再描画を避けるため、
@@ -190,14 +238,64 @@ function QuantumPetBody({
 
   const guideText = message ?? defaultText
 
+  /*
+   * チュートリアルの台詞は1文字ずつ出す。会話らしく見えるだけでなく、
+   * 長い説明を一度に浴びせないための間にもなる。
+   */
+  const typewriterEnabled = isTutorialPet && motionEnabled
+  useEffect(() => {
+    if (!typewriterEnabled) {
+      return
+    }
+
+    const intervalId = window.setInterval(() => {
+      setTypedText((current) => {
+        /* 台詞が変わった直後は、新しい文の1文字目から数え直す。 */
+        if (current.text !== guideText) {
+          return { text: guideText, count: 1 }
+        }
+        if (current.count >= guideText.length) {
+          window.clearInterval(intervalId)
+          return current
+        }
+        return { text: guideText, count: current.count + 1 }
+      })
+    }, TYPE_INTERVAL_MS)
+
+    return () => window.clearInterval(intervalId)
+  }, [guideText, typewriterEnabled])
+
+  /* 表示中の台詞と対応していない進捗は、0文字として扱う。 */
+  const revealedCount = typedText.text === guideText ? typedText.count : 0
+  const visibleText = typewriterEnabled ? guideText.slice(0, revealedCount) : guideText
+  const isTyping = typewriterEnabled && revealedCount < guideText.length
+  const activeMood = reaction ?? mood ?? null
+
   const className = [
     'quantum-pet',
     `quantum-pet--${phase}`,
     bubbleOpen ? 'quantum-pet--open' : '',
     poked ? 'quantum-pet--poked' : '',
+    isTutorialPet ? 'quantum-pet--tutorial' : '',
+    activeMood ? `quantum-pet--expressive quantum-pet--mood-${activeMood}` : '',
+    isTyping ? 'quantum-pet--speaking' : '',
+    motionEnabled ? '' : 'quantum-pet--still',
   ]
     .filter((token) => token !== '')
     .join(' ')
+
+  function handleStageClick() {
+    setPoked(true)
+
+    /* 案内中は閉じられると進めなくなるので、代わりに反応だけ返す。 */
+    if (isTutorialPet) {
+      reactionCountRef.current += 1
+      setReaction(reactionMoods[reactionCountRef.current % reactionMoods.length])
+      return
+    }
+
+    setBubbleOpen((current) => !current)
+  }
 
   return (
     <>
@@ -276,9 +374,18 @@ function QuantumPetBody({
           role="status"
           aria-live="polite"
         >
-          <span className="quantum-pet__bubble-eyebrow">{phaseLabels[phase]}</span>
+          <span className="quantum-pet__bubble-eyebrow">{eyebrow ?? phaseLabels[phase]}</span>
 
-          <span className="quantum-pet__bubble-text">{guideText}</span>
+          {/* 途中まで表示している間は、読み上げに断片を渡さない。 */}
+          <span
+            className="quantum-pet__bubble-text"
+            aria-hidden={isTyping ? 'true' : undefined}
+            /* 待ちきれないときは、押せば最後まで出る。 */
+            onClick={() => setTypedText({ text: guideText, count: guideText.length })}
+          >
+            {visibleText}
+            {isTyping ? <i className="quantum-pet__caret" aria-hidden="true" /> : null}
+          </span>
 
           {phase === 'running' ? (
             /* 0.1秒ごとに変わるので、読み上げ対象からは外す。 */
@@ -286,19 +393,22 @@ function QuantumPetBody({
               {(elapsedMs / 1000).toFixed(1)} 秒経過
             </span>
           ) : null}
+
+          {actions ? <div className="quantum-pet__bubble-actions">{actions}</div> : null}
         </div>
 
         <button
           type="button"
           ref={stageRef}
           className="quantum-pet__stage"
-          aria-label={`シミュレーションガイド（${phaseLabels[phase]}）`}
-          aria-expanded={bubbleOpen}
+          aria-label={
+            isTutorialPet
+              ? 'ナビペット（チュートリアル案内中）'
+              : `シミュレーションガイド（${phaseLabels[phase]}）`
+          }
+          aria-expanded={isTutorialPet ? undefined : bubbleOpen}
           aria-controls="quantum-pet-bubble"
-          onClick={() => {
-            setBubbleOpen((current) => !current)
-            setPoked(true)
-          }}
+          onClick={handleStageClick}
         >
           <span className="quantum-pet__aura" aria-hidden="true" />
 
@@ -309,6 +419,9 @@ function QuantumPetBody({
               <span className="quantum-pet__eye" />
               <span className="quantum-pet__eye" />
             </span>
+
+            {/* 口はチュートリアルの表情つきのときだけ出す。 */}
+            {activeMood ? <span className="quantum-pet__mouth" /> : null}
           </span>
         </button>
       </div>

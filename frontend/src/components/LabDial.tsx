@@ -2,6 +2,8 @@ import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from '
 import './LabDial.css'
 
 type LabDialProps = {
+  /* チュートリアルの強調表示が名指しするための目印。 */
+  anchor?: string
   label: string
   value: number
   min: number
@@ -29,12 +31,21 @@ function polarPoint(angleDeg: number, radius: number) {
   }
 }
 
-function describeArc(startAngle: number, endAngle: number, radius: number) {
-  const start = polarPoint(endAngle, radius)
-  const end = polarPoint(startAngle, radius)
-  const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1
-  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`
+/*
+ * 目盛り全体を1本のパスとして、最小値の端から最大値の端へ向けて引く。
+ * 針の位置に合わせて `d` を書き換えるやり方は、弧の長短フラグが途中で
+ * 反転した瞬間にブラウザ側の補間が破綻し、計器の外に大きな輪が出る。
+ * 形は固定したまま stroke-dasharray で見せる長さだけを変える。
+ */
+function sweepPath(radius: number) {
+  const start = polarPoint(START_ANGLE, radius)
+  const end = polarPoint(END_ANGLE, radius)
+  const largeArcFlag = SWEEP > 180 ? 1 : 0
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`
 }
+
+const TRACK_PATH = sweepPath(RADIUS)
+const TRACK_LENGTH = (2 * Math.PI * RADIUS * SWEEP) / 360
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -53,6 +64,7 @@ function defaultFormat(value: number) {
 }
 
 export function LabDial({
+  anchor,
   label,
   value,
   min,
@@ -67,6 +79,8 @@ export function LabDial({
   const reactId = useId()
   const labelId = `lab-dial-label-${reactId}`
   const gaugeRef = useRef<HTMLDivElement | null>(null)
+  /* 目盛りの空白部分に入る直前、針がどちら半分にいたか。 */
+  const deadZoneSideRef = useRef<'start' | 'end' | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [draftText, setDraftText] = useState('')
@@ -74,9 +88,6 @@ export function LabDial({
   const boundedMax = Math.max(max, min + step)
   const fraction = clamp((value - min) / (boundedMax - min), 0, 1)
   const needleAngle = START_ANGLE + fraction * SWEEP
-  const needleTip = polarPoint(needleAngle, RADIUS - 8)
-  const trackPath = describeArc(START_ANGLE, END_ANGLE, RADIUS)
-  const valuePath = describeArc(START_ANGLE, needleAngle, RADIUS)
 
   function commit(nextValue: number) {
     if (!Number.isFinite(nextValue)) {
@@ -100,10 +111,16 @@ export function LabDial({
     const y = (clientY - rect.top) * scaleY - CENTER
     let angleDeg = (Math.atan2(x, -y) * 180) / Math.PI
 
-    if (angleDeg > END_ANGLE && angleDeg <= 180) {
-      angleDeg = END_ANGLE
-    } else if (angleDeg < START_ANGLE && angleDeg >= -180) {
-      angleDeg = START_ANGLE
+    /*
+     * 目盛りは真下 90 度ぶんが開いている。この空白でも真下（±180 度）を境に
+     * 端を選ぶと、下端をかすめただけで最大から最小へ一気に振り切れる。
+     * ドラッグ中は「どちら側から空白に入ったか」を覚えておき、その端で止める。
+     */
+    if (angleDeg > END_ANGLE || angleDeg < START_ANGLE) {
+      const side = deadZoneSideRef.current ?? (angleDeg > 0 ? 'end' : 'start')
+      angleDeg = side === 'end' ? END_ANGLE : START_ANGLE
+    } else {
+      deadZoneSideRef.current = angleDeg >= 0 ? 'end' : 'start'
     }
 
     const pointerFraction = clamp((angleDeg - START_ANGLE) / SWEEP, 0, 1)
@@ -116,6 +133,7 @@ export function LabDial({
     }
     event.currentTarget.setPointerCapture(event.pointerId)
     setIsDragging(true)
+    deadZoneSideRef.current = null
     const nextValue = valueFromPointer(event.clientX, event.clientY)
     if (nextValue !== null) {
       commit(nextValue)
@@ -174,7 +192,7 @@ export function LabDial({
   }
 
   return (
-    <div className="lab-dial">
+    <div className="lab-dial" data-tutorial-anchor={anchor}>
       <span className="lab-dial__label" id={labelId}>{label}</span>
       <div
         ref={gaugeRef}
@@ -194,7 +212,7 @@ export function LabDial({
         onKeyDown={handleKeyDown}
       >
         <svg viewBox="0 0 120 120" className="lab-dial__svg" aria-hidden="true">
-          <path className="lab-dial__track" d={trackPath} />
+          <path className="lab-dial__track" d={TRACK_PATH} />
           {TICK_FRACTIONS.map((tickFraction) => {
             const angle = START_ANGLE + tickFraction * SWEEP
             const outer = polarPoint(angle, RADIUS + 4)
@@ -210,14 +228,26 @@ export function LabDial({
               />
             )
           })}
-          <path className="lab-dial__value-arc" d={valuePath} />
+          <path
+            className="lab-dial__value-arc"
+            d={TRACK_PATH}
+            strokeDasharray={TRACK_LENGTH}
+            style={{
+              strokeDashoffset: TRACK_LENGTH * (1 - fraction),
+              ...(isDragging ? { transition: 'none' } : null),
+            }}
+          />
           <line
             className="lab-dial__needle"
             x1={CENTER}
             y1={CENTER}
-            x2={needleTip.x}
-            y2={needleTip.y}
-            style={isDragging ? { transition: 'none' } : undefined}
+            x2={CENTER}
+            y2={CENTER - (RADIUS - 8)}
+            style={{
+              transform: `rotate(${needleAngle}deg)`,
+              transformOrigin: `${CENTER}px ${CENTER}px`,
+              ...(isDragging ? { transition: 'none' } : null),
+            }}
           />
           <circle className="lab-dial__hub" cx={CENTER} cy={CENTER} r={5} />
         </svg>

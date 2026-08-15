@@ -85,7 +85,7 @@ export function SimulationCompletionPopup({
     </filter>
   </svg>
 
-  <div className={`simulation-completion-popup simulation-completion-popup--${mode}`} role="status" aria-live="polite">
+  <div className={`simulation-completion-popup simulation-completion-popup--${mode}`} role="status" aria-live="polite" data-tutorial-anchor="completion-popup">
     <div className="simulation-completion-popup__inner">
       <div className="simulation-completion-popup__glow" />
       <div className="simulation-completion-popup__fluctuation" />

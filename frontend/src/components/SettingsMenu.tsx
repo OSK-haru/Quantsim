@@ -1,10 +1,12 @@
 import './SettingsMenu.css'
+import { useAdminMode } from '../context/useAdminMode'
 import { useAnimationSettings } from '../context/useAnimationSettings'
 import { usePetSettings } from '../context/usePetSettings'
 
 export function SettingsMenu() {
   const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
   const { petVisible, setPetVisible } = usePetSettings()
+  const { adminModeEnabled, setAdminModeEnabled } = useAdminMode()
 
   return (
     <div className="settings-menu">
@@ -43,6 +45,28 @@ export function SettingsMenu() {
           <span className="settings-menu__switch-knob" aria-hidden="true" />
         </button>
       </div>
+
+      <div className="settings-menu__row settings-menu__row--admin">
+        <div className="settings-menu__row-label">
+          <span>管理者モード</span>
+          <small>内部情報（API・実行基盤・生データ・内部識別子）を表示</small>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={adminModeEnabled}
+          aria-label="管理者モードの有効/無効を切り替え"
+          className={`settings-menu__switch${adminModeEnabled ? ' settings-menu__switch--on' : ''}`}
+          onClick={() => setAdminModeEnabled(!adminModeEnabled)}
+        >
+          <span className="settings-menu__switch-knob" aria-hidden="true" />
+        </button>
+      </div>
+      {adminModeEnabled ? (
+        <p className="settings-menu__admin-note">
+          内部情報を表示中です。一般公開時はオフに戻してください。
+        </p>
+      ) : null}
     </div>
   )
 }

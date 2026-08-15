@@ -9,6 +9,16 @@
   line-height: 1.6;
 }
 
+/* 生 JSON の代わりに出す、利用者向けの要約。 */
+.circuit-config-preview__summary {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(163, 163, 163, 0.22);
+  background: rgba(18, 18, 18, 0.4);
+  color: var(--tt-ink-mid);
+  line-height: 1.7;
+}
+
 .circuit-config-preview__actions {
   display: flex;
   align-items: center;

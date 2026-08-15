@@ -52,6 +52,7 @@
   font-size: 0.82rem;
   line-height: 1.5;
   text-align: right;
+  border-radius: var(--tt-radius);
 }
 
 .run-panel__rows {
@@ -62,6 +63,7 @@
 .run-panel__methods {
   border: 1px solid rgba(163, 163, 163, 0.24);
   background: rgba(42, 42, 42, 0.1);
+  border-radius: var(--tt-radius);
 }
 
 .run-panel__methods-summary {
@@ -126,6 +128,7 @@
   padding: 14px 16px;
   border: 1px solid rgba(163, 163, 163, 0.24);
   background: rgba(42, 42, 42, 0.1);
+  border-radius: var(--tt-radius);
 }
 
 .run-panel__method span {
@@ -150,31 +153,7 @@
   border: 1px solid rgba(163, 163, 163, 0.38);
   background: var(--tt-panel);
   color: var(--tt-ink-max);
-}
-
-.run-panel__row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  padding: 14px 16px;
-  border: 1px solid rgba(163, 163, 163, 0.16);
-  background: rgba(10, 10, 10, 0.56);
-}
-
-.run-panel__label {
-  color: var(--tt-ink-mid);
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.run-panel__value {
-  color: var(--tt-ink-max);
-  font-size: 0.98rem;
-  line-height: 1.45;
-  word-break: break-word;
-  text-align: right;
+  border-radius: var(--tt-radius);
 }
 
 .run-panel__actions {
@@ -182,6 +161,16 @@
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 18px;
+}
+
+/* 管理者モードでのみ出る技術詳細。本文より一段落とす。 */
+.run-panel__error-detail {
+  display: block;
+  margin-top: 4px;
+  opacity: 0.75;
+  font-size: 0.72rem;
+  font-family: var(--tt-font-mono, monospace);
+  word-break: break-all;
 }
 
 .run-panel__debug {
@@ -198,6 +187,7 @@
   padding: 12px 14px;
   border: 1px solid rgba(163, 163, 163, 0.14);
   background: rgba(10, 10, 10, 0.28);
+  border-radius: var(--tt-radius);
 }
 
 .run-panel__debug-label {
@@ -217,6 +207,14 @@
   word-break: break-word;
 }
 
+.run-panel__rules {
+  margin: 12px 0 0;
+  color: var(--tt-ink-mid);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 /* 主操作。インターフェイス中で最も強いハザードレッドを当てる。 */
 .run-panel__button {
   padding: 14px 20px;
@@ -229,6 +227,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
+  border-radius: var(--tt-radius);
 }
 
 .run-panel__button:hover:not(:disabled) {
@@ -275,11 +274,6 @@
     text-align: left;
   }
 
-  .run-panel__row {
-    flex-direction: column;
-    align-items: start;
-  }
-
   .run-panel__method {
     flex-direction: column;
     align-items: stretch;
@@ -296,9 +290,5 @@
 
   .run-panel__actions {
     flex-direction: column;
-  }
-
-  .run-panel__value {
-    text-align: left;
   }
 }

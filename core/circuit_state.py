@@ -263,8 +263,8 @@ def _gate_fits(gate: GateOperation, logical_qubits: int) -> bool:
     if any(qubit < 0 or qubit >= logical_qubits for qubit in used_qubits):
         return False
     if gate.type.upper() == "CNOT":
-        if len(gate.targets) != 1 or len(gate.controls or []) != 1:
+        if len(gate.targets) != 1 or len(gate.controls or []) < 1:
             return False
-        if gate.targets[0] == gate.controls[0]:
+        if len(set(gate.controls or [])) != len(gate.controls or []) or gate.targets[0] in (gate.controls or []):
             return False
     return True

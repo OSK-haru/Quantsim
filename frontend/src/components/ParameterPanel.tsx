@@ -179,7 +179,8 @@ export function ParameterPanel({
     const range = parameterRanges[name]
     const validationMessage = validationMessages[name]
     return (
-      <label className="parameter-panel__field">
+      /* チュートリアルがこの項目を名指しで指せるようにしておく。 */
+      <label className="parameter-panel__field" data-tutorial-anchor={`param-${name}`}>
         <span className="parameter-panel__field-label">{label}</span>
         <input
           className={`parameter-panel__input${
@@ -211,6 +212,7 @@ export function ParameterPanel({
     return (
       <LabDial
         key={name}
+        anchor={`param-${name}`}
         label={label}
         value={editableParameters[name]}
         min={range.min}
@@ -250,7 +252,11 @@ export function ParameterPanel({
   }
 
   return (
-    <section className="parameter-panel" aria-label="シミュレーションパラメーター">
+    <section
+      className="parameter-panel"
+      aria-label="シミュレーションパラメーター"
+      data-tutorial-anchor="parameter-panel"
+    >
       <div className="parameter-panel__header">
         <SectionHeader
           icon="chip"

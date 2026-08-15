@@ -1,5 +1,6 @@
 import './DiagnosticsCard.css'
 import { ResultDrawer } from './ResultDrawer'
+import { useInternalInfoVisible } from '../context/useAdminMode'
 import { getModelLabel } from '../utils/modelLabels'
 import type { SimulationDiagnostics, SimulationRates } from '../types/simulation'
 
@@ -10,13 +11,14 @@ type DiagnosticsCardProps = {
   rates: SimulationRates
 }
 
-function ModelValue({ id }: { id: string }) {
+/* 内部 ID は管理者モードでのみ添える。 */
+function ModelValue({ id, showId }: { id: string; showId: boolean }) {
   const info = getModelLabel(id)
 
   return (
     <strong className="diagnostics-value">
       <span>{info.label}</span>
-      <span className="diagnostics-value__id">{info.id}</span>
+      {showId ? <span className="diagnostics-value__id">{info.id}</span> : null}
     </strong>
   )
 }
@@ -104,17 +106,19 @@ const INTERNAL_PROFILING_FIELDS: PerformanceField[] = [
 ]
 
 export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
+  const internalInfoVisible = useInternalInfoVisible()
+
   const rateRows = [
-    { label: 'Downward rate', value: rates.gamma_down_per_us, format: formatRate },
-    { label: 'Upward rate', value: rates.gamma_up_per_us, format: formatRate },
+    { label: '下降レート', value: rates.gamma_down_per_us, format: formatRate },
+    { label: '上昇レート', value: rates.gamma_up_per_us, format: formatRate },
     {
-      label: 'Population relaxation rate',
+      label: '占有数緩和レート',
       value: rates.gamma_population_relaxation_per_us,
       format: formatRate,
     },
-    { label: 'Pure dephasing rate', value: rates.gamma_phi_per_us, format: formatRate },
-    { label: 'Base T1', value: rates.t1_base_us, format: formatMicroseconds },
-    { label: 'Effective T1', value: rates.t1_effective_us, format: formatMicroseconds },
+    { label: '純位相緩和レート', value: rates.gamma_phi_per_us, format: formatRate },
+    { label: '基準 T1', value: rates.t1_base_us, format: formatMicroseconds },
+    { label: '実効 T1', value: rates.t1_effective_us, format: formatMicroseconds },
   ].filter((row) => row.value !== null)
 
   const performanceRows = PERFORMANCE_FIELDS
@@ -145,7 +149,8 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
     })
     .filter((entry): entry is { label: string; value: string } => entry !== null)
 
-  const internalProfilingRows = diagnostics.core_internal_profiling_enabled === true
+  const internalProfilingRows = internalInfoVisible
+    && diagnostics.core_internal_profiling_enabled === true
     ? INTERNAL_PROFILING_FIELDS
         .map((field) => {
           const value = diagnostics[field.key]
@@ -164,52 +169,63 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
   return (
     <ResultDrawer
       eyebrow="診断情報"
-      title="実行時スナップショット"
+      title={internalInfoVisible ? '実行時スナップショット' : '計算条件の詳細'}
       icon="wrench"
-      description="最新の応答に関するバックエンドと実行時の詳細です。"
+      description={
+        internalInfoVisible
+          ? '最新の応答に関するバックエンドと実行時の詳細です。'
+          : '直近の計算に使われた物理モデルと環境レートです。'
+      }
       defaultOpen={false}
     >
       <div className="diagnostics-grid">
         <div className="diagnostics-item">
           <span className="diagnostics-label">シミュレーションモデル</span>
-          <ModelValue id={diagnostics.simulation_model} />
+          <ModelValue id={diagnostics.simulation_model} showId={internalInfoVisible} />
         </div>
         <div className="diagnostics-item">
           <span className="diagnostics-label">発展モード</span>
-          <ModelValue id={diagnostics.evolution_mode} />
+          <ModelValue id={diagnostics.evolution_mode} showId={internalInfoVisible} />
         </div>
-        <div className="diagnostics-item">
-          <span className="diagnostics-label">シミュレーションバックエンド</span>
-          <ModelValue id={diagnostics.simulation_backend} />
-        </div>
-        <div className="diagnostics-item">
-          <span className="diagnostics-label">バックエンド名</span>
-          <ModelValue id={diagnostics.backend_name} />
-        </div>
-        <div className="diagnostics-item">
-          <span className="diagnostics-label">Rust カーネルモード</span>
-          <strong className="diagnostics-value">{diagnostics.rust_kernel_mode}</strong>
-        </div>
-        <div className="diagnostics-item">
-          <span className="diagnostics-label">Rust 呼び出し回数</span>
-          <strong className="diagnostics-value">{diagnostics.rust_kernel_call_count}</strong>
-        </div>
-        <div className="diagnostics-item">
-          <span className="diagnostics-label">サンプルバッチ数</span>
-          <strong className="diagnostics-value">
-            {diagnostics.rust_kernel_sampled_batch_count}
-          </strong>
-        </div>
+        {/* ここから下は実行基盤の内部情報なので、管理者モードのみ。 */}
+        {internalInfoVisible ? (
+          <>
+            <div className="diagnostics-item">
+              <span className="diagnostics-label">シミュレーションバックエンド</span>
+              <ModelValue id={diagnostics.simulation_backend} showId />
+            </div>
+            <div className="diagnostics-item">
+              <span className="diagnostics-label">バックエンド名</span>
+              <ModelValue id={diagnostics.backend_name} showId />
+            </div>
+            <div className="diagnostics-item">
+              <span className="diagnostics-label">Rust カーネルモード</span>
+              <strong className="diagnostics-value">{diagnostics.rust_kernel_mode}</strong>
+            </div>
+            <div className="diagnostics-item">
+              <span className="diagnostics-label">Rust 呼び出し回数</span>
+              <strong className="diagnostics-value">{diagnostics.rust_kernel_call_count}</strong>
+            </div>
+            <div className="diagnostics-item">
+              <span className="diagnostics-label">サンプルバッチ数</span>
+              <strong className="diagnostics-value">
+                {diagnostics.rust_kernel_sampled_batch_count}
+              </strong>
+            </div>
+          </>
+        ) : null}
       </div>
 
-      <div className="diagnostics-badges">
-        <span className={`diagnostics-badge ${diagnostics.backend_fallback_used ? 'is-warn' : 'is-ok'}`}>
-          {diagnostics.backend_fallback_used ? 'バックエンドフォールバック' : 'フォールバックなし'}
-        </span>
-        <span className={`diagnostics-badge ${diagnostics.rust_kernel_fallback_used ? 'is-warn' : 'is-ok'}`}>
-          {diagnostics.rust_kernel_fallback_used ? 'Rust フォールバック' : 'Rust 有効'}
-        </span>
-      </div>
+      {internalInfoVisible ? (
+        <div className="diagnostics-badges">
+          <span className={`diagnostics-badge ${diagnostics.backend_fallback_used ? 'is-warn' : 'is-ok'}`}>
+            {diagnostics.backend_fallback_used ? 'バックエンドフォールバック' : 'フォールバックなし'}
+          </span>
+          <span className={`diagnostics-badge ${diagnostics.rust_kernel_fallback_used ? 'is-warn' : 'is-ok'}`}>
+            {diagnostics.rust_kernel_fallback_used ? 'Rust フォールバック' : 'Rust 有効'}
+          </span>
+        </div>
+      ) : null}
 
       {rateRows.length > 0 ? (
         <div className="diagnostics-performance" aria-label="環境レート">
@@ -225,7 +241,7 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
         </div>
       ) : null}
 
-      {performanceRows.length > 0 ? (
+      {internalInfoVisible && performanceRows.length > 0 ? (
         <div className="diagnostics-performance" aria-label="性能と時間">
           <h4 className="diagnostics-performance__title">性能 / 時間</h4>
           <div className="diagnostics-performance__grid">
@@ -239,7 +255,7 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
         </div>
       ) : null}
 
-      {coreProfilingRows.length > 0 ? (
+      {internalInfoVisible && coreProfilingRows.length > 0 ? (
         <div className="diagnostics-performance" aria-label="Core プロファイリング">
           <h4 className="diagnostics-performance__title">Core プロファイリング</h4>
           <div className="diagnostics-performance__grid">

@@ -1,0 +1,46 @@
+.density-matrix-canvas {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.density-matrix-canvas__surface {
+  display: block;
+  max-width: 100%;
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  background: var(--tt-void);
+  /* セルを潰さない。拡大時も補間させない。 */
+  image-rendering: pixelated;
+  cursor: crosshair;
+}
+
+.density-matrix-canvas__surface:focus-visible {
+  outline: var(--tt-bar) solid var(--tt-accent);
+  outline-offset: 2px;
+}
+
+.density-matrix-canvas__axes {
+  display: flex;
+  justify-content: space-between;
+  width: min(100%, 640px);
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+}
+
+.density-matrix-canvas__hint,
+.density-matrix-canvas__notice {
+  margin: 0;
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+}
+
+.density-matrix-canvas__notice {
+  padding: 6px 10px;
+  border-left: 3px solid var(--tt-accent);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink-mid);
+}

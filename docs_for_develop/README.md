@@ -3,7 +3,7 @@
 ## Current Implementation Status
 
 This page is the documentation entry point for the implementation state as of
-2026-07-23. Runtime code and tests take precedence if another document
+2026-08-14. Runtime code and tests take precedence if another document
 disagrees with this page.
 
 ### User-Facing Application
@@ -14,7 +14,8 @@ disagrees with this page.
 - Circuit Studio editor and fixed-step RK4 noisy density-matrix execution for
   2-8 logical qubits. Measurement-free ideal circuits above 5 qubits continue
   to use the statevector path; explicit CPTP remains limited to 5 noisy qubits.
-- H, X, Z, CNOT, and MEASURE placement.
+- Gate palette: H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX, SWAP, QFT,
+  ORACLE, MEASURE, and the MESSAGE/RECEIVED annotation pair.
 - Click placement, drag-and-drop placement and movement, drag-out deletion,
   Delete-key deletion, Clear, Undo, and Redo.
 - Circuit JSON import/export.
@@ -25,10 +26,16 @@ disagrees with this page.
 ### Gate-Aware Simulation
 
 - `POST /api/simulate`.
-- Preset compatibility through `circuit_preset: "bell"`.
+- Preset compatibility through `circuit_preset`: `bell`, `teleportation`, and
+  `bit_flip_repetition`.
 - Arbitrary circuits through `circuit_config`.
-- Core and API accept up to 18 logical qubits; noisy density evolution remains limited to 5,
-  while ideal measurement-free circuits use the statevector path.
+- Core and API accept up to 18 logical qubits; noisy density evolution is
+  limited to 8 and explicit CPTP to 5, while ideal measurement-free circuits
+  above 5 qubits use the statevector path.
+- `MEASURE` is a computational-basis projective measurement. Unassigned
+  measurements are non-selective; measurements bound to a classical bit drive
+  conditional feed-forward branches.
+- Evolution methods: `fixed_step_rk4` (default) and `explicit_cptp`.
 - `normalized` and `physical` environment input modes remain supported.
 - The React client currently sends `physical` mode and `circuit_config`.
 - Default public backend: `python_dense`.
@@ -82,9 +89,13 @@ gate_aware_hamiltonian_lindblad_v1
 ### Explicitly Not Implemented
 
 - Multi-qubit pulse control beyond the coupled transmon-pair model above.
-- Strict finite-step CPTP production solver.
+- Explicit CPTP above 5 noisy qubits; 6-8 noisy qubits are RK4 only.
 - Calibrated real-hardware prediction.
-- Pulse execution through Rust.
+- Pulse execution through Rust. The Rust preview kernel covers only the
+  gate-aware dense path.
+- Measurement post-selection and readout error.
+- Trajectory (stochastic) execution; the representation slot is reserved and
+  reported as `trajectory_available: false`.
 - Godot production UI.
 
 ## Canonical Documents
@@ -96,6 +107,10 @@ gate_aware_hamiltonian_lindblad_v1
 | Gate config format | [`architecture/config_format.md`](architecture/config_format.md) |
 | Complexity | [`architecture/complexity.md`](architecture/complexity.md) |
 | Gate model identity | [`physics/model_identity.md`](physics/model_identity.md) |
+| Execution representation policy | [`physics/execution-representations.md`](physics/execution-representations.md) |
+| Measurement model | [`physics/gate-aware-measurement-model.md`](physics/gate-aware-measurement-model.md) |
+| Explicit CPTP freeze | [`validation/gate-aware-cptp-freeze.md`](validation/gate-aware-cptp-freeze.md) |
+| Windows desktop distribution | [`../docs/development/windows-desktop-distribution.md`](../docs/development/windows-desktop-distribution.md) |
 | Pulse model | [`physics/pulse-baseline-a-model.md`](physics/pulse-baseline-a-model.md) |
 | Qutrit contract | [`physics/pulse-extension-b-qutrit-contract.md`](physics/pulse-extension-b-qutrit-contract.md) |
 | Pulse API | [`architecture/pulse-api-contract.md`](architecture/pulse-api-contract.md) |
@@ -116,14 +131,20 @@ gate_aware_hamiltonian_lindblad_v1
 
 ## Document Status Rules
 
-- `docs/architecture/`, `docs/physics/`, and final reports under
-  `docs/validation/` describe the current implementation unless explicitly
-  marked otherwise.
-- `docs/requirements/` records requirements and decisions. A requirement is
-  not proof that a feature is implemented.
-- Old phase documents under `docs/development/` are implementation history.
+Paths below are relative to this `docs_for_develop/` directory. The separate
+top-level `docs/` directory holds only generated performance notes and the
+Windows desktop distribution guide.
+
+- `architecture/`, `physics/`, and final reports under `validation/` describe
+  the current implementation unless explicitly marked otherwise.
+- `requirements/` records requirements and decisions. A requirement is not
+  proof that a feature is implemented.
+- Old phase documents under `development/` are implementation history.
   Documents marked "Historical" or "Superseded" must not be used as current
   runtime instructions.
+- Freeze reports record the state at freeze time. Later work may supersede
+  individual clauses; the superseding document is named inline where that has
+  happened.
 - Machine-readable validation truth is stored under `validation_results/`.
 - Task prompts are not retained after an equivalent final report and
   reproducible script exist.

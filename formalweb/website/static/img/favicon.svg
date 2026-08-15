@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <!--
+    タブ内は 16px 前後まで縮むので、logo.svg より要素を削って階段を2段に。
+    void の下地を敷いておかないと、明色タブバーで細部が飛ぶ。
+  -->
+  <rect width="32" height="32" fill="#0a0a0a" />
+  <rect x="1.5" y="1.5" width="29" height="29" stroke="#e61919" stroke-width="3" />
+  <rect x="7" y="18" width="8" height="7" fill="#eaeaea" />
+  <rect x="17" y="8" width="8" height="7" fill="#e61919" />
+</svg>

@@ -4,14 +4,17 @@ import type { CircuitEditorState, DragGatePayload, GateType } from '../types/cir
 export type PendingCnotControl = {
   columnIndex: number
   qubitIndex: number
+  controlValue?: 0 | 1
   additionalQubits?: number[]
+  additionalControlValues?: Array<0 | 1>
 }
 
-export type CircuitPresetKey = 'teleportation' | 'bit_flip_repetition' | 'grover_2qubit'
+export type CircuitPresetKey = 'teleportation' | 'bit_flip_repetition' | 'grover_2qubit' | 'grover_4qubit'
 
 export type CircuitContextValue = {
   circuitState: CircuitEditorState
   selectedGateType: GateType | null
+  selectedControlValue: 0 | 1 | null
   selectedGateId: string | null
   dragPayload: DragGatePayload | null
   pendingCnotControl: PendingCnotControl | null
@@ -22,8 +25,9 @@ export type CircuitContextValue = {
   canClearCircuit: boolean
   canRemoveLastCircuitColumn: boolean
   handleSelectGateType: (gateType: GateType | null) => void
+  handleSelectControlValue: (controlValue: 0 | 1 | null) => void
+  handleControlMarkerDragStart: (controlValue: 0 | 1) => void
   handleGateSelect: (gateId: string | null) => void
-  handleResetCircuitToBell: () => void
   handleLoadCircuitPreset: (preset: CircuitPresetKey) => void
   handleLogicalQubitsChange: (nextLogicalQubits: number) => void
   handleCircuitSlotClick: (columnIndex: number, qubitIndex: number) => void

@@ -1,8 +1,10 @@
 import './RunPanel.css'
+import { CompiledCircuitDiagram } from './CompiledCircuitDiagram'
 import { ResultDrawer } from './ResultDrawer'
 import { SectionHeader } from './SectionHeader'
 import { RunCostNotice } from './RunCostNotice'
 import { SimulationProgressIndicator } from './SimulationProgressIndicator'
+import { useInternalInfoVisible } from '../context/useAdminMode'
 import type {
   GateAwareEvolutionMethod,
   GateCompilationMode,
@@ -19,6 +21,8 @@ type RunPanelProps = {
   dataSourceLabel: string
   loadStatus: SimulationLoadStatus
   errorMessage: string | null
+  /** 例外本文や HTTP ステータスなど、管理者モードでのみ出す技術的な詳細。 */
+  errorDetail: string | null
   lastFetchResult: string
   lastFetchUrl: string
   lastFetchStartedAt: string
@@ -49,6 +53,13 @@ const backendDescriptions: Record<SimulationBackend, string> = {
     '任意の Rust preview バックエンドです。RK4 は利用不可時に Python へフォールバックし、Explicit CPTP には Rust 拡張が必要です。',
 }
 
+/* 実行基盤の実装名を伏せた、利用者向けの説明。 */
+const publicBackendDescriptions: Record<SimulationBackend, string> = {
+  python_dense: '検証済みの標準計算エンジンです。結果の正しさを最優先します。',
+  rust_dense_preview:
+    '高速化を試験中の計算エンジンです。利用できない条件では自動的に標準エンジンへ切り替わります。',
+}
+
 const compilationModeDescriptions: Record<GateCompilationMode, string> = {
   logical_direct:
     '発展ゲートを1つの有効Hamiltonianとして直接実行します。',
@@ -62,13 +73,19 @@ const compilationModeLabels: Record<GateCompilationMode, string> = {
 }
 
 const evolutionMethodLabels: Record<GateAwareEvolutionMethod, string> = {
-  fixed_step_rk4: 'Fixed-step RK4',
-  explicit_cptp: 'Explicit CPTP maps',
+  fixed_step_rk4: '固定ステップ RK4',
+  explicit_cptp: '明示的 CPTP 写像',
 }
 
 const backendLabels: Record<SimulationBackend, string> = {
   python_dense: 'Python dense',
   rust_dense_preview: 'Rust dense (preview)',
+}
+
+/* 実装名を出さない、利用者向けのエンジン呼称。 */
+const publicBackendLabels: Record<SimulationBackend, string> = {
+  python_dense: '標準エンジン',
+  rust_dense_preview: '高速エンジン（試験）',
 }
 
 function formatElapsedMs(value: number | null) {
@@ -78,26 +95,6 @@ function formatElapsedMs(value: number | null) {
   return `${value.toFixed(1)} ms`
 }
 
-function formatDurationUs(value: number | null) {
-  return value === null ? '—' : `${value.toFixed(3)} us`
-}
-
-function formatCompiledOperation(operation: {
-  gate: string
-  targets: number[]
-  controls: number[]
-  params: Record<string, number>
-}) {
-  const angle = operation.params.theta_rad
-  const angleLabel = Number.isFinite(angle) ? ` θ=${angle.toFixed(4)}` : ''
-  if (operation.controls.length > 0 && operation.targets.length > 0) {
-    const controls = operation.controls.map((control) => `q${control}`).join(',')
-    const targets = operation.targets.map((target) => `q${target}`).join(',')
-    return `${operation.gate}(${controls}→${targets}${angleLabel})`
-  }
-  return `${operation.gate}(${operation.targets.map((target) => `q${target}`).join(',')}${angleLabel})`
-}
-
 export function RunPanel({
   run,
   costEstimate,
@@ -105,6 +102,7 @@ export function RunPanel({
   dataSourceLabel,
   loadStatus,
   errorMessage,
+  errorDetail,
   lastFetchResult,
   lastFetchUrl,
   lastFetchStartedAt,
@@ -121,20 +119,33 @@ export function RunPanel({
   onReloadApiExample,
   onRunSimulation,
 }: RunPanelProps) {
+  const internalInfoVisible = useInternalInfoVisible()
   const canRun = run.can_run ?? true
   const isRequestPending = loadStatus === 'loading'
+  const backendLabel = internalInfoVisible
+    ? backendLabels[simulationBackend]
+    : publicBackendLabels[simulationBackend]
+  const backendDescription = internalInfoVisible
+    ? backendDescriptions[simulationBackend]
+    : publicBackendDescriptions[simulationBackend]
 
   return (
     <section className="run-panel" aria-label="シミュレーションの実行" data-load-status={loadStatus}>
       <div className="run-panel__header">
         <SectionHeader icon="terminal" eyebrow="実行" title="シミュレーションを実行" />
         <div className="run-panel__meta">
-          <p className="run-panel__status">読み込み状態: {loadStatus}</p>
+          {/* 生の内部状態値なので管理者モードのみ。 */}
+          {internalInfoVisible ? (
+            <p className="run-panel__status">読み込み状態: {loadStatus}</p>
+          ) : null}
           <p className="run-panel__source">接続: {connectionLabel}</p>
           <p className="run-panel__source">データソース: {dataSourceLabel}</p>
           {errorMessage ? (
             <p className="run-panel__error" role="alert">
               {errorMessage}
+              {internalInfoVisible && errorDetail ? (
+                <span className="run-panel__error-detail">{errorDetail}</span>
+              ) : null}
             </p>
           ) : null}
         </div>
@@ -149,7 +160,7 @@ export function RunPanel({
               <strong>計算方法</strong>
               <small>
                 推奨設定を使用中: {compilationModeLabels[compilationMode]} /{' '}
-                {evolutionMethodLabels[evolutionMethod]} / {backendLabels[simulationBackend]}
+                {evolutionMethodLabels[evolutionMethod]} / {backendLabel}
               </small>
             </span>
             <span className="run-panel__methods-toggle" aria-hidden="true" />
@@ -157,7 +168,7 @@ export function RunPanel({
           <div className="run-panel__methods-body">
             <label className="run-panel__method">
               <span>
-                <strong>Gate execution</strong>
+                <strong>ゲートの実行方法</strong>
                 <small>{compilationModeDescriptions[compilationMode]}</small>
               </span>
               <select
@@ -174,7 +185,7 @@ export function RunPanel({
             </label>
             <label className="run-panel__method">
               <span>
-                <strong>Evolution method</strong>
+                <strong>時間発展の解法</strong>
                 <small>{evolutionMethodDescriptions[evolutionMethod]}</small>
               </span>
               <select
@@ -185,16 +196,16 @@ export function RunPanel({
                   )
                 }}
                 disabled={isRequestPending}
-                aria-label="Gate-aware evolution method"
+                aria-label="時間発展の解法"
               >
-                <option value="fixed_step_rk4">Fixed-step RK4</option>
-                <option value="explicit_cptp">Explicit CPTP maps</option>
+                <option value="fixed_step_rk4">{evolutionMethodLabels.fixed_step_rk4}</option>
+                <option value="explicit_cptp">{evolutionMethodLabels.explicit_cptp}</option>
               </select>
             </label>
             <label className="run-panel__method">
               <span>
-                <strong>Execution backend</strong>
-                <small>{backendDescriptions[simulationBackend]}</small>
+                <strong>計算エンジン</strong>
+                <small>{backendDescription}</small>
               </span>
               <select
                 value={simulationBackend}
@@ -202,49 +213,29 @@ export function RunPanel({
                   onSimulationBackendChange(event.target.value as SimulationBackend)
                 }}
                 disabled={isRequestPending}
-                aria-label="Simulation backend"
+                aria-label="計算エンジン"
               >
-                <option value="python_dense">Python dense (standard)</option>
-                <option value="rust_dense_preview">Rust dense (preview)</option>
+                <option value="python_dense">
+                  {internalInfoVisible ? 'Python dense (standard)' : '標準エンジン'}
+                </option>
+                <option value="rust_dense_preview">
+                  {internalInfoVisible ? 'Rust dense (preview)' : '高速エンジン（試験）'}
+                </option>
               </select>
             </label>
           </div>
         </details>
-        <div className="run-panel__row">
-          <span className="run-panel__label">状態</span>
-          <strong className="run-panel__value">{run.status}</strong>
-        </div>
-        <div className="run-panel__row">
-          <span className="run-panel__label">前回のバックエンド</span>
-          <strong className="run-panel__value">{run.selected_backend}</strong>
-        </div>
-        <div className="run-panel__row">
-          <span className="run-panel__label">前回の実行</span>
-          <strong className="run-panel__value">{run.last_run_label}</strong>
-        </div>
-        {run.compilation ? (
-          <>
-            <div className="run-panel__row">
-              <span className="run-panel__label">Gate count</span>
-              <strong className="run-panel__value">
-                {run.compilation.logical_gate_count} → {run.compilation.compiled_gate_count}
-              </strong>
-            </div>
-            <div className="run-panel__row">
-              <span className="run-panel__label">Depth</span>
-              <strong className="run-panel__value">
-                {run.compilation.logical_depth} → {run.compilation.compiled_depth}
-              </strong>
-            </div>
-            <div className="run-panel__row">
-              <span className="run-panel__label">Gate duration</span>
-              <strong className="run-panel__value">
-                {formatDurationUs(run.compilation.logical_duration_us)} →{' '}
-                {formatDurationUs(run.compilation.compiled_duration_us)}
-              </strong>
-            </div>
-          </>
-        ) : null}
+        {/*
+          「状態 / 前回のバックエンド / 前回の実行」はここから外した。
+          実際に走ったバックエンドとフォールバック有無は DiagnosticsCard が
+          より詳しく出しており、残り2つはヘッダーの読み込み状態・データソースと
+          同じことを言っていた。
+        */}
+        {/*
+          「Gate count / Depth / Gate duration」もここから外した。
+          論理→コンパイル後の対応は下の GATE COMPILER ドロワーが
+          カラム単位で出しており、要約3行は同じ情報の重複だった。
+        */}
       </div>
 
       {run.compilation ? (
@@ -252,32 +243,18 @@ export function RunPanel({
           eyebrow="GATE COMPILER"
           title="分解後の回路"
           icon="chip"
-          description="論理ゲートと、実際にGate-awareモデルへ渡された基本ゲート列の対応です。"
+          description="実際にGate-awareモデルへ渡された基本ゲート列を、そのまま回路図として描いています。"
           defaultOpen={run.compilation.mode === 'auto_decompose'}
         >
-          <div className="run-panel__debug-grid">
-            {(run.compilation.compiled_circuit.columns ?? []).map((column) => (
-              <div className="run-panel__debug-item" key={column.step}>
-                <span className="run-panel__debug-label">Column {column.step + 1}</span>
-                <strong className="run-panel__debug-value">
-                  {column.gates.map((gate) => gate.type).join(' + ') || 'Idle'}
-                </strong>
-              </div>
-            ))}
-            {run.compilation.source_map.map((entry, index) => (
-              <div
-                className="run-panel__debug-item"
-                key={`${entry.logical_column}-${entry.source_gate}-${index}`}
-              >
-                <span className="run-panel__debug-label">
-                  {entry.source_gate} / logical column {entry.logical_column + 1}
-                </span>
-                <strong className="run-panel__debug-value">
-                  {entry.compiled_operations.map(formatCompiledOperation).join(' → ')}
-                </strong>
-              </div>
-            ))}
-          </div>
+          <CompiledCircuitDiagram
+            circuit={run.compilation.compiled_circuit}
+            sourceMap={run.compilation.source_map}
+          />
+          {run.compilation.decomposition_rules_used.length > 0 ? (
+            <p className="run-panel__rules">
+              適用した分解規則: {run.compilation.decomposition_rules_used.join(' / ')}
+            </p>
+          ) : null}
         </ResultDrawer>
       ) : null}
 
@@ -288,11 +265,12 @@ export function RunPanel({
           onClick={onReloadApiExample}
           disabled={isRequestPending}
         >
-          API サンプルを再読み込み
+          {internalInfoVisible ? 'API サンプルを再読み込み' : 'サンプルを再読み込み'}
         </button>
         <button
           className="run-panel__button"
           type="button"
+          data-tutorial-anchor="run-button"
           onClick={onRunSimulation}
           disabled={!canRun || isRequestPending}
         >
@@ -302,6 +280,8 @@ export function RunPanel({
 
       <RunCostNotice estimate={costEstimate} />
 
+      {/* 取得 URL・タイムスタンプ等の低レベル情報は管理者モード専用。 */}
+      {internalInfoVisible ? (
       <div className="run-panel__debug">
         <ResultDrawer
           eyebrow="API デバッグ"
@@ -354,6 +334,7 @@ export function RunPanel({
           </div>
         </ResultDrawer>
       </div>
+      ) : null}
     </section>
   )
 }

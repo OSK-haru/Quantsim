@@ -154,7 +154,26 @@ def _apply_gate(vector: Vector, gate: GateOperation, n_qubits: int) -> Vector:
         }[gate_type]
         return _apply_single(vector, matrix, gate.targets[0], n_qubits)
     if gate_type == "CNOT":
-        return _apply_controlled_x(vector, gate.controls[0], gate.targets[0], n_qubits)
+        params = gate.params or {}
+        raw_control_value = params.get("control_value", 1.0)
+        raw_control_state = params.get("control_state")
+        if raw_control_value not in {0.0, 1.0}:
+            raise ValueError("CNOT control_value must be 0 or 1")
+        if raw_control_state is not None and (
+            raw_control_state != int(raw_control_state)
+            or raw_control_state < 0
+            or raw_control_state >= 2 ** len(gate.controls)
+        ):
+            raise ValueError("CNOT control_state is outside the control-bit range")
+        control_value = int(raw_control_value)
+        return _apply_controlled_x(
+            vector,
+            gate.controls,
+            gate.targets[0],
+            n_qubits,
+            control_value,
+            None if raw_control_state is None else int(raw_control_state),
+        )
     if gate_type == "CZ":
         return _apply_controlled_phase(vector, gate.controls[0], gate.targets[0], n_qubits, -1.0)
     if gate_type == "SWAP":
@@ -192,12 +211,24 @@ def _apply_single(vector: Vector, matrix, target: int, n_qubits: int) -> Vector:
     return tuple(values)
 
 
-def _apply_controlled_x(vector, control, target, n_qubits):
-    control_mask = 1 << (n_qubits - 1 - control)
+def _apply_controlled_x(vector, controls, target, n_qubits, control_value=1, control_state=None):
+    if not controls:
+        raise ValueError("CNOT requires at least one control")
+    if control_value not in {0, 1}:
+        raise ValueError("CNOT control_value must be 0 or 1")
+    if control_state is None:
+        control_state = control_value if len(controls) == 1 else 2 ** len(controls) - 1
+    if control_state < 0 or control_state >= 2 ** len(controls):
+        raise ValueError("CNOT control_state is outside the control-bit range")
+    control_masks = [1 << (n_qubits - 1 - control) for control in controls]
     target_mask = 1 << (n_qubits - 1 - target)
     values = list(vector)
     for index in range(len(vector)):
-        if index & control_mask and not index & target_mask:
+        control_is_active = all(
+            bool(index & mask) == bool((control_state >> (len(control_masks) - 1 - position)) & 1)
+            for position, mask in enumerate(control_masks)
+        )
+        if control_is_active and not index & target_mask:
             partner = index | target_mask
             values[index], values[partner] = vector[partner], vector[index]
     return tuple(values)

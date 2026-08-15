@@ -1,23 +1,263 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
+/* ============================================================================
+   DOCS HOME // PRIMARY TERMINAL
+   本体 frontend/src/pages/HomePage.css の移植。密度の高い mono のスラグ行で、
+   ビューポート幅まで伸びる macro タイポグラフィを挟む構成をそのまま踏襲する。
+   ========================================================================= */
 
-.heroBanner {
-  padding: 4rem 0;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
+.home {
+  display: grid;
+  align-content: start;
+  padding: 0 0 64px;
+  background: var(--tt-void);
+  color: var(--tt-ink);
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
+/* --- Macro typography ----------------------------------------------------- */
+
+.hero {
+  padding: 40px 24px 0;
+}
+
+.wordmark {
+  display: grid;
+  margin: 0;
+  color: var(--tt-ink);
+  font-family: var(--tt-macro);
+  font-size: clamp(3.4rem, 15vw, 13rem);
+  font-weight: 900;
+  line-height: 0.82;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+}
+
+.wordmark span:last-child {
+  color: var(--tt-ink-faint);
+}
+
+.wordmark sup {
+  font-size: 0.18em;
+  vertical-align: super;
+  letter-spacing: 0;
+}
+
+.heroBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 32px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: var(--tt-bar) solid var(--tt-accent);
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--tt-ink);
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.lede {
+  margin: 16px 0 0;
+  max-width: 62ch;
+  color: var(--tt-ink-mid);
+  font-size: 0.9rem;
+  line-height: 1.75;
+}
+
+/* --- Spec block: definition list as instrument readout -------------------- */
+
+.spec {
+  display: grid;
+  align-content: start;
+  gap: var(--tt-hair);
+  margin: 0;
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-rule);
+}
+
+.spec > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 12px;
+  background: var(--tt-panel);
+  font-family: var(--tt-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+}
+
+.spec dt {
+  color: var(--tt-ink-dim);
+}
+
+.spec dd {
+  margin: 0;
+  color: var(--tt-ink);
+  text-align: right;
+}
+
+/* --- Entry selection: 本体のモード選択ボタンと同じ左右対称の2枚 ----------- */
+
+.entries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--tt-hair);
+  padding: 32px 24px 0;
+}
+
+.entry {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 20px 22px 22px;
+  border: var(--tt-hair) solid var(--tt-accent);
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms linear, border-color 120ms linear,
+    color 120ms linear;
+}
+
+.entry:hover {
+  border-color: var(--tt-accent-hot);
+  background: var(--tt-accent-hot);
+  color: var(--tt-ink-max);
+  text-decoration: none;
+}
+
+.entryUnit {
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.entryTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--tt-mono);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.entryVector {
+  opacity: 0.55;
+}
+
+.entryDetail {
+  font-size: 0.78rem;
+  line-height: 1.65;
+  opacity: 0.85;
+}
+
+.entrySecondary {
+  border-color: var(--tt-rule-strong);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+}
+
+.entrySecondary:hover {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink-max);
+}
+
+/* --- Document map: 文書区画をヘアラインで区切ったコンパートメント --------- */
+
+.map {
+  padding: 56px 24px 0;
+}
+
+.mapHeading {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.mapList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--tt-hair);
+  margin: 0;
+  padding: 0;
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-rule);
+  list-style: none;
+}
+
+.mapItem {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  height: 100%;
+  padding: 18px 18px 22px;
+  border-left: 3px solid transparent;
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  transition: background 120ms linear, border-color 120ms linear;
+}
+
+.mapItem:hover {
+  border-left-color: var(--tt-accent);
+  background: var(--tt-panel-3);
+  color: var(--tt-ink-max);
+  text-decoration: none;
+}
+
+.mapIndex {
+  color: var(--tt-accent);
+  font-family: var(--tt-macro);
+  font-size: 1.9rem;
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+}
+
+.mapUnit {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.mapTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.mapDetail {
+  color: var(--tt-ink-mid);
+  font-size: 0.76rem;
+  line-height: 1.65;
+}
+
+/* --- Narrow viewports ----------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .heroBody {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
-.buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+@media (max-width: 640px) {
+  .hero {
+    padding: 28px 16px 0;
+  }
+
+  .entries,
+  .map {
+    padding-inline: 16px;
+  }
+
+  .entries {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

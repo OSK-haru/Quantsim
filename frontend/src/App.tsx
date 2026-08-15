@@ -4,6 +4,9 @@ import { type SimulationDiagnostics } from './components/DiagnosticsCard'
 import { type MockSimulationResult } from './types/simulation'
 import type { GateDurationDefaults } from './types/simulation'
 import { CircuitProvider } from './context/CircuitContext'
+import { TutorialProvider } from './context/TutorialContext'
+import { TutorialOverlay } from './components/TutorialOverlay'
+import { TutorialCircuitWatcher } from './components/TutorialCircuitWatcher'
 import { AlgorithmLibraryPage } from './pages/AlgorithmLibraryPage'
 import { CircuitStudioPage } from './pages/CircuitStudioPage'
 import { HomePage } from './pages/HomePage'
@@ -179,91 +182,103 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
-  if (screen === 'home') {
+  function renderScreen() {
+    if (screen === 'home') {
+      return (
+        <>
+          <AppNavigation currentRoute={screen} onNavigate={navigate} />
+          <HomePage
+            onStartSimulation={() => navigate('simulate')}
+            onOpenPulseLab={() => navigate('pulse-lab')}
+          />
+        </>
+      )
+    }
+
+    if (screen === 'pulse-lab' || screen === 'pulse-circuit-studio') {
+      return (
+        <>
+          <AppNavigation currentRoute={screen} onNavigate={navigate} />
+          {screen === 'pulse-lab' ? (
+            <PulseLabPage
+              form={pulseLabForm}
+              onFormChange={setPulseLabForm}
+              sequence={pulseCircuit.lanes[activePulseTransmonIndex]?.steps ?? []}
+              activeTransmonIndex={activePulseTransmonIndex}
+              executionConstraints={pulseCircuit.executionConstraints}
+              onExecutionConstraintsChange={(executionConstraints) => setPulseCircuit((current) => ({
+                ...current,
+                executionConstraints,
+              }))}
+            />
+          ) : (
+            <PulseCircuitStudioPage
+              circuit={pulseCircuit}
+              currentForm={pulseLabForm}
+              onCircuitChange={setPulseCircuit}
+              onSelectPulseForRun={selectPulseForRun}
+            />
+          )}
+        </>
+      )
+    }
+
     return (
       <>
         <AppNavigation currentRoute={screen} onNavigate={navigate} />
-        <HomePage
-          onStartSimulation={() => navigate('simulate')}
-          onOpenStateExplorer={() => navigate('state-explorer')}
-          onOpenPulseLab={() => navigate('pulse-lab')}
-        />
+        <CircuitProvider gateDurationDefaults={gateDurationDefaults}>
+        <TutorialCircuitWatcher />
+
+        {screen === 'help' ? (
+          <HelpPage />
+        ) : null}
+
+        {screen === 'algorithm-library' ? (
+          <AlgorithmLibraryPage onOpenSimulation={() => navigate('simulate')} />
+        ) : null}
+
+        {screen === 'circuit-studio' ? (
+          <CircuitStudioPage gateDurationDefaults={gateDurationDefaults} />
+        ) : null}
+
+        {screen === 'state-explorer' ? (
+          <StateExplorerPage
+            response={latestGateAwareResult?.response ?? null}
+            executedCircuitConfig={latestGateAwareResult?.circuitConfig ?? null}
+            gateDurationDefaults={gateDurationDefaults}
+            onOpenSimulation={() => navigate('simulate')}
+          />
+        ) : null}
+
+        {screen === 'simulate' ? (
+          <SimulatePage
+            diagnostics={mockDiagnostics}
+            result={mockResult}
+            gateDurationDefaults={gateDurationDefaults}
+            onGateDurationDefaultsChange={setGateDurationDefaults}
+            onOpenCircuitStudio={() => navigate('circuit-studio')}
+            onOpenStateExplorer={() => navigate('state-explorer')}
+            previousResponse={latestGateAwareResult?.response ?? null}
+            onSuccessfulResponse={(response, circuitConfig) => {
+              setLatestGateAwareResult({ response, circuitConfig })
+            }}
+          />
+        ) : null}
+        </CircuitProvider>
       </>
     )
   }
 
-  if (screen === 'pulse-lab' || screen === 'pulse-circuit-studio') {
-    return (
-      <>
-        <AppNavigation currentRoute={screen} onNavigate={navigate} />
-        {screen === 'pulse-lab' ? (
-          <PulseLabPage
-            form={pulseLabForm}
-            onFormChange={setPulseLabForm}
-            sequence={pulseCircuit.lanes[activePulseTransmonIndex]?.steps ?? []}
-            activeTransmonIndex={activePulseTransmonIndex}
-            executionConstraints={pulseCircuit.executionConstraints}
-            onExecutionConstraintsChange={(executionConstraints) => setPulseCircuit((current) => ({
-              ...current,
-              executionConstraints,
-            }))}
-          />
-        ) : (
-          <PulseCircuitStudioPage
-            circuit={pulseCircuit}
-            currentForm={pulseLabForm}
-            onCircuitChange={setPulseCircuit}
-            onSelectPulseForRun={selectPulseForRun}
-          />
-        )}
-      </>
-    )
-  }
-
+  /*
+   * チュートリアルはページをまたいで進むので、
+   * 画面の出し分けごと Provider の内側へ入れる。
+   * 案内幕（TutorialOverlay）はどの画面でも1枚だけ出す。
+   */
   return (
-    <>
-      <AppNavigation currentRoute={screen} onNavigate={navigate} />
-      <CircuitProvider gateDurationDefaults={gateDurationDefaults}>
-      {screen === 'help' ? (
-        <HelpPage />
-      ) : null}
-
-      {screen === 'algorithm-library' ? (
-        <AlgorithmLibraryPage onOpenSimulation={() => navigate('simulate')} />
-      ) : null}
-
-      {screen === 'circuit-studio' ? (
-        <CircuitStudioPage
-          gateDurationDefaults={gateDurationDefaults}
-          onOpenSimulation={() => navigate('simulate')}
-        />
-      ) : null}
-
-      {screen === 'state-explorer' ? (
-        <StateExplorerPage
-          response={latestGateAwareResult?.response ?? null}
-          executedCircuitConfig={latestGateAwareResult?.circuitConfig ?? null}
-          gateDurationDefaults={gateDurationDefaults}
-          onOpenSimulation={() => navigate('simulate')}
-        />
-      ) : null}
-
-      {screen === 'simulate' ? (
-        <SimulatePage
-          diagnostics={mockDiagnostics}
-          result={mockResult}
-          gateDurationDefaults={gateDurationDefaults}
-          onGateDurationDefaultsChange={setGateDurationDefaults}
-          onOpenCircuitStudio={() => navigate('circuit-studio')}
-          onOpenStateExplorer={() => navigate('state-explorer')}
-          previousResponse={latestGateAwareResult?.response ?? null}
-          onSuccessfulResponse={(response, circuitConfig) => {
-            setLatestGateAwareResult({ response, circuitConfig })
-          }}
-        />
-      ) : null}
-      </CircuitProvider>
-    </>
+    <TutorialProvider currentRoute={screen} onNavigate={navigate}>
+      {renderScreen()}
+      <TutorialOverlay />
+    </TutorialProvider>
   )
 }
 

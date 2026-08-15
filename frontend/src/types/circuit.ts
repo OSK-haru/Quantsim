@@ -41,6 +41,10 @@ export type InitialQubitState = 0 | 1 | '+' | '-'
 
 export type CircuitGateParams = {
   duration_us?: number
+  /** 0 draws and executes an open control; omitted/1 is a closed control. */
+  control_value?: 0 | 1
+  /** Bit pattern required by a multi-control X, in controls-array order. */
+  control_state?: number
   [key: string]: number | undefined
 }
 
@@ -72,6 +76,8 @@ export type DragGatePayload =
   | {
       source: 'palette'
       gateType: GateType
+      /** Palette-only ● / ○ marker; it becomes part of CNOT after placement. */
+      controlValue?: 0 | 1
     }
   | {
       source: 'circuit'

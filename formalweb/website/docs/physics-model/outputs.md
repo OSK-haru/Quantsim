@@ -90,6 +90,20 @@ UIでは次の対応で表示されます。
 | `max_trace_error` | トレースの $1$ からのずれの最大値 |
 | `backend_fallback_used` | Rustカーネルからのフォールバックが発生したか |
 
+実行表現の選択についても診断が返されます。
+
+| 項目 | 内容 |
+|---|---|
+| `execution_representation` | `density_matrix` / `statevector` |
+| `state_dimension` | $2^n$ |
+| `density_matrix_dimension` | $(2^n)^2$ |
+| `representation_policy` | `adaptive_representation_v1` |
+| `density_matrix_qubit_limit` | ノイズあり密度行列経路の上限(現在 8) |
+| `large_density_matrix_execution` | 密度行列経路を6量子ビット以上で実行したときに `true` |
+| `evolution_method_fallback` | CPTPからRK4へフォールバックした理由(該当時のみ) |
+
+`large_density_matrix_execution` は、次元 $64\times64$ 以上の密度行列を扱ったことを示す目印です。エラーではありませんが、実行時間とメモリが急増する領域に入ったことを意味します。
+
 明示的CPTP経路では、加えてChoi行列の監査結果が返されます。
 
 | 項目 | 内容 |
@@ -114,7 +128,7 @@ Pulse-levelモデルでは、整形前の**生の状態**に対する物理性�
 
 レスポンスには `warnings` と `limitations` が含まれ、モデルの境界がクライアント側から見えるようになっています。たとえば次のような内容です。
 
-- 5量子ビットの条件付き回路でCPTPからRK4へフォールバックした旨
+- 5量子ビット以上の条件付き回路でCPTPからRK4へフォールバックした旨
 - 古典分岐数が上限で制約されている旨
 - Coupled transmon pairで両トランズモンが単一の環境プロファイルを共有している旨
 - RK4が厳密な有限ステップCPTP積分ではない旨

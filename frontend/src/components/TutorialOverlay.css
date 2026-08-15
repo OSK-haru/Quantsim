@@ -1,0 +1,276 @@
+/*
+ * チュートリアルの暗転幕・強調枠・進行HUD。
+ *
+ * 幕は操作を奪わない。クリックは常に下の本物のUIへ抜ける。
+ * 「今どこを見ればいいか」を視覚だけで狭めるための層。
+ */
+
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+
+  /* 幕は案内であって蓋ではない。操作はすべて素通しする。 */
+  pointer-events: none;
+}
+
+.tutorial-overlay__scrim {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+.tutorial-overlay__veil {
+  fill: #050505;
+  fill-opacity: 0.82;
+}
+
+/* 強調枠。走査するような破線で、注目点を1か所に絞る。 */
+.tutorial-overlay__frame {
+  fill: none;
+  stroke: var(--tt-accent);
+  stroke-width: 2;
+  stroke-dasharray: 14 8;
+
+  animation: tutorial-frame-march 900ms linear infinite;
+}
+
+@keyframes tutorial-frame-march {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+
+/* 枠が何を指しているかの札。 */
+.tutorial-overlay__tag {
+  position: absolute;
+
+  padding: 3px 8px;
+
+  border: var(--tt-hair) solid var(--tt-accent);
+  background: var(--tt-void);
+
+  color: var(--tt-accent-hot);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+/* --- 実行の記録 ------------------------------------------------------------ */
+
+/*
+ * 条件を変えながら走らせた結果を並べる帳面。
+ * ペットは右下にいるので、こちらは左下に固定する。
+ */
+.tutorial-overlay__samples {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+
+  display: grid;
+  gap: 8px;
+
+  width: min(320px, calc(100vw - 48px));
+  padding: 12px 14px;
+
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  border-left: 3px solid var(--tt-ink);
+  background: var(--tt-panel-2);
+
+  pointer-events: auto;
+}
+
+.tutorial-overlay__samples-title {
+  color: var(--tt-ink-mid);
+  font-family: var(--tt-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.tutorial-overlay__samples-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-family: var(--tt-mono);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tutorial-overlay__samples-table th,
+.tutorial-overlay__samples-table td {
+  padding: 4px 6px;
+
+  text-align: right;
+}
+
+.tutorial-overlay__samples-table thead th {
+  border-bottom: var(--tt-hair) solid var(--tt-rule);
+
+  color: var(--tt-ink-dim);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+
+.tutorial-overlay__samples-table tbody th {
+  color: var(--tt-ink-dim);
+  font-weight: 400;
+  text-align: left;
+}
+
+.tutorial-overlay__samples-table tbody td {
+  color: var(--tt-ink);
+}
+
+/* 最新の1行だけを白リンで立てる。 */
+.tutorial-overlay__samples-row--latest th,
+.tutorial-overlay__samples-row--latest td {
+  color: var(--tt-ink-max);
+  font-weight: 700;
+}
+
+.tutorial-overlay__samples-delta {
+  margin: 0;
+  padding-top: 8px;
+
+  border-top: var(--tt-hair) solid var(--tt-rule);
+
+  color: var(--tt-accent-hot);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+}
+
+/* --- 進行HUD --------------------------------------------------------------- */
+
+.tutorial-overlay__hud {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+
+  display: flex;
+  gap: 16px;
+  align-items: center;
+
+  width: min(560px, calc(100vw - 32px));
+  padding: 10px 12px;
+
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  border-left: 3px solid var(--tt-accent);
+  background: var(--tt-panel);
+
+  transform: translateX(-50%);
+
+  pointer-events: auto;
+}
+
+.tutorial-overlay__hud-text {
+  display: grid;
+  gap: 2px;
+
+  min-width: 0;
+}
+
+.tutorial-overlay__hud-eyebrow {
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.tutorial-overlay__hud-title {
+  overflow: hidden;
+
+  color: var(--tt-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutorial-overlay__progress {
+  flex: 1;
+
+  height: 4px;
+
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-void);
+}
+
+.tutorial-overlay__progress span {
+  display: block;
+
+  height: 100%;
+
+  background: var(--tt-accent);
+
+  transition: width 220ms linear;
+}
+
+.tutorial-overlay__quit {
+  flex: none;
+
+  padding: 6px 12px;
+
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  background: var(--tt-void);
+
+  color: var(--tt-ink-mid);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+
+  cursor: pointer;
+
+  transition: border-color 120ms linear, color 120ms linear;
+}
+
+.tutorial-overlay__quit:hover {
+  border-color: var(--tt-accent);
+
+  color: var(--tt-accent-hot);
+}
+
+.tutorial-overlay__quit:focus-visible {
+  outline: var(--tt-bar) solid var(--tt-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-overlay__frame {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .tutorial-overlay__hud {
+    top: 40px;
+
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tutorial-overlay__progress {
+    order: 3;
+
+    flex-basis: 100%;
+  }
+
+  /* 下はペットの吹き出しに譲り、記録はHUDの下へ回す。 */
+  .tutorial-overlay__samples {
+    top: 132px;
+    right: 12px;
+    bottom: auto;
+    left: 12px;
+
+    width: auto;
+  }
+}

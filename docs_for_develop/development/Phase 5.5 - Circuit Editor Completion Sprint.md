@@ -1,7 +1,7 @@
 
 > **Historical Streamlit-era implementation plan**
 >
-> Circuit editing is now implemented in React with 2-4 qubit rows,
+> Circuit editing is now implemented in React with 2-8 qubit rows,
 > drag-and-drop, deletion, Undo/Redo, and import/export. The Streamlit
 > implementation details below are obsolete.
 

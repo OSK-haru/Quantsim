@@ -1,21 +1,1215 @@
 @import 'katex/dist/katex.min.css';
 
+/* ============================================================================
+   YURAGI-STRIDER // DOCUMENTATION SUBSTRATE
+   本体アプリ (frontend/src/index.css) の "TACTICAL TELEMETRY SUBSTRATE" を
+   Docusaurus に移植したもの。トークン名・値は本体と 1:1 で揃えてある。
+   No gradients. No border-radius. No soft shadows. No translucent glass.
+   Single accent: aviation hazard red. Single signal: terminal green.
+
+   構成:
+     1. TOKENS          本体と共有するデザイントークン
+     2. INFIMA BRIDGE   Docusaurus (Infima) 変数をトークンへ写す
+     3. BASE            素の要素・タイポグラフィ
+     4. DEGRADATION     CRT スキャンライン + 粒子ノイズ
+     5. PRIMITIVES      .tt-* 共有クラス
+     6. CHROME          ナビバー / サイドバー / TOC / フッター
+     7. CONTENT         見出し / 表 / コード / 注意書き / 数式
+     8. CONTROLS        ボタン / ページ送り / パンくず
+   ========================================================================= */
+
+/* ============================================================================
+   1. TOKENS
+   ========================================================================= */
+
 :root {
-  --ifm-color-primary: #2563eb;
-  --ifm-color-primary-dark: #1d4ed8;
-  --ifm-color-primary-darker: #1e40af;
-  --ifm-color-primary-darkest: #172554;
-  --ifm-color-primary-light: #3b82f6;
-  --ifm-color-primary-lighter: #60a5fa;
-  --ifm-color-primary-lightest: #93c5fd;
+  /* -- Substrate -------------------------------------------------------- */
+  --tt-void: #0a0a0a;
+  --tt-panel: #121212;
+  --tt-panel-2: #171717;
+  --tt-panel-3: #1e1e1e;
+
+  /* -- Structure -------------------------------------------------------- */
+  --tt-rule: #2a2a2a;
+  --tt-rule-mid: #383838;
+  --tt-rule-strong: #4d4d4d;
+
+  /* -- Phosphor --------------------------------------------------------- */
+  --tt-ink: #eaeaea;
+  --tt-ink-max: #ffffff;
+  --tt-ink-mid: #a3a3a3;
+  --tt-ink-dim: #6e6e6e;
+  --tt-ink-faint: #4a4a4a;
+
+  /* -- Accent (aviation / hazard red) — the ONLY accent ------------------ */
+  --tt-accent: #e61919;
+  --tt-accent-hot: #ff2a2a;
+  --tt-accent-deep: #7a0f0f;
+  --tt-accent-wash: #24090a;
+
+  /* -- Signal (terminal green) ------------------------------------------ */
+  /*
+   * 本体では「実行中ステータス専用」。ドキュメントには実行状態が無いので、
+   * :::tip（肯定的な補足）だけに貸し出す。それ以外では使わない。
+   */
+  --tt-signal: #4af626;
+
+  --tt-ink-rgb: 234 234 234;
+  --tt-accent-rgb: 230 25 25;
+
+  /* -- Blueprint column rule -------------------------------------------- */
+  --tt-blueprint: rgba(234, 234, 234, 0.035);
+
+  /* -- Typography ------------------------------------------------------- */
+  /*
+   * Archivo Black は CJK グリフを持たないので、日本語見出しは次の候補に落ちる。
+   * それらは bold を持つため macro 見出しは 900 を要求し、font-synthesis: none
+   * で Latin マスターが偽 bold に潰されるのを防ぐ。
+   */
+  --tt-macro:
+    'Archivo Black', Inter, 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP',
+    Meiryo, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --tt-sans:
+    Inter, 'Yu Gothic UI', 'Hiragino Sans', 'Noto Sans JP', Meiryo,
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --tt-mono:
+    'JetBrains Mono', 'IBM Plex Mono', 'SFMono-Regular', Consolas,
+    'Liberation Mono', Menlo, monospace;
+
+  /* -- Grid metrics ----------------------------------------------------- */
+  --tt-hair: 1px;
+  --tt-bar: 2px;
+  --tt-unit: 8px;
+  --tt-radius: 6px;
+
+  color-scheme: dark;
 }
 
-[data-theme='dark'] {
-  --ifm-color-primary: #38bdf8;
-  --ifm-color-primary-dark: #0ea5e9;
-  --ifm-color-primary-darker: #0284c7;
-  --ifm-color-primary-darkest: #075985;
-  --ifm-color-primary-light: #67e8f9;
-  --ifm-color-primary-lighter: #a5f3fc;
-  --ifm-color-primary-lightest: #cffafe;
+/* ============================================================================
+   2. INFIMA BRIDGE
+   Docusaurus のテーマ変数を上のトークンへ写す。ダーク確定なので :root と
+   [data-theme='dark'] の双方に同じ値を置き、どちらが当たっても崩れないようにする。
+   ========================================================================= */
+
+:root,
+[data-theme='dark'],
+[data-theme='light'] {
+  /* -- Primary = hazard red --------------------------------------------- */
+  --ifm-color-primary: #e61919;
+  --ifm-color-primary-dark: #cf1616;
+  --ifm-color-primary-darker: #c31515;
+  --ifm-color-primary-darkest: #a01111;
+  --ifm-color-primary-light: #ff2a2a;
+  --ifm-color-primary-lighter: #ff4040;
+  --ifm-color-primary-lightest: #ff6b6b;
+
+  /* -- Surfaces ---------------------------------------------------------- */
+  --ifm-background-color: var(--tt-void);
+  --ifm-background-surface-color: var(--tt-panel);
+  --ifm-hover-overlay: var(--tt-panel-3);
+
+  /* -- Content ----------------------------------------------------------- */
+  --ifm-font-color-base: var(--tt-ink);
+  --ifm-color-content: var(--tt-ink);
+  --ifm-color-content-secondary: var(--tt-ink-mid);
+  --ifm-heading-color: var(--tt-ink-max);
+
+  /* -- Emphasis ramp: 無彩色のまま substrate に合わせて引き直す ---------- */
+  --ifm-color-emphasis-0: var(--tt-void);
+  --ifm-color-emphasis-100: var(--tt-panel);
+  --ifm-color-emphasis-200: var(--tt-panel-2);
+  --ifm-color-emphasis-300: var(--tt-rule);
+  --ifm-color-emphasis-400: var(--tt-rule-mid);
+  --ifm-color-emphasis-500: var(--tt-rule-strong);
+  --ifm-color-emphasis-600: var(--tt-ink-faint);
+  --ifm-color-emphasis-700: var(--tt-ink-dim);
+  --ifm-color-emphasis-800: var(--tt-ink-mid);
+  --ifm-color-emphasis-900: var(--tt-ink);
+  --ifm-color-emphasis-1000: var(--tt-ink-max);
+
+  /* -- Typography -------------------------------------------------------- */
+  --ifm-font-family-base: var(--tt-sans);
+  --ifm-font-family-monospace: var(--tt-mono);
+  --ifm-heading-font-family: var(--tt-macro);
+  --ifm-heading-font-weight: 900;
+  --ifm-font-weight-bold: 700;
+  --ifm-line-height-base: 1.5;
+
+  /* -- Geometry: 直角のみ・影なし ---------------------------------------- */
+  --ifm-global-radius: 0;
+  --ifm-global-border-width: var(--tt-hair);
+  --ifm-global-shadow-lw: none;
+  --ifm-global-shadow-md: none;
+  --ifm-global-shadow-tl: none;
+  --ifm-transition-fast: 120ms;
+  --ifm-transition-slow: 200ms;
+  --ifm-transition-timing-default: linear;
+
+  --ifm-container-width: 1200px;
+  --ifm-container-width-xl: 1440px;
+
+  /* -- Rules ------------------------------------------------------------- */
+  --ifm-hr-border-color: var(--tt-rule);
+  --ifm-hr-border-width: var(--tt-hair);
+  --ifm-toc-border-color: var(--tt-rule);
+
+  /* -- Links ------------------------------------------------------------- */
+  --ifm-link-color: var(--tt-accent);
+  --ifm-link-hover-color: var(--tt-accent-hot);
+  --ifm-link-decoration: none;
+  --ifm-link-hover-decoration: underline;
+
+  /* -- Code -------------------------------------------------------------- */
+  --ifm-code-background: var(--tt-panel-3);
+  --ifm-code-border-radius: 0;
+  --ifm-code-font-size: 0.86em;
+  --ifm-code-padding-horizontal: 0.35rem;
+  --ifm-code-padding-vertical: 0.12rem;
+  --ifm-pre-background: var(--tt-void);
+  --ifm-pre-border-radius: 0;
+  --ifm-pre-color: var(--tt-ink);
+  --ifm-pre-padding: 16px;
+  --docusaurus-highlighted-code-line-bg: var(--tt-accent-wash);
+
+  /* -- Navbar (= 本体の instrument rail) --------------------------------- */
+  --ifm-navbar-background-color: var(--tt-void);
+  --ifm-navbar-height: 44px;
+  --ifm-navbar-padding-horizontal: 24px;
+  --ifm-navbar-padding-vertical: 0;
+  --ifm-navbar-item-padding-horizontal: 12px;
+  --ifm-navbar-link-color: var(--tt-ink-mid);
+  --ifm-navbar-link-hover-color: var(--tt-ink-max);
+  --ifm-navbar-shadow: none;
+  --ifm-navbar-search-input-background-color: var(--tt-void);
+  --ifm-navbar-search-input-color: var(--tt-ink);
+  --ifm-navbar-search-input-placeholder-color: var(--tt-ink-faint);
+  --ifm-dropdown-background-color: var(--tt-panel);
+
+  /* -- Sidebar menu ------------------------------------------------------ */
+  --doc-sidebar-width: 288px;
+  --ifm-menu-color: var(--tt-ink-mid);
+  --ifm-menu-color-active: var(--tt-ink-max);
+  --ifm-menu-color-background-active: var(--tt-accent-wash);
+  --ifm-menu-color-background-hover: var(--tt-panel-3);
+  --ifm-menu-link-padding-horizontal: 14px;
+  --ifm-menu-link-padding-vertical: 9px;
+  /*
+   * 折りたたみキャレットは黒い画像なので、暗い substrate では反転が必須。
+   * Docusaurus は [data-theme='dark'] の下でしか反転を当てないが、以前に
+   * light を localStorage に残した訪問者は data-theme='light' で戻ってくる。
+   * テーマ属性に依存させず、ここで常時反転させる。
+   */
+  --ifm-menu-link-sublist-icon-filter: invert(100%) sepia(6%) saturate(0%)
+    brightness(105%) contrast(98%);
+  --docusaurus-collapse-button-bg: var(--tt-panel);
+  --docusaurus-collapse-button-bg-hover: var(--tt-accent-wash);
+
+  /* -- TOC --------------------------------------------------------------- */
+  --ifm-toc-link-color: var(--tt-ink-dim);
+  --ifm-toc-padding-vertical: 8px;
+
+  /* -- Tables ------------------------------------------------------------ */
+  --ifm-table-background: transparent;
+  --ifm-table-stripe-background: var(--tt-panel);
+  --ifm-table-border-color: var(--tt-rule);
+  --ifm-table-border-width: var(--tt-hair);
+  --ifm-table-cell-padding: 6px 10px;
+  --ifm-table-head-background: var(--tt-panel-2);
+  --ifm-table-head-color: var(--tt-ink-mid);
+  --ifm-table-head-font-weight: 700;
+
+  /* -- Blockquote -------------------------------------------------------- */
+  --ifm-blockquote-color: var(--tt-ink-mid);
+  --ifm-blockquote-border-color: var(--tt-accent);
+  --ifm-blockquote-border-left-width: 3px;
+  --ifm-blockquote-padding-horizontal: 18px;
+  --ifm-blockquote-padding-vertical: 10px;
+  --ifm-blockquote-font-size: 0.92rem;
+
+  /* -- Alerts (admonitions) ---------------------------------------------- */
+  --ifm-alert-border-radius: 0;
+  --ifm-alert-border-width: var(--tt-hair);
+  --ifm-alert-border-left-width: 3px;
+  --ifm-alert-padding-horizontal: 18px;
+  --ifm-alert-padding-vertical: 14px;
+  --ifm-alert-shadow: none;
+
+  /* -- Buttons ----------------------------------------------------------- */
+  --ifm-button-border-radius: 0;
+  --ifm-button-font-weight: 700;
+  --ifm-button-padding-horizontal: 22px;
+  --ifm-button-padding-vertical: 13px;
+  --ifm-button-transition-duration: 120ms;
+
+  /* -- Breadcrumbs / pagination ------------------------------------------ */
+  --ifm-breadcrumb-border-radius: 0;
+  --ifm-breadcrumb-color-active: var(--tt-accent);
+  --ifm-breadcrumb-item-background-active: transparent;
+  --ifm-breadcrumb-padding-horizontal: 0;
+  --ifm-breadcrumb-padding-vertical: 0;
+  --ifm-breadcrumb-spacing: 10px;
+  --ifm-breadcrumb-separator-size-multiplier: 1;
+  --ifm-pagination-nav-border-radius: 0;
+  --ifm-pagination-nav-color-hover: var(--tt-accent);
+
+  /* -- Footer (= 本体の colophon) ---------------------------------------- */
+  --ifm-footer-background-color: var(--tt-void);
+  --ifm-footer-color: var(--tt-ink-dim);
+  --ifm-footer-link-color: var(--tt-ink-mid);
+  --ifm-footer-link-hover-color: var(--tt-accent);
+  --ifm-footer-title-color: var(--tt-ink);
+  --ifm-footer-padding-horizontal: 24px;
+  --ifm-footer-padding-vertical: 32px;
+
+  /* -- Misc -------------------------------------------------------------- */
+  --ifm-tabs-padding-horizontal: 16px;
+  --ifm-tabs-padding-vertical: 10px;
+  --docusaurus-tag-list-border: var(--tt-rule);
+  --ifm-badge-border-radius: 0;
+  --ifm-avatar-intro-margin: 0;
+}
+
+/* ============================================================================
+   3. BASE
+   ========================================================================= */
+
+html {
+  background: var(--tt-void);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--tt-void);
+  color: var(--tt-ink);
+}
+
+/* --- Geometry directive: 90 degrees, everywhere -------------------------- */
+*,
+*::before,
+*::after {
+  border-radius: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  border-radius: 0;
+}
+
+::selection {
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
+}
+
+:focus-visible {
+  outline: var(--tt-bar) solid var(--tt-accent);
+  outline-offset: 1px;
+}
+
+/* --- Scrollbars as mechanical tracks ------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tt-rule-strong) var(--tt-void);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--tt-void);
+  border-left: var(--tt-hair) solid var(--tt-rule);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--tt-rule-strong);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--tt-accent);
+}
+
+/* ============================================================================
+   4. ANALOG DEGRADATION LAYER
+   本体と同じ 2 枚の固定プレーン。ただし本文が長い読み物なので、走査線は
+   本体の 0.11 → 0.075 まで落として可読性を確保している（粒子は同値）。
+   ========================================================================= */
+
+body::before,
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  content: '';
+  pointer-events: none;
+}
+
+body::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 2px,
+    rgba(0, 0, 0, 0.075) 2px 4px
+  );
+  mix-blend-mode: multiply;
+}
+
+body::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.05;
+}
+
+/* ============================================================================
+   5. TELEMETRY PRIMITIVES
+   本体 index.css と同一。グローバル CSS なので JSX / MDX から直接使える。
+   ========================================================================= */
+
+.tt-grid {
+  display: grid;
+  gap: var(--tt-hair);
+  background: var(--tt-rule);
+  border: var(--tt-hair) solid var(--tt-rule);
+}
+
+.tt-grid > * {
+  background: var(--tt-panel);
+}
+
+.tt-panel {
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-panel);
+}
+
+.tt-bracket::before {
+  content: '[ ';
+}
+
+.tt-bracket::after {
+  content: ' ]';
+}
+
+.tt-vector::before {
+  content: '>>> ';
+  color: var(--tt-accent);
+}
+
+.tt-reg {
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+}
+
+.tt-meta {
+  font-family: var(--tt-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tt-ink-dim);
+}
+
+.tt-readout {
+  font-family: var(--tt-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--tt-ink);
+}
+
+.tt-hazard {
+  height: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--tt-accent) 0 8px,
+    var(--tt-void) 8px 16px
+  );
+}
+
+.tt-barcode {
+  width: 168px;
+  height: 20px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--tt-ink) 0 1px,
+    transparent 1px 3px,
+    var(--tt-ink) 3px 5px,
+    transparent 5px 8px
+  );
+  opacity: 0.55;
+}
+
+/* 本体 App.css の共有 eyebrow。MDX からも使えるよう残す。 */
+.eyebrow {
+  display: inline-block;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: '[ ';
+}
+
+.eyebrow::after {
+  content: ' ]';
+}
+
+/* ============================================================================
+   6. CHROME
+   ========================================================================= */
+
+/* --- Navbar: 本体 AppNavigation の instrument rail に合わせる ------------- */
+
+.navbar {
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+  font-family: var(--tt-mono);
+}
+
+.navbar__inner {
+  align-items: stretch;
+}
+
+.navbar__brand {
+  margin-right: 20px;
+  padding-right: 20px;
+  border-right: var(--tt-hair) solid var(--tt-rule);
+}
+
+.navbar__logo {
+  height: 20px;
+  margin-right: 10px;
+}
+
+.navbar__title {
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.navbar__item,
+.navbar__link {
+  font-family: var(--tt-mono);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.navbar__link {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 現在いるセクションは rail 上で accent。本体の __route と同じ扱い。 */
+.navbar__link--active {
+  color: var(--tt-accent);
+}
+
+.navbar__link:hover {
+  color: var(--tt-ink-max);
+  text-decoration: none;
+}
+
+/*
+ * 本体 AppNavigation の rail 右端には稼働ビーコン（点滅する signal green）が
+ * あるが、ここには移植しない。ドキュメントに報告すべき稼働状態は無いので
+ * 計器の意味を持たない飾りになり、かつ読み物の上で無限に点滅させることに
+ * なる。rail の同一性は mono 大文字・ヘアライン・accent の下線で足りている。
+ */
+
+.navbar-sidebar {
+  border-right: var(--tt-hair) solid var(--tt-rule-strong);
+  background: var(--tt-void);
+}
+
+.navbar-sidebar__brand {
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+  box-shadow: none;
+}
+
+.navbar-sidebar__backdrop {
+  background: rgba(10, 10, 10, 0.82);
+}
+
+.navbar__toggle {
+  color: var(--tt-ink);
+}
+
+/* --- Doc sidebar: hairline compartments + accent latch ------------------- */
+
+.theme-doc-sidebar-container {
+  border-right: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-void);
+}
+
+/*
+ * future.v4 が有効なので Docusaurus 側の CSS は全て @layer docusaurus.* に入る。
+ * このファイルは非レイヤー = 常に上位なので、詳細度も !important も要らない。
+ */
+.menu {
+  padding: 12px 8px 24px;
+  font-weight: 400;
+}
+
+.menu__list-item-collapsible,
+.menu__link {
+  border-left: 3px solid transparent;
+}
+
+/* カテゴリ見出しはメタ情報なので mono・大文字・小さめ。 */
+.theme-doc-sidebar-item-category > .menu__list-item-collapsible > .menu__link {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.theme-doc-sidebar-item-category
+  > .menu__list-item-collapsible
+  > .menu__link:hover {
+  color: var(--tt-ink);
+}
+
+/* 末端のドキュメントリンクは本文と同じ sans。読みものへの入口だから。 */
+.theme-doc-sidebar-item-link > .menu__link {
+  color: var(--tt-ink-mid);
+  font-family: var(--tt-sans);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.menu__link:hover,
+.menu__list-item-collapsible:hover {
+  border-left-color: var(--tt-rule-strong);
+  background: var(--tt-panel-3);
+  color: var(--tt-ink-max);
+}
+
+.menu__link--active {
+  border-left-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink-max);
+  font-weight: 700;
+}
+
+.menu__link--active:not(.menu__link--sublist) {
+  color: var(--tt-ink-max);
+}
+
+.menu__caret {
+  border-left: 0;
+}
+
+.menu__caret:hover {
+  background: var(--tt-panel-3);
+}
+
+.menu__list .menu__list {
+  margin-left: 10px;
+  padding-left: 0;
+  border-left: var(--tt-hair) solid var(--tt-rule);
+}
+
+/* --- TOC: 右側の計器目盛り ---------------------------------------------- */
+
+.table-of-contents {
+  border-left: var(--tt-hair) solid var(--tt-rule);
+  font-size: 0.72rem;
+}
+
+.table-of-contents__left-border {
+  border-left: 0;
+}
+
+.table-of-contents__link {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+}
+
+.table-of-contents__link:hover,
+.table-of-contents__link:hover code {
+  color: var(--tt-ink);
+  text-decoration: none;
+}
+
+.table-of-contents__link--active,
+.table-of-contents__link--active code {
+  color: var(--tt-accent);
+  font-weight: 700;
+}
+
+/* --- Footer: colophon ---------------------------------------------------- */
+
+.footer {
+  border-top: var(--tt-hair) solid var(--tt-rule);
+}
+
+.footer--dark {
+  --ifm-footer-background-color: var(--tt-void);
+}
+
+/*
+ * フッター上端のハザード帯。本体ホームの最上段と対をなす。
+ * .footer は自前の padding を持つので、負のマージンで一度端まで戻して
+ * 全幅に張る（padding の内側だと帯が浮いて見える）。
+ */
+.footer::before {
+  display: block;
+  height: 6px;
+  margin: calc(-1 * var(--ifm-footer-padding-vertical))
+    calc(-1 * var(--ifm-footer-padding-horizontal)) 28px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--tt-accent) 0 8px,
+    var(--tt-void) 8px 16px
+  );
+  content: '';
+}
+
+.footer__title {
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.footer__link-item {
+  font-size: 0.82rem;
+}
+
+.footer__link-item:hover {
+  text-decoration: none;
+}
+
+.footer__copyright {
+  color: var(--tt-ink-faint);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.footer__bottom {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: var(--tt-hair) solid var(--tt-rule);
+  text-align: left;
+}
+
+/* ============================================================================
+   7. CONTENT
+   ========================================================================= */
+
+/*
+ * Macro 見出し。本体は line-height 0.9 / letter-spacing -0.03em だが、
+ * ここは日本語の長文見出しが入るので、詰めを少しだけ緩めて行を読ませる。
+ */
+.markdown h1,
+.markdown > h2,
+.markdown > h3 {
+  font-family: var(--tt-macro);
+  font-weight: 900;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+}
+
+.markdown h1:first-child {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+  font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+  line-height: 1.02;
+}
+
+.markdown > h2 {
+  margin-top: 48px;
+  padding-top: 14px;
+  border-top: var(--tt-hair) solid var(--tt-rule);
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.markdown > h3 {
+  margin-top: 32px;
+  font-size: 1.16rem;
+  line-height: 1.2;
+}
+
+/* h4 以降は本体と同様に mono ラベル扱い。 */
+.markdown > h4,
+.markdown > h5,
+.markdown > h6 {
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.markdown > h4 {
+  margin-top: 28px;
+  font-size: 0.88rem;
+}
+
+/* アンカーリンクのハッシュは accent で。 */
+.hash-link {
+  color: var(--tt-accent);
+}
+
+/* --- 本文 ---------------------------------------------------------------- */
+
+.markdown {
+  --ifm-h1-vertical-rhythm-bottom: 1;
+  font-size: 0.94rem;
+  line-height: 1.85;
+}
+
+.markdown p,
+.markdown li {
+  color: var(--tt-ink);
+}
+
+.markdown a {
+  border-bottom: var(--tt-hair) solid rgb(var(--tt-accent-rgb) / 0.45);
+  font-weight: 600;
+}
+
+.markdown a:hover {
+  border-bottom-color: var(--tt-accent-hot);
+  text-decoration: none;
+}
+
+.markdown strong {
+  color: var(--tt-ink-max);
+}
+
+.markdown hr {
+  height: 0;
+  border: 0;
+  border-top: var(--tt-hair) solid var(--tt-rule);
+}
+
+.markdown blockquote {
+  background: var(--tt-panel);
+}
+
+/* --- インラインコード / コードブロック ---------------------------------- */
+
+.markdown code {
+  border: var(--tt-hair) solid var(--tt-rule-mid);
+  color: var(--tt-ink-max);
+  letter-spacing: 0;
+}
+
+.theme-code-block {
+  border: var(--tt-hair) solid var(--tt-rule);
+  box-shadow: none;
+}
+
+.theme-code-block pre code {
+  border: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0;
+}
+
+/* コードブロックのタイトルバーは計器のラベル板として扱う。 */
+.theme-code-block [class*='codeBlockTitle'] {
+  border-bottom: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-panel-2);
+  color: var(--tt-ink-mid);
+  font-family: var(--tt-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.theme-code-block [class*='copyButton'] {
+  border: var(--tt-hair) solid var(--tt-rule-mid);
+  background: var(--tt-panel-2);
+  color: var(--tt-ink-mid);
+}
+
+.theme-code-block [class*='copyButton']:hover {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink-max);
+}
+
+/* --- テーブル: 本体 App.css の telemetry table と同一 -------------------- */
+
+/* 横に長い表は自分のスクロール枠で処理する。ページ本体は横に流さない。 */
+.markdown table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-family: var(--tt-mono);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.markdown table th,
+.markdown table td {
+  border: var(--tt-hair) solid var(--tt-rule);
+  text-align: left;
+}
+
+.markdown table th {
+  background: var(--tt-panel-2);
+  color: var(--tt-ink-mid);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.markdown table tr {
+  border-top: 0;
+  background: transparent;
+}
+
+.markdown table tr:nth-child(2n) {
+  background: var(--tt-panel);
+}
+
+/* --- Admonitions: 左端のバーだけで種別を示す ---------------------------- */
+
+.theme-admonition {
+  border: var(--tt-hair) solid var(--tt-rule);
+  border-left-width: 3px;
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  box-shadow: none;
+}
+
+.theme-admonition [class*='admonitionHeading'] {
+  color: var(--tt-ink-max);
+  font-family: var(--tt-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.theme-admonition [class*='admonitionContent'] > :last-child {
+  margin-bottom: 0;
+}
+
+.theme-admonition-note {
+  border-left-color: var(--tt-rule-strong);
+}
+
+.theme-admonition-info {
+  border-left-color: var(--tt-ink-dim);
+}
+
+/* signal green はここだけに貸す（§1 のトークン注記参照）。 */
+.theme-admonition-tip {
+  border-left-color: var(--tt-signal);
+}
+
+.theme-admonition-tip [class*='admonitionIcon'] svg {
+  fill: var(--tt-signal);
+}
+
+.theme-admonition-warning {
+  border-left-color: var(--tt-accent);
+}
+
+.theme-admonition-warning [class*='admonitionIcon'] svg {
+  fill: var(--tt-accent);
+}
+
+/* danger は最上位の警告。ハザード帯を上端に立てる。 */
+.theme-admonition-danger {
+  position: relative;
+  border-color: var(--tt-accent-deep);
+  border-left-color: var(--tt-accent-hot);
+  background: var(--tt-accent-wash);
+}
+
+.theme-admonition-danger::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--tt-accent) 0 8px,
+    var(--tt-void) 8px 16px
+  );
+  content: '';
+}
+
+.theme-admonition-danger [class*='admonitionHeading'] {
+  color: var(--tt-accent-hot);
+}
+
+.theme-admonition-danger [class*='admonitionIcon'] svg {
+  fill: var(--tt-accent-hot);
+}
+
+/* --- 数式 (KaTeX) ------------------------------------------------------- */
+
+.katex {
+  color: var(--tt-ink-max);
+  font-size: 1.02em;
+}
+
+/* 別行立ての式は計器の読み出し枠に入れる。 */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 16px 18px;
+  border: var(--tt-hair) solid var(--tt-rule);
+  border-left: 3px solid var(--tt-rule-strong);
+  background: var(--tt-panel);
+}
+
+/* --- 図版 --------------------------------------------------------------- */
+
+.markdown img {
+  max-width: 100%;
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-panel);
+}
+
+/* ============================================================================
+   8. CONTROLS
+   ========================================================================= */
+
+/* --- ボタン: 本体 App.css / HomePage の mode ボタンに合わせる ------------ */
+
+.button {
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  background: var(--tt-panel-2);
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: background 120ms linear, border-color 120ms linear,
+    color 120ms linear;
+}
+
+.button:hover {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink-max);
+  text-decoration: none;
+}
+
+.button:active {
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
+}
+
+.button--primary,
+.button--secondary {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
+}
+
+.button--primary:hover,
+.button--secondary:hover {
+  border-color: var(--tt-accent-hot);
+  background: var(--tt-accent-hot);
+  color: var(--tt-ink-max);
+}
+
+.button--outline {
+  border-color: var(--tt-rule-strong);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+}
+
+.button--outline:hover {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink-max);
+}
+
+/* --- パンくず: mono の座標表示 ------------------------------------------ */
+
+.breadcrumbs {
+  margin-bottom: 20px;
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.breadcrumbs__item {
+  color: var(--tt-ink-dim);
+}
+
+.breadcrumbs__link {
+  padding: 0;
+  background: transparent;
+  color: var(--tt-ink-dim);
+}
+
+.breadcrumbs__link:hover {
+  background: transparent;
+  color: var(--tt-ink);
+  text-decoration: none;
+}
+
+.breadcrumbs__item--active .breadcrumbs__link {
+  background: transparent;
+  color: var(--tt-accent);
+  font-weight: 700;
+}
+
+.breadcrumbs__item:not(:last-child)::after {
+  filter: none;
+  background: none;
+  color: var(--tt-ink-faint);
+  content: '/';
+  opacity: 1;
+}
+
+/* --- ページ送り: 前後のコンパートメント -------------------------------- */
+
+.pagination-nav__link {
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-panel);
+  transition: border-color 120ms linear, background 120ms linear;
+}
+
+.pagination-nav__link:hover {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+}
+
+.pagination-nav__sublabel {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.pagination-nav__label {
+  color: var(--tt-ink);
+  font-family: var(--tt-sans);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+/* 進行方向のベクトル記号。左右で向きを反転させる。 */
+.pagination-nav__link--next .pagination-nav__label::after {
+  color: var(--tt-accent);
+  content: ' >>>';
+}
+
+.pagination-nav__link--prev .pagination-nav__label::before {
+  color: var(--tt-accent);
+  content: '<<< ';
+}
+
+/* --- 編集リンク / タグ / 検索 ------------------------------------------- */
+
+.theme-edit-this-page,
+.theme-last-updated {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.navbar__search-input {
+  border: var(--tt-hair) solid var(--tt-rule-mid);
+  background: var(--tt-void);
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.navbar__search-input:focus {
+  border-color: var(--tt-accent);
+  outline: none;
+}
+
+/* --- 404 / 汎用ページ --------------------------------------------------- */
+/* ホームの見出しは CSS Module 側が持つので、ここは触らない（詳細度で負ける）。 */
+
+.hero__title {
+  font-family: var(--tt-macro);
+  font-weight: 900;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+}
+
+.hero--primary {
+  --ifm-hero-background-color: var(--tt-void);
+  --ifm-hero-text-color: var(--tt-ink);
+}
+
+/* ============================================================================
+   MOTION
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============================================================================
+   NARROW VIEWPORTS
+   ========================================================================= */
+
+@media (max-width: 996px) {
+  .navbar__brand {
+    margin-right: 12px;
+    padding-right: 12px;
+  }
+
+  .navbar__title {
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+  }
+
+  .markdown h1:first-child {
+    font-size: clamp(1.6rem, 7vw, 2.1rem);
+  }
+}
+
+/* ============================================================================
+   APP CTA (navbar link to the hosted web demo)
+   ========================================================================= */
+
+.navbar__item--app-cta {
+  padding: 6px 16px;
+  margin-left: 8px;
+  border-radius: 6px;
+  background: var(--ifm-color-primary);
+  color: #fff !important;
+}
+
+.navbar__item--app-cta:hover {
+  background: var(--ifm-color-primary-dark);
 }

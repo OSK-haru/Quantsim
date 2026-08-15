@@ -14,8 +14,11 @@ import { gateReference } from '../utils/gateReference'
 
 type GatePaletteProps = {
   selectedGateType: GateType | null
+  selectedControlValue: 0 | 1 | null
   logicalQubits: number
   onSelectGateType: (gateType: GateType | null) => void
+  onSelectControlValue: (controlValue: 0 | 1 | null) => void
+  onControlMarkerDragStart: (controlValue: 0 | 1) => void
   onSelectLogicalQubits: (logicalQubits: number) => void
   onGateDragStart: (gateType: GateType) => void
   onGateDragEnd: () => void
@@ -35,8 +38,11 @@ const logicalQubitOptions = Array.from(
 
 export function GatePalette({
   selectedGateType,
+  selectedControlValue,
   logicalQubits,
   onSelectGateType,
+  onSelectControlValue,
+  onControlMarkerDragStart,
   onSelectLogicalQubits,
   onGateDragStart,
   onGateDragEnd,
@@ -67,6 +73,8 @@ export function GatePalette({
         key={gateType}
         className="gate-palette__item"
         data-family={entry.family}
+        /* チュートリアルが「このゲートを置いて」と指し示すための目印。 */
+        data-tutorial-anchor={`gate-${gateType}`}
       >
         <button
           type="button"
@@ -100,7 +108,7 @@ export function GatePalette({
   }
 
   return (
-    <section className="gate-palette" aria-label="ゲートパレット">
+    <section className="gate-palette" aria-label="ゲートパレット" data-tutorial-anchor="gate-palette">
       <div className="gate-palette__group" role="radiogroup" aria-label="論理量子ビット">
         <span className="gate-palette__label">量子ビット</span>
         <div className="gate-palette__qubit-selector-buttons">
@@ -143,6 +151,46 @@ export function GatePalette({
       <div className="gate-palette__group" role="toolbar" aria-label="制御ゲート">
         <span className="gate-palette__label">制御</span>
         <div className="gate-palette__buttons">
+          <div className="gate-palette__item" data-family="control">
+            <button
+              type="button"
+              className={`gate-palette__button gate-palette__control-symbol gate-palette__button--draggable${selectedControlValue === 1 ? ' gate-palette__button--selected' : ''}`}
+              aria-label="制御点"
+              aria-pressed={selectedControlValue === 1}
+              draggable
+              title="制御点 ● を置く。X、または既存CNOTの縦線内へドロップすると自動接続"
+              onClick={() => onSelectControlValue(selectedControlValue === 1 ? null : 1)}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'copy'
+                event.dataTransfer.setData('text/plain', 'palette:control-1')
+                setCircuitDragPreview(event, '●', 'palette')
+                onControlMarkerDragStart(1)
+              }}
+              onDragEnd={onGateDragEnd}
+            >
+              ●
+            </button>
+          </div>
+          <div className="gate-palette__item" data-family="control">
+            <button
+              type="button"
+              className={`gate-palette__button gate-palette__control-symbol gate-palette__button--draggable${selectedControlValue === 0 ? ' gate-palette__button--selected' : ''}`}
+              aria-label="反制御点"
+              aria-pressed={selectedControlValue === 0}
+              draggable
+              title="反制御点 ○（制御値0）を置く。X、または既存CNOTの縦線内へドロップすると自動接続"
+              onClick={() => onSelectControlValue(selectedControlValue === 0 ? null : 0)}
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'copy'
+                event.dataTransfer.setData('text/plain', 'palette:control-0')
+                setCircuitDragPreview(event, '○', 'palette')
+                onControlMarkerDragStart(0)
+              }}
+              onDragEnd={onGateDragEnd}
+            >
+              ○
+            </button>
+          </div>
           {renderGateButton('CNOT')}
           {renderGateButton('CZ')}
           {renderGateButton('CP')}

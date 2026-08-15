@@ -1,7 +1,10 @@
 import math
 import unittest
 
+from core.gates import multi_qubit_physical_collapse_operators
+
 from core.rust_dense_kernel import (
+    RustDenseSession,
     flatten_collapse_ops,
     flatten_complex_matrix,
     is_rust_kernel_available,
@@ -158,6 +161,101 @@ class RustDenseKernelWrapperCallTest(unittest.TestCase):
         _assert_matrix_close(self, samples[0], rho)
         _assert_matrix_close(self, samples[1], rho)
 
+    def test_persistent_session_batches_different_hamiltonians(self) -> None:
+        rho = (
+            (0.6 + 0.0j, 0.1 + 0.05j),
+            (0.1 - 0.05j, 0.4 + 0.0j),
+        )
+        h1 = ((0.0 + 0.0j, 0.2 + 0.0j), (0.2 + 0.0j, 0.0 + 0.0j))
+        h2 = ((0.1 + 0.0j, 0.0 - 0.15j), (0.0 + 0.15j, -0.1 + 0.0j))
+        collapse = ((0.0 + 0.0j, 0.25 + 0.0j), (0.0 + 0.0j, 0.0 + 0.0j))
+        session = RustDenseSession(rho, [collapse])
+
+        samples = session.evolve_piecewise_cleaned_samples(
+            rho,
+            [h1, h2],
+            [0.003, 0.002],
+            [2, 3],
+        )
+        first = rust_rk4_evolve_segment_cleaned(rho, h1, [collapse], 0.003, 2)
+        second = rust_rk4_evolve_segment_cleaned(first, h2, [collapse], 0.002, 3)
+
+        self.assertEqual(len(samples), 2)
+        _assert_matrix_close(self, samples[0], first, delta=1e-10)
+        _assert_matrix_close(self, samples[1], second, delta=1e-10)
+
+    def test_persistent_session_returns_paired_metrics(self) -> None:
+        rho = ((1.0 + 0.0j, 0.0j), (0.0j, 0.0j))
+        hamiltonian = ((0.0j, 0.2 + 0.0j), (0.2 + 0.0j, 0.0j))
+        collapse = ((0.0j, 0.15 + 0.0j), (0.0j, 0.0j))
+        session = RustDenseSession(rho, [collapse])
+
+        noisy, ideal, metrics = session.evolve_paired_piecewise_metrics(
+            rho,
+            rho,
+            [hamiltonian, hamiltonian],
+            [0.002, 0.002],
+            [2, 3],
+        )
+
+        self.assertEqual(len(noisy), 2)
+        self.assertEqual(len(ideal), 2)
+        self.assertEqual(len(metrics), 2)
+        for noisy_state, ideal_state, (fidelity, purity, trace_error, ideal_purity) in zip(
+            noisy, ideal, metrics
+        ):
+            self.assertAlmostEqual(
+                fidelity,
+                _python_lindblad_overlap(noisy_state, ideal_state),
+                delta=1e-10,
+            )
+            self.assertAlmostEqual(
+                purity,
+                _python_lindblad_overlap(noisy_state, noisy_state),
+                delta=1e-10,
+            )
+            self.assertLessEqual(trace_error, 1e-12)
+            self.assertAlmostEqual(
+                ideal_purity,
+                _python_lindblad_overlap(ideal_state, ideal_state),
+                delta=1e-10,
+            )
+
+    def test_local_rate_session_matches_explicit_two_qubit_operators(self) -> None:
+        rho = tuple(
+            tuple(1.0 + 0.0j if row == column == 3 else 0.0j for column in range(4))
+            for row in range(4)
+        )
+        rates = (0.12, 0.03, 0.07)
+        explicit = RustDenseSession(
+            rho,
+            multi_qubit_physical_collapse_operators(2, *rates),
+        )
+        local = RustDenseSession.from_local_rates(rho, 2, *rates)
+        hamiltonian = _zero_matrix(4)
+
+        expected = explicit.evolve_cleaned(rho, hamiltonian, 0.004, 5)
+        actual = local.evolve_cleaned(rho, hamiltonian, 0.004, 5)
+
+        _assert_matrix_close(self, actual, expected, delta=1e-10)
+
+    def test_compact_paired_output_keeps_metrics_but_selects_states(self) -> None:
+        rho = ((1.0 + 0.0j, 0.0j), (0.0j, 0.0j))
+        hamiltonian = ((0.0j, 0.2 + 0.0j), (0.2 + 0.0j, 0.0j))
+        session = RustDenseSession.from_local_rates(rho, 1, 0.1, 0.02, 0.03)
+
+        captured, metrics = session.evolve_paired_registered_compact(
+            rho,
+            rho,
+            [hamiltonian] * 3,
+            [0.002] * 3,
+            [1, 1, 1],
+            [False, True, False],
+        )
+
+        self.assertEqual(len(metrics), 3)
+        self.assertEqual(set(captured), {1, 2})
+
     def test_wrapper_rejects_bad_dimensions(self) -> None:
         rho = ((1.0 + 0.0j,),)
         hamiltonian = _zero_matrix(2)
@@ -302,6 +400,14 @@ def _add_scaled(base, delta, scale: float):
         )
         for row in range(len(base))
     )
+
+
+def _python_lindblad_overlap(left, right):
+    return sum(
+        left[row][column] * right[column][row]
+        for row in range(len(left))
+        for column in range(len(left))
+    ).real
 
 
 def _assert_matrix_close(

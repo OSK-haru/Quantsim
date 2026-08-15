@@ -37,13 +37,13 @@ and read against the register's own bit order. Marking several states is done by
 placing several oracles in sequence, since diagonal gates commute.
 
 The React Circuit Studio import/export format is intentionally narrower:
-2-5 qubits and initial states `0` or `1`. The editor stops at 5 because that is
+2-8 qubits and initial states `0` or `1`. The editor stops at 8 because that is
 the core's noisy density-matrix ceiling, so anything editable can also be run
 under the gate-aware model. The FastAPI `circuit_config`
 boundary accepts the same 1-18 range and `0`/`1`/`+`/`-` initial states as
-the core config format; noisy density-matrix evolution is limited to 5
-qubits, with ideal measurement-free circuits above that using the
-statevector path instead.
+the core config format; noisy density-matrix evolution is limited to 8
+qubits, explicit CPTP to 5, and ideal measurement-free circuits above 5 qubits
+use the statevector path instead.
 
 ## Environment
 

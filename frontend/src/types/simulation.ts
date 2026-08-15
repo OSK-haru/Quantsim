@@ -259,6 +259,38 @@ export type GateDurationDefaultErrors = Partial<
   Record<keyof GateDurationDefaults, string>
 >
 
+export type CompiledCircuitGate = {
+  type: string
+  targets: number[]
+  controls?: number[]
+  params?: Record<string, number>
+}
+
+export type CompiledCircuitColumn = {
+  step: number
+  gates: CompiledCircuitGate[]
+}
+
+/** `CircuitConfig.to_dict()` from the backend, narrowed to what the UI draws. */
+export type CompiledCircuitData = {
+  logical_qubits?: number
+  initial_states?: string[]
+  columns?: CompiledCircuitColumn[]
+}
+
+export type CompiledSourceMapEntry = {
+  logical_column: number
+  source_gate: string
+  rule_id: string | null
+  compiled_operations: Array<{
+    compiled_column: number
+    gate: string
+    targets: number[]
+    controls: number[]
+    params: Record<string, number>
+  }>
+}
+
 export type RunPanelData = {
   status: string
   selected_backend: string
@@ -274,24 +306,8 @@ export type RunPanelData = {
     logical_duration_us: number | null
     compiled_duration_us: number | null
     decomposition_rules_used: string[]
-    source_map: Array<{
-      logical_column: number
-      source_gate: string
-      rule_id: string | null
-      compiled_operations: Array<{
-          compiled_column: number
-          gate: string
-          targets: number[]
-          controls: number[]
-          params: Record<string, number>
-      }>
-    }>
-    compiled_circuit: {
-      columns?: Array<{
-        step: number
-        gates: Array<{ type: string }>
-      }>
-    }
+    source_map: CompiledSourceMapEntry[]
+    compiled_circuit: CompiledCircuitData
   }
   comparison?: {
     ideal_timeline: MetricPoint[]

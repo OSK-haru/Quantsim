@@ -100,20 +100,35 @@ def expand_single_qubit_gate(gate: Matrix, target: int, n_qubits: int) -> Matrix
     return expanded
 
 
-def expand_cnot(control: int, target: int, n_qubits: int) -> Matrix:
-    """Return a CNOT matrix with q0 as the most significant bit."""
+def expand_cnot(
+    control: int | Sequence[int],
+    target: int,
+    n_qubits: int,
+    control_value: int | None = None,
+    control_state: int | None = None,
+) -> Matrix:
+    """Return multi-controlled X; zero bits in the state are open controls."""
 
-    _require_qubit_index(control, n_qubits)
+    controls = [control] if isinstance(control, int) else list(control)
+    if not controls:
+        raise ValueError("CNOT requires at least one control")
+    for item in controls:
+        _require_qubit_index(item, n_qubits)
     _require_qubit_index(target, n_qubits)
-    if control == target:
-        raise ValueError("CNOT control and target must be different")
+    if len(set(controls)) != len(controls) or target in controls:
+        raise ValueError("CNOT controls and target must be different")
+    if control_state is None:
+        control_state = control_value if len(controls) == 1 else (2 ** len(controls) - 1)
+    if control_state is None or control_state < 0 or control_state >= 2 ** len(controls):
+        raise ValueError("CNOT control_state is outside the control-bit range")
+    required_bits = format(control_state, f"0{len(controls)}b")
 
     dimension = 2 ** n_qubits
     rows = [[0.0 + 0.0j for _ in range(dimension)] for _ in range(dimension)]
     for input_index in range(dimension):
         bits = _index_to_bits(input_index, n_qubits)
         output_bits = list(bits)
-        if bits[control] == "1":
+        if all(bits[item] == required_bits[index] for index, item in enumerate(controls)):
             output_bits[target] = "0" if output_bits[target] == "1" else "1"
         output_index = _bits_to_index(output_bits)
         rows[output_index][input_index] = 1.0 + 0.0j
@@ -391,6 +406,10 @@ def initial_density_matrix(initial_states: list[str]) -> Matrix:
 def apply_unitary_to_density(rho: Matrix, u: Matrix) -> Matrix:
     """Return U rho U dagger."""
 
+    if len(rho) >= 16:
+        rho_array = np.asarray(rho, dtype=np.complex128)
+        unitary_array = np.asarray(u, dtype=np.complex128)
+        return _freeze((unitary_array @ rho_array @ unitary_array.conj().T).tolist())
     return matmul(matmul(u, rho), adjoint(u))
 
 
@@ -543,9 +562,24 @@ def gate_unitary(gate: GateOperation, n_qubits: int) -> Matrix:
     if gate_type == "MEASURE":
         return identity_matrix(dimension)
     if gate_type == "CNOT":
-        if len(gate.controls or []) != 1 or len(gate.targets) != 1:
-            raise ValueError("CNOT requires exactly one control and one target")
-        return expand_cnot(gate.controls[0], gate.targets[0], n_qubits)
+        if len(gate.controls or []) < 1 or len(gate.targets) != 1:
+            raise ValueError("CNOT requires at least one control and exactly one target")
+        params = gate.params or {}
+        raw_control_value = params.get("control_value", 1.0)
+        raw_control_state = params.get("control_state")
+        if raw_control_value not in {0.0, 1.0}:
+            raise ValueError("CNOT control_value must be 0 or 1")
+        if raw_control_state is not None and (
+            raw_control_state != int(raw_control_state)
+            or raw_control_state < 0
+            or raw_control_state >= 2 ** len(gate.controls)
+        ):
+            raise ValueError("CNOT control_state is outside the control-bit range")
+        return expand_cnot(
+            gate.controls, gate.targets[0], n_qubits,
+            control_value=int(raw_control_value),
+            control_state=None if raw_control_state is None else int(raw_control_state),
+        )
     if gate_type == "CZ":
         if len(gate.controls or []) != 1 or len(gate.targets) != 1:
             raise ValueError("CZ requires exactly one control and one target")
@@ -641,6 +675,8 @@ def column_unitary(column, n_qubits: int) -> Matrix:
 def effective_hamiltonian_from_involution(
     unitary: Matrix,
     duration_us: float,
+    *,
+    validate: bool = True,
 ) -> Matrix:
     """Return H = pi / (2 tau) * (I - U) for Hermitian involutory U."""
 
@@ -649,10 +685,11 @@ def effective_hamiltonian_from_involution(
         raise ValueError("duration_us must be positive to build a Hamiltonian")
     dimension = len(unitary)
     identity = identity_matrix(dimension)
-    if _max_abs_difference(adjoint(unitary), unitary) > INVOLUTION_TOLERANCE:
-        raise ValueError("column unitary must be Hermitian for effective Hamiltonian mode")
-    if _max_abs_difference(matmul(unitary, unitary), identity) > INVOLUTION_TOLERANCE:
-        raise ValueError("column unitary must satisfy U^2 = I for effective Hamiltonian mode")
+    if validate:
+        if _max_abs_difference(adjoint(unitary), unitary) > INVOLUTION_TOLERANCE:
+            raise ValueError("column unitary must be Hermitian for effective Hamiltonian mode")
+        if _max_abs_difference(matmul(unitary, unitary), identity) > INVOLUTION_TOLERANCE:
+            raise ValueError("column unitary must satisfy U^2 = I for effective Hamiltonian mode")
     return scale(pi / (2.0 * duration_us), subtract(identity, unitary))
 
 

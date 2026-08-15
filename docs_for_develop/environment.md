@@ -22,9 +22,17 @@ Browser :5173
 - 主な API: `GET /api/simulation/example`, `POST /api/simulate`
 - Vite proxy の接続先は `frontend/vite.config.ts` に固定されています。
 
+### 任意: Windows desktop 単一 process 起動
+
+`desktop_app.py` は build 済みの `frontend/dist/` と FastAPI を同一 local address から提供し、既定 browser を開きます。外部 network 通信は行いません。
+
+```powershell
+.\.venv\Scripts\pythonw.exe desktop_app.py
+```
+
 ### 任意: Rust dense preview
 
-`rust_kernels/yuragi_strider_rust` は PyO3 の Python 拡張です。未導入時は `python_dense` が標準 backend として動作します。API の現行 request model は `python_dense` のみを受け付けるため、Rust は開発・比較試験向けです。
+`rust_kernels/yuragi_strider_rust` は PyO3 の Python 拡張です。未導入時は `python_dense` が標準 backend として動作します。API の `simulation_backend` は `python_dense`（既定）と `rust_dense_preview` を受け付けます。Rust 拡張が入っていない場合は診断付きで Python 経路へ fallback するため、再現条件には含めません。対象は Gate-aware の dense 経路のみで、Pulse 経路は Python のみです。
 
 ## 2. toolchain
 
@@ -88,7 +96,8 @@ Cargo 依存は `rust_kernels/yuragi_strider_rust/Cargo.lock` で固定されて
 | `requirements-runtime.txt` | 通常実行に必要な Python の直接依存 |
 | `requirements-validation.txt` | QuTiP 比較を行う場合に追加導入 |
 | `requirements-lock.txt` | 監査済み Python 開発環境の推移依存まで含む再現 |
-| `requirements.txt` | 既存環境との互換用。新規構築には非推奨 |
+| `requirements-packaging.txt` | Windows desktop package の build 時のみ（PyInstaller） |
+| `requirements.txt` | 既存環境との互換用。`requirements-runtime.txt` を読み込むだけ |
 | `frontend/package.json` | Frontend の直接依存と npm scripts |
 | `frontend/package-lock.json` | Frontend の完全な依存解決結果 |
 | `rust_kernels/yuragi_strider_rust/pyproject.toml` | Python extension の build 設定 |
@@ -132,6 +141,7 @@ server 起動後:
 ## 7. 既知の再現性上の境界
 
 - `requirements-lock.txt` は Windows/Python 3.14.4 で監査した固定版一覧です。OS 固有 wheel の hash までは固定していません。
-- React の production 配信 server や container 定義は現時点ではありません。`npm run build` は `frontend/dist/` を生成します。
-- API と Vite の開発起動は別 process です。一括起動 script はありません。
+- container 定義はありません。`npm run build` は `frontend/dist/` を生成します。配信は `desktop_app.py` が build 済み React と FastAPI を同一 local address から提供する desktop 経路のみで、汎用の production web server 構成はありません。
+- Windows desktop package の build には PyInstaller が別途必要です（`requirements-packaging.txt`、`scripts/build_windows_desktop.ps1`）。利用者側には不要です。詳細は [`../docs/development/windows-desktop-distribution.md`](../docs/development/windows-desktop-distribution.md) を参照してください。
+- API と Vite の開発起動は別 process です。一括起動 script はありません（desktop 経路は例外で、単一 process になります）。
 - Rust preview は任意で、標準 API/UI の再現条件には含めません。

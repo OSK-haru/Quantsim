@@ -10,6 +10,7 @@ import { OutputProbabilities } from '../components/OutputProbabilities'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { StateProbabilityComparison } from '../components/StateProbabilityComparison'
 import { useCircuitContext } from '../context/useCircuitContext'
+import { useTutorial } from '../context/useTutorial'
 import type { GateDurationDefaults, SimulationResponse } from '../types/simulation'
 import { nearestSnapshotIndex } from '../utils/physicalTimeline'
 import { stateExplorerTips } from '../utils/quantumPetTips'
@@ -84,7 +85,11 @@ function PanelVisibilityMenu({
   }, [isOpen])
 
   return (
-    <div className="state-explorer-page__panel-menu" ref={containerRef}>
+    <div
+      className="state-explorer-page__panel-menu"
+      ref={containerRef}
+      data-tutorial-anchor="explorer-panel-menu"
+    >
       <button
         type="button"
         className="state-explorer-page__panel-menu-toggle"
@@ -167,6 +172,17 @@ export function StateExplorerPage({
   }, [])
   const showAllPanels = useCallback(() => setAllPanels(true), [setAllPanels])
   const hideAllPanels = useCallback(() => setAllPanels(false), [setAllPanels])
+
+  /*
+   * チュートリアルの結果解説の章のあいだは、指標タイムラインを開いた扱いにする。
+   * 「まず自分で開いて」と言うと話の腰が折れるので、状態は書き換えず、
+   * 表示だけを上書きする。章を抜ければ利用者の設定がそのまま戻る。
+   */
+  const tutorial = useTutorial()
+  const forcesMetricsOpen = tutorial.beat?.opensPanel === 'metric-timeline'
+  const visiblePanels = forcesMetricsOpen && !openPanels.metrics
+    ? { ...openPanels, metrics: true }
+    : openPanels
   const idealSnapshots = activeResponse && Array.isArray(activeResponse.run.comparison?.ideal_state_snapshots)
     ? activeResponse.run.comparison.ideal_state_snapshots
     : []
@@ -247,17 +263,17 @@ export function StateExplorerPage({
         <>
           <PanelVisibilityMenu
             panels={availablePanelKeys}
-            openPanels={openPanels}
+            openPanels={visiblePanels}
             onToggle={togglePanel}
             onShowAll={showAllPanels}
             onHideAll={hideAllPanels}
           />
           {hasTransfer ? (
-            <CollapsiblePanel panelKey="transfer" open={openPanels.transfer} onToggle={() => togglePanel('transfer')}>
+            <CollapsiblePanel panelKey="transfer" open={visiblePanels.transfer} onToggle={() => togglePanel('transfer')}>
               <MessageReceiveStateTransferView circuit={circuitState} noisySnapshots={snapshots} idealSnapshots={idealSnapshots} stateTransfer={activeResponse.state_transfer} />
             </CollapsiblePanel>
           ) : null}
-          <CollapsiblePanel panelKey="physical" open={openPanels.physical} onToggle={() => togglePanel('physical')}>
+          <CollapsiblePanel panelKey="physical" open={visiblePanels.physical} onToggle={() => togglePanel('physical')}>
           <PhysicalTimelinePlayback
             circuit={circuitState}
             gateDurationDefaults={gateDurationDefaults}
@@ -269,7 +285,7 @@ export function StateExplorerPage({
               idealSnapshots={idealSnapshots}
             />
           </CollapsiblePanel>
-          <CollapsiblePanel panelKey="metrics" open={openPanels.metrics} onToggle={() => togglePanel('metrics')}>
+          <CollapsiblePanel panelKey="metrics" open={visiblePanels.metrics} onToggle={() => togglePanel('metrics')}>
           <MetricTimeline
             timeline={activeResponse.timeline}
             idealTimeline={idealTimeline}
@@ -278,7 +294,7 @@ export function StateExplorerPage({
           />
           </CollapsiblePanel>
           {qubitCount === null ? null : (
-            <CollapsiblePanel panelKey="probabilities" open={openPanels.probabilities} onToggle={() => togglePanel('probabilities')}>
+            <CollapsiblePanel panelKey="probabilities" open={visiblePanels.probabilities} onToggle={() => togglePanel('probabilities')}>
             <StateProbabilityComparison
               qubitCount={qubitCount}
               idealSnapshots={idealSnapshots}
@@ -288,7 +304,7 @@ export function StateExplorerPage({
             />
             </CollapsiblePanel>
           )}
-          <CollapsiblePanel panelKey="output" open={openPanels.output} onToggle={() => togglePanel('output')}>
+          <CollapsiblePanel panelKey="output" open={visiblePanels.output} onToggle={() => togglePanel('output')}>
             <OutputProbabilities
               outputProbabilities={activeResponse.output_probabilities}
               qubitCount={qubitCount}
@@ -299,7 +315,7 @@ export function StateExplorerPage({
             />
           </CollapsiblePanel>
           {qubitCount === null ? null : (
-            <CollapsiblePanel panelKey="measurement" open={openPanels.measurement} onToggle={() => togglePanel('measurement')}>
+            <CollapsiblePanel panelKey="measurement" open={visiblePanels.measurement} onToggle={() => togglePanel('measurement')}>
             <MeasurementResults
               measurement={activeResponse.measurement}
               qubitCount={qubitCount}
@@ -318,7 +334,7 @@ export function StateExplorerPage({
               </div>
             ) : (
               <div className="state-explorer-page__explorers">
-                <CollapsiblePanel panelKey="bloch" open={openPanels.bloch} onToggle={() => togglePanel('bloch')}>
+                <CollapsiblePanel panelKey="bloch" open={visiblePanels.bloch} onToggle={() => togglePanel('bloch')}>
                 <div className="state-explorer-page__comparison-grid">
                   <section className="state-explorer-page__comparison-panel">
                     <h2>Gate-aware 状態</h2>
@@ -344,7 +360,7 @@ export function StateExplorerPage({
                   className="state-explorer-page__density-section"
                   aria-labelledby="density-matrix-title"
                 >
-                <CollapsiblePanel panelKey="density" open={openPanels.density} onToggle={() => togglePanel('density')}>
+                <CollapsiblePanel panelKey="density" open={visiblePanels.density} onToggle={() => togglePanel('density')}>
                   <div className="state-explorer-page__section-heading">
                     <div>
                       <span className="state-explorer-page__eyebrow">Full quantum state</span>

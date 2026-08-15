@@ -378,9 +378,24 @@ class StateSnapshotCollector:
         )
 
     def capture_requested_time(self, *, time_us: float, density_matrix: Matrix) -> None:
-        if self.plan is None or not self.plan.enabled:
+        request = self.request_for_time(time_us)
+        if request is None:
             return
-        request = next(
+        self.capture(
+            time_us=time_us,
+            requested_time_us=request.requested_time_us,
+            kind=request.kind,
+            density_matrix=density_matrix,
+            capture_method="exact_integration_boundary",
+            event_kind=None,
+        )
+
+    def request_for_time(self, time_us: float):
+        """Return the matching explicit request without requiring a matrix."""
+
+        if self.plan is None or not self.plan.enabled:
+            return None
+        return next(
             (
                 request
                 for request in self.plan.requests
@@ -392,16 +407,6 @@ class StateSnapshotCollector:
                 )
             ),
             None,
-        )
-        if request is None:
-            return
-        self.capture(
-            time_us=time_us,
-            requested_time_us=request.requested_time_us,
-            kind=request.kind,
-            density_matrix=density_matrix,
-            capture_method="exact_integration_boundary",
-            event_kind=None,
         )
 
     def finalize(self) -> tuple[list[StateSnapshot], SnapshotDiagnostics]:

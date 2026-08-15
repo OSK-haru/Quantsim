@@ -41,6 +41,17 @@
   background: rgba(10, 10, 10, 0.46);
 }
 
+/* 回路図の直下に敷く編集バー。上のツールバーより一段落ち着かせる。 */
+.circuit-workspace__toolbar--edit {
+  z-index: 1;
+  background: rgba(10, 10, 10, 0.34);
+}
+
+/* ファイル操作は編集操作と性質が違うので、先頭で少し強い枠にして区切る。 */
+.circuit-workspace__tool-group--file {
+  border-color: rgba(163, 163, 163, 0.28);
+}
+
 .circuit-workspace__tool-label {
   color: var(--tt-ink);
   font-size: 0.72rem;
@@ -126,7 +137,6 @@
 }
 
 .circuit-workspace__status,
-.circuit-workspace__status-secondary,
 .circuit-workspace__transfer-status,
 .circuit-workspace__shortcut-hints {
   margin: 0;
@@ -137,11 +147,6 @@
 
 .circuit-workspace__status {
   color: var(--tt-ink);
-}
-
-.circuit-workspace__status-secondary {
-  margin-top: 3px;
-  font-size: 0.82rem;
 }
 
 .circuit-workspace__shortcut-hints {

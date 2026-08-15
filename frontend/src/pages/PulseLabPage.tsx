@@ -6,7 +6,9 @@ import { PulseWaveform } from '../components/PulseWaveform'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { ResultDrawer } from '../components/ResultDrawer'
 import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
+import { apiUrl } from '../utils/apiBase'
 import { pulseLabTips, pulseRunningStages } from '../utils/quantumPetTips'
+import { useInternalInfoVisible } from '../context/useAdminMode'
 import {
   isQutritPulseResponse,
   isCoupledTransmonPairResponse,
@@ -57,10 +59,12 @@ export function PulseLabPage({
   executionConstraints,
   onExecutionConstraintsChange,
 }: PulseLabPageProps) {
+  const internalInfoVisible = useInternalInfoVisible()
   const [result, setResult] = useState<PulseResponse | null>(null)
   const [resultForm, setResultForm] = useState<PulseLabForm | null>(null)
   const [status, setStatus] = useState<RequestStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [errorDetail, setErrorDetail] = useState<string | null>(null)
   const [lastRequestPayload, setLastRequestPayload] = useState<Record<string, unknown> | null>(null)
   const [lastResponseAt, setLastResponseAt] = useState<string | null>(null)
   const [showCompletionPopup, setShowCompletionPopup] = useState(false)
@@ -154,6 +158,7 @@ export function PulseLabPage({
     )
     setStatus('loading')
     setErrorMessage(null)
+    setErrorDetail(null)
     setLastRequestPayload(null)
 
     try {
@@ -188,7 +193,7 @@ export function PulseLabPage({
 
         const payload = buildPulsePayload(operation.form, initialDensityMatrix)
         payloads.push(payload)
-        const response = await fetch('/api/pulse/simulate', {
+        const response = await fetch(apiUrl('/api/pulse/simulate'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -243,6 +248,7 @@ export function PulseLabPage({
       setResultForm({ ...form })
       setStatus('success')
       setErrorMessage(null)
+      setErrorDetail(null)
       setLastResponseAt(new Date().toISOString())
       setShowCompletionPopup(true)
       setPetCelebrating(true)
@@ -252,10 +258,19 @@ export function PulseLabPage({
       }
       setStatus('error')
       setPetCelebrating(false)
+      /* 例外本文にはサーバ側の内部情報が載りうるので、詳細は管理者モードだけに出す。 */
+      const timedOut = error instanceof Error && error.name === 'AbortError'
       setErrorMessage(
-        error instanceof Error && error.name === 'AbortError'
-          ? 'Pulseリクエストがタイムアウトしました。前回の有効な結果を表示しています。'
-          : `${error instanceof Error ? error.message : 'Pulseリクエストが失敗しました。'} 前回の有効な結果を表示しています。`,
+        timedOut
+          ? '待ち時間の上限に達したため、実行を打ち切りました。前回の有効な結果を表示しています。'
+          : 'Pulseの実行に失敗しました。前回の有効な結果を表示しています。',
+      )
+      setErrorDetail(
+        timedOut
+          ? 'request aborted by timeout'
+          : error instanceof Error
+            ? error.message
+            : null,
       )
     } finally {
       window.clearTimeout(timeoutId)
@@ -316,8 +331,8 @@ export function PulseLabPage({
           <span>発展方式</span>
           <strong>
             {form.evolutionMethod === 'explicit_cptp'
-              ? 'Explicit CPTP'
-              : 'Fixed-step RK4'}
+              ? '明示的 CPTP 写像'
+              : '固定ステップ RK4'}
           </strong>
         </div>
       </section>
@@ -366,7 +381,12 @@ export function PulseLabPage({
             </ul>
           ) : null}
           {errorMessage ? (
-            <p className="pulse-lab__run-error" role="alert">{errorMessage}</p>
+            <p className="pulse-lab__run-error" role="alert">
+              {errorMessage}
+              {internalInfoVisible && errorDetail ? (
+                <span className="pulse-lab__run-error-detail">{errorDetail}</span>
+              ) : null}
+            </p>
           ) : null}
         </section>
 
@@ -383,10 +403,13 @@ export function PulseLabPage({
                 <span>直近の有効な結果</span>
                 <strong>{result.model.description}</strong>
               </div>
-              <div>
-                <span>契約バージョン</span>
-                <strong>{result.contract_version}</strong>
-              </div>
+              {/* API のコントラクト版数は内部情報。 */}
+              {internalInfoVisible ? (
+                <div>
+                  <span>契約バージョン</span>
+                  <strong>{result.contract_version}</strong>
+                </div>
+              ) : null}
               <div>
                 <span>完了時刻</span>
                 <strong>{lastResponseAt ? new Date(lastResponseAt).toLocaleTimeString() : 'たった今'}</strong>
@@ -395,8 +418,8 @@ export function PulseLabPage({
                 <span>発展方式</span>
                 <strong>
                   {result.diagnostics.evolution.resolved === 'explicit_cptp'
-                    ? 'Explicit CPTP'
-                    : 'Fixed-step RK4'}
+                    ? '明示的 CPTP 写像'
+                    : '固定ステップ RK4'}
                 </strong>
               </div>
             </section>
@@ -414,27 +437,35 @@ export function PulseLabPage({
             ) : null}
 
             <div className="pulse-lab__drawers">
-              <ResultDrawer
-                eyebrow="モデル"
-                title="モデルと近似の詳細"
-                description="APIが返すモデル識別情報と前提条件。"
-              >
-                <JsonBlock value={result.model} />
-              </ResultDrawer>
-              <ResultDrawer
-                eyebrow="環境"
-                title="レートと熱占有数"
-                description="ソルバーが実際に使用した正規化レート。"
-              >
-                <JsonBlock value={result.rates} />
-              </ResultDrawer>
-              <ResultDrawer
-                eyebrow="数値計算"
-                title="ステップ方針と物理的整合性"
-                description="計算量の上限、生の物理的整合性、クリーンアップ診断。"
-              >
-                <JsonBlock value={{ step_policy: result.step_policy, diagnostics: result.diagnostics }} />
-              </ResultDrawer>
+              {/*
+                以下は API の応答をそのまま流した生データで、内部フィールド名が
+                そのまま並ぶ。管理者モードのときだけ開けるようにしている。
+              */}
+              {internalInfoVisible ? (
+                <>
+                  <ResultDrawer
+                    eyebrow="モデル"
+                    title="モデルと近似の詳細"
+                    description="APIが返すモデル識別情報と前提条件。"
+                  >
+                    <JsonBlock value={result.model} />
+                  </ResultDrawer>
+                  <ResultDrawer
+                    eyebrow="環境"
+                    title="レートと熱占有数"
+                    description="ソルバーが実際に使用した正規化レート。"
+                  >
+                    <JsonBlock value={result.rates} />
+                  </ResultDrawer>
+                  <ResultDrawer
+                    eyebrow="数値計算"
+                    title="ステップ方針と物理的整合性"
+                    description="計算量の上限、生の物理的整合性、クリーンアップ診断。"
+                  >
+                    <JsonBlock value={{ step_policy: result.step_policy, diagnostics: result.diagnostics }} />
+                  </ResultDrawer>
+                </>
+              ) : null}
               {(result.warnings.length > 0 || result.limitations.length > 0) ? (
                 <ResultDrawer
                   eyebrow="適用範囲"
@@ -450,13 +481,15 @@ export function PulseLabPage({
                   </div>
                 </ResultDrawer>
               ) : null}
-              <ResultDrawer
-                eyebrow="API"
-                title="リクエストのデバッグ情報"
-                description="このページが最後に送信したペイロード。未使用のフィールドは含まれません。"
-              >
-                <JsonBlock value={lastRequestPayload} />
-              </ResultDrawer>
+              {internalInfoVisible ? (
+                <ResultDrawer
+                  eyebrow="API"
+                  title="リクエストのデバッグ情報"
+                  description="このページが最後に送信したペイロード。未使用のフィールドは含まれません。"
+                >
+                  <JsonBlock value={lastRequestPayload} />
+                </ResultDrawer>
+              ) : null}
             </div>
           </>
         ) : (
@@ -471,7 +504,11 @@ export function PulseLabPage({
         <SimulationCompletionPopup
           mode="pulse"
           title="Pulse シミュレーションが完了しました"
-          detail={`発展方式: ${result?.diagnostics.evolution.resolved ?? '完了'}`}
+          detail={
+            internalInfoVisible
+              ? `発展方式: ${result?.diagnostics.evolution.resolved ?? '完了'}`
+              : '波形どおりに時間発展を計算しました'
+          }
           onDismiss={() => setShowCompletionPopup(false)}
         />
       ) : null}

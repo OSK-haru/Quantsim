@@ -8,14 +8,17 @@ import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { RunPanel } from '../components/RunPanel'
 import { ResultDrawer } from '../components/ResultDrawer'
 import { SectionHeader } from '../components/SectionHeader'
-import { SimulationSummary } from '../components/SimulationSummary'
 import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
 import { uiResponseExample } from '../mock/uiResponseExample'
+import { apiUrl } from '../utils/apiBase'
 import { circuitEditorStateToConfig, type CircuitConfig } from '../utils/circuitConfig'
 import { validateCircuitConfigForRun } from '../utils/circuitValidation'
 import { simulateTips } from '../utils/quantumPetTips'
 import { estimateSimulationCost } from '../utils/simulationCost'
 import { useCircuitContext } from '../context/useCircuitContext'
+import { useTutorial } from '../context/useTutorial'
+import { hasExtendedDuration, hasShortT1 } from '../utils/tutorialProgress'
+import { useInternalInfoVisible } from '../context/useAdminMode'
 import type {
   GateDurationDefaultErrors,
   GateDurationDefaults,
@@ -55,6 +58,11 @@ type SimulateRequestPayload = {
 }
 
 type RequestErrorKind = 'none' | 'api' | 'validation'
+/** summary は誰にでも見せる説明、detail は管理者モード専用の技術情報。 */
+type RequestFailure = {
+  summary: string
+  detail: string | null
+}
 type CompletionNotice = {
   title: string
   detail: string
@@ -284,14 +292,72 @@ function validateSnapshotOptions(
   return null
 }
 
-function formatApiFailureMessage(status: number, detail: string | null) {
+/* 完了通知・問題一覧で内部識別子の代わりに出す日本語の呼称。 */
+const evolutionMethodNoticeLabels: Record<GateAwareEvolutionMethod, string> = {
+  fixed_step_rk4: '固定ステップ RK4',
+  explicit_cptp: '明示的 CPTP 写像',
+}
+
+const issueLevelLabels: Record<string, string> = {
+  info: '情報',
+  warning: '警告',
+  error: 'エラー',
+  critical: '重大',
+}
+
+/* データソース表示に使う日本語の呼称。内部の実装名は出さない。 */
+const SOURCE_LABEL_FIXTURE = '内蔵サンプル'
+const SOURCE_LABEL_FIXTURE_FALLBACK = '内蔵サンプル（代替表示）'
+const SOURCE_LABEL_SERVER_EXAMPLE = 'サーバーのサンプル'
+const SOURCE_LABEL_SERVER_RUN = 'サーバーでの実行結果'
+
+/*
+ * 利用者に見せる文と、管理者モードでのみ添える技術詳細を分ける。
+ * HTTP ステータスやサーバ側の生の detail は summary へ混ぜない。
+ */
+function formatApiFailureMessage(status: number, detail: string | null): RequestFailure {
+  const technicalDetail = detail ? `HTTP ${status}: ${detail}` : `HTTP ${status}`
+
   if (status === 422) {
-    const detailSuffix = detail ? `: ${detail}` : ''
-    return `HTTP 422: リクエストの検証に失敗しました${detailSuffix}。前回の結果を表示しています。`
+    return {
+      summary: '入力内容をサーバー側で確認できませんでした。前回の結果を表示しています。',
+      detail: technicalDetail,
+    }
   }
 
-  const detailSuffix = detail ? `: ${detail}` : ''
-  return `HTTP ${status}${detailSuffix}。前回の結果を表示しています。`
+  return {
+    summary: 'シミュレーションの実行に失敗しました。前回の結果を表示しています。',
+    detail: technicalDetail,
+  }
+}
+
+/* 利用者向けの文と技術詳細を、throw を跨いでも分けたまま運ぶ。 */
+class RequestFailureError extends Error {
+  readonly failure: RequestFailure
+
+  constructor(failure: RequestFailure) {
+    super(failure.summary)
+    this.name = 'RequestFailureError'
+    this.failure = failure
+  }
+}
+
+function toRequestFailure(error: unknown, timeoutMs: number): RequestFailure {
+  if (error instanceof RequestFailureError) {
+    return error.failure
+  }
+
+  if (error instanceof Error && error.name === 'AbortError') {
+    return {
+      summary: '待ち時間の上限に達したため、実行を打ち切りました。前回の結果を表示しています。',
+      detail: `request aborted after ${timeoutMs} ms`,
+    }
+  }
+
+  return {
+    summary: '実行リクエストに失敗しました。前回の結果を表示しています。',
+    detail: error instanceof Error ? error.message : null,
+  }
 }
 
 function normalizeApiDetail(detail: unknown): string | null {
@@ -346,6 +412,12 @@ export function SimulatePage({
   onSuccessfulResponse,
 }: SimulatePageProps) {
   const { circuitState } = useCircuitContext()
+  const internalInfoVisible = useInternalInfoVisible()
+  /* チュートリアルは、回路・設定・実行完了の3つをここから受け取る。 */
+  const tutorial = useTutorial()
+  const { reportCondition, recordRun } = tutorial
+  const tutorialOpensAdvanced = tutorial.beat?.opensPanel === 'advanced-settings'
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [response, setResponse] = useState<SimulationResponse>(
     () => previousResponse ?? uiResponseExample,
   )
@@ -353,6 +425,7 @@ export function SimulatePage({
     previousResponse === null ? 'fixture' : 'api',
   )
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [errorDetail, setErrorDetail] = useState<string | null>(null)
   const [lastFetchUrl, setLastFetchUrl] = useState<string>('')
   const [lastFetchStartedAt, setLastFetchStartedAt] = useState<string>('')
   const [frontendRunStartedAt, setFrontendRunStartedAt] = useState<string>('')
@@ -363,7 +436,7 @@ export function SimulatePage({
     previousResponse === null ? 'idle' : 'success',
   )
   const [latestSourceLabel, setLatestSourceLabel] = useState<string>(
-    previousResponse === null ? 'Static fixture' : 'Previous simulation',
+    previousResponse === null ? SOURCE_LABEL_FIXTURE : '前回のシミュレーション',
   )
   const [activeRequestLabel, setActiveRequestLabel] = useState<string>('')
   const [simulationParameters, setSimulationParameters] =
@@ -391,6 +464,17 @@ export function SimulatePage({
   const requestIdRef = useRef(0)
   const mountedRef = useRef(true)
 
+  /*
+   * チュートリアルの達成条件のうち、いまの状態から読めるもの。
+   * 実行の完了だけは出来事なので、成功時に別途報告する。
+   */
+  const tutorialShortT1 = hasShortT1(simulationParameters)
+  const tutorialLongDuration = hasExtendedDuration(simulationParameters)
+  useEffect(() => {
+    reportCondition('t1-lowered', tutorialShortT1)
+    reportCondition('duration-extended', tutorialLongDuration)
+  }, [reportCondition, tutorialShortT1, tutorialLongDuration])
+
   function handleSimulationParametersChange(nextParameters: SimulateRequestParameters) {
     const validation = validateSimulationParameters(nextParameters)
     const gateDurationValidation = validateGateDurationDefaults(gateDurationDefaults)
@@ -404,6 +488,7 @@ export function SimulatePage({
     ) {
       setRequestErrorKind('none')
       setErrorMessage(null)
+      setErrorDetail(null)
     }
   }
 
@@ -420,6 +505,7 @@ export function SimulatePage({
     ) {
       setRequestErrorKind('none')
       setErrorMessage(null)
+      setErrorDetail(null)
     }
   }
 
@@ -431,16 +517,17 @@ export function SimulatePage({
 
     const controller = new AbortController()
     abortControllerRef.current = controller
-    const url = `/api/simulation/example?ts=${Date.now()}`
+    const url = apiUrl(`/api/simulation/example?ts=${Date.now()}`)
     const startedAt = new Date().toISOString()
     const timeoutId = window.setTimeout(() => controller.abort(), API_EXAMPLE_TIMEOUT_MS)
 
     setLoadStatus('loading')
-    setActiveRequestLabel('サンプル API')
+    setActiveRequestLabel(SOURCE_LABEL_SERVER_EXAMPLE)
     setLastFetchUrl(url)
     setLastFetchStartedAt(startedAt)
     setLastFetchResult('pending')
     setErrorMessage(null)
+    setErrorDetail(null)
     setRequestErrorKind('none')
 
     try {
@@ -463,28 +550,33 @@ export function SimulatePage({
 
       setResponse(parsed as SimulationResponse)
       setLoadStatus('api')
-      setLatestSourceLabel('API example')
+      setLatestSourceLabel(SOURCE_LABEL_SERVER_EXAMPLE)
       setLastFetchResult('success')
       setErrorMessage(null)
+      setErrorDetail(null)
       setRequestErrorKind('none')
     } catch (error) {
       if (!mountedRef.current || requestId !== requestIdRef.current) {
         return
       }
 
-      let message = 'Using static fixture fallback.'
-      if (error instanceof Error) {
-        message =
-          error.name === 'AbortError'
-            ? 'API request timed out. Using static fixture fallback.'
-            : `${error.message}. Using static fixture fallback.`
-      }
+      const failure: RequestFailure =
+        error instanceof Error && error.name === 'AbortError'
+          ? {
+              summary: 'サーバーの応答がありませんでした。内蔵サンプルを表示しています。',
+              detail: 'request aborted by timeout',
+            }
+          : {
+              summary: 'サーバーからサンプルを取得できませんでした。内蔵サンプルを表示しています。',
+              detail: error instanceof Error ? error.message : null,
+            }
 
       setResponse(uiResponseExample)
       setLoadStatus('error')
-      setLatestSourceLabel('Static fixture fallback')
+      setLatestSourceLabel(SOURCE_LABEL_FIXTURE_FALLBACK)
       setLastFetchResult('failed')
-      setErrorMessage(message)
+      setErrorMessage(failure.summary)
+      setErrorDetail(failure.detail)
       setRequestErrorKind('api')
     } finally {
       window.clearTimeout(timeoutId)
@@ -526,12 +618,13 @@ export function SimulatePage({
       snapshotValidationMessage
     if (firstValidationMessage !== null) {
       setLoadStatus('error')
-      setActiveRequestLabel('シミュレーション API')
+      setActiveRequestLabel(SOURCE_LABEL_SERVER_RUN)
       setLastFetchUrl('not requested - validation failed')
       setLastFetchStartedAt(new Date().toISOString())
       setLastFetchResult('validation failed')
       setRequestErrorKind('validation')
       setErrorMessage(firstValidationMessage)
+      setErrorDetail(null)
       setFrontendRunFinishedAt(new Date().toISOString())
       setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
       return
@@ -541,12 +634,13 @@ export function SimulatePage({
     const circuitValidation = validateCircuitConfigForRun(circuitConfig)
     if (!circuitValidation.valid) {
       setLoadStatus('error')
-      setActiveRequestLabel('シミュレーション API')
+      setActiveRequestLabel(SOURCE_LABEL_SERVER_RUN)
       setLastFetchUrl('not requested - validation failed')
       setLastFetchStartedAt(new Date().toISOString())
       setLastFetchResult('validation failed')
       setRequestErrorKind('validation')
       setErrorMessage(circuitValidation.message)
+      setErrorDetail(null)
       setFrontendRunFinishedAt(new Date().toISOString())
       setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
       return
@@ -559,16 +653,17 @@ export function SimulatePage({
 
     const controller = new AbortController()
     abortControllerRef.current = controller
-    const url = `/api/simulate?ts=${Date.now()}`
+    const url = apiUrl(`/api/simulate?ts=${Date.now()}`)
     const startedAt = new Date().toISOString()
     const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
 
     setLoadStatus('loading')
-    setActiveRequestLabel('シミュレーション API')
+    setActiveRequestLabel(SOURCE_LABEL_SERVER_RUN)
     setLastFetchUrl(url)
     setLastFetchStartedAt(startedAt)
     setLastFetchResult('pending')
     setErrorMessage(null)
+    setErrorDetail(null)
     setRequestErrorKind('none')
 
     try {
@@ -594,22 +689,27 @@ export function SimulatePage({
       })
       if (!apiResponse.ok) {
         const rawError = await apiResponse.text()
-        let errorDetail: string | null = null
+        let responseDetail: string | null = null
         if (rawError.trim().length > 0) {
           try {
             const parsedError = JSON.parse(rawError) as unknown
-            errorDetail = normalizeApiDetail(parsedError)
+            responseDetail = normalizeApiDetail(parsedError)
           } catch {
-            errorDetail = rawError.trim().replace(/\s+/g, ' ').slice(0, 180)
+            responseDetail = rawError.trim().replace(/\s+/g, ' ').slice(0, 180)
           }
         }
 
-        throw new Error(formatApiFailureMessage(apiResponse.status, errorDetail))
+        throw new RequestFailureError(
+          formatApiFailureMessage(apiResponse.status, responseDetail),
+        )
       }
 
       const parsed = (await apiResponse.json()) as unknown
       if (!hasRequiredResponseKeys(parsed)) {
-        throw new Error('Invalid response shape')
+        throw new RequestFailureError({
+          summary: 'サーバーの応答を解釈できませんでした。前回の結果を表示しています。',
+          detail: 'response payload is missing required keys',
+        })
       }
 
       if (!mountedRef.current || requestId !== requestIdRef.current) {
@@ -619,33 +719,50 @@ export function SimulatePage({
       setResponse(parsed as SimulationResponse)
       onSuccessfulResponse(parsed as SimulationResponse, circuitConfig)
       setLoadStatus('api')
-      setLatestSourceLabel('シミュレーション API')
+      setLatestSourceLabel(SOURCE_LABEL_SERVER_RUN)
       setLastFetchResult('success')
       setErrorMessage(null)
+      setErrorDetail(null)
       setRequestErrorKind('none')
       setFrontendRunFinishedAt(new Date().toISOString())
       setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
       setCompletionNotice({
         title: 'シミュレーションが完了しました',
-        detail: `${parsed.run.selected_backend} / ${evolutionMethod}`,
+        /* 完了通知は誰の目にも入るので、内部の実行基盤名は出さない。 */
+        detail: internalInfoVisible
+          ? `${parsed.run.selected_backend} / ${evolutionMethod}`
+          : `${evolutionMethodNoticeLabels[evolutionMethod]}で計算しました`,
       })
       setPetCelebrating(true)
+
+      /*
+       * チュートリアルへの報告。判定は「この実行に使った設定」で行う。
+       * あとで設定を戻しても、この実行が済んだ事実は変わらないようにする。
+       */
+      reportCondition('simulation-finished', true)
+      if (hasShortT1(simulationParameters)) {
+        reportCondition('short-t1-run-finished', true)
+      }
+      if (hasExtendedDuration(simulationParameters)) {
+        reportCondition('long-run-finished', true)
+      }
+      recordRun({
+        fidelity: parsed.summary.final_fidelity,
+        purity: parsed.summary.final_purity,
+        t1Us: simulationParameters.t1_max_us,
+        durationUs: simulationParameters.duration_us,
+      })
     } catch (error) {
       if (!mountedRef.current || requestId !== requestIdRef.current) {
         return
       }
 
-      let message = '実行リクエストに失敗しました。前回の結果を表示しています。'
-      if (error instanceof Error) {
-        message =
-          error.name === 'AbortError'
-            ? `${timeoutMs} ms で実行リクエストがタイムアウトしました。前回の結果を表示しています。`
-            : error.message
-      }
+      const failure = toRequestFailure(error, timeoutMs)
 
       setLoadStatus('error')
       setLastFetchResult('failed')
-      setErrorMessage(message)
+      setErrorMessage(failure.summary)
+      setErrorDetail(failure.detail)
       setRequestErrorKind('api')
       setPetCelebrating(false)
       setFrontendRunFinishedAt(new Date().toISOString())
@@ -687,22 +804,22 @@ export function SimulatePage({
         : loadStatus === 'error'
           ? requestErrorKind === 'validation'
             ? '未送信'
-            : 'API は利用できません'
+            : 'サーバーに接続できません'
           : '未接続'
 
   const dataSourceLabel =
     loadStatus === 'loading'
-      ? `${activeRequestLabel || 'API リクエスト'} を読み込み中...`
+      ? `${activeRequestLabel || SOURCE_LABEL_SERVER_RUN} を読み込み中...`
       : loadStatus === 'api'
         ? latestSourceLabel
         : loadStatus === 'error'
           ? requestErrorKind === 'validation'
             ? `前回の結果を保持中（${latestSourceLabel}）`
-          : latestSourceLabel === 'Static fixture' ||
-            latestSourceLabel === 'Static fixture fallback'
-            ? '静的フィクスチャ（フォールバック）'
+          : latestSourceLabel === SOURCE_LABEL_FIXTURE ||
+            latestSourceLabel === SOURCE_LABEL_FIXTURE_FALLBACK
+            ? SOURCE_LABEL_FIXTURE_FALLBACK
             : `前回の結果を保持中（${latestSourceLabel}）`
-          : '静的フィクスチャ'
+          : SOURCE_LABEL_FIXTURE
   const hasAlerts = response.warnings.length > 0 || response.issues.length > 0
 
   const petPhase: QuantumPetPhase =
@@ -718,7 +835,7 @@ export function SimulatePage({
         : loadStatus === 'error' && errorMessage !== null
           ? requestErrorKind === 'validation'
             ? `送信できなかったよ：${errorMessage}`
-            : `APIでつまずいたみたい：${errorMessage}`
+            : `つまずいたみたい：${errorMessage}`
           : null
   const circuitGateCount = circuitState.columns.reduce(
     (count, column) => count + column.gates.length,
@@ -751,7 +868,16 @@ export function SimulatePage({
           actionLabel="回路スタジオで編集"
           onAction={onOpenCircuitStudio}
         />
-        <details className="simulate-page__advanced">
+        {/*
+          チュートリアルがパラメーターの話をしている間は開いたままにする。
+          利用者が閉じても、その章のあいだは開き直す。
+        */}
+        <details
+          className="simulate-page__advanced"
+          data-tutorial-anchor="advanced-settings"
+          open={advancedOpen || tutorialOpensAdvanced}
+          onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}
+        >
           <summary className="simulate-page__advanced-summary">
             <SectionHeader
               className="simulate-page__advanced-header"
@@ -902,6 +1028,7 @@ export function SimulatePage({
           dataSourceLabel={dataSourceLabel}
           loadStatus={loadStatus}
           errorMessage={errorMessage}
+          errorDetail={errorDetail}
           lastFetchResult={lastFetchResult}
           lastFetchUrl={lastFetchUrl}
           lastFetchStartedAt={lastFetchStartedAt}
@@ -922,7 +1049,11 @@ export function SimulatePage({
             void runSimulationFromApi()
           }}
         />
-        <SimulationSummary summary={response.summary} />
+        {/*
+          「シミュレーション結果のスナップショット」はここから外した。
+          最終忠実度は実行完了ポップアップとペットが伝えており、
+          時間変化そのものは状態エクスプローラーのタイムラインで読める。
+        */}
       </div>
 
       <div className="simulate-page__drawer-stack">
@@ -955,7 +1086,8 @@ export function SimulatePage({
                     <article className="simulate-page__issue-card" key={`${issue.code}-${index}`}>
                       <div className="simulate-page__issue-header">
                         <strong className="simulate-page__issue-code">
-                          {issue.level} / {issue.code}
+                          {issueLevelLabels[issue.level] ?? issue.level}
+                          {internalInfoVisible ? ` / ${issue.code}` : ''}
                         </strong>
                         <span className="simulate-page__issue-message">{issue.message}</span>
                       </div>

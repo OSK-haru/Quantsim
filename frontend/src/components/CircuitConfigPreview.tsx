@@ -4,6 +4,7 @@ import { ResultDrawer } from './ResultDrawer'
 import type { CircuitEditorState } from '../types/circuit'
 import { circuitEditorStateToConfig } from '../utils/circuitConfig'
 import { exportCircuitConfigBundleJson } from '../utils/circuitConfigTransfer'
+import { useInternalInfoVisible } from '../context/useAdminMode'
 
 type CircuitConfigPreviewProps = {
   circuit: CircuitEditorState
@@ -21,6 +22,7 @@ export function CircuitConfigPreview({
   defaultOpen = false,
   showTransferActions = true,
 }: CircuitConfigPreviewProps) {
+  const internalInfoVisible = useInternalInfoVisible()
   const previewJson = JSON.stringify(circuitEditorStateToConfig(circuit), null, 2)
   const [copyStatus, setCopyStatus] = useState<{
     status: 'idle' | 'copied' | 'failed'
@@ -45,12 +47,12 @@ export function CircuitConfigPreview({
     const url = window.URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = 'quantscope-circuit.qscope.json'
+    anchor.download = '回路データ.json'
     document.body.appendChild(anchor)
     anchor.click()
     anchor.remove()
     window.setTimeout(() => window.URL.revokeObjectURL(url), 0)
-    setTransferStatus('JSON をエクスポートしました')
+    setTransferStatus('回路データを書き出しました')
   }
 
   function openFilePicker() {
@@ -68,16 +70,25 @@ export function CircuitConfigPreview({
       const message = await onImportCircuitConfig(file)
       setTransferStatus(message)
     } catch (error) {
-      setTransferStatus(error instanceof Error ? error.message : 'インポートに失敗しました。')
+      /* 解析失敗の本文には内部のフィールド名が並ぶので、通常は伏せる。 */
+      setTransferStatus(
+        internalInfoVisible && error instanceof Error
+          ? error.message
+          : '回路データを読み込めませんでした。ファイルの形式を確認してください。',
+      )
     }
   }
 
   return (
     <ResultDrawer
       eyebrow="エディター"
-      title="CircuitConfig のプレビュー"
+      title={internalInfoVisible ? 'CircuitConfig のプレビュー' : '回路データ'}
       icon="braces"
-      description="変換された回路状態を API 互換の JSON として表示します。"
+      description={
+        internalInfoVisible
+          ? '変換された回路状態を API 互換の JSON として表示します。'
+          : '編集中の回路を、保存・受け渡しできる形にまとめたものです。'
+      }
       defaultOpen={defaultOpen}
     >
       <div className="circuit-config-preview">
@@ -90,23 +101,26 @@ export function CircuitConfigPreview({
               type="button"
               onClick={handleExportJson}
             >
-              JSON をエクスポート
+              回路を書き出す
             </button>
-            <button
-              className="circuit-config-preview__copy"
-              type="button"
-              onClick={handleCopyJson}
-            >
-              JSON をコピー
-            </button>
+            {/* 生データのコピーは内部表現の持ち出しなので管理者モードのみ。 */}
+            {internalInfoVisible ? (
+              <button
+                className="circuit-config-preview__copy"
+                type="button"
+                onClick={handleCopyJson}
+              >
+                JSON をコピー
+              </button>
+            ) : null}
             <button className="circuit-config-preview__copy" type="button" onClick={openFilePicker}>
-              JSON をインポート
+              回路を読み込む
             </button>
             <span className="circuit-config-preview__status" aria-live="polite">
               {transferStatus || (visibleCopyStatus === 'copied' ? 'コピーしました' : visibleCopyStatus === 'failed' ? 'コピーに失敗しました' : ' ')}
             </span>
           </div>
-        ) : (
+        ) : internalInfoVisible ? (
           <div className="circuit-config-preview__actions">
             <button
               className="circuit-config-preview__copy circuit-config-preview__copy--inline"
@@ -119,7 +133,7 @@ export function CircuitConfigPreview({
               {visibleCopyStatus === 'copied' ? 'コピーしました' : visibleCopyStatus === 'failed' ? 'コピーに失敗しました' : ' '}
             </span>
           </div>
-        )}
+        ) : null}
 
         {showTransferActions ? (
           <input
@@ -127,14 +141,22 @@ export function CircuitConfigPreview({
             className="circuit-config-preview__file-input"
             type="file"
             accept=".json,.qscope.json,application/json"
-            aria-label="回路設定 JSON をインポート"
+            aria-label="回路データを読み込む"
             onChange={handleFileChange}
           />
         ) : null}
 
-        <pre className="circuit-config-preview__json" aria-label="回路設定 JSON">
-          {previewJson}
-        </pre>
+        {/* 内部フィールド名がそのまま並ぶため、生の JSON は管理者モードのみ。 */}
+        {internalInfoVisible ? (
+          <pre className="circuit-config-preview__json" aria-label="回路設定 JSON">
+            {previewJson}
+          </pre>
+        ) : (
+          <p className="circuit-config-preview__summary">
+            量子ビット {circuit.logical_qubits} 本 / {circuit.columns.length} 列の回路です。
+            書き出したファイルは、そのままこの画面から読み込み直せます。
+          </p>
+        )}
       </div>
     </ResultDrawer>
   )

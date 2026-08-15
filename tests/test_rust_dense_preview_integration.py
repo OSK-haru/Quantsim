@@ -87,6 +87,35 @@ class RustDensePreviewIntegrationTest(unittest.TestCase):
         )
 
     @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
+    def test_five_qubit_preview_uses_persistent_rust_session(self) -> None:
+        python_result = run_simulation(_five_qubit_h_config("python_dense"))
+        result = run_simulation(_five_qubit_h_config("rust_dense_preview"))
+
+        self.assertEqual(result.diagnostics["backend_requested"], "rust_dense_preview")
+        self.assertEqual(result.diagnostics["backend_name"], "rust_dense_preview")
+        self.assertFalse(result.diagnostics["backend_fallback_used"])
+        self.assertTrue(result.diagnostics["rust_kernel_used"])
+        self.assertGreater(result.diagnostics["rust_kernel_session_count"], 0.0)
+        self.assertGreater(result.diagnostics["rust_kernel_session_reuse_count"], 0.0)
+        self.assertGreater(result.diagnostics["rust_kernel_piecewise_segment_count"], 0.0)
+        self.assertLess(
+            result.diagnostics["rust_kernel_sampled_returned_state_count"],
+            len(result.times),
+        )
+        _assert_results_close(self, python_result, result)
+
+    @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
+    def test_rust_rate_path_does_not_build_dense_python_collapse_operators(self) -> None:
+        with patch(
+            "core.simulator.multi_qubit_environment_collapse_operators",
+            side_effect=AssertionError("dense Python collapse operators were built"),
+        ):
+            result = run_simulation(_five_qubit_h_config("rust_dense_preview"))
+
+        self.assertEqual(result.issues, [])
+        self.assertTrue(result.diagnostics["rust_kernel_used"])
+
+    @unittest.skipUnless(is_rust_kernel_available(), "yuragi_strider_rust is not importable")
     def test_cleanup_policy_is_preserved(self) -> None:
         python_result = run_simulation(_finite_noise_1q_config("python_dense"))
         rust_result = run_simulation(_finite_noise_1q_config("rust_dense_preview"))
@@ -99,8 +128,15 @@ class RustDensePreviewIntegrationTest(unittest.TestCase):
             raise RuntimeError("forced rust failure")
 
         with (
-            patch("core.simulator.rust_rk4_evolve_segment_samples", fail_kernel),
-            patch("core.simulator.rust_rk4_evolve_segment_cleaned", fail_kernel),
+            patch(
+                "core.simulator.RustDenseSession.evolve_piecewise_cleaned_samples",
+                fail_kernel,
+            ),
+            patch(
+                "core.simulator.RustDenseSession.evolve_paired_registered_compact",
+                fail_kernel,
+            ),
+            patch("core.simulator.RustDenseSession.evolve_cleaned", fail_kernel),
         ):
             result = run_simulation(_finite_noise_1q_config("rust_dense_preview"))
 
@@ -123,6 +159,23 @@ def _one_qubit_h_config(simulation_backend: str) -> SimulationConfig:
         environment=_finite_environment(),
         duration_us=1.0,
         time_steps=51,
+        fidelity_threshold=0.9,
+        simulation_backend=simulation_backend,
+    )
+
+
+def _five_qubit_h_config(simulation_backend: str) -> SimulationConfig:
+    return SimulationConfig(
+        circuit=CircuitConfig(
+            logical_qubits=5,
+            initial_states=["0"] * 5,
+            columns=[
+                GateColumn(step=0, gates=[GateOperation(type="H", targets=[0])]),
+            ],
+        ),
+        environment=_finite_environment(),
+        duration_us=0.02,
+        time_steps=3,
         fidelity_threshold=0.9,
         simulation_backend=simulation_backend,
     )

@@ -51,7 +51,7 @@ export function CircuitSummaryCard({
   const gateCounts = getGateCounts(circuit)
 
   return (
-    <section className="circuit-summary-card" aria-label="回路の概要">
+    <section className="circuit-summary-card" aria-label="回路の概要" data-tutorial-anchor="circuit-summary">
       <div className="circuit-summary-card__header">
         <div>
           <div className="circuit-summary-card__eyebrow">回路</div>

@@ -134,11 +134,20 @@ NumPy reduces the dense-operation constant factor but does not change the
 exponential memory and runtime scaling. The estimates are useful for scaling
 intuition, not precise wall-clock prediction.
 
+## Explicit CPTP
+
+`explicit_cptp` builds one constant-GKSL exponential map per finite interval in
+Liouville space, so its generator is `d^2 x d^2 = 4^n x 4^n`. Matrix
+exponentiation and the Choi audit are therefore roughly `O(d^6) = O(64^n)` per
+distinct interval. This is why the noisy explicit-CPTP path is capped at 5
+qubits while RK4 runs to 8, and why 5-qubit conditional circuits fall back to
+RK4 for their branches.
+
 ## Recommendation
 
 - Keep default UI flows focused on 2 qubits.
-- Treat 3-4 qubit runs as bounded, potentially expensive experiments.
-- Treat 5-6 qubits as requiring optimization, reduced sampling, or a future
-  backend change.
+- Treat 3-5 qubit runs as bounded, potentially expensive experiments.
+- Treat 6-8 qubits as requiring reduced sampling and, in practice, the
+  `rust_dense_preview` backend; they are RK4 only.
 - Avoid large parameter sweeps until runtime and memory budgets are measured
   with `scripts/benchmark_complexity.py`.

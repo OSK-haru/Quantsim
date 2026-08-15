@@ -198,7 +198,11 @@ export function MetricTimeline({
       )
 
   return (
-    <section className="metric-timeline" aria-label="指標のタイムライン">
+    <section
+      className="metric-timeline"
+      aria-label="指標のタイムライン"
+      data-tutorial-anchor="metric-timeline"
+    >
       <div className="metric-timeline__header">
         <SectionHeader icon="chart" eyebrow="タイムライン" title="指標のタイムライン" />
         <div className="metric-timeline__legend">

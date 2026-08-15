@@ -1,0 +1,17 @@
+# Render Blueprint for the Yuragi-Strider FastAPI backend.
+# Deploy: Render dashboard -> New -> Blueprint -> point at this repo.
+# ALLOWED_ORIGINS below is a placeholder — after the frontend's first
+# `wrangler deploy` (see frontend/wrangler.jsonc), replace it with the real
+# origin Cloudflare assigns. See docs_for_develop/deployment/web-demo.md.
+services:
+  - type: web
+    name: yuragi-strider-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://yuragi-strider-app.workers.dev
+      - key: PUBLIC_MAX_LOGICAL_QUBITS
+        value: "10"
+    healthCheckPath: /api/health

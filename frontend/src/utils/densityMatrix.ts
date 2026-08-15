@@ -16,11 +16,32 @@ export type DensityMatrixCell = {
   sign: 'positive' | 'negative' | 'zero'
 }
 
+/**
+ * Row-major planes covering the whole matrix.
+ *
+ * The raster renderer uploads these straight to the GPU, and above five qubits
+ * they are the only representation built — 8 qubits would otherwise mean 65536
+ * per-cell objects rebuilt on every render.
+ */
+export type DensityMatrixField = {
+  real: Float32Array
+  imag: Float32Array
+  /** Raw mode-dependent value; divide by `denominator` to normalise. */
+  value: Float32Array
+  /** Brightness weight in [0, 1]. */
+  intensity: Float32Array
+}
+
 export type ValidatedDensityMatrix = {
   dimension: number
   qubitCount: number
   labels: string[]
+  /** Per-cell objects, only populated when the DOM grid can render them. */
   cells: DensityMatrixCell[]
+  field: DensityMatrixField
+  /** Scale that maps `field.value` onto [-1, 1] for the raster renderer. */
+  denominator: number
+  gridRenderable: boolean
   scaleLabel: string
 }
 
@@ -28,15 +49,51 @@ export type DensityMatrixValidationResult =
   | { valid: true; matrix: ValidatedDensityMatrix }
   | { valid: false; message: string }
 
-// Keep the interactive grid bounded even though the simulator can evolve
-// larger density matrices. Rendering 64x64-256x256 cells is not useful UI.
-const MAX_RENDERABLE_QUBITS = 5
+// Matches MAX_DENSITY_MATRIX_QUBITS in core/capabilities.py — the simulator
+// serialises density matrices up to eight qubits, so the viewer accepts the
+// same range and hands anything past the grid limit to the raster renderer.
+export const MAX_RENDERABLE_QUBITS = 8
+
+// Past this the DOM grid stops being readable (and stops being cheap): a
+// 64x64 matrix is 4096 focusable cells. The raster path takes over instead.
+export const GRID_QUBIT_LIMIT = 5
 
 export function inferQubitCountFromDimension(dimension: number): number | null {
   const qubitCount = Math.log2(dimension)
   return Number.isInteger(qubitCount) && qubitCount >= 1 && qubitCount <= MAX_RENDERABLE_QUBITS
     ? qubitCount
     : null
+}
+
+/** Rebuild a single cell from the field planes, for raster-mode inspection. */
+export function densityCellAt(
+  matrix: ValidatedDensityMatrix,
+  row: number,
+  column: number,
+): DensityMatrixCell | null {
+  const { dimension, field, labels } = matrix
+  if (row < 0 || column < 0 || row >= dimension || column >= dimension) {
+    return null
+  }
+
+  const index = row * dimension + column
+  const real = field.real[index]
+  const imag = field.imag[index]
+  const value = field.value[index]
+  const magnitude = Math.hypot(real, imag)
+  return {
+    row,
+    column,
+    rowLabel: labels[row],
+    columnLabel: labels[column],
+    real,
+    imag,
+    magnitude,
+    phase: magnitude < 1e-12 ? 0 : Math.atan2(imag, real),
+    value,
+    intensity: field.intensity[index],
+    sign: Math.abs(value) < 1e-12 ? 'zero' : value > 0 ? 'positive' : 'negative',
+  }
 }
 
 export function basisLabelsForDimension(dimension: number): string[] {
@@ -133,7 +190,7 @@ export function validateDensityMatrixSnapshot(
   if (qubitCount === null) {
     return {
       valid: false,
-      message: '密度行列グリッドは5量子ビット以下の結果で表示できます。',
+      message: `密度行列は${MAX_RENDERABLE_QUBITS}量子ビット以下の結果で表示できます。`,
     }
   }
 
@@ -151,30 +208,27 @@ export function validateDensityMatrixSnapshot(
   }
 
   const labels = basisLabelsForDimension(dimension)
-  const rawValues: Array<{
-    row: number
-    column: number
-    real: number
-    imag: number
-    magnitude: number
-    phase: number
-    value: number
-  }> = []
+  const count = dimension * dimension
+  const fieldReal = new Float32Array(count)
+  const fieldImag = new Float32Array(count)
+  const fieldValue = new Float32Array(count)
+  const fieldIntensity = new Float32Array(count)
 
   let maxMagnitude = 0
   let maxAbs = 0
 
   for (let row = 0; row < dimension; row += 1) {
+    const realRow = real[row]
+    const imagRow = imag[row]
     for (let column = 0; column < dimension; column += 1) {
-      const realValue = real[row][column]
-      const imagValue = imag[row][column]
+      const realValue = realRow[column]
+      const imagValue = imagRow[column]
 
       if (!Number.isFinite(realValue) || !Number.isFinite(imagValue)) {
         return { valid: false, message: '密度行列に有限でない値が含まれています。' }
       }
 
       const magnitude = Math.hypot(realValue, imagValue)
-      const phase = magnitude < 1e-12 ? 0 : Math.atan2(imagValue, realValue)
       const value =
         mode === 'magnitude'
           ? magnitude
@@ -182,55 +236,63 @@ export function validateDensityMatrixSnapshot(
             ? realValue
             : mode === 'imaginary'
               ? imagValue
-              : phase
+              : magnitude < 1e-12
+                ? 0
+                : Math.atan2(imagValue, realValue)
+
+      const index = row * dimension + column
+      fieldReal[index] = realValue
+      fieldImag[index] = imagValue
+      fieldValue[index] = value
+      // Reused as scratch until the maxima are known, then normalised below.
+      fieldIntensity[index] = mode === 'phase' ? magnitude : Math.abs(value)
+
       maxMagnitude = Math.max(maxMagnitude, magnitude)
       maxAbs = Math.max(maxAbs, Math.abs(value))
-      rawValues.push({
-        row,
-        column,
-        real: realValue,
-        imag: imagValue,
-        magnitude,
-        phase,
-        value,
-      })
     }
   }
 
-  const denominator = mode === 'magnitude' ? maxMagnitude : maxAbs
-  const cells = rawValues.map((entry) => {
-    const intensity = mode === 'phase'
-      ? (maxMagnitude === 0 ? 0 : Math.min(entry.magnitude / maxMagnitude, 1))
-      : (denominator === 0 ? 0 : Math.min(Math.abs(entry.value) / denominator, 1))
-    const sign: DensityMatrixCell['sign'] =
-      Math.abs(entry.value) < 0.000000000001
-        ? 'zero'
-        : entry.value > 0
-          ? 'positive'
-          : 'negative'
-
-    return {
-      ...entry,
-      rowLabel: labels[entry.row],
-      columnLabel: labels[entry.column],
-      intensity,
-      sign,
-    }
-  })
-
-  return {
-    valid: true,
-    matrix: {
-      dimension,
-      qubitCount,
-      labels,
-      cells,
-      scaleLabel:
-        mode === 'magnitude'
-          ? `0 から ${formatDensityValue(maxMagnitude)}`
-          : mode === 'phase'
-            ? '-π から +π（濃さは絶対値）'
-            : `-${formatDensityValue(maxAbs)} から +${formatDensityValue(maxAbs)}`,
-    },
+  // Phase spans a fixed range, so only the brightness weight is data-scaled.
+  const denominator = mode === 'phase' ? Math.PI : mode === 'magnitude' ? maxMagnitude : maxAbs
+  const intensityScale = mode === 'phase' ? maxMagnitude : denominator
+  for (let index = 0; index < count; index += 1) {
+    fieldIntensity[index] = intensityScale === 0
+      ? 0
+      : Math.min(fieldIntensity[index] / intensityScale, 1)
   }
+
+  const field: DensityMatrixField = {
+    real: fieldReal,
+    imag: fieldImag,
+    value: fieldValue,
+    intensity: fieldIntensity,
+  }
+
+  const gridRenderable = qubitCount <= GRID_QUBIT_LIMIT
+  const matrix: ValidatedDensityMatrix = {
+    dimension,
+    qubitCount,
+    labels,
+    cells: [],
+    field,
+    denominator,
+    gridRenderable,
+    scaleLabel:
+      mode === 'magnitude'
+        ? `0 から ${formatDensityValue(maxMagnitude)}`
+        : mode === 'phase'
+          ? '-π から +π（濃さは絶対値）'
+          : `-${formatDensityValue(maxAbs)} から +${formatDensityValue(maxAbs)}`,
+  }
+
+  // Only materialise per-cell objects when the DOM grid will actually use them.
+  if (gridRenderable) {
+    const cells: DensityMatrixCell[] = new Array(count)
+    for (let index = 0; index < count; index += 1) {
+      cells[index] = densityCellAt(matrix, Math.floor(index / dimension), index % dimension)!
+    }
+    matrix.cells = cells
+  }
+
+  return { valid: true, matrix }
 }

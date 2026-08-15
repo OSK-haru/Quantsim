@@ -17,44 +17,42 @@
   letter-spacing: 0.02em;
 }
 
+/* バッジはパレットのボタンと同じ系統色。ポップオーバーが色の凡例になる。 */
 .gate-info-card__family {
   padding: 3px 8px;
-  border: 1px solid transparent;
+  border: 1px solid rgb(var(--gate-family-rgb) / 0.45);
+  background: rgb(var(--gate-family-rgb) / 0.12);
+  color: rgb(var(--gate-family-rgb));
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  --gate-family-rgb: var(--tt-ink-rgb);
 }
 
 .gate-info-card__family--rotation {
-  border-color: rgba(163, 163, 163, 0.4);
-  background: rgba(163, 163, 163, 0.12);
-  color: var(--tt-ink-mid);
+  --gate-family-rgb: var(--gate-rotation-rgb);
 }
 
 .gate-info-card__family--phase {
-  border-color: rgba(234, 234, 234, 0.4);
-  background: rgba(234, 234, 234, 0.12);
-  color: var(--tt-ink);
+  --gate-family-rgb: var(--gate-phase-rgb);
 }
 
 .gate-info-card__family--control {
-  border-color: rgba(230, 25, 25, 0.4);
-  background: rgba(230, 25, 25, 0.12);
-  color: var(--tt-accent);
+  --gate-family-rgb: var(--gate-control-rgb);
+}
+
+.gate-info-card__family--register {
+  --gate-family-rgb: var(--gate-register-rgb);
 }
 
 .gate-info-card__family--measurement {
-  border-color: rgba(230, 25, 25, 0.4);
-  background: rgba(230, 25, 25, 0.12);
-  color: var(--tt-accent);
+  --gate-family-rgb: var(--gate-measurement-rgb);
 }
 
 .gate-info-card__family--annotation {
-  border-color: rgba(163, 163, 163, 0.32);
-  background: rgba(163, 163, 163, 0.12);
-  color: var(--tt-ink-mid);
+  --gate-family-rgb: var(--gate-annotation-rgb);
 }
 
 .gate-info-card__description {

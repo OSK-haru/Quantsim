@@ -162,16 +162,16 @@ function cloneGate(gate: CircuitGate): CircuitGate {
 function isGateValidForLogicalQubits(gate: CircuitGate, logicalQubits: number) {
   if (isControlledGateType(gate.type)) {
     const controls = gate.controls ?? []
-    if (controls.length !== 1 || gate.targets.length !== 1) {
+    if ((gate.type === 'CNOT' ? controls.length < 1 : controls.length !== 1) || gate.targets.length !== 1) {
       return false
     }
 
-    const control = controls[0]
     const target = gate.targets[0]
     return (
-      isQubitIndexValid(control, logicalQubits) &&
+      new Set(controls).size === controls.length &&
+      controls.every((control) => isQubitIndexValid(control, logicalQubits)) &&
       isQubitIndexValid(target, logicalQubits) &&
-      control !== target
+      !controls.includes(target)
     )
   }
 
@@ -300,22 +300,119 @@ export function createPlacedGate(
 }
 
 export function createCnotGate(
-  controlQubit: number,
+  controlQubit: number | number[],
   targetQubit: number,
   durationUs: number,
   gateId: string,
   gateType: ControlledGateType = 'CNOT',
+  controlValue: 0 | 1 | Array<0 | 1> = 1,
 ): CircuitGate {
+  const controls = Array.isArray(controlQubit) ? [...controlQubit] : [controlQubit]
+  const controlValues = Array.isArray(controlValue)
+    ? [...controlValue]
+    : Array.from({ length: controls.length }, () => controlValue)
+  const controlState = controlValues.reduce<number>((state, value) => (state << 1) | value, 0)
   return {
     id: gateId,
     type: gateType,
-    controls: [controlQubit],
+    controls,
     targets: [targetQubit],
     params: {
       duration_us: durationUs,
+      ...(gateType === 'CNOT' && controls.length === 1 && controlValues[0] === 0
+        ? { control_value: 0 as const }
+        : {}),
+      ...(gateType === 'CNOT' && controls.length > 1 ? { control_state: controlState } : {}),
       ...(gateType === 'CP' ? { theta_rad: Math.PI / 2 } : {}),
     },
   }
+}
+
+export function controlValuesForGate(gate: CircuitGate): Array<0 | 1> {
+  const controls = gate.controls ?? []
+  const state = controls.length > 1
+    ? gate.params?.control_state ?? (2 ** controls.length - 1)
+    : gate.params?.control_value ?? 1
+  return controls.map((_, index) => (
+    ((state >> (controls.length - 1 - index)) & 1) as 0 | 1
+  ))
+}
+
+/** Replace the sole plain X in a column with a connected controlled-X. */
+export function connectControlToXInCircuit(
+  circuit: CircuitEditorState,
+  columnIndex: number,
+  controlQubit: number | number[],
+  controlValue: 0 | 1 | Array<0 | 1>,
+  durationUs: number,
+  gateId: string,
+): CircuitEditorState {
+  const column = circuit.columns[columnIndex]
+  if (!column) return circuit
+  const controls = Array.isArray(controlQubit) ? controlQubit : [controlQubit]
+  const targets = column.gates.filter((gate) =>
+    gate.type === 'X' && gate.targets.length === 1 && !controls.includes(gate.targets[0]),
+  )
+  if (targets.length !== 1) return circuit
+
+  const targetGate = targets[0]
+  const candidate = createCnotGate(
+    controls,
+    targetGate.targets[0],
+    durationUs,
+    gateId,
+    'CNOT',
+    controlValue,
+  )
+  const remainingGates = column.gates.filter((gate) => gate.id !== targetGate.id)
+  if (findColumnCollision({ ...column, gates: remainingGates }, candidate) !== null) {
+    return circuit
+  }
+
+  return {
+    ...circuit,
+    columns: circuit.columns.map((item, index) => index === columnIndex
+      ? { ...item, gates: sortCircuitColumnGates([...remainingGates, candidate]) }
+      : item),
+  }
+}
+
+/** Add a newly placed marker to the sole controlled-X already in a column. */
+export function appendControlToCnotInCircuit(
+  circuit: CircuitEditorState,
+  columnIndex: number,
+  controlQubit: number,
+  controlValue: 0 | 1,
+): CircuitEditorState {
+  const column = circuit.columns[columnIndex]
+  if (!column) return circuit
+  const candidates = column.gates.filter((gate) =>
+    gate.type === 'CNOT' && gate.targets.length === 1 && !(gate.controls ?? []).includes(controlQubit),
+  )
+  if (candidates.length !== 1) return circuit
+  const source = candidates[0]
+  const controls = [...(source.controls ?? []), controlQubit]
+  if (source.targets[0] === controlQubit || new Set(controls).size !== controls.length) return circuit
+  const next = createCnotGate(
+    controls,
+    source.targets[0],
+    source.params?.duration_us ?? durationUsForGate(source),
+    source.id,
+    'CNOT',
+    [...controlValuesForGate(source), controlValue],
+  )
+  const remainingGates = column.gates.filter((gate) => gate.id !== source.id)
+  if (findColumnCollision({ ...column, gates: remainingGates }, next) !== null) return circuit
+  return {
+    ...circuit,
+    columns: circuit.columns.map((item, index) => index === columnIndex
+      ? { ...item, gates: sortCircuitColumnGates([...remainingGates, next]) }
+      : item),
+  }
+}
+
+function durationUsForGate(gate: CircuitGate) {
+  return gate.params?.duration_us ?? 0.2
 }
 
 export function createPairGate(
@@ -685,16 +782,20 @@ export function placeCnotGateInCircuit(
   circuit: CircuitEditorState,
   columnCount: number,
   columnIndex: number,
-  controlQubit: number,
+  controlQubit: number | number[],
   targetQubit: number,
   durationUs: number,
   gateId: string,
   gateType: ControlledGateType = 'CNOT',
+  controlValue: 0 | 1 | Array<0 | 1> = 1,
 ): CircuitEditorState {
+  const controls = Array.isArray(controlQubit) ? controlQubit : [controlQubit]
   if (
-    !isQubitIndexValid(controlQubit, circuit.logical_qubits) ||
+    controls.length < 1 ||
+    !controls.every((control) => isQubitIndexValid(control, circuit.logical_qubits)) ||
+    new Set(controls).size !== controls.length ||
     !isQubitIndexValid(targetQubit, circuit.logical_qubits) ||
-    controlQubit === targetQubit
+    controls.includes(targetQubit)
   ) {
     return circuit
   }
@@ -704,7 +805,9 @@ export function placeCnotGateInCircuit(
     Math.max(columnCount, columnIndex + 1),
   )
 
-  const candidate = createCnotGate(controlQubit, targetQubit, durationUs, gateId, gateType)
+  const candidate = createCnotGate(
+    controls, targetQubit, durationUs, gateId, gateType, controlValue,
+  )
   const placement = canPlaceGateInColumn(normalizedCircuit, columnIndex, candidate)
   if (!placement.valid) {
     return circuit

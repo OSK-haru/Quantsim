@@ -4,6 +4,13 @@
 **Date:** 2026-07-29
 **Method ID:** `gate_aware_constant_gksl_exponential_v1`
 
+> **Partly superseded.** The method ID and physical contract still hold. The
+> "Measurement semantics" section below does not: `MEASURE` is now a
+> computational-basis projection with classical feed-forward, described in
+> [`../../physics/gate-aware-measurement-model.md`](../../physics/gate-aware-measurement-model.md).
+> Qubit-count and backend limits have also moved; see
+> [`../../README.md`](../../README.md).
+
 ## Purpose
 
 The gate-aware simulator now offers two numerical evolution methods:
@@ -129,12 +136,14 @@ API decision.
 
 ## Scope and limitations
 
-- The state space remains a small dense 1-4 qubit model.
+- The state space remains a small dense model. Explicit CPTP is capped at 5
+  noisy qubits; 6-8 noisy qubits are RK4 only.
 - The environment remains Markovian GKSL/Lindblad.
-- Gates remain the current involutory effective-Hamiltonian set.
 - Explicit CPTP guarantees numerical channel physicality for the implemented
   maps; it does not establish real-hardware predictive validity.
-- Dense Liouville-space exponentials scale rapidly with qubit count. Four
-  qubits are supported but cost more than RK4 for many distinct intervals.
-- The public Simulation API remains on `python_dense`; Rust selection remains
-  a core preview path.
+- Dense Liouville-space exponentials scale rapidly with qubit count. Five
+  qubits are supported but cost far more than RK4 for many distinct intervals,
+  and 5-qubit conditional circuits fall back to RK4 for their branches.
+- The public Simulation API defaults to `python_dense` and also accepts
+  `rust_dense_preview`, which falls back to Python with diagnostics when the
+  extension is not built.

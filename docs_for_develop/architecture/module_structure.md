@@ -41,15 +41,23 @@ api/
   main.py                     FastAPI application and gate API
   pulse_models.py             strict pulse request/response schemas
   pulse_service.py            bounded Pulse Baseline A orchestration
+  pulse_qutrit_service.py     bounded Extension B qutrit orchestration
+  pulse_transmon_pair_service.py  coupled transmon-pair orchestration
 
 core/
   simulator.py                gate-aware simulation entry point
+  capabilities.py             shared limits, gate set, and model identifiers
+  execution_representation.py statevector/density-matrix selection policy
   circuit_model.py            JSON-friendly circuit models
   circuit_state.py            core-side editable circuit state
   circuit_history.py          core-side undo/redo model
   circuit_validation.py       placement validation
+  classical_branching.py      measurement feed-forward branch execution
   physical_environment.py     physical/normalized input to rates
   gates.py                    operators and Lindblad RHS
+  gate_compiler.py            advanced-gate decomposition rules
+  gate_aware_cptp.py          explicit CPTP exponential maps and Choi audit
+  cptp*.py                    Liouvillian/Kraus construction and comparison
   dense_numpy.py              default NumPy dense execution
   rust_dense_kernel.py        optional Rust preview wrapper
   pulse_*.py                  Pulse Baseline A and staged Extension B paths
@@ -64,7 +72,10 @@ validation_pulse/             reusable pulse validation helpers
 scripts/                      validation, profiling, and diagnostics
 tests/                        Python unittest suite
 validation_results/           machine-readable validation artifacts
-docs/                         requirements, architecture, physics, reports
+docs_for_develop/             requirements, architecture, physics, reports
+docs/                         generated performance notes and packaging guide
+packaging/, desktop_app.py    optional Windows desktop launcher
+formalweb/website/            public Docusaurus documentation site
 ```
 
 The former `app/` Streamlit tree is not active and must not be referenced by
@@ -73,11 +84,12 @@ new runtime instructions.
 ## Current Capabilities
 
 - Gate-aware core/API: 1-18 logical qubits; noisy density-matrix evolution is
-  limited to 5, ideal measurement-free circuits above that use the
-  statevector path.
-- Circuit Studio UI: 2-4 logical qubits.
+  limited to 8, explicit CPTP to 5, and ideal measurement-free circuits above
+  5 qubits use the statevector path.
+- Circuit Studio UI: 2-8 logical qubits.
 - Supported gate labels: I, H, X, Y, Z, S, T, RX, RY, RZ, CNOT, CZ, CP, CCX,
-  SWAP, MEASURE, and MESSAGE.
+  SWAP, QFT, ORACLE, MEASURE, and MESSAGE.
+- Evolution methods: `fixed_step_rk4` (default) and `explicit_cptp`.
 - React uses physical inputs; normalized API compatibility remains.
 - Arbitrary `circuit_config` and Bell preset compatibility coexist.
 - State snapshot serialization is bounded by request policy.

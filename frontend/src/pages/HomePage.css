@@ -148,56 +148,77 @@
   line-height: 1.6;
 }
 
-/* --- Actions -------------------------------------------------------------- */
+/* --- Mode selection ------------------------------------------------------- */
 
+/* 2つのモードは対等な入口なので、幅も中身の段組みも左右で揃える。 */
 .home-page__actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--tt-hair);
   padding: 32px 24px 0;
 }
 
-.home-page__button {
-  display: inline-flex;
-  align-items: center;
+.home-page__mode {
+  display: grid;
+  align-content: start;
   gap: 10px;
-  padding: 16px 22px;
+  padding: 20px 22px 22px;
   border: var(--tt-hair) solid var(--tt-accent);
   background: var(--tt-accent);
   color: var(--tt-ink-max);
-  font-family: var(--tt-mono);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  text-align: left;
   cursor: pointer;
   transition: background 120ms linear, color 120ms linear;
 }
 
-.home-page__button-index {
-  color: currentColor;
+.home-page__mode-unit {
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.home-page__mode-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--tt-mono);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-page__mode-index {
   opacity: 0.55;
 }
 
-.home-page__button:hover:not(:disabled) {
+.home-page__mode-detail {
+  font-size: 0.78rem;
+  line-height: 1.65;
+  opacity: 0.85;
+}
+
+.home-page__mode:hover:not(:disabled) {
   border-color: var(--tt-accent-hot);
   background: var(--tt-accent-hot);
   color: var(--tt-ink-max);
 }
 
-.home-page__button--secondary {
+.home-page__mode--secondary {
   border-color: var(--tt-rule-strong);
   background: var(--tt-panel);
   color: var(--tt-ink);
 }
 
-.home-page__button--secondary:hover:not(:disabled) {
+.home-page__mode--secondary:hover:not(:disabled) {
   border-color: var(--tt-accent);
   background: var(--tt-accent-wash);
   color: var(--tt-ink-max);
 }
 
-.home-page__button--activated {
+.home-page__mode--activated {
   animation: home-page-button-latch 180ms steps(2, end);
 }
 
@@ -209,45 +230,141 @@
   }
 }
 
-/* --- Live preview compartment --------------------------------------------- */
+/* --- Guided tour ---------------------------------------------------------- */
 
-.home-page__demo {
-  margin: 56px 24px 0;
-  border: var(--tt-hair) solid var(--tt-rule);
+/*
+ * モード選択の直下に敷く案内バー。左端の帯だけをハザードレッドにして、
+ * 主動線（モード選択）より一段弱く、でも見落とさない強さにする。
+ */
+.home-page__tutorial {
+  display: grid;
+  gap: 16px;
+
+  margin: var(--tt-hair) 24px 0;
+  padding: 16px 20px 20px;
+
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  border-left: 3px solid var(--tt-accent);
   background: var(--tt-panel);
 }
 
-.home-page__demo-head {
+.home-page__tutorial-intro {
+  display: grid;
+  gap: 6px;
+
+  max-width: 62ch;
+}
+
+.home-page__tutorial-unit {
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.home-page__tutorial-lede {
+  margin: 0;
+
+  color: var(--tt-ink);
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+/* コースの一覧。番号つきで、上から順に受ける想定であることを示す。 */
+.home-page__tutorial-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--tt-hair);
+
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.home-page__tutorial-course {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+
+  padding: 16px 18px 18px;
+
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-panel-2);
+}
+
+.home-page__tutorial-course-head {
   display: flex;
   flex-wrap: wrap;
+  gap: 4px 12px;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
-  border-bottom: var(--tt-hair) solid var(--tt-rule);
 }
 
-.home-page__demo-title {
-  margin: 0;
-  color: var(--tt-ink);
-  font-family: var(--tt-macro);
-  font-size: 1.1rem;
-  letter-spacing: -0.02em;
-}
-
-.home-page__demo-title::before {
-  margin-right: 10px;
+.home-page__tutorial-index {
   color: var(--tt-accent);
-  content: '///';
+  font-family: var(--tt-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
 }
 
-.home-page__demo .tt-barcode {
-  margin: 0 18px;
+.home-page__tutorial-name {
+  margin: 0;
+
+  color: var(--tt-ink-max);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
-.home-page__demo .bloch-sphere-explorer {
-  padding: 18px;
-  border-bottom: none;
+.home-page__tutorial-meta {
+  margin-left: auto;
+
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+}
+
+.home-page__tutorial-summary {
+  margin: 0;
+
+  color: var(--tt-ink-mid);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+
+.home-page__tutorial-button {
+  justify-self: start;
+
+  padding: 12px 22px;
+
+  border: var(--tt-hair) solid var(--tt-ink);
+  background: var(--tt-void);
+
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+
+  cursor: pointer;
+
+  transition: border-color 120ms linear, background 120ms linear, color 120ms linear;
+}
+
+.home-page__tutorial-button:hover {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent);
+
+  color: var(--tt-ink-max);
+}
+
+.home-page__tutorial-button:focus-visible {
+  outline: var(--tt-bar) solid var(--tt-accent);
+  outline-offset: 2px;
 }
 
 /* --- Colophon ------------------------------------------------------------- */
@@ -282,13 +399,12 @@
     padding-inline: 16px;
   }
 
-  .home-page__demo,
-  .home-page__colophon {
+  .home-page__colophon,
+  .home-page__tutorial {
     margin-inline: 16px;
   }
 
-  .home-page__button {
-    flex: 1 1 100%;
-    justify-content: flex-start;
+  .home-page__actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

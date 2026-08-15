@@ -17,6 +17,10 @@ Yuragi-Strider は、温度・磁場・ノイズなどの物理環境が小規�
 | 独立検証 | QuTiP、SciPy、Matplotlib | 物理モデルの比較検証と plot（任意） |
 | 高速化 preview | Rust、PyO3、maturin | 任意の dense kernel |
 
+対応規模は、論理量子ビット 1〜18、ノイズありの密度行列計算は 8 まで、
+明示的 CPTP は 5 までです。理想環境かつ測定なしの回路は 5 を超えると
+状態ベクトル経路へ自動的に切り替わります。Circuit Studio の編集範囲は 2〜8 です。
+
 ## 必要なツール
 
 - Git
@@ -71,6 +75,7 @@ Vite は `/api` を `127.0.0.1:8001` にプロキシします。接続確認は�
 ```powershell
 # Python テスト（標準ライブラリ unittest）
 .\.venv\Scripts\python.exe -m unittest discover -s tests
+```
 
 変更箇所に応じた短いテストプロファイルは次で実行できます。`full-audit` は
 Pulse と凍結監査を含むため、リリース確認時だけ使用します。
@@ -82,17 +87,18 @@ Pulse と凍結監査を含むため、リリース確認時だけ使用しま�
 .\.venv\Scripts\python.exe scripts/run_tests.py full-audit
 ```
 
-測定フィードフォワードの監査用プリセットとして API は
-`bell`、`teleportation`、`bit_flip_repetition` を受け付けます。
-後者2つは古典レジスタと条件付き補正を含み、分岐ごとの Gate-aware ノイズも
-結果へ反映します。5量子ビットの Explicit CPTP は Choi 監査の計算量を抑えるため
-RK4へ明示的にフォールバックします。
-
+```powershell
 # Frontend
 cd frontend
 npm run lint
 npm run build
 ```
+
+測定フィードフォワードの監査用プリセットとして API は
+`bell`、`teleportation`、`bit_flip_repetition` を受け付けます。
+後者2つは古典レジスタと条件付き補正を含み、分岐ごとの Gate-aware ノイズも
+結果へ反映します。5量子ビットの Explicit CPTP は Choi 監査の計算量を抑えるため
+RK4へ明示的にフォールバックします。
 
 QuTiP を使う独立検証も含める場合:
 
@@ -123,7 +129,9 @@ Rust toolchain が利用できる環境で、Python 仮想環境へローカル�
 - `validation_results/`: 機械可読な検証結果
 - `scripts/`: 独立検証、benchmark、診断 script
 - `rust_kernels/`: 任意の PyO3/maturin 拡張
-- `docs/environment.md`: 詳細な環境・依存ライブラリ台帳
+- `packaging/`, `desktop_app.py`: 任意の Windows desktop 配布用ランチャー
+- `docs_for_develop/`: 要求・設計・物理モデル・検証レポート
+- `docs_for_develop/environment.md`: 詳細な環境・依存ライブラリ台帳
 
 ## 再現性に関する注意
 
@@ -133,4 +141,4 @@ Rust toolchain が利用できる環境で、Python 仮想環境へローカル�
 - 従来の `requirements.txt` は既存環境との互換用に残しています。新規構築には上記2ファイルのどちらかを使ってください。
 - 対応 OS はコード上 cross-platform ですが、この台帳は Windows で実測・検証しています。
 
-詳細は [実行環境・技術スタック台帳](docs/environment.md) を参照してください。
+詳細は [実行環境・技術スタック台帳](docs_for_develop/environment.md) を参照してください。

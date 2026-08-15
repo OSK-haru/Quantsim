@@ -1,13 +1,10 @@
 import './CircuitStudioPage.css'
-import { useState } from 'react'
 import { CircuitWorkspace } from '../components/CircuitWorkspace'
 import { QuantumPet } from '../components/QuantumPet'
 import type { CircuitEditorState } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
 import { useCircuitContext } from '../context/useCircuitContext'
-import { circuitEditorStateToConfig } from '../utils/circuitConfig'
 import { isMultiQubitGateType } from '../utils/circuitEditing'
-import { validateCircuitConfigForRun } from '../utils/circuitValidation'
 import {
   circuitStudioTips,
   gatePlacementGuide,
@@ -16,7 +13,6 @@ import {
 
 type CircuitStudioPageProps = {
   gateDurationDefaults: GateDurationDefaults
-  onOpenSimulation: () => void
 }
 
 function getCircuitCounts(circuit: CircuitEditorState) {
@@ -37,34 +33,9 @@ function getCircuitCounts(circuit: CircuitEditorState) {
   )
 }
 
-function formatStudioValidationMessage(message: string | null) {
-  if (!message) {
-    return '回路の検証に失敗しました。'
-  }
-
-  return message
-    .replace('This circuit was not simulated. ', '回路の検証に失敗しました。')
-    .replace(' The previous result is still shown.', '')
-}
-
-export function CircuitStudioPage({
-  gateDurationDefaults,
-  onOpenSimulation,
-}: CircuitStudioPageProps) {
+export function CircuitStudioPage({ gateDurationDefaults }: CircuitStudioPageProps) {
   const circuit = useCircuitContext()
-  const [validationStatus, setValidationStatus] = useState<string | null>(null)
   const counts = getCircuitCounts(circuit.circuitState)
-
-  function handleValidateCircuit() {
-    const validation = validateCircuitConfigForRun(
-      circuitEditorStateToConfig(circuit.circuitState),
-    )
-    setValidationStatus(
-      validation.valid
-        ? '検証に成功しました'
-        : formatStudioValidationMessage(validation.message),
-    )
-  }
 
   /*
    * ペットの案内は、いま手を動かしている対象に合わせる。
@@ -105,6 +76,7 @@ export function CircuitStudioPage({
           circuit={circuit.circuitState}
           gateDurationDefaults={gateDurationDefaults}
           selectedGateType={circuit.selectedGateType}
+          selectedControlValue={circuit.selectedControlValue}
           selectedGateId={circuit.selectedGateId}
           pendingCnotControl={circuit.pendingCnotControl}
           dragPayload={circuit.dragPayload}
@@ -115,8 +87,9 @@ export function CircuitStudioPage({
           canClearCircuit={circuit.canClearCircuit}
           canRemoveLastColumn={circuit.canRemoveLastCircuitColumn}
           onSelectGateType={circuit.handleSelectGateType}
+          onSelectControlValue={circuit.handleSelectControlValue}
+          onControlMarkerDragStart={circuit.handleControlMarkerDragStart}
           onSelectLogicalQubits={circuit.handleLogicalQubitsChange}
-          onResetToBell={circuit.handleResetCircuitToBell}
           onUndo={circuit.handleUndoCircuit}
           onRedo={circuit.handleRedoCircuit}
           onDeleteSelected={circuit.handleDeleteSelectedGate}
@@ -134,9 +107,6 @@ export function CircuitStudioPage({
           onDragEnd={circuit.handleGateDragEnd}
           onSlotDrop={circuit.handleCircuitSlotDrop}
           onImportCircuitConfig={circuit.handleImportCircuitConfig}
-          onValidateCircuit={handleValidateCircuit}
-          onOpenSimulation={onOpenSimulation}
-          validationStatus={validationStatus}
         />
       </div>
       {/* ここは実行しない編集ページなので、ペットはガイド役だけ。 */}

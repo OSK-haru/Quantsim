@@ -5,6 +5,12 @@
 **Status:** PASS WITH RESTRICTIONS
 **Scope:** Gate-aware Hamiltonian-Lindblad circuit execution
 
+> **Partly superseded.** This document records the state at freeze time. The
+> `MEASURE` clause below no longer describes the runtime: measurement is now a
+> computational-basis projection with classical feed-forward. See
+> [`../physics/gate-aware-measurement-model.md`](../physics/gate-aware-measurement-model.md).
+> The frozen exponential-map construction and Choi audit are unchanged.
+
 ## Frozen contract
 
 The gate-aware simulator supports these evolution methods:
@@ -42,6 +48,7 @@ application. Explicit CPTP mode does not apply density-matrix cleanup.
 - API and UI selection is opt-in; omitted `evolution_method` means RK4.
 - `MEASURE` remains the existing identity placeholder. It is not a projective
   measurement instrument and no classical outcome is generated.
+  *(Superseded: see the note at the top of this document.)*
 
 ## Evidence
 

@@ -1,6 +1,7 @@
-import { Fragment, useState, type CSSProperties } from 'react'
+import { Fragment, useMemo, useState, type CSSProperties } from 'react'
 import './DensityMatrixViewer.css'
 import type { StateSnapshot } from '../types/simulation'
+import { DensityMatrixCanvas } from './DensityMatrixCanvas'
 import {
   formatDensityValue,
   formatSnapshotProgress,
@@ -10,6 +11,8 @@ import {
   type DensityMatrixCell,
   type DensityMatrixMode,
 } from '../utils/densityMatrix'
+
+type DensityView = 'grid' | 'raster'
 
 type DensityMatrixViewerProps = {
   snapshots?: StateSnapshot[] | null
@@ -26,6 +29,7 @@ const MODE_OPTIONS: Array<{ label: string; value: DensityMatrixMode }> = [
 
 type DensityCellStyle = CSSProperties & {
   '--density-cell-alpha': string
+  '--density-cell-ink': string
 }
 
 type ActiveCellSelection = {
@@ -41,6 +45,7 @@ export function DensityMatrixViewer({
   const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
   const [internalSnapshotIndex, setInternalSnapshotIndex] = useState(0)
   const [mode, setMode] = useState<DensityMatrixMode>('magnitude')
+  const [preferredView, setPreferredView] = useState<DensityView | null>(null)
   const [activeCellSelection, setActiveCellSelection] = useState<ActiveCellSelection | null>(null)
   const requestedSnapshotIndex = controlledSnapshotIndex ?? internalSnapshotIndex
   const snapshotIndex = clamp(requestedSnapshotIndex, 0, Math.max(safeSnapshots.length - 1, 0))
@@ -49,6 +54,17 @@ export function DensityMatrixViewer({
     ? activeCellSelection.cell
     : null
 
+  const activeSnapshot = safeSnapshots[snapshotIndex]
+
+  /*
+   * 8量子ビットでは 65536 セル分の走査になるので、毎レンダーでは回さない。
+   * （ホバーで state が動くだけでも再計算されてしまう。）
+   */
+  const validation = useMemo(
+    () => validateDensityMatrixSnapshot(activeSnapshot, mode),
+    [activeSnapshot, mode],
+  )
+
   if (safeSnapshots.length === 0) {
     return (
       <p className="density-matrix-viewer__empty">
@@ -56,9 +72,6 @@ export function DensityMatrixViewer({
       </p>
     )
   }
-
-  const activeSnapshot = safeSnapshots[snapshotIndex]
-  const validation = validateDensityMatrixSnapshot(activeSnapshot, mode)
 
   function selectSnapshot(nextSnapshotIndex: number) {
     const clampedIndex = clamp(nextSnapshotIndex, 0, safeSnapshots.length - 1)
@@ -160,8 +173,37 @@ export function DensityMatrixViewer({
               {validation.matrix.qubitCount} qubits
             </span>
             <span>スナップショットごとのスケール: {validation.matrix.scaleLabel}</span>
+            {validation.matrix.gridRenderable ? (
+              <span className="density-matrix-viewer__views">
+                {(['grid', 'raster'] as const).map((view) => (
+                  <button
+                    className="density-matrix-viewer__view"
+                    data-active={resolveView(preferredView, validation.matrix.gridRenderable) === view}
+                    type="button"
+                    aria-pressed={resolveView(preferredView, validation.matrix.gridRenderable) === view}
+                    key={view}
+                    onClick={() => setPreferredView(view)}
+                  >
+                    {view === 'grid' ? 'グリッド' : 'ヒートマップ'}
+                  </button>
+                ))}
+              </span>
+            ) : (
+              <span className="density-matrix-viewer__views">
+                GPU ラスター描画（{validation.matrix.dimension}² セル）
+              </span>
+            )}
           </div>
 
+          {resolveView(preferredView, validation.matrix.gridRenderable) === 'raster' ? (
+            <DensityMatrixCanvas
+              matrix={validation.matrix}
+              mode={mode}
+              onInspect={(cell) => setActiveCellSelection(
+                cell === null ? null : { key: activeCellKey, cell },
+              )}
+            />
+          ) : (
           <div className="density-matrix-viewer__matrix-scroll" tabIndex={0}>
             <div
               className="density-matrix-viewer__matrix"
@@ -194,16 +236,26 @@ export function DensityMatrixViewer({
                   {validation.matrix.cells
                     .filter((cell) => cell.row === rowIndex)
                     .map((cell) => {
+                      const renderedSign = mode === 'magnitude' ? 'positive' : cell.sign
+                      const alpha = 0.08 + cell.intensity * 0.82
                       const cellStyle: DensityCellStyle = {
-                        '--density-cell-alpha': `${0.08 + cell.intensity * 0.82}`,
+                        '--density-cell-alpha': `${alpha}`,
+                        /*
+                         * 明るいセルほど白文字が沈むので、塗りが濃くなったら
+                         * 文字側を反転させる。赤側は輝度が低いままなので白で通す。
+                         */
+                        '--density-cell-ink':
+                          renderedSign === 'positive' && alpha > 0.45
+                            ? 'var(--tt-void)'
+                            : 'var(--tt-ink-max)',
                       }
 
                       return (
-                        <button
+                        <div
                           className="density-matrix-viewer__cell"
-                          data-sign={mode === 'magnitude' ? 'positive' : cell.sign}
-                          type="button"
+                          data-sign={renderedSign}
                           role="gridcell"
+                          tabIndex={0}
                           key={`${cell.row}-${cell.column}`}
                           style={cellStyle}
                           title={cellTitle(cell)}
@@ -214,13 +266,14 @@ export function DensityMatrixViewer({
                           <span className="density-matrix-viewer__cell-value">
                             {formatCellValue(cell.value)}
                           </span>
-                        </button>
+                        </div>
                       )
                     })}
                 </Fragment>
               ))}
             </div>
           </div>
+          )}
 
           <div className="density-matrix-viewer__details" aria-live="polite">
             {activeCell === null ? (
@@ -245,6 +298,14 @@ export function DensityMatrixViewer({
       )}
     </div>
   )
+}
+
+/* 格子が読めるサイズならグリッド既定、超えたら強制的にラスター。 */
+function resolveView(preferred: DensityView | null, gridRenderable: boolean): DensityView {
+  if (!gridRenderable) {
+    return 'raster'
+  }
+  return preferred ?? 'grid'
 }
 
 function cellTitle(cell: DensityMatrixCell): string {

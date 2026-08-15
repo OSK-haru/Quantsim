@@ -4,6 +4,7 @@ from core.circuit_model import CircuitConfig, GateColumn, GateOperation
 from core.comparison import ComparisonConfig, run_comparison
 from core.results import EnvironmentConfig, SimulationConfig
 from core.simulator import run_simulation
+from core.statevector import execute_statevector_branches
 
 
 class GateExecutionTest(unittest.TestCase):
@@ -34,6 +35,82 @@ class GateExecutionTest(unittest.TestCase):
         self.assertEqual(result.issues, [])
         self.assertAlmostEqual(result.output_probabilities["0"], 1.0, delta=1e-4)
         self.assertAlmostEqual(result.output_probabilities["1"], 0.0, delta=1e-4)
+
+    def test_open_control_cnot_fires_when_control_is_zero(self) -> None:
+        circuit = CircuitConfig(
+            logical_qubits=2,
+            initial_states=["0", "0"],
+            columns=[GateColumn(step=0, gates=[GateOperation(
+                type="CNOT",
+                controls=[0],
+                targets=[1],
+                params={"control_value": 0.0},
+            )])],
+        )
+
+        result = run_simulation(SimulationConfig(
+            circuit=circuit,
+            environment=_environment(),
+            duration_us=0.001,
+            time_steps=3,
+            fidelity_threshold=0.9,
+        ))
+
+        self.assertEqual(result.issues, [])
+        self.assertAlmostEqual(result.output_probabilities["01"], 1.0, delta=1e-4)
+
+    def test_multi_control_x_supports_mixed_open_and_closed_controls(self) -> None:
+        circuit = CircuitConfig(
+            logical_qubits=3,
+            initial_states=["0", "1", "0"],
+            columns=[GateColumn(step=0, gates=[GateOperation(
+                type="CNOT",
+                controls=[0, 1],
+                targets=[2],
+                params={"control_state": 1.0},  # q0=0 (open), q1=1 (closed)
+            )])],
+        )
+
+        result = run_simulation(SimulationConfig(
+            circuit=circuit,
+            environment=_environment(),
+            duration_us=0.001,
+            time_steps=3,
+            fidelity_threshold=0.9,
+        ))
+
+        self.assertEqual(result.issues, [])
+        self.assertAlmostEqual(result.output_probabilities["011"], 1.0, delta=1e-4)
+
+    def test_four_qubit_grover_three_iterations_amplifies_marked_0100_state(self) -> None:
+        all_qubits = [0, 1, 2, 3]
+        columns = [GateColumn(0, [GateOperation("H", [qubit]) for qubit in all_qubits])]
+        step = 1
+        for iteration in range(3):
+            columns.append(GateColumn(step, [GateOperation(
+                "ORACLE", all_qubits, params={"marked_index": 4.0},
+            )]))
+            step += 1
+            columns.extend([
+                GateColumn(step, [GateOperation("H", [qubit]) for qubit in all_qubits]),
+                GateColumn(step + 1, [GateOperation("X", [qubit]) for qubit in all_qubits]),
+                GateColumn(step + 2, [GateOperation("H", [3])]),
+                GateColumn(step + 3, [GateOperation(
+                    "CNOT", [3], controls=[0, 1, 2], params={"control_state": 7.0},
+                )]),
+                GateColumn(step + 4, [GateOperation("H", [3])]),
+                GateColumn(step + 5, [GateOperation("X", [qubit]) for qubit in all_qubits]),
+                GateColumn(step + 6, [GateOperation("H", [qubit]) for qubit in all_qubits]),
+            ])
+            step += 7
+
+        result = execute_statevector_branches(CircuitConfig(
+            logical_qubits=4,
+            initial_states=["0", "0", "0", "0"],
+            columns=columns,
+        ))
+
+        self.assertGreater(result.output_probabilities["0100"], 0.95)
 
     def test_run_comparison_works_for_non_h_one_qubit_circuit(self) -> None:
         comparison = run_comparison(

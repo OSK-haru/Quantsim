@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import './CircuitWorkspace.css'
-import { CircuitColumnNavigator } from './CircuitColumnNavigator'
 import { CircuitConfigPreview } from './CircuitConfigPreview'
+import { useInternalInfoVisible } from '../context/useAdminMode'
 import { CircuitPreview } from './CircuitPreview'
 import { CircuitZoomControls } from './CircuitZoomControls'
 import { GateInspector } from './GateInspector'
@@ -15,19 +15,21 @@ import {
   isMultiControlledGateType,
   isMultiQubitGateType,
   isPairGateType,
-  isThetaGateType,
 } from '../utils/circuitEditing'
 
 type PendingCnotControl = {
   columnIndex: number
   qubitIndex: number
+  controlValue?: 0 | 1
   additionalQubits?: number[]
+  additionalControlValues?: Array<0 | 1>
 }
 
 type CircuitWorkspaceProps = {
   circuit: CircuitEditorState
   gateDurationDefaults: GateDurationDefaults
   selectedGateType: GateType | null
+  selectedControlValue: 0 | 1 | null
   selectedGateId: string | null
   pendingCnotControl: PendingCnotControl | null
   dragPayload: DragGatePayload | null
@@ -38,8 +40,9 @@ type CircuitWorkspaceProps = {
   canClearCircuit: boolean
   canRemoveLastColumn: boolean
   onSelectGateType: (gateType: GateType | null) => void
+  onSelectControlValue: (controlValue: 0 | 1 | null) => void
+  onControlMarkerDragStart: (controlValue: 0 | 1) => void
   onSelectLogicalQubits: (logicalQubits: number) => void
-  onResetToBell: () => void
   onUndo: () => void
   onRedo: () => void
   onDeleteSelected: () => void
@@ -62,9 +65,6 @@ type CircuitWorkspaceProps = {
   onDragEnd: () => void
   onSlotDrop: (columnIndex: number, qubitIndex: number) => void
   onImportCircuitConfig: (file: File) => Promise<string>
-  onValidateCircuit: () => void
-  onOpenSimulation: () => void
-  validationStatus?: string | null
 }
 
 type SelectedGateInfo = {
@@ -129,6 +129,9 @@ function getWorkspaceStatus({
   | 'editorHint'
 >) {
   if (dragPayload) {
+    if (dragPayload.source === 'palette' && dragPayload.controlValue !== undefined) {
+      return `${dragPayload.controlValue === 1 ? '制御 ●' : '反制御 ○'}をドラッグ中`
+    }
     return dragPayload.source === 'circuit'
       ? `${dragPayload.gateType} をドラッグ中`
       : `パレットから ${dragPayload.gateType} をドラッグ中`
@@ -159,6 +162,7 @@ export function CircuitWorkspace({
   circuit,
   gateDurationDefaults,
   selectedGateType,
+  selectedControlValue,
   selectedGateId,
   pendingCnotControl,
   dragPayload,
@@ -169,8 +173,9 @@ export function CircuitWorkspace({
   canClearCircuit,
   canRemoveLastColumn,
   onSelectGateType,
+  onSelectControlValue,
+  onControlMarkerDragStart,
   onSelectLogicalQubits,
-  onResetToBell,
   onUndo,
   onRedo,
   onDeleteSelected,
@@ -188,14 +193,10 @@ export function CircuitWorkspace({
   onDragEnd,
   onSlotDrop,
   onImportCircuitConfig,
-  onValidateCircuit,
-  onOpenSimulation,
-  validationStatus = null,
 }: CircuitWorkspaceProps) {
   const [scrollToEndToken, setScrollToEndToken] = useState(0)
+  const internalInfoVisible = useInternalInfoVisible()
   const [showConfigPreview, setShowConfigPreview] = useState(false)
-  const [showInspector, setShowInspector] = useState(false)
-  const [inspectedGateId, setInspectedGateId] = useState<string | null>(selectedGateId)
   const [transferStatus, setTransferStatus] = useState('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const selectedGateInfo = getSelectedGateInfo(circuit, selectedGateId)
@@ -213,16 +214,6 @@ export function CircuitWorkspace({
     dragPayload,
     editorHint,
   })
-
-  // Angle-carrying gates are unusable until theta is set, so surface the inspector
-  // as soon as one is placed or selected. Adjusted during render rather than in an
-  // effect so the panel is already open on the first paint after selection.
-  if (selectedGateId !== inspectedGateId) {
-    setInspectedGateId(selectedGateId)
-    if (selectedGateInfo && isThetaGateType(selectedGateInfo.gate.type)) {
-      setShowInspector(true)
-    }
-  }
 
   useEffect(() => {
     function handleDeleteKeyDown(event: KeyboardEvent) {
@@ -249,12 +240,12 @@ export function CircuitWorkspace({
     const url = window.URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = 'quantscope-circuit.qscope.json'
+    anchor.download = '回路データ.json'
     document.body.appendChild(anchor)
     anchor.click()
     anchor.remove()
     window.setTimeout(() => window.URL.revokeObjectURL(url), 0)
-    setTransferStatus('回路 JSON をエクスポートしました。')
+    setTransferStatus('回路データを書き出しました。')
   }
 
   function openFilePicker() {
@@ -272,13 +263,101 @@ export function CircuitWorkspace({
       const message = await onImportCircuitConfig(file)
       setTransferStatus(message)
     } catch (error) {
-      setTransferStatus(error instanceof Error ? error.message : 'インポートに失敗しました。')
+      /* 解析失敗の本文には内部のフィールド名が並ぶので、通常は伏せる。 */
+      setTransferStatus(
+        internalInfoVisible && error instanceof Error
+          ? error.message
+          : '回路データを読み込めませんでした。ファイルの形式を確認してください。',
+      )
     }
   }
 
   return (
     <section className="circuit-workspace" aria-label="回路編集ワークスペース">
       <div className="circuit-workspace__toolbar" aria-label="回路編集ツールバー">
+        {/*
+          ファイル操作は Word などと同じくツールバーの先頭（左上）に置く。
+          折り返しレイアウトなので DOM の順番がそのまま表示順になる。
+        */}
+        <div
+          className="circuit-workspace__tool-group circuit-workspace__tool-group--file"
+          role="group"
+          aria-label="ファイル"
+        >
+          <span className="circuit-workspace__tool-label">ファイル</span>
+          <button type="button" onClick={openFilePicker}>
+            インポート
+          </button>
+          <button type="button" onClick={handleExportJson}>
+            エクスポート
+          </button>
+          <button
+            type="button"
+            aria-pressed={showConfigPreview}
+            onClick={() => setShowConfigPreview((isOpen) => !isOpen)}
+          >
+            {showConfigPreview ? 'データを隠す' : 'データを確認'}
+          </button>
+          <input
+            ref={fileInputRef}
+            className="circuit-workspace__file-input"
+            type="file"
+            accept=".json,.qscope.json,application/json"
+            aria-label="回路データを読み込む"
+            onChange={handleFileChange}
+          />
+        </div>
+
+        <CircuitZoomControls
+          zoom={viewport.zoom}
+          onZoomOut={viewport.zoomOut}
+          onZoomIn={viewport.zoomIn}
+          onResetZoom={viewport.resetZoom}
+          onFitCircuit={viewport.fitCircuit}
+        />
+      </div>
+
+      <div className="circuit-workspace__body">
+        <GatePalette
+          selectedGateType={selectedGateType}
+          selectedControlValue={selectedControlValue}
+          logicalQubits={circuit.logical_qubits}
+          onSelectGateType={onSelectGateType}
+          onSelectControlValue={onSelectControlValue}
+          onControlMarkerDragStart={onControlMarkerDragStart}
+          onSelectLogicalQubits={onSelectLogicalQubits}
+          onGateDragStart={onGateDragStart}
+          onGateDragEnd={onGateDragEnd}
+        />
+        <CircuitPreview
+          circuit={circuit}
+          gateDurationDefaults={gateDurationDefaults}
+          selectedGateType={selectedGateType}
+          selectedControlValue={selectedControlValue}
+          selectedGateId={selectedGateId}
+          pendingCnotControl={pendingCnotControl}
+          dragPayload={dragPayload}
+          zoom={viewport.zoom}
+          scrollToEndToken={scrollToEndToken}
+          viewportRef={viewport.viewportRef}
+          highlightedColumnIndex={viewport.highlightedColumnIndex}
+          onViewportScroll={viewport.updateVisibleRange}
+          onSlotClick={onSlotClick}
+          onGateSelect={onGateSelect}
+          onCircuitGateDragStart={onCircuitGateDragStart}
+          onDragEnd={onDragEnd}
+          onSlotDrop={onSlotDrop}
+        />
+      </div>
+
+      {/*
+        回路そのものを書き換える操作は回路図の直下に置く。上のツールバーは
+        ファイル・表示・移動といった、回路の中身を変えない操作だけにする。
+      */}
+      <div
+        className="circuit-workspace__toolbar circuit-workspace__toolbar--edit"
+        aria-label="回路の編集操作"
+      >
         <div className="circuit-workspace__tool-group" role="group" aria-label="履歴">
           <span className="circuit-workspace__tool-label">履歴</span>
           <button type="button" onClick={onUndo} disabled={!canUndo}>
@@ -307,9 +386,6 @@ export function CircuitWorkspace({
           >
             クリア
           </button>
-          <button type="button" onClick={onResetToBell}>
-            Bell 状態にリセット
-          </button>
         </div>
 
         <div className="circuit-workspace__tool-group" role="group" aria-label="列">
@@ -322,99 +398,14 @@ export function CircuitWorkspace({
             + 列
           </button>
         </div>
-
-        <CircuitZoomControls
-          zoom={viewport.zoom}
-          onZoomOut={viewport.zoomOut}
-          onZoomIn={viewport.zoomIn}
-          onResetZoom={viewport.resetZoom}
-          onFitCircuit={viewport.fitCircuit}
-        />
-
-        <CircuitColumnNavigator
-          columnCount={circuit.columns.length}
-          visibleRange={viewport.visibleRange}
-          onJumpToColumn={(columnIndex) => viewport.scrollToColumn(columnIndex, { highlight: true })}
-          onFirst={viewport.goFirst}
-          onPreviousGroup={viewport.goPreviousGroup}
-          onNextGroup={viewport.goNextGroup}
-          onLast={viewport.goLast}
-        />
-
-        <div className="circuit-workspace__tool-group" role="group" aria-label="ファイル">
-          <span className="circuit-workspace__tool-label">ファイル</span>
-          <button type="button" onClick={openFilePicker}>
-            インポート
-          </button>
-          <button type="button" onClick={handleExportJson}>
-            エクスポート
-          </button>
-          <button
-            type="button"
-            aria-pressed={showConfigPreview}
-            onClick={() => setShowConfigPreview((isOpen) => !isOpen)}
-          >
-            {showConfigPreview ? 'JSON を隠す' : 'JSON をプレビュー'}
-          </button>
-          <input
-            ref={fileInputRef}
-            className="circuit-workspace__file-input"
-            type="file"
-            accept=".json,.qscope.json,application/json"
-            aria-label="回路設定 JSON をインポート"
-            onChange={handleFileChange}
-          />
-        </div>
-
-        <div className="circuit-workspace__tool-group" role="group" aria-label="操作">
-          <span className="circuit-workspace__tool-label">操作</span>
-          <button type="button" onClick={onValidateCircuit}>
-            検証
-          </button>
-          <button type="button" onClick={onOpenSimulation}>
-            シミュレーションラボ
-          </button>
-          <button
-            type="button"
-            aria-pressed={showInspector}
-            disabled={!selectedGateId}
-            onClick={() => setShowInspector((isOpen) => !isOpen)}
-          >
-            {showInspector ? 'インスペクターを隠す' : 'インスペクター'}
-          </button>
-        </div>
       </div>
 
-      <div className="circuit-workspace__body">
-        <GatePalette
-          selectedGateType={selectedGateType}
-          logicalQubits={circuit.logical_qubits}
-          onSelectGateType={onSelectGateType}
-          onSelectLogicalQubits={onSelectLogicalQubits}
-          onGateDragStart={onGateDragStart}
-          onGateDragEnd={onGateDragEnd}
-        />
-        <CircuitPreview
-          circuit={circuit}
-          gateDurationDefaults={gateDurationDefaults}
-          selectedGateType={selectedGateType}
-          selectedGateId={selectedGateId}
-          pendingCnotControl={pendingCnotControl}
-          dragPayload={dragPayload}
-          zoom={viewport.zoom}
-          scrollToEndToken={scrollToEndToken}
-          viewportRef={viewport.viewportRef}
-          highlightedColumnIndex={viewport.highlightedColumnIndex}
-          onViewportScroll={viewport.updateVisibleRange}
-          onSlotClick={onSlotClick}
-          onGateSelect={onGateSelect}
-          onCircuitGateDragStart={onCircuitGateDragStart}
-          onDragEnd={onDragEnd}
-          onSlotDrop={onSlotDrop}
-        />
-      </div>
-
-      {showInspector && selectedGateId ? (
+      {/*
+        インスペクターの開閉ボタンはツールバーから外したので、ゲートを選んだら
+        そのまま出す。ORACLE のマーク状態や回転角はここでしか変えられない。
+        閉じたいときはゲートの選択を外す。
+      */}
+      {selectedGateId ? (
         <GateInspector
           circuit={circuit}
           selectedGateId={selectedGateId}
@@ -429,10 +420,7 @@ export function CircuitWorkspace({
 
       <div className="circuit-workspace__status-row">
         <div className="circuit-workspace__status-block" aria-live="polite">
-          <p className="circuit-workspace__status">{validationStatus ?? statusText}</p>
-          {validationStatus ? (
-            <p className="circuit-workspace__status-secondary">{statusText}</p>
-          ) : null}
+          <p className="circuit-workspace__status">{statusText}</p>
         </div>
         <p className="circuit-workspace__shortcut-hints">
           Delete: 選択項目を削除 | F: 回路に合わせる | Home/End: 最初/最後

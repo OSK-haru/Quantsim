@@ -131,7 +131,45 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
             message: formatValidationFailure(`CCX in column ${columnIndex + 1} uses an out-of-range qubit.`),
           }
         }
-      } else if (gate.type === 'CNOT' || gate.type === 'CZ' || gate.type === 'CP') {
+      } else if (gate.type === 'CNOT') {
+        if (!Array.isArray(gate.controls) || gate.controls.length < 1 || gate.targets.length !== 1) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`CNOT in column ${columnIndex + 1} needs one or more controls and one target.`),
+          }
+        }
+
+        const [target] = gate.targets
+        const qubits = [...gate.controls, target]
+        if (
+          qubits.some((qubit) =>
+            !isFiniteInteger(qubit) || qubit < 0 || qubit >= config.logical_qubits,
+          )
+        ) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`CNOT in column ${columnIndex + 1} uses an out-of-range qubit.`),
+          }
+        }
+
+        if (hasDuplicateQubits(qubits)) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`CNOT controls and target must all differ in column ${columnIndex + 1}.`),
+          }
+        }
+
+        const controlState = gate.params?.control_state
+        if (
+          controlState !== undefined &&
+          (!isFiniteInteger(controlState) || controlState < 0 || controlState >= 2 ** gate.controls.length)
+        ) {
+          return {
+            valid: false,
+            message: formatValidationFailure(`CNOT control state is outside the selected control-bit range in column ${columnIndex + 1}.`),
+          }
+        }
+      } else if (gate.type === 'CZ' || gate.type === 'CP') {
         if (!Array.isArray(gate.controls) || gate.controls.length !== 1 || gate.targets.length !== 1) {
           return {
             valid: false,
@@ -159,13 +197,6 @@ export function validateCircuitConfigForRun(config: CircuitConfig): CircuitValid
           return {
             valid: false,
             message: formatValidationFailure(`${gate.type} control and target must differ in column ${columnIndex + 1}.`),
-          }
-        }
-
-        if (hasDuplicateQubits([control, target])) {
-          return {
-            valid: false,
-            message: formatValidationFailure(`A qubit has multiple operations in the same step.`),
           }
         }
       } else if (gate.type === 'SWAP') {

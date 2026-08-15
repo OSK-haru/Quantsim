@@ -7,11 +7,13 @@ from concurrent.futures import (
     TimeoutError as FuturesTimeoutError,
 )
 import math
+import os
 from threading import BoundedSemaphore
 from typing import Literal
 from time import perf_counter
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, root_validator, validator
 
 from api.pulse_models import (
@@ -30,6 +32,33 @@ from core.ui_response import simulation_result_to_ui_response
 
 
 app = FastAPI(title="Yuragi-Strider API", version="0.1.0")
+
+# Local dev (Vite) and the desktop-app launcher serve the frontend from the
+# same origin as this API, so they never need CORS. The hosted web demo
+# serves the frontend from a separate origin (Cloudflare Pages) and this API
+# from another (Render), so that origin must be allow-listed explicitly via
+# env var rather than left open to "*" (this endpoint runs real compute).
+_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+if _ALLOWED_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_ALLOWED_ORIGINS,
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+    )
+
+# Dense simulation cost is O(8^n); the desktop app and test suite rely on the
+# full le=18 validation range, but a publicly reachable server shares memory
+# across every visitor, so it gets its own, stricter cap via env var. Unset
+# by default so existing (non-public) deployments are unaffected.
+_PUBLIC_MAX_LOGICAL_QUBITS = os.environ.get("PUBLIC_MAX_LOGICAL_QUBITS")
+PUBLIC_MAX_LOGICAL_QUBITS = (
+    int(_PUBLIC_MAX_LOGICAL_QUBITS) if _PUBLIC_MAX_LOGICAL_QUBITS else None
+)
 
 PULSE_API_TIMEOUT_SECONDS = 90.0
 PULSE_API_MAX_CONCURRENT_REQUESTS = 2
@@ -110,6 +139,8 @@ class SimulationParametersRequest(BaseModel):
 class CircuitGateParamsRequest(BaseModel):
     duration_us: float | None = None
     theta_rad: float | None = None
+    control_value: Literal[0, 1] | None = None
+    control_state: int | None = Field(default=None, ge=0)
     animation_parameter_t: float | None = None
     marked_index: float | None = None
 
@@ -162,15 +193,26 @@ class CircuitGateRequest(BaseModel):
         targets = values.get("targets") or []
         controls = values.get("controls") or []
 
-        if gate_type in {"CNOT", "CZ", "CP"}:
+        if gate_type == "CNOT":
+            if len(controls) < 1:
+                raise ValueError("CNOT requires at least one control qubit.")
+            if len(targets) != 1:
+                raise ValueError("CNOT requires exactly one target qubit.")
+            if len(set(controls)) != len(controls) or targets[0] in controls:
+                raise ValueError(
+                    "CNOT controls and target must all be different qubits."
+                )
+            params = values.get("params")
+            control_state = getattr(params, "control_state", None)
+            if control_state is not None and control_state >= 2 ** len(controls):
+                raise ValueError("CNOT control_state is outside the control-bit range.")
+        elif gate_type in {"CZ", "CP"}:
             if len(controls) != 1:
                 raise ValueError(f"{gate_type} requires exactly one control qubit.")
             if len(targets) != 1:
                 raise ValueError(f"{gate_type} requires exactly one target qubit.")
             if controls[0] == targets[0]:
-                raise ValueError(
-                    f"{gate_type} control and target must be different qubits."
-                )
+                raise ValueError(f"{gate_type} control and target must be different qubits.")
         elif gate_type == "CCX":
             if len(controls) != 2:
                 raise ValueError("CCX requires exactly two control qubits.")
@@ -759,6 +801,18 @@ def pulse_simulate(request: PulseApiRequest) -> dict[str, object]:
 
 @app.post("/api/simulate")
 def simulate(request: SimulateRequest) -> dict[str, object]:
+    if (
+        PUBLIC_MAX_LOGICAL_QUBITS is not None
+        and request.circuit_config is not None
+        and request.circuit_config.logical_qubits > PUBLIC_MAX_LOGICAL_QUBITS
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "logical_qubits exceeds the public demo limit.",
+                "maximum_logical_qubits": PUBLIC_MAX_LOGICAL_QUBITS,
+            },
+        )
     request_started_at = perf_counter()
     try:
         config_started_at = perf_counter()

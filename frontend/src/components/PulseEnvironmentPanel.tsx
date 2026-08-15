@@ -15,6 +15,7 @@ import {
   pulseDeviceProfileConstraints,
   pulseDeviceProfiles,
 } from '../utils/pulseDeviceProfiles'
+import { useInternalInfoVisible } from '../context/useAdminMode'
 import './PulseParameterPanel.css'
 
 type PulseEnvironmentPanelProps = {
@@ -34,6 +35,7 @@ export function PulseEnvironmentPanel({
   executionConstraints,
   onExecutionConstraintsChange,
 }: PulseEnvironmentPanelProps) {
+  const internalInfoVisible = useInternalInfoVisible()
   const isQutrit = form.modelId === QUTRIT_PULSE_MODEL
   const isTransmon = form.modelId !== TWO_LEVEL_PULSE_MODEL
   const isPair = form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
@@ -88,7 +90,7 @@ export function PulseEnvironmentPanel({
           </select>
         </label>
         <label>
-          発展方式
+          時間発展の解法
           <select
             value={form.evolutionMethod}
             disabled={disabled}
@@ -97,25 +99,31 @@ export function PulseEnvironmentPanel({
               evolutionMethod: event.target.value as PulseLabForm['evolutionMethod'],
             })}
           >
-            <option value="fixed_step_rk4">Fixed-step RK4</option>
-            <option value="explicit_cptp">Explicit CPTP maps</option>
+            <option value="fixed_step_rk4">固定ステップ RK4</option>
+            <option value="explicit_cptp">明示的 CPTP 写像</option>
           </select>
         </label>
-        <label>
-          バックエンド
-          <select
-            value={form.backend}
-            disabled={disabled}
-            onChange={(event) => onChange({
-              ...form,
-              backend: event.target.value as PulseLabForm['backend'],
-            })}
-          >
-            <option value="auto">Auto（Rust優先）</option>
-            <option value="rust">Rust dense</option>
-            <option value="python">Python dense</option>
-          </select>
-        </label>
+        {/*
+          実行基盤の選択は実装名がそのまま並ぶため管理者モード専用。
+          通常は自動選択（既定値）のまま走る。
+        */}
+        {internalInfoVisible ? (
+          <label>
+            バックエンド
+            <select
+              value={form.backend}
+              disabled={disabled}
+              onChange={(event) => onChange({
+                ...form,
+                backend: event.target.value as PulseLabForm['backend'],
+              })}
+            >
+              <option value="auto">Auto（Rust優先）</option>
+              <option value="rust">Rust dense</option>
+              <option value="python">Python dense</option>
+            </select>
+          </label>
+        ) : null}
       </div>
 
       <div className="pulse-parameters__grid">

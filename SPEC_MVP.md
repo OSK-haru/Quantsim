@@ -4,9 +4,10 @@
 >
 > This file records the original one-qubit MVP acceptance target. The MVP was
 > completed and the current product has expanded to React/FastAPI, arbitrary
-> 1-4 qubit gate-aware simulation, Circuit Studio, state snapshots, and the
-> Pulse Baseline A API. Do not use the non-goals below as current feature
-> status. See `docs_for_develop/README.md`.
+> 1-18 qubit gate-aware simulation (noisy density matrix up to 8), Circuit
+> Studio, state snapshots, and the Pulse Baseline A / Extension B APIs. Do not
+> use the non-goals below as current feature status. See
+> `docs_for_develop/README.md`.
 
 ## Project
 Quantum-sim MVP

@@ -11,13 +11,15 @@ import type {
   RegisterGateType,
 } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
-import { createDefaultBellCircuit } from '../utils/circuitDefaults'
+import { createDefaultCircuit } from '../utils/circuitDefaults'
 import { parseCircuitConfigJson } from '../utils/circuitConfigTransfer'
 import {
   appendEmptyColumn,
+  appendControlToCnotInCircuit,
   canRemoveLastColumn,
   canPlaceGateInColumn,
   clearCircuit,
+  connectControlToXInCircuit,
   createCnotGate,
   createCcxGate,
   createPairGate,
@@ -82,9 +84,10 @@ const DEFAULT_EDITOR_HINT = 'パレットからゲートをドラッグして配
 
 export function CircuitProvider({ gateDurationDefaults, children }: CircuitProviderProps) {
   const [circuitHistory, setCircuitHistory] = useState<CircuitHistoryState>(() =>
-    createCircuitHistory(createDefaultBellCircuit()),
+    createCircuitHistory(createDefaultCircuit()),
   )
   const [selectedGateType, setSelectedGateType] = useState<GateType | null>(null)
+  const [selectedControlValue, setSelectedControlValue] = useState<0 | 1 | null>(null)
   const [selectedGateId, setSelectedGateId] = useState<string | null>(null)
   const [dragPayload, setDragPayload] = useState<DragGatePayload | null>(null)
   const [pendingCnotControl, setPendingCnotControl] = useState<PendingCnotControl | null>(null)
@@ -101,6 +104,7 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
 
   function handleSelectGateType(gateType: GateType | null) {
     setSelectedGateType(gateType)
+    setSelectedControlValue(null)
     setSelectedGateId(null)
     setPendingCnotControl(null)
 
@@ -122,19 +126,20 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     setEditorHint(`${gateType}: パレットからドラッグして配置してください。`)
   }
 
+  function handleSelectControlValue(controlValue: 0 | 1 | null) {
+    setSelectedControlValue(controlValue)
+    setSelectedGateType(null)
+    setSelectedGateId(null)
+    setPendingCnotControl(null)
+    setEditorHint(controlValue === null
+      ? DEFAULT_EDITOR_HINT
+      : `${controlValue === 1 ? '制御 ●' : '反制御 ○'}: X と同じ列の量子ビットをクリックしてください。`)
+  }
+
   function handleGateSelect(gateId: string | null) {
     setSelectedGateId(gateId)
     setPendingCnotControl(null)
     setEditorHint(gateId ? 'ゲートを選択中です。Deleteキーで削除できます。' : DEFAULT_EDITOR_HINT)
-  }
-
-  function handleResetCircuitToBell() {
-    finalizeCircuitEdit(createDefaultBellCircuit())
-    setSelectedGateType(null)
-    setSelectedGateId(null)
-    setPendingCnotControl(null)
-    setEditorHint(DEFAULT_EDITOR_HINT)
-    gateIdCounterRef.current = 0
   }
 
   function handleLogicalQubitsChange(nextLogicalQubits: number) {
@@ -221,7 +226,84 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
   // other gate type is drag-only (from the palette), and selecting an existing
   // gate happens by clicking it directly (see CircuitPreview's slot click
   // wiring), not through here.
+  function placeControlMarker(
+    columnIndex: number,
+    qubitIndex: number,
+    controlValue: 0 | 1,
+  ) {
+      const pendingControls = pendingCnotControl?.columnIndex === columnIndex
+        ? [pendingCnotControl.qubitIndex, ...(pendingCnotControl.additionalQubits ?? [])]
+        : []
+      const pendingValues = pendingCnotControl?.columnIndex === columnIndex
+        ? [pendingCnotControl.controlValue ?? 1, ...(pendingCnotControl.additionalControlValues ?? [])]
+        : []
+      if (pendingControls.includes(qubitIndex)) {
+        const retained = pendingControls
+          .map((control, index) => ({ control, value: pendingValues[index] }))
+          .filter((item) => item.control !== qubitIndex)
+        setPendingCnotControl(retained.length === 0 ? null : {
+          columnIndex,
+          qubitIndex: retained[0].control,
+          controlValue: retained[0].value,
+          additionalQubits: retained.slice(1).map((item) => item.control),
+          additionalControlValues: retained.slice(1).map((item) => item.value),
+        })
+        setEditorHint('制御点の配置を解除しました。')
+        return
+      }
+
+      const xTargets = circuitState.columns[columnIndex]?.gates.filter((gate) =>
+        gate.type === 'X' && ![...pendingControls, qubitIndex].includes(gate.targets[0]),
+      ) ?? []
+      if (xTargets.length === 1) {
+        const controls = [...pendingControls, qubitIndex]
+        const values = [...pendingValues, controlValue]
+        const gateId = `cnot-${columnIndex}-${controls.join('-')}-${xTargets[0].targets[0]}-${gateIdCounterRef.current}`
+        const nextCircuit = connectControlToXInCircuit(
+          circuitState,
+          columnIndex,
+          controls,
+          values,
+          gateDurationDefaults.CNOT,
+          gateId,
+        )
+        if (nextCircuit !== circuitState) {
+          gateIdCounterRef.current += 1
+          setPendingCnotControl(null)
+          finalizeCircuitEdit(nextCircuit)
+          setEditorHint(`${controlValue === 1 ? '制御' : '反制御'}と X を自動接続しました。`)
+          return
+        }
+      }
+
+      const nextCnotCircuit = appendControlToCnotInCircuit(
+        circuitState, columnIndex, qubitIndex, controlValue,
+      )
+      if (nextCnotCircuit !== circuitState) {
+        setPendingCnotControl(null)
+        finalizeCircuitEdit(nextCnotCircuit)
+        setEditorHint(`${controlValue === 1 ? '制御' : '反制御'}を既存の制御Xへ追加しました。`)
+        return
+      }
+
+      const controls = [...pendingControls, qubitIndex]
+      const values = [...pendingValues, controlValue]
+      setPendingCnotControl({
+        columnIndex,
+        qubitIndex: controls[0],
+        controlValue: values[0],
+        additionalQubits: controls.slice(1),
+        additionalControlValues: values.slice(1),
+      })
+      setEditorHint(`${controls.length} 個の制御点を仮置きしました。同じ列へ X をドロップしてください。`)
+  }
+
   function handleCircuitSlotClick(columnIndex: number, qubitIndex: number) {
+    if (selectedControlValue !== null) {
+      placeControlMarker(columnIndex, qubitIndex, selectedControlValue)
+      return
+    }
+
     if (selectedGateType && isRegisterGateType(selectedGateType)) {
       handleRegisterSlotClick(selectedGateType, columnIndex, qubitIndex)
       return
@@ -353,6 +435,51 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
       classicalBits = 2
       initialStates = [1, 0, 0, 0, 0]
       hint = '3量子ビット反復符号を読み込みました。X故障を注入済みです。'
+    } else if (preset === 'grover_4qubit') {
+      // Search a 16-item register for |0100>. The optimal integer Grover
+      // iteration count is three. Each diffuser is H^4 X^4 MCZ X^4 H^4,
+      // with MCZ represented as H(q3) · MCX(q0,q1,q2 -> q3) · H(q3).
+      const allQubits = [0, 1, 2, 3]
+      const allSingleQubitGates = (idPrefix: string, type: 'H' | 'X') =>
+        allQubits.map((qubit) => gate(`${idPrefix}-q${qubit}`, type, [qubit]))
+      const oracleGate = (iteration: number) => gate(
+        `grover4-oracle-${iteration}`,
+        'ORACLE',
+        allQubits,
+        [],
+        { params: { duration_us: gateDurationDefaults.ORACLE * allQubits.length, marked_index: 4 } },
+      )
+      const diffuser = (iteration: number, step: number) => [
+        { step, gates: allSingleQubitGates(`grover4-${iteration}-diff-h-a`, 'H') },
+        { step: step + 1, gates: allSingleQubitGates(`grover4-${iteration}-diff-x-a`, 'X') },
+        { step: step + 2, gates: [gate(`grover4-${iteration}-diff-h-target-a`, 'H', [3])] },
+        {
+          step: step + 3,
+          gates: [gate(
+            `grover4-${iteration}-diff-mcx`,
+            'CNOT',
+            [3],
+            [0, 1, 2],
+            { params: { duration_us: gateDurationDefaults.CNOT, control_state: 7 } },
+          )],
+        },
+        { step: step + 4, gates: [gate(`grover4-${iteration}-diff-h-target-b`, 'H', [3])] },
+        { step: step + 5, gates: allSingleQubitGates(`grover4-${iteration}-diff-x-b`, 'X') },
+        { step: step + 6, gates: allSingleQubitGates(`grover4-${iteration}-diff-h-b`, 'H') },
+      ]
+      columns = [
+        { step: 0, gates: allSingleQubitGates('grover4-init-h', 'H') },
+        { step: 1, gates: [oracleGate(1)] },
+        ...diffuser(1, 2),
+        { step: 9, gates: [oracleGate(2)] },
+        ...diffuser(2, 10),
+        { step: 17, gates: [oracleGate(3)] },
+        ...diffuser(3, 18),
+      ]
+      logicalQubits = 4
+      classicalBits = 0
+      initialStates = [0, 0, 0, 0]
+      hint = '4量子ビットGrover探索回路を読み込みました。|0100>を3回の反復で振幅増幅します。'
     } else {
       // Marks |11> with a CZ oracle, then amplifies it with one Grover diffusion round.
       columns = [
@@ -480,8 +607,18 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     setDragPayload({ source: 'palette', gateType })
     setSelectedGateType(null)
     setSelectedGateId(null)
-    setPendingCnotControl(null)
+    if (gateType !== 'X' || pendingCnotControl === null) {
+      setPendingCnotControl(null)
+    }
     setEditorHint(`${gateType} をドラッグ中です。回路スロットにドロップしてください。`)
+  }
+
+  function handleControlMarkerDragStart(controlValue: 0 | 1) {
+    activeDragRef.current = { source: 'palette', gateType: 'CNOT', committed: false }
+    setDragPayload({ source: 'palette', gateType: 'CNOT', controlValue })
+    setSelectedGateType(null)
+    setSelectedGateId(null)
+    setEditorHint(`${controlValue === 1 ? '制御 ●' : '反制御 ○'}をドラッグ中です。回路スロットにドロップしてください。`)
   }
 
   function handleCircuitGateDragStart(
@@ -515,7 +652,51 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     }
 
     if (dragPayload.source === 'palette') {
+      if (dragPayload.controlValue !== undefined) {
+        placeControlMarker(columnIndex, qubitIndex, dragPayload.controlValue)
+        if (activeDragRef.current) activeDragRef.current.committed = true
+        setDragPayload(null)
+        return
+      }
       const gateId = `${dragPayload.gateType.toLowerCase()}-${columnIndex}-${qubitIndex}-${gateIdCounterRef.current}`
+      if (
+        dragPayload.gateType === 'X' &&
+        pendingCnotControl?.columnIndex === columnIndex &&
+        ![pendingCnotControl.qubitIndex, ...(pendingCnotControl.additionalQubits ?? [])].includes(qubitIndex)
+      ) {
+        const controls = [pendingCnotControl.qubitIndex, ...(pendingCnotControl.additionalQubits ?? [])]
+        const controlValues = [pendingCnotControl.controlValue ?? 1, ...(pendingCnotControl.additionalControlValues ?? [])]
+        const controlledGateId = `cnot-${columnIndex}-${controls.join('-')}-${qubitIndex}-${gateIdCounterRef.current}`
+        const candidate = createCnotGate(
+          controls,
+          qubitIndex,
+          gateDurationDefaults.CNOT,
+          controlledGateId,
+          'CNOT',
+          controlValues,
+        )
+        const placement = canPlaceGateInColumn(circuitState, columnIndex, candidate)
+        if (placement.valid) {
+          gateIdCounterRef.current += 1
+          const nextCircuit = placeCnotGateInCircuit(
+            circuitState,
+            circuitState.columns.length,
+            columnIndex,
+            controls,
+            qubitIndex,
+            gateDurationDefaults.CNOT,
+            controlledGateId,
+            'CNOT',
+            controlValues,
+          )
+          if (activeDragRef.current) activeDragRef.current.committed = true
+          setPendingCnotControl(null)
+          finalizeCircuitEdit(nextCircuit)
+          setEditorHint(`${controls.length} 個の制御点と X を自動接続しました。`)
+          setDragPayload(null)
+          return
+        }
+      }
       const candidate =
         isRegisterGateType(dragPayload.gateType)
           ? (() => {
@@ -760,6 +941,7 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
   const value: CircuitContextValue = {
     circuitState,
     selectedGateType,
+    selectedControlValue,
     selectedGateId,
     dragPayload,
     pendingCnotControl,
@@ -770,8 +952,8 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     canClearCircuit: !isCircuitEmpty(circuitState),
     canRemoveLastCircuitColumn: canRemoveLastColumn(circuitState),
     handleSelectGateType,
+    handleSelectControlValue,
     handleGateSelect,
-    handleResetCircuitToBell,
     handleLoadCircuitPreset,
     handleLogicalQubitsChange,
     handleCircuitSlotClick,
@@ -785,6 +967,7 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     handleUndoCircuit,
     handleRedoCircuit,
     handlePaletteGateDragStart,
+    handleControlMarkerDragStart,
     handleCircuitGateDragStart,
     handleGateDragEnd,
     handleCircuitSlotDrop,
