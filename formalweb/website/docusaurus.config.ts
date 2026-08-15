@@ -114,12 +114,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          // TODO: replace with the real URL Cloudflare assigns on first
-          // `wrangler deploy` from frontend/ (either
-          // yuragi-strider-app.<your-workers-subdomain>.workers.dev or a
-          // custom domain you attach). See
-          // docs_for_develop/deployment/web-demo.md.
-          href: 'https://yuragi-strider-app.workers.dev',
+          href: 'https://yuragi-strider-app.23sam55781.workers.dev',
           label: 'アプリを試す',
           position: 'right',
           className: 'navbar__item--app-cta',

@@ -8,8 +8,10 @@ Cloudflare で公開中）とは別 URL で「ブラウザから触れる」Web 
 ## 全体構成
 
 - ドキュメントサイト: `yuragi-strider.pages.dev`（既存、変更なし）
-- アプリ（フロント）: 新規 Cloudflare Worker（静的アセット配信）、`frontend/wrangler.jsonc`
-- API（バックエンド）: 新規 Render Web Service、リポジトリ直下の `Dockerfile` / `render.yaml`
+- アプリ（フロント）: `https://yuragi-strider-app.23sam55781.workers.dev`
+  （Cloudflare Worker、静的アセット配信、`frontend/wrangler.jsonc`）
+- API（バックエンド）: `https://quantsim-vjul.onrender.com`
+  （Render Web Service、リポジトリ直下の `Dockerfile`）
 
 フロントとAPIは別オリジンになるため、フロントは `VITE_API_BASE_URL` で API の
 URL を指定し、API 側は `ALLOWED_ORIGINS` でフロントのオリジンを許可します。
@@ -21,8 +23,8 @@ URL を指定し、API 側は `ALLOWED_ORIGINS` でフロントのオリジン�
    リポジトリを選択する。リポジトリ直下の `render.yaml` が自動検出される。
 3. `render.yaml` の内容通りに `yuragi-strider-api` サービスが作成される
    （`Dockerfile` からビルド、無料プラン、`/api/health` をヘルスチェックに使用）。
-4. デプロイが終わったら、割り当てられた URL（例:
-   `https://yuragi-strider-api.onrender.com`）を控える。
+4. デプロイが終わったら、割り当てられた URL を控える。
+   （このプロジェクトでは `https://quantsim-vjul.onrender.com` で公開済み）
 5. `PUBLIC_MAX_LOGICAL_QUBITS`（デフォルト10）は密行列計算のメモリ消費を
    抑えるための公開デモ専用の上限。必要ならRenderの環境変数から調整できる
    （ローカル/デスクトップ版の18qubit上限には影響しない）。
@@ -39,30 +41,54 @@ URL を指定し、API 側は `ALLOWED_ORIGINS` でフロントのオリジン�
 ```sh
 cd frontend
 npm ci
-VITE_API_BASE_URL=https://yuragi-strider-api.onrender.com npm run build
+VITE_API_BASE_URL=https://quantsim-vjul.onrender.com npm run build
 npx wrangler login   # 未ログインの場合のみ
 npx wrangler deploy
 ```
 
-初回 `wrangler deploy` の出力に、実際に割り当てられた URL が表示される
-（`https://yuragi-strider-app.<あなたのworkers.devサブドメイン>.workers.dev`、
-または既存の Cloudflare カスタムドメインを紐付けていればそちら）。
+## 3. Renderで ALLOWED_ORIGINS をフロントの実URLに設定する
 
-## 3. 実URLで2箇所を更新する
+このプロジェクトの `yuragi-strider-api`（Render上の表示名は `quantsim-vjul`）は
+Blueprintではなく **New Web Service** から手動作成されたため、`render.yaml` は
+自動適用されない。Renderダッシュボードのサービス画面 → **Environment** タブで
+以下を手動追加する（末尾にスラッシュを付けない）。
 
-手順1・2はプレースホルダー URL (`yuragi-strider-app.workers.dev` /
-`yuragi-strider-api.onrender.com`) で書かれているので、実際の値が判明したら
-以下を更新してコミットする。
+| Key | Value |
+| --- | --- |
+| `ALLOWED_ORIGINS` | `https://yuragi-strider-app.23sam55781.workers.dev` |
+| `PUBLIC_MAX_LOGICAL_QUBITS` | `10` |
 
-- `render.yaml` の `ALLOWED_ORIGINS` → 実際のフロントURL
-  （Renderのダッシュボードでも直接上書き可能。両方揃える）
-- `formalweb/website/docusaurus.config.ts` の `アプリを試す` リンクの `href`
-  → 実際のフロントURL
+保存すると自動的に再デプロイされる。`docusaurus.config.ts` と `render.yaml` は
+既にこのURLで更新済み。
 
-更新後、Render は環境変数変更時に自動再デプロイされる。ドキュメントサイトは
-既存の手順（`docusaurus deploy` もしくは `wrangler deploy`）で再公開する。
+## 4. 新機能を追加した後の反映方法
 
-## 4. 動作確認チェックリスト
+バックエンドとフロントエンドで挙動が違うので注意。
+
+- **`api/` または `core/` を変更した場合**: `master` に push すれば Render が
+  自動で再ビルド・再デプロイする（Renderダッシュボードのサービス設定で
+  GitHub連携時に有効化される既定の動作。Settings > Build & Deploy で
+  Auto-Deploy が有効かどうか、どのブランチを見ているかは確認しておく）。
+- **`frontend/` を変更した場合**: `.github/workflows/deploy-frontend.yml` が
+  `master` への push（`frontend/**` の変更を含むもの）を検知して、
+  ビルドしてから `wrangler deploy` を自動実行する。手動での
+  `npm run build && npx wrangler deploy` はもう不要（GitHub Actionsの
+  **Actions** タブから `workflow_dispatch` で手動実行も可能）。
+
+このワークフローを動かすには、GitHubリポジトリの **Settings > Secrets and
+variables > Actions** に以下2つのRepository secretを一度だけ登録する。
+
+| Secret名 | 値の取得方法 |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Cloudflareダッシュボード → 右上のアイコン →
+  **My Profile > API Tokens > Create Token** → テンプレート「Edit Cloudflare
+  Workers」を使用して発行 |
+| `CLOUDFLARE_ACCOUNT_ID` | `frontend/` で `npx wrangler whoami` を実行すると
+  表示される、またはCloudflareダッシュボードの右サイドバーに表示される |
+
+登録後は、`frontend/` 配下を変更して `master` に push するだけで自動反映される。
+
+## 5. 動作確認チェックリスト
 
 - [ ] フロントURLを直接開いて `Simulate` ページが動く（`/api/simulate` が
       別オリジンのRenderに到達し、CORSエラーが出ない）
