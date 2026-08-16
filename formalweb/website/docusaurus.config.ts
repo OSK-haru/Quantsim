@@ -118,6 +118,11 @@ const config: Config = {
           position: 'left',
         },
         {
+          href: 'https://github.com/OSK-haru/Quantsim',
+          label: 'GitHub',
+          position: 'right',
+        },
+        {
           href: 'https://yuragi-strider-app.23sam55781.workers.dev',
           label: 'アプリを試してみる',
           position: 'right',
