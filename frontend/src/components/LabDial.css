@@ -33,7 +33,7 @@
 
 .lab-dial__track {
   fill: none;
-  stroke: rgba(163, 163, 163, 0.16);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.16);
   stroke-width: 9;
   stroke-linecap: round;
 }
@@ -51,7 +51,7 @@
 }
 
 .lab-dial__tick {
-  stroke: rgba(163, 163, 163, 0.4);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.4);
   stroke-width: 2;
 }
 
@@ -85,7 +85,7 @@
   align-items: baseline;
   gap: 3px;
   padding: 4px 10px;
-  border: 1px solid rgba(163, 163, 163, 0.3);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.3);
   background: var(--tt-void);
   color: var(--tt-ink-max);
   font: inherit;

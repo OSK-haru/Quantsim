@@ -5,7 +5,7 @@
   --pulse-orange: var(--tt-accent);
   min-height: 100vh;
   padding: 34px clamp(18px, 4vw, 58px) 70px;
-  background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(163, 163, 163, 0.025) 79px 80px), rgba(30, 30, 30, 0.18);
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgb(var(--tt-ink-mid-rgb) / 0.025) 79px 80px), rgb(var(--tt-panel-3-rgb) / 0.18);
   color: var(--pulse-ink);
 }
 
@@ -60,7 +60,7 @@
 .pulse-lab__nav button,
 .pulse-lab__run button {
   padding: 9px 13px;
-  border: 1px solid rgba(77, 77, 77, 0.28);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.28);
   background: var(--tt-void);
   color: var(--tt-ink);
   cursor: pointer;
@@ -79,8 +79,8 @@
   padding: 11px 14px;
   align-items: baseline;
   gap: 8px;
-  border: 1px solid rgba(230, 25, 25, 0.24);
-  background: rgba(18, 18, 18, 0.46);
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.24);
+  background: rgb(var(--tt-panel-rgb) / 0.46);
   color: var(--tt-ink-mid);
   font-size: 0.82rem;
   line-height: 1.5;
@@ -99,8 +99,8 @@
   margin: 0 auto;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid rgba(77, 77, 77, 0.18);
-  background: rgba(77, 77, 77, 0.18);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.18);
+  background: rgb(var(--tt-rule-strong-rgb) / 0.18);
 }
 
 .pulse-lab__identity {
@@ -133,7 +133,7 @@
   grid-template-columns: 1fr auto;
   gap: 12px 20px;
   padding: 19px 22px;
-  border: 1px solid rgba(230, 25, 25, 0.23);
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.23);
   background: var(--tt-panel);
 }
 
@@ -166,7 +166,7 @@
 }
 
 .pulse-lab__run button:disabled {
-  border-color: rgba(77, 77, 77, 0.22);
+  border-color: rgb(var(--tt-rule-strong-rgb) / 0.22);
   background: var(--tt-panel-3);
   color: var(--tt-ink-dim);
   cursor: not-allowed;
@@ -247,7 +247,7 @@
 
 .pulse-lab__empty {
   padding: 38px;
-  border: 1px dashed rgba(77, 77, 77, 0.26);
+  border: 1px dashed rgb(var(--tt-rule-strong-rgb) / 0.26);
   text-align: center;
   background: var(--tt-void);
 }

@@ -5,7 +5,7 @@
   display: grid;
   align-content: start;
   gap: 20px;
-  background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(163, 163, 163, 0.025) 79px 80px), rgba(30, 30, 30, 0.18);
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgb(var(--tt-ink-mid-rgb) / 0.025) 79px 80px), rgb(var(--tt-panel-3-rgb) / 0.18);
   color: var(--tt-ink);
 }
 
@@ -59,7 +59,7 @@
 .state-explorer-page__actions button,
 .state-explorer-page__empty button {
   padding: 10px 14px;
-  border: 1px solid rgba(163, 163, 163, 0.28);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.28);
   background: var(--tt-panel);
   color: var(--tt-ink);
   cursor: pointer;
@@ -78,7 +78,7 @@
 
 .state-explorer-page__summary span {
   padding: 7px 10px;
-  border: 1px solid rgba(163, 163, 163, 0.2);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.2);
   background: var(--tt-panel);
   color: var(--tt-ink);
   font-size: 0.84rem;
@@ -87,7 +87,7 @@
 .state-explorer-page__workspace {
   min-width: 0;
   padding: 22px;
-  border: 1px solid rgba(77, 77, 77, 0.2);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.2);
   background: var(--tt-void);
 }
 
@@ -114,7 +114,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border: 1px solid rgba(163, 163, 163, 0.32);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.32);
   background: var(--tt-panel);
   color: var(--tt-ink);
   font-size: 0.86rem;
@@ -141,7 +141,7 @@
 
 .state-explorer-page__panel-menu-count {
   padding: 2px 8px;
-  background: rgba(163, 163, 163, 0.16);
+  background: rgb(var(--tt-ink-mid-rgb) / 0.16);
   color: var(--tt-ink-mid);
   font-size: 0.76rem;
   font-weight: 700;
@@ -156,7 +156,7 @@
   gap: 4px;
   min-width: 240px;
   padding: 10px;
-  border: 1px solid rgba(163, 163, 163, 0.3);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.3);
   background: var(--tt-panel);
 }
 
@@ -165,13 +165,13 @@
   gap: 6px;
   padding-bottom: 8px;
   margin-bottom: 4px;
-  border-bottom: 1px solid rgba(163, 163, 163, 0.2);
+  border-bottom: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.2);
 }
 
 .state-explorer-page__panel-menu-actions button {
   flex: 1;
   padding: 6px 8px;
-  border: 1px solid rgba(163, 163, 163, 0.32);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.32);
   background: var(--tt-panel-2);
   color: var(--tt-ink);
   font-size: 0.76rem;
@@ -193,7 +193,7 @@
 }
 
 .state-explorer-page__panel-menu-item:hover {
-  background: rgba(163, 163, 163, 0.1);
+  background: rgb(var(--tt-ink-mid-rgb) / 0.1);
 }
 
 .state-explorer-page__panel-menu-item input {
@@ -202,9 +202,9 @@
 
 .state-explorer-panel {
   margin: 12px 0;
-  border: 1px solid rgba(163, 163, 163, 0.24);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
   overflow: hidden;
-  background: rgba(10, 10, 10, 0.5);
+  background: rgb(var(--tt-void-rgb) / 0.5);
 }
 
 .state-explorer-panel__toggle {
@@ -231,7 +231,7 @@
 }
 
 .state-explorer-panel--collapsed {
-  background: rgba(10, 10, 10, 0.3);
+  background: rgb(var(--tt-void-rgb) / 0.3);
 }
 
 .state-explorer-page__comparison-grid {
@@ -244,13 +244,13 @@
 .state-explorer-page__comparison-panel {
   min-width: 0;
   padding: 16px;
-  border: 1px solid rgba(77, 77, 77, 0.18);
-  background: rgba(10, 10, 10, 0.42);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.18);
+  background: rgb(var(--tt-void-rgb) / 0.42);
 }
 
 .state-explorer-page__comparison-panel--ideal {
-  border-color: rgba(230, 25, 25, 0.28);
-  background: rgba(10, 10, 10, 0.24);
+  border-color: rgb(var(--tt-accent-rgb) / 0.28);
+  background: rgb(var(--tt-void-rgb) / 0.24);
 }
 
 .state-explorer-page__comparison-panel h2,
@@ -289,7 +289,7 @@
 .state-explorer-page__unavailable {
   box-sizing: border-box;
   padding: 28px;
-  border: 1px solid rgba(163, 163, 163, 0.2);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.2);
   background: var(--tt-panel);
   color: var(--tt-ink);
 }
@@ -306,8 +306,8 @@
 }
 
 .state-explorer-page__empty button {
-  border-color: rgba(163, 163, 163, 0.44);
-  background: rgba(42, 42, 42, 0.46);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.44);
+  background: rgb(var(--tt-rule-rgb) / 0.46);
   color: var(--tt-ink);
 }
 

@@ -79,10 +79,10 @@
   display: grid;
   gap: 3px 14px;
   padding: 8px 12px;
-  border-top: 1px solid rgba(163, 163, 163, 0.5);
-  border-bottom: 1px solid rgba(163, 163, 163, 0.5);
-  border-left: 2px solid rgba(163, 163, 163, 0.5);
-  border-right: 2px solid rgba(163, 163, 163, 0.5);
+  border-top: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.5);
+  border-bottom: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.5);
+  border-left: 2px solid rgb(var(--tt-ink-mid-rgb) / 0.5);
+  border-right: 2px solid rgb(var(--tt-ink-mid-rgb) / 0.5);
   font-family: var(--tt-mono);
   font-size: 0.78rem;
   color: var(--tt-ink-max);

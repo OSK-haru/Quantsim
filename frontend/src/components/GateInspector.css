@@ -5,8 +5,8 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid rgba(163, 163, 163, 0.14);
-  background: rgba(10, 10, 10, 0.2);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.14);
+  background: rgb(var(--tt-void-rgb) / 0.2);
   color: var(--tt-ink);
 }
 
@@ -44,8 +44,8 @@
   align-items: baseline;
   gap: 6px;
   padding: 6px 9px;
-  border: 1px solid rgba(163, 163, 163, 0.12);
-  background: rgba(10, 10, 10, 0.44);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+  background: rgb(var(--tt-void-rgb) / 0.44);
 }
 
 .gate-inspector dt {
@@ -67,7 +67,7 @@
 .gate-inspector__angle-input {
   width: 88px;
   padding: 3px 6px;
-  border: 1px solid rgba(163, 163, 163, 0.35);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.35);
   background: var(--tt-void);
   color: var(--tt-ink);
   font: inherit;
@@ -95,14 +95,14 @@
 }
 
 .gate-inspector__reverse {
-  border: 1px solid rgba(234, 234, 234, 0.38);
-  background: rgba(30, 30, 30, 0.2);
+  border: 1px solid rgb(var(--tt-ink-rgb) / 0.38);
+  background: rgb(var(--tt-panel-3-rgb) / 0.2);
   color: var(--tt-ink);
 }
 
 .gate-inspector__reverse:hover {
   border-color: var(--tt-ink);
-  background: rgba(30, 30, 30, 0.3);
+  background: rgb(var(--tt-panel-3-rgb) / 0.3);
 }
 
 .gate-inspector__note {
@@ -116,25 +116,25 @@
 }
 
 .gate-inspector__reveal {
-  border: 1px solid rgba(163, 163, 163, 0.34);
-  background: rgba(77, 77, 77, 0.14);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.34);
+  background: rgb(var(--tt-rule-strong-rgb) / 0.14);
   color: var(--tt-ink);
 }
 
 .gate-inspector__delete {
-  border: 1px solid rgba(230, 25, 25, 0.32);
-  background: rgba(122, 15, 15, 0.14);
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.32);
+  background: rgb(var(--tt-accent-deep-rgb) / 0.14);
   color: var(--tt-accent-hot);
 }
 
 .gate-inspector__reveal:hover {
   border-color: var(--tt-ink-mid);
-  background: rgba(77, 77, 77, 0.22);
+  background: rgb(var(--tt-rule-strong-rgb) / 0.22);
 }
 
 .gate-inspector__delete:hover {
   border-color: var(--tt-accent);
-  background: rgba(122, 15, 15, 0.22);
+  background: rgb(var(--tt-accent-deep-rgb) / 0.22);
 }
 
 @media (max-width: 640px) {

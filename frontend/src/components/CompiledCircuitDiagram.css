@@ -5,8 +5,8 @@
 
 .compiled-circuit__viewport {
   overflow-x: auto;
-  border: 1px solid rgba(163, 163, 163, 0.16);
-  background: rgba(10, 10, 10, 0.56);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.16);
+  background: rgb(var(--tt-void-rgb) / 0.56);
   border-radius: var(--tt-radius);
 }
 
@@ -21,11 +21,11 @@
 }
 
 .compiled-circuit__band {
-  fill: rgba(10, 10, 10, 0.22);
+  fill: rgb(var(--tt-void-rgb) / 0.22);
 }
 
 .compiled-circuit__band--alternate {
-  fill: rgba(30, 30, 30, 0.34);
+  fill: rgb(var(--tt-panel-3-rgb) / 0.34);
 }
 
 .compiled-circuit__column-index {
@@ -36,8 +36,8 @@
 }
 
 .compiled-circuit__source-band {
-  fill: rgba(230, 25, 25, 0.1);
-  stroke: rgba(230, 25, 25, 0.42);
+  fill: rgb(var(--tt-accent-rgb) / 0.1);
+  stroke: rgb(var(--tt-accent-rgb) / 0.42);
   stroke-width: 1;
 }
 
@@ -63,7 +63,7 @@
 }
 
 .compiled-circuit__wire {
-  stroke: rgba(163, 163, 163, 0.42);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.42);
   stroke-width: 2;
 }
 

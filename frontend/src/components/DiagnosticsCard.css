@@ -6,8 +6,8 @@
 
 .diagnostics-item {
   padding: 14px 15px;
-  border: 1px solid rgba(163, 163, 163, 0.16);
-  background: rgba(10, 10, 10, 0.56);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.16);
+  background: rgb(var(--tt-void-rgb) / 0.56);
 }
 
 .diagnostics-label {
@@ -52,20 +52,20 @@
 
 .diagnostics-badge.is-ok {
   color: var(--tt-ink);
-  background: rgba(18, 18, 18, 0.28);
-  border-color: rgba(42, 42, 42, 0.28);
+  background: rgb(var(--tt-panel-rgb) / 0.28);
+  border-color: rgb(var(--tt-rule-rgb) / 0.28);
 }
 
 .diagnostics-badge.is-warn {
   color: var(--tt-accent-hot);
-  background: rgba(122, 15, 15, 0.28);
-  border-color: rgba(230, 25, 25, 0.28);
+  background: rgb(var(--tt-accent-deep-rgb) / 0.28);
+  border-color: rgb(var(--tt-accent-rgb) / 0.28);
 }
 
 .diagnostics-performance {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid rgba(163, 163, 163, 0.16);
+  border-top: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.16);
 }
 
 .diagnostics-performance__title {
@@ -85,8 +85,8 @@
 
 .diagnostics-performance__item {
   padding: 12px 13px;
-  background: rgba(10, 10, 10, 0.44);
-  border: 1px solid rgba(163, 163, 163, 0.12);
+  background: rgb(var(--tt-void-rgb) / 0.44);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
 }
 
 .diagnostics-performance__label {

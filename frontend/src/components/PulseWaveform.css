@@ -2,7 +2,7 @@
 .pulse-population,
 .pulse-density {
   padding: 22px;
-  border: 1px solid rgba(77, 77, 77, 0.2);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.2);
   background: var(--tt-void);
 }
 
@@ -69,12 +69,12 @@
 .pulse-waveform__axis,
 .pulse-population__axis,
 .pulse-population__grid {
-  stroke: rgba(77, 77, 77, 0.23);
+  stroke: rgb(var(--tt-rule-strong-rgb) / 0.23);
   stroke-width: 1;
 }
 
 .pulse-waveform__boundary {
-  stroke: rgba(230, 25, 25, 0.45);
+  stroke: rgb(var(--tt-accent-rgb) / 0.45);
   stroke-dasharray: 4 5;
 }
 

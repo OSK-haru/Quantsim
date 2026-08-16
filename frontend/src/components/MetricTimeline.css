@@ -1,6 +1,6 @@
 .metric-timeline {
   padding: 24px;
-  border: 1px solid rgba(77, 77, 77, 0.2);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.2);
   background: var(--tt-void);
   color: var(--tt-ink);
 }
@@ -61,7 +61,7 @@
 }
 
 .metric-timeline__axis {
-  stroke: rgba(163, 163, 163, 0.3);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.3);
   stroke-width: 1.2;
 }
 
@@ -112,8 +112,8 @@
 .metric-timeline__interpretation {
   margin: 14px 0 0;
   padding: 11px 13px;
-  border: 1px solid rgba(230, 25, 25, 0.2);
-  background: rgba(122, 15, 15, 0.14);
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.2);
+  background: rgb(var(--tt-accent-deep-rgb) / 0.14);
   color: var(--tt-ink);
   font-size: 0.86rem;
   line-height: 1.65;
@@ -134,16 +134,16 @@
 .metric-timeline__empty {
   margin: 0;
   padding: 18px 16px;
-  border: 1px dashed rgba(163, 163, 163, 0.22);
-  background: rgba(10, 10, 10, 0.44);
+  border: 1px dashed rgb(var(--tt-ink-mid-rgb) / 0.22);
+  background: rgb(var(--tt-void-rgb) / 0.44);
   color: var(--tt-ink-mid);
   line-height: 1.6;
 }
 
 .metric-timeline__value-card {
   padding: 14px 15px;
-  border: 1px solid rgba(77, 77, 77, 0.16);
-  background: rgba(10, 10, 10, 0.56);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.16);
+  background: rgb(var(--tt-void-rgb) / 0.56);
 }
 
 .metric-timeline__label {

@@ -37,7 +37,7 @@
   width: 100%;
   overflow: hidden;
 
-  background: rgba(77, 77, 77, 0.25);
+  background: rgb(var(--tt-rule-strong-rgb) / 0.25);
 }
 
 /*
@@ -96,7 +96,7 @@
 /* パルスシミュレーション版 */
 .simulation-completion-popup--pulse
 .simulation-completion-popup__inner {
-  background: rgba(234, 234, 234, 0.26);
+  background: rgb(var(--tt-ink-rgb) / 0.26);
 }
 
 .simulation-completion-popup--pulse::before {
@@ -113,7 +113,7 @@
   width: 180px;
   height: 130px;
 
-  background: rgba(77, 77, 77, 0.22);
+  background: rgb(var(--tt-rule-strong-rgb) / 0.22);
 
   pointer-events: none;
 
@@ -126,7 +126,7 @@
 
 .simulation-completion-popup--pulse
 .simulation-completion-popup__glow {
-  background: rgba(234, 234, 234, 0.24);
+  background: rgb(var(--tt-ink-rgb) / 0.24);
 }
 
 .simulation-completion-popup__fluctuation {
@@ -137,9 +137,9 @@
   background: repeating-radial-gradient(
       ellipse at 50% 50%,
       transparent 0 28px,
-      rgba(163, 163, 163, 0.08) 29px 30px,
+      rgb(var(--tt-ink-mid-rgb) / 0.08) 29px 30px,
       transparent 31px 58px
-    ), rgba(163, 163, 163, 0.24);
+    ), rgb(var(--tt-ink-mid-rgb) / 0.24);
 
   background-size: 170px 130px,
     230px 180px,
@@ -161,9 +161,9 @@
   background: repeating-radial-gradient(
       ellipse at 50% 50%,
       transparent 0 28px,
-      rgba(234, 234, 234, 0.08) 29px 30px,
+      rgb(var(--tt-ink-rgb) / 0.08) 29px 30px,
       transparent 31px 58px
-    ), rgba(234, 234, 234, 0.24);
+    ), rgb(var(--tt-ink-rgb) / 0.24);
 
   background-size: 170px 130px,
     230px 180px,
@@ -220,7 +220,7 @@
 
   border: 0;
 
-  background: rgba(163, 163, 163, 0.14);
+  background: rgb(var(--tt-ink-mid-rgb) / 0.14);
   color: var(--tt-ink);
 
   font: inherit;
@@ -235,7 +235,7 @@
 }
 
 .simulation-completion-popup__close:hover {
-  background: rgba(163, 163, 163, 0.26);
+  background: rgb(var(--tt-ink-mid-rgb) / 0.26);
   color: var(--tt-ink-max);
 
   transform: scale(1.08);

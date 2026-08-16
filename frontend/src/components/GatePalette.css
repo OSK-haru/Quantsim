@@ -4,8 +4,8 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 10px;
-  border: 1px solid rgba(163, 163, 163, 0.14);
-  background: rgba(10, 10, 10, 0.2);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.14);
+  background: rgb(var(--tt-void-rgb) / 0.2);
   color: var(--tt-ink);
 }
 
@@ -15,8 +15,8 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 6px;
-  border: 1px solid rgba(163, 163, 163, 0.12);
-  background: rgba(10, 10, 10, 0.44);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+  background: rgb(var(--tt-void-rgb) / 0.44);
 }
 
 .gate-palette__buttons {
@@ -52,8 +52,8 @@
 .gate-palette__button {
   min-width: 38px;
   padding: 8px 11px;
-  border: 1px solid rgba(163, 163, 163, 0.24);
-  background: rgba(10, 10, 10, 0.3);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
+  background: rgb(var(--tt-void-rgb) / 0.3);
   color: var(--tt-ink);
   cursor: pointer;
   font: inherit;
@@ -87,7 +87,7 @@
 
 .gate-palette__qubit-button:hover,
 .gate-palette__button:hover {
-  border-color: rgba(163, 163, 163, 0.48);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.48);
 }
 
 .gate-palette__qubit-button:focus-visible,
@@ -147,8 +147,8 @@
 
 /* 量子ビット数が足りないゲートは、系統色を落として無効だと分かるようにする。 */
 .gate-palette__item .gate-palette__button:disabled {
-  border-color: rgba(163, 163, 163, 0.16);
-  background: rgba(10, 10, 10, 0.3);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.16);
+  background: rgb(var(--tt-void-rgb) / 0.3);
   color: var(--tt-ink-faint);
   cursor: not-allowed;
 }
@@ -164,7 +164,7 @@
   left: 50%;
   z-index: 40;
   padding: 12px 14px;
-  border: 1px solid rgba(163, 163, 163, 0.28);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.28);
   background: var(--tt-panel);
   opacity: 0;
   pointer-events: none;

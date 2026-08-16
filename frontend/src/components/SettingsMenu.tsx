@@ -2,16 +2,35 @@ import './SettingsMenu.css'
 import { useAdminMode } from '../context/useAdminMode'
 import { useAnimationSettings } from '../context/useAnimationSettings'
 import { usePetSettings } from '../context/usePetSettings'
+import { useTheme } from '../context/useTheme'
 
 export function SettingsMenu() {
   const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
   const { petVisible, setPetVisible } = usePetSettings()
   const { adminModeEnabled, setAdminModeEnabled } = useAdminMode()
+  const { theme, toggleTheme } = useTheme()
+  const darkModeEnabled = theme === 'dark'
 
   return (
     <div className="settings-menu">
       <div className="settings-menu__header">
         <span>設定</span>
+      </div>
+      <div className="settings-menu__row">
+        <div className="settings-menu__row-label">
+          <span>ダークモード</span>
+          <small>画面の明るさと配色を切り替え</small>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={darkModeEnabled}
+          aria-label="ダークモードを切り替え"
+          className={`settings-menu__switch${darkModeEnabled ? ' settings-menu__switch--on' : ''}`}
+          onClick={toggleTheme}
+        >
+          <span className="settings-menu__switch-knob" aria-hidden="true" />
+        </button>
       </div>
       <div className="settings-menu__row">
         <div className="settings-menu__row-label">

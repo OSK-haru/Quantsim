@@ -6,7 +6,7 @@
   min-height: 100vh;
   box-sizing: border-box;
   padding: 34px clamp(18px, 4vw, 58px) 70px;
-  background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(163, 163, 163, 0.025) 79px 80px), rgba(30, 30, 30, 0.18);
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgb(var(--tt-ink-mid-rgb) / 0.025) 79px 80px), rgb(var(--tt-panel-3-rgb) / 0.18);
   color: var(--pulse-ink);
 }
 
@@ -54,7 +54,7 @@
 .pulse-circuit-studio__environment,
 .pulse-circuit-studio__palette,
 .pulse-circuit-studio__sequence {
-  border: 1px solid rgba(163, 163, 163, 0.2);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.2);
   background: var(--tt-void);
 }
 
@@ -76,7 +76,7 @@
   box-sizing: border-box;
   margin-bottom: 18px;
   padding: 13px 16px;
-  border-color: rgba(230, 25, 25, 0.25);
+  border-color: rgb(var(--tt-accent-rgb) / 0.25);
   color: var(--tt-accent-hot);
 }
 
@@ -120,7 +120,7 @@
 .pulse-circuit-studio__transmon-count select {
   min-width: 110px;
   padding: 8px 10px;
-  border: 1px solid rgba(163, 163, 163, 0.26);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.26);
   background: var(--tt-void);
   color: var(--pulse-ink);
 }
@@ -170,7 +170,7 @@
 .pulse-circuit-studio__clear,
 .pulse-circuit-studio__step-actions button,
 .pulse-circuit-studio__inspector button {
-  border: 1px solid rgba(163, 163, 163, 0.22);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.22);
   background: var(--tt-panel);
   color: var(--pulse-ink);
   cursor: pointer;
@@ -211,7 +211,7 @@
   grid-template-columns: 76px minmax(0, 1fr);
   min-height: 150px;
   align-items: center;
-  border-block: 1px solid rgba(163, 163, 163, 0.12);
+  border-block: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
 }
 
 .pulse-circuit-studio__lanes {
@@ -221,8 +221,8 @@
 }
 
 .pulse-circuit-studio__track[data-active='true'] {
-  border-color: rgba(163, 163, 163, 0.34);
-  background: rgba(10, 10, 10, 0.2);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.34);
+  background: rgb(var(--tt-void-rgb) / 0.2);
 }
 
 .pulse-circuit-studio__line-label {
@@ -249,7 +249,7 @@
   gap: 16px;
   align-items: end;
   padding: 18px;
-  border: 1px solid rgba(234, 234, 234, 0.34);
+  border: 1px solid rgb(var(--tt-ink-rgb) / 0.34);
   background: var(--tt-panel);
 }
 
@@ -280,7 +280,7 @@
 .pulse-circuit-studio__virtual-z-editor input {
   min-height: 40px;
   padding: 8px 10px;
-  border: 1px solid rgba(234, 234, 234, 0.32);
+  border: 1px solid rgb(var(--tt-ink-rgb) / 0.32);
   background: var(--tt-void);
   color: var(--pulse-ink);
 }
@@ -295,7 +295,7 @@
 .pulse-circuit-studio__virtual-z-presets button,
 .pulse-circuit-studio__virtual-z-save {
   padding: 8px 11px;
-  border: 1px solid rgba(234, 234, 234, 0.32);
+  border: 1px solid rgb(var(--tt-ink-rgb) / 0.32);
   background: var(--tt-panel-3);
   color: var(--tt-ink);
   cursor: pointer;
@@ -323,7 +323,7 @@
 
 .pulse-circuit-studio__step {
   flex: 0 0 116px;
-  border: 1px solid rgba(163, 163, 163, 0.2);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.2);
   overflow: hidden;
   background: var(--tt-panel);
 }
@@ -333,7 +333,7 @@
 }
 
 .pulse-circuit-studio__step[data-operation='virtual_z'] {
-  border-color: rgba(234, 234, 234, 0.42);
+  border-color: rgb(var(--tt-ink-rgb) / 0.42);
   background: var(--tt-panel-3);
 }
 
@@ -367,7 +367,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   padding: 6px;
-  border-top: 1px solid rgba(163, 163, 163, 0.12);
+  border-top: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
 }
 
 .pulse-circuit-studio__step-actions button {

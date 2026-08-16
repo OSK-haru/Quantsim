@@ -36,6 +36,14 @@
   /* Channel triplets, for compositing a token colour at a variable alpha. */
   --tt-ink-rgb: 234 234 234;
   --tt-accent-rgb: 230 25 25;
+  --tt-void-rgb: 10 10 10;
+  --tt-panel-rgb: 18 18 18;
+  --tt-panel-2-rgb: 23 23 23;
+  --tt-panel-3-rgb: 30 30 30;
+  --tt-rule-rgb: 42 42 42;
+  --tt-rule-strong-rgb: 77 77 77;
+  --tt-ink-mid-rgb: 163 163 163;
+  --tt-accent-deep-rgb: 122 15 15;
 
   /*
    * -- Gate family hues ---------------------------------------------------
@@ -52,7 +60,7 @@
   --gate-annotation-rgb: 163 163 163;
 
   /* -- Blueprint column rule, drawn across every workspace substrate ----- */
-  --tt-blueprint: rgba(234, 234, 234, 0.035);
+  --tt-blueprint: rgb(var(--tt-ink-rgb) / 0.035);
 
   /* -- Typography ------------------------------------------------------- */
   /*
@@ -91,6 +99,43 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color-scheme: dark;
+}
+
+html[data-theme='light'] {
+  --tt-void: #f4f2ed;
+  --tt-panel: #fffefa;
+  --tt-panel-2: #ebe8e0;
+  --tt-panel-3: #dedbd3;
+
+  --tt-rule: #d8d2c7;
+  --tt-rule-mid: #b9b2a5;
+  --tt-rule-strong: #7c756b;
+
+  --tt-ink: #252320;
+  --tt-ink-max: #090909;
+  --tt-ink-mid: #5c5850;
+  --tt-ink-dim: #777168;
+  --tt-ink-faint: #a29c92;
+
+  --tt-accent: #b71414;
+  --tt-accent-hot: #d81919;
+  --tt-accent-deep: #760f0f;
+  --tt-accent-wash: #f5dddd;
+  --tt-signal: #197a25;
+
+  --tt-ink-rgb: 37 35 32;
+  --tt-accent-rgb: 183 20 20;
+  --tt-void-rgb: 244 242 237;
+  --tt-panel-rgb: 255 254 250;
+  --tt-panel-2-rgb: 235 232 224;
+  --tt-panel-3-rgb: 222 219 211;
+  --tt-rule-rgb: 216 210 199;
+  --tt-rule-strong-rgb: 124 117 107;
+  --tt-ink-mid-rgb: 92 88 80;
+  --tt-accent-deep-rgb: 118 15 15;
+  --tt-blueprint: rgba(37, 35, 32, 0.05);
+
+  color-scheme: light;
 }
 
 html,

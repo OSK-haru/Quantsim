@@ -1,14 +1,14 @@
 .circuit-preview {
   padding: 10px;
-  border: 1px solid rgba(163, 163, 163, 0.14);
-  background: rgba(10, 10, 10, 0.18);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.14);
+  background: rgb(var(--tt-void-rgb) / 0.18);
   color: var(--tt-ink);
   -webkit-user-select: none;
   user-select: none;
 }
 
 .circuit-preview--dragging {
-  border-color: rgba(230, 25, 25, 0.34);
+  border-color: rgb(var(--tt-accent-rgb) / 0.34);
 }
 
 .circuit-preview__header {
@@ -33,8 +33,8 @@
   gap: 6px;
   margin-top: 6px;
   padding: 5px 9px;
-  border: 1px solid rgba(230, 25, 25, 0.28);
-  background: rgba(122, 15, 15, 0.14);
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.28);
+  background: rgb(var(--tt-accent-deep-rgb) / 0.14);
   color: var(--tt-accent-hot);
   font-size: 0.86rem;
   line-height: 1.4;
@@ -62,8 +62,8 @@
 
 .circuit-preview__column-button {
   padding: 8px 11px;
-  border: 1px solid rgba(163, 163, 163, 0.24);
-  background: rgba(10, 10, 10, 0.32);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
+  background: rgb(var(--tt-void-rgb) / 0.32);
   color: var(--tt-ink);
   cursor: pointer;
   font: inherit;
@@ -80,8 +80,8 @@
   overflow-x: auto;
   max-width: 100%;
   padding-bottom: 4px;
-  border: 1px solid rgba(163, 163, 163, 0.1);
-  background: rgba(10, 10, 10, 0.16);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.1);
+  background: rgb(var(--tt-void-rgb) / 0.16);
   overscroll-behavior-x: contain;
 }
 
@@ -97,7 +97,7 @@
   z-index: 4;
   display: block;
   background: var(--tt-panel);
-  border-right: 1px solid rgba(163, 163, 163, 0.16);
+  border-right: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.16);
 }
 
 .circuit-preview__label-rail-item {
@@ -125,11 +125,11 @@
 }
 
 .circuit-preview__column-band {
-  fill: rgba(10, 10, 10, 0.22);
+  fill: rgb(var(--tt-void-rgb) / 0.22);
 }
 
 .circuit-preview__column-band--alternate {
-  fill: rgba(18, 18, 18, 0.18);
+  fill: rgb(var(--tt-panel-rgb) / 0.18);
 }
 
 .circuit-preview__column-band--empty {
@@ -137,18 +137,18 @@
 }
 
 .circuit-preview__column-band--highlighted {
-  fill: rgba(163, 163, 163, 0.22);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.22);
   stroke: var(--tt-ink);
   stroke-width: 1.5;
 }
 
 .circuit-preview__column-divider {
-  stroke: rgba(163, 163, 163, 0.12);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.12);
   stroke-width: 1;
 }
 
 .circuit-preview__column-divider--major {
-  stroke: rgba(163, 163, 163, 0.28);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.28);
   stroke-width: 1.4;
 }
 
@@ -159,14 +159,14 @@
 }
 
 .circuit-preview__add-column-band {
-  fill: rgba(163, 163, 163, 0.05);
-  stroke: rgba(163, 163, 163, 0.4);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.05);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.4);
   stroke-width: 1.4;
   stroke-dasharray: 6 5;
 }
 
 .circuit-preview__add-column-band--hovered {
-  fill: rgba(163, 163, 163, 0.16);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.16);
   stroke: var(--tt-ink-mid);
   stroke-dasharray: none;
 }
@@ -181,7 +181,7 @@
 }
 
 .circuit-preview__wire {
-  stroke: rgba(163, 163, 163, 0.42);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.42);
   stroke-width: 2;
 }
 
@@ -196,31 +196,31 @@
 }
 
 .circuit-preview__slot {
-  fill: rgba(10, 10, 10, 0.1);
-  stroke: rgba(163, 163, 163, 0.16);
+  fill: rgb(var(--tt-void-rgb) / 0.1);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.16);
   stroke-dasharray: 4 4;
   stroke-width: 1.2;
 }
 
 .circuit-preview__slot--interactive {
-  fill: rgba(163, 163, 163, 0.06);
-  stroke: rgba(163, 163, 163, 0.38);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.06);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.38);
 }
 
 .circuit-preview__slot--drop-target {
-  fill: rgba(42, 42, 42, 0.1);
+  fill: rgb(var(--tt-rule-rgb) / 0.1);
   stroke: var(--tt-ink-dim);
   stroke-width: 1.5;
 }
 
 .circuit-preview__slot--drop-hovered {
-  fill: rgba(42, 42, 42, 0.18);
+  fill: rgb(var(--tt-rule-rgb) / 0.18);
   stroke: var(--tt-ink-mid);
   stroke-dasharray: none;
 }
 
 .circuit-preview__slot--invalid-drop-target {
-  fill: rgba(230, 25, 25, 0.12);
+  fill: rgb(var(--tt-accent-rgb) / 0.12);
   stroke: var(--tt-accent);
   stroke-dasharray: 3 3;
 }
@@ -231,13 +231,13 @@
 
 .circuit-preview__slot-group:hover .circuit-preview__slot--interactive {
   stroke: var(--tt-ink-mid);
-  fill: rgba(163, 163, 163, 0.1);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.1);
 }
 
 .circuit-preview__slot-group:focus-visible .circuit-preview__slot--interactive {
   outline: none;
   stroke: var(--tt-ink-mid);
-  fill: rgba(163, 163, 163, 0.12);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.12);
 }
 
 .circuit-preview__slot--occupied {
@@ -259,15 +259,15 @@
 }
 
 .circuit-preview__slot--pending-control {
-  fill: rgba(77, 77, 77, 0.18);
+  fill: rgb(var(--tt-rule-strong-rgb) / 0.18);
   stroke: var(--tt-ink-mid);
   stroke-dasharray: none;
   stroke-width: 1.9;
 }
 
 .circuit-preview__slot--pending-target {
-  fill: rgba(163, 163, 163, 0.1);
-  stroke: rgba(163, 163, 163, 0.55);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.1);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.55);
 }
 
 .circuit-preview__slot-group--pending-control .circuit-preview__gate,
@@ -280,8 +280,8 @@
 }
 
 .circuit-preview__slot-group--dragging .circuit-preview__slot {
-  stroke: rgba(230, 25, 25, 0.55);
-  fill: rgba(230, 25, 25, 0.05);
+  stroke: rgb(var(--tt-accent-rgb) / 0.55);
+  fill: rgb(var(--tt-accent-rgb) / 0.05);
 }
 
 .circuit-preview__slot-group--dragging .circuit-preview__gate,
@@ -334,23 +334,23 @@
 }
 
 .circuit-preview__gate--annotation {
-  fill: rgba(77, 77, 77, 0.2);
+  fill: rgb(var(--tt-rule-strong-rgb) / 0.2);
   stroke: var(--tt-ink-dim);
   stroke-dasharray: 3 2;
 }
 
 .circuit-preview__gate-hit-area--annotation {
-  fill: rgba(77, 77, 77, 0.08);
+  fill: rgb(var(--tt-rule-strong-rgb) / 0.08);
 }
 
 .circuit-preview__gate--active-operation {
-  fill: rgba(163, 163, 163, 0.42);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.42);
   stroke: var(--tt-ink);
   stroke-width: 2.5;
 }
 
 .circuit-preview__gate-hit-area--active-operation {
-  fill: rgba(163, 163, 163, 0.12);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.12);
 }
 
 .circuit-preview__gate-label {
@@ -424,7 +424,7 @@
 }
 
 .circuit-preview__cnot-drag-handle {
-  fill: rgba(10, 10, 10, 0.01);
+  fill: rgb(var(--tt-void-rgb) / 0.01);
   stroke: transparent;
   cursor: grab;
 }
@@ -513,13 +513,13 @@
 }
 
 .circuit-preview__slot-group--draw-start .circuit-preview__slot {
-  stroke: rgba(163, 163, 163, 0.55);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.55);
   stroke-dasharray: 4 3;
 }
 
 .circuit-preview__slot-group--draw-start:hover .circuit-preview__slot {
   stroke: var(--tt-ink-mid);
-  fill: rgba(163, 163, 163, 0.1);
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.1);
 }
 
 @media (max-width: 640px) {

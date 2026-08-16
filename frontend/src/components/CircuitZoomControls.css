@@ -4,8 +4,8 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 6px;
-  border: 1px solid rgba(163, 163, 163, 0.12);
-  background: rgba(10, 10, 10, 0.46);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+  background: rgb(var(--tt-void-rgb) / 0.46);
 }
 
 .circuit-zoom-controls__value {

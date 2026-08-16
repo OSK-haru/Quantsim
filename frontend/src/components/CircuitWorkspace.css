@@ -2,7 +2,7 @@
   display: grid;
   gap: 12px;
   padding: 14px;
-  border: 1px solid rgba(163, 163, 163, 0.22);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.22);
   background: var(--tt-panel);
   color: var(--tt-ink);
 }
@@ -12,8 +12,8 @@
   align-items: center;
   min-height: 30px;
   padding: 5px 10px;
-  border: 1px solid rgba(163, 163, 163, 0.18);
-  background: rgba(10, 10, 10, 0.24);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.18);
+  background: rgb(var(--tt-void-rgb) / 0.24);
   color: var(--tt-ink);
   font-size: 0.84rem;
   white-space: nowrap;
@@ -25,8 +25,8 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 10px;
-  border: 1px solid rgba(163, 163, 163, 0.14);
-  background: rgba(10, 10, 10, 0.22);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.14);
+  background: rgb(var(--tt-void-rgb) / 0.22);
   position: relative;
   z-index: 2;
 }
@@ -37,19 +37,19 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 6px;
-  border: 1px solid rgba(163, 163, 163, 0.12);
-  background: rgba(10, 10, 10, 0.46);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+  background: rgb(var(--tt-void-rgb) / 0.46);
 }
 
 /* 回路図の直下に敷く編集バー。上のツールバーより一段落ち着かせる。 */
 .circuit-workspace__toolbar--edit {
   z-index: 1;
-  background: rgba(10, 10, 10, 0.34);
+  background: rgb(var(--tt-void-rgb) / 0.34);
 }
 
 /* ファイル操作は編集操作と性質が違うので、先頭で少し強い枠にして区切る。 */
 .circuit-workspace__tool-group--file {
-  border-color: rgba(163, 163, 163, 0.28);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.28);
 }
 
 .circuit-workspace__tool-label {
@@ -62,8 +62,8 @@
 
 .circuit-workspace__toolbar button {
   padding: 8px 11px;
-  border: 1px solid rgba(163, 163, 163, 0.24);
-  background: rgba(10, 10, 10, 0.3);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
+  background: rgb(var(--tt-void-rgb) / 0.3);
   color: var(--tt-ink);
   cursor: pointer;
   font: inherit;
@@ -71,7 +71,7 @@
 }
 
 .circuit-workspace__toolbar button:hover:not(:disabled) {
-  border-color: rgba(163, 163, 163, 0.48);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.48);
 }
 
 .circuit-workspace__toolbar button:focus-visible {
@@ -85,13 +85,13 @@
 }
 
 .circuit-workspace__toolbar .circuit-workspace__toolbar-danger {
-  border-color: rgba(230, 25, 25, 0.28);
+  border-color: rgb(var(--tt-accent-rgb) / 0.28);
   color: var(--tt-accent-hot);
 }
 
 .circuit-workspace__toolbar .circuit-workspace__toolbar-danger:hover:not(:disabled) {
-  border-color: rgba(230, 25, 25, 0.58);
-  background: rgba(122, 15, 15, 0.18);
+  border-color: rgb(var(--tt-accent-rgb) / 0.58);
+  background: rgb(var(--tt-accent-deep-rgb) / 0.18);
 }
 
 .circuit-workspace__toolbar button:disabled {
@@ -114,8 +114,8 @@
 .circuit-workspace .gate-palette,
 .circuit-workspace .circuit-preview {
   min-width: 0;
-  border-color: rgba(163, 163, 163, 0.14);
-  background: rgba(10, 10, 10, 0.18);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.14);
+  background: rgb(var(--tt-void-rgb) / 0.18);
 }
 
 .circuit-workspace .gate-palette {
@@ -132,8 +132,8 @@
   gap: 10px;
   align-items: center;
   padding: 9px 12px;
-  border: 1px solid rgba(163, 163, 163, 0.12);
-  background: rgba(10, 10, 10, 0.2);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+  background: rgb(var(--tt-void-rgb) / 0.2);
 }
 
 .circuit-workspace__status,

@@ -3,7 +3,7 @@
   box-sizing: border-box;
   margin: 0 auto;
   padding: 22px;
-  border: 1px solid rgba(77, 77, 77, 0.24);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.24);
   background: var(--tt-void);
 }
 
@@ -24,7 +24,7 @@
 
 .state-probability-comparison__selector select {
   padding: 7px 10px;
-  border: 1px solid rgba(163, 163, 163, 0.3);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.3);
   background: var(--tt-panel);
   color: var(--tt-ink-max);
 }
@@ -56,8 +56,8 @@
 }
 
 .state-probability-comparison__chart { display: block; width: 100%; min-width: 520px; height: 250px; }
-.state-probability-comparison__grid { stroke: rgba(163, 163, 163, 0.12); stroke-width: 1; }
-.state-probability-comparison__axis { stroke: rgba(163, 163, 163, 0.34); stroke-width: 1; }
+.state-probability-comparison__grid { stroke: rgb(var(--tt-ink-mid-rgb) / 0.12); stroke-width: 1; }
+.state-probability-comparison__axis { stroke: rgb(var(--tt-ink-mid-rgb) / 0.34); stroke-width: 1; }
 .state-probability-comparison__line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .state-probability-comparison__line--ideal { stroke: var(--tt-ink-dim); }
 .state-probability-comparison__line--noisy { stroke: var(--tt-ink-mid); }
@@ -170,7 +170,7 @@
 .state-probability-comparison__row {
   min-height: 42px;
   padding: 5px 8px;
-  border-top: 1px solid rgba(163, 163, 163, 0.1);
+  border-top: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.1);
 }
 
 .state-probability-comparison__row code {
@@ -197,7 +197,7 @@
 .state-probability-comparison__bar {
   height: 7px;
   overflow: hidden;
-  background: rgba(77, 77, 77, 0.15);
+  background: rgb(var(--tt-rule-strong-rgb) / 0.15);
 }
 
 .state-probability-comparison__fill {

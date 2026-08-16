@@ -5,7 +5,7 @@
   display: grid;
   gap: 16px;
   align-content: start;
-  background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(163, 163, 163, 0.025) 79px 80px), rgba(30, 30, 30, 0.18);
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgb(var(--tt-ink-mid-rgb) / 0.025) 79px 80px), rgb(var(--tt-panel-3-rgb) / 0.18);
   color: var(--tt-ink);
 }
 
@@ -23,7 +23,7 @@
   align-items: center;
   padding: 6px 10px;
   margin-bottom: 8px;
-  border: 1px solid rgba(163, 163, 163, 0.28);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.28);
   background: var(--tt-panel);
   color: var(--tt-ink-mid);
   font-size: 0.78rem;
@@ -67,7 +67,7 @@
   align-items: center;
   min-height: 30px;
   padding: 5px 10px;
-  border: 1px solid rgba(77, 77, 77, 0.2);
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.2);
   background: var(--tt-void);
   color: var(--tt-ink);
   font-size: 0.84rem;
@@ -83,7 +83,7 @@
 
 .circuit-studio-page__nav {
   padding: 8px 12px;
-  border: 1px solid rgba(163, 163, 163, 0.24);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
   background: var(--tt-panel);
   color: var(--tt-ink);
   cursor: pointer;
@@ -92,7 +92,7 @@
 }
 
 .circuit-studio-page__nav:hover {
-  border-color: rgba(163, 163, 163, 0.48);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.48);
 }
 
 .circuit-studio-page__nav:focus-visible {
@@ -102,7 +102,7 @@
 
 .circuit-studio-page__nav--primary {
   border-color: var(--tt-ink-mid);
-  background: rgba(77, 77, 77, 0.2);
+  background: rgb(var(--tt-rule-strong-rgb) / 0.2);
   color: var(--tt-ink-max);
 }
 
