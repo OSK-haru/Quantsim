@@ -27,6 +27,13 @@ const config: Config = {
   // 見出し、JetBrains Mono = 計器ラベル / 数値、Inter = 本文。
   headTags: [
     {
+      tagName: 'meta',
+      attributes: {
+        name: 'google-site-verification',
+        content: 'uxEUHXelqrVlWkGvmS-Tm7Z11pr_vGnV9mixTRAkhrQ',
+      },
+    },
+    {
       tagName: 'link',
       attributes: {rel: 'preconnect', href: 'https://fonts.googleapis.com'},
     },
