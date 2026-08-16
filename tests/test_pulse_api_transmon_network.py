@@ -1,6 +1,7 @@
 import math
 import unittest
 
+import numpy as np
 from fastapi import HTTPException
 from pydantic import TypeAdapter, ValidationError
 
@@ -15,13 +16,23 @@ from core.capabilities import (
     SUPPORTED_PULSE_MODELS,
 )
 from core.gates import add, adjoint, matmul, subtract
-from core.pulse_envelopes import SquarePulseEnvelope
+from core.pulse_envelopes import GaussianPulseEnvelope, SquarePulseEnvelope
+from core.pulse_evolution import (
+    DenseCollapseDissipator,
+    evolve_dense_time_dependent_segment,
+    evolve_time_dependent_segment,
+)
 from core.pulse_qutrit_contract import NUMBER_QUTRIT
+from core.pulse_qutrit_open_system import QutritDissipationRates
 from core.pulse_transmon_network import (
     CoupledTransmonNetworkHamiltonian,
     ScheduledTransmonDrive,
     TransmonExchangeCoupling,
     embed_network_local_operator,
+    network_collapse_operator_matrices,
+    network_collapse_operators,
+    network_initial_density_matrix,
+    network_site_local_dissipator,
 )
 
 
@@ -120,15 +131,10 @@ class CoupledTransmonNetworkApiTests(unittest.TestCase):
         self.assertIn("density-matrix element limit", str(raised.exception.detail))
 
     def test_four_transmon_dense_work_budget_is_checked_before_evolution(self) -> None:
-        payload = _network_payload()
+        payload = _four_transmon_payload()
         payload.update({
-            "transmon_count": 4,
-            "initial_state": "0000",
-            "frequencies_ghz": [5.0] * 4,
-            "anharmonicities_mhz": [-20.0] * 4,
-            "detunings_rad_per_us": [0.0] * 4,
-            "total_simulation_time_us": 0.1,
-            "snapshot_options": {"uniform_count": 2, "custom_times_us": [0.001]},
+            "anharmonicities_mhz": [-200.0] * 4,
+            "total_simulation_time_us": 0.2,
         })
         request = CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
 
@@ -137,6 +143,186 @@ class CoupledTransmonNetworkApiTests(unittest.TestCase):
 
         self.assertEqual(raised.exception.status_code, 422)
         self.assertIn("dimension-aware dense-work limit", str(raised.exception.detail))
+
+    def test_four_transmon_register_runs_a_driven_layer(self) -> None:
+        request = CoupledTransmonNetworkPulseSimulateRequest.model_validate(
+            _four_transmon_payload()
+        )
+        response = pulse_simulate(request)
+        validated = CoupledTransmonNetworkPulseSimulateResponse.model_validate(response)
+
+        self.assertEqual(validated.model["logical_qubits"], 4)
+        self.assertEqual(validated.model["hilbert_dimension"], 81)
+        self.assertEqual(len(validated.final.density_matrix), 81)
+        self.assertAlmostEqual(
+            sum(validated.final.joint_populations.values()),
+            1.0,
+            places=10,
+        )
+        self.assertLess(validated.final.population_sum_error, 1e-9)
+        # Cleanup restores trace and Hermiticity but not positivity, so the
+        # network path only claims eigenvalues at the RK4 truncation level.
+        self.assertGreater(
+            validated.final.cleaned_physicality.minimum_eigenvalue,
+            -1e-6,
+        )
+        populations = validated.final.joint_populations
+        for transmon in range(4):
+            excited = sum(
+                value
+                for label, value in populations.items()
+                if label[transmon] == "1"
+            )
+            self.assertGreater(excited, 1e-3)
+
+
+class CoupledTransmonNetworkDenseKernelTests(unittest.TestCase):
+    """Lock the fast network kernel to the reference dense formulation."""
+
+    def test_site_local_dissipator_matches_dense_collapse_operators(self) -> None:
+        for count in (2, 3, 4):
+            with self.subTest(transmon_count=count):
+                rates = _rates(count)
+                dimension = 3 ** count
+                state = _hermitian_probe_state(dimension)
+                dense = DenseCollapseDissipator(
+                    network_collapse_operator_matrices(rates)
+                )
+                local = network_site_local_dissipator(rates)
+
+                self.assertLess(
+                    float(np.max(np.abs(
+                        dense.relaxation_array(dimension)
+                        - local.relaxation_array(dimension)
+                    ))),
+                    1e-12,
+                )
+                self.assertLess(
+                    float(np.max(np.abs(
+                        dense.apply_jumps(state) - local.apply_jumps(state)
+                    ))),
+                    1e-12,
+                )
+
+    def test_dense_segment_matches_the_tuple_evolution_path(self) -> None:
+        envelope = GaussianPulseEnvelope.from_target_rotation_angle(
+            math.pi / 2,
+            0.001,
+            3.0,
+        )
+        hamiltonian = CoupledTransmonNetworkHamiltonian(
+            anharmonicities_rad_per_us=(-628.3, -640.0),
+            detunings_rad_per_us=(0.0, 3.0),
+            couplings=(TransmonExchangeCoupling(0, 1, 5.0),),
+            drives=(
+                ScheduledTransmonDrive(0, 0.0, envelope),
+                ScheduledTransmonDrive(1, 0.0, envelope, math.pi / 2),
+            ),
+        )
+        rates = _rates(2)
+        initial = network_initial_density_matrix("00", 2)
+        checkpoints = [0.003, 0.006]
+
+        reference = evolve_time_dependent_segment(
+            initial,
+            hamiltonian,
+            network_collapse_operators(rates),
+            0.006,
+            1e-4,
+            checkpoint_times_us=checkpoints,
+            backend="python",
+        )
+        dense = evolve_dense_time_dependent_segment(
+            initial,
+            hamiltonian,
+            network_site_local_dissipator(rates),
+            0.006,
+            1e-4,
+            checkpoint_times_us=checkpoints,
+        )
+
+        self.assertEqual(
+            dense.diagnostics.internal_step_count,
+            reference.diagnostics.internal_step_count,
+        )
+        self.assertEqual(len(dense.checkpoints), len(reference.checkpoints))
+        self.assertLess(
+            float(np.max(np.abs(
+                np.asarray(dense.state) - np.asarray(reference.state)
+            ))),
+            1e-12,
+        )
+        for expected, actual in zip(
+            reference.checkpoints,
+            dense.checkpoints,
+            strict=True,
+        ):
+            self.assertAlmostEqual(expected.time_us, actual.time_us, places=12)
+            self.assertLess(
+                float(np.max(np.abs(
+                    np.asarray(expected.cleaned_state)
+                    - np.asarray(actual.cleaned_state)
+                ))),
+                1e-12,
+            )
+
+
+def _rates(transmon_count: int) -> tuple[QutritDissipationRates, ...]:
+    return tuple(
+        QutritDissipationRates(
+            input_mode="direct_rates",
+            gamma_10_down_per_us=0.2 + 0.05 * index,
+            gamma_01_up_per_us=0.02,
+            gamma_21_down_per_us=0.4,
+            gamma_12_up_per_us=0.03,
+            gamma_phi_adjacent_per_us=0.08,
+        )
+        for index in range(transmon_count)
+    )
+
+
+def _hermitian_probe_state(dimension: int) -> np.ndarray:
+    generator = np.random.default_rng(20260816)
+    root = (
+        generator.normal(size=(dimension, dimension))
+        + 1j * generator.normal(size=(dimension, dimension))
+    )
+    state = root @ root.conj().T
+    return state / np.trace(state)
+
+
+def _four_transmon_payload() -> dict[str, object]:
+    """Return one Gaussian half-pi layer across a four-transmon chain."""
+
+    pulse = {
+        "shape": "gaussian",
+        "amplitude_mode": "target_rotation_angle",
+        "target_rotation_angle_rad": math.pi / 2,
+        "sigma_us": 0.001,
+        "truncation_sigma": 3.0,
+        "phase_rad": 0.0,
+        "detuning_rad_per_us": 0.0,
+        "drag_beta_us": 0.0,
+    }
+    payload = _network_payload()
+    payload.update({
+        "transmon_count": 4,
+        "initial_state": "0000",
+        "frequencies_ghz": [5.0, 5.1, 4.9, 5.05],
+        "anharmonicities_mhz": [-100.0] * 4,
+        "detunings_rad_per_us": [0.0] * 4,
+        "couplings": [
+            {"left": left, "right": left + 1, "exchange_coupling_rad_per_us": 5.0}
+            for left in range(3)
+        ],
+        "drives": [
+            {"target": target, "start_time_us": 0.0, "pulse": pulse}
+            for target in range(4)
+        ],
+        "total_simulation_time_us": 0.006,
+        "snapshot_options": {"uniform_count": 2, "custom_times_us": []},
+    })
+    return payload
 
 
 def _network_payload() -> dict[str, object]:

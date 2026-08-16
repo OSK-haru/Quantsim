@@ -33,6 +33,8 @@ from core.capabilities import (
     DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL,
     PULSE_MODEL_STATUSES,
 )
+from core.pulse_qutrit_contract import mhz_to_rad_per_us
+from core.pulse_step_policy import PULSE_QUTRIT_EPSILON_H
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,14 +65,15 @@ REQUIRED_VALIDATION_FILES = (
 )
 
 REQUIRED_DOCUMENTS = (
-    "docs/physics/pulse-extension-b-qutrit-contract.md",
-    "docs/physics/pulse-extension-b-qutrit-model.md",
-    "docs/architecture/pulse-api-contract.md",
-    "docs/validation/pulse-extension-b-report.md",
-    "docs/validation/pulse-b-pulse-lab-ui.md",
-    "docs/development/pulse-extension-b/README.md",
-    "docs/development/pulse-extension-b/phase-b7-integration-and-freeze.md",
-    "docs/README.md",
+    "docs_for_develop/physics/pulse-extension-b-qutrit-contract.md",
+    "docs_for_develop/physics/pulse-extension-b-qutrit-model.md",
+    "docs_for_develop/architecture/pulse-api-contract.md",
+    "docs_for_develop/validation/pulse-extension-b-report.md",
+    "docs_for_develop/validation/pulse-b-pulse-lab-ui.md",
+    "docs_for_develop/development/pulse-extension-b/README.md",
+    "docs_for_develop/development/pulse-extension-b/"
+    "phase-b7-integration-and-freeze.md",
+    "docs_for_develop/README.md",
     "frontend/README.md",
 )
 
@@ -332,10 +335,20 @@ def _qutrit_summary(response: dict[str, Any]) -> dict[str, Any]:
 
 
 def _over_budget_summary() -> dict[str, Any]:
+    """Submit a request that cannot fit in the qutrit work budget.
+
+    The total time is derived from the current ceiling instead of being fixed,
+    so raising the ceiling cannot silently turn this check into a request that
+    the API happily executes.
+    """
+
+    anharmonicity_mhz = -250.0
     payload = _qutrit_direct_payload()
-    payload["anharmonicity_mhz"] = -250.0
+    payload["anharmonicity_mhz"] = anharmonicity_mhz
     payload["pulse"]["sigma_us"] = 0.02
-    payload["total_simulation_time_us"] = 0.2
+    payload["total_simulation_time_us"] = _over_budget_total_time_us(
+        anharmonicity_mhz
+    )
     try:
         run_qutrit_pulse_request(
             QutritPulseSimulateRequest.model_validate(payload)
@@ -351,6 +364,21 @@ def _over_budget_summary() -> dict[str, Any]:
         "exception": None,
         "message": "over-budget fixture unexpectedly executed",
     }
+
+
+def _over_budget_total_time_us(anharmonicity_mhz: float) -> float:
+    """Return a total time that exceeds the ceiling for any allowed step.
+
+    The anharmonicity alone caps the internal step at
+    ``epsilon_h / |alpha|``; every other limit in the step policy is smaller
+    or equal, so a total time twice the ceiling times that cap needs more
+    steps than the budget allows no matter how the policy is tuned.
+    """
+
+    largest_step_us = PULSE_QUTRIT_EPSILON_H / abs(
+        mhz_to_rad_per_us(anharmonicity_mhz)
+    )
+    return 2.0 * (QUTRIT_API_MAX_INTERNAL_STEPS + 1) * largest_step_us
 
 
 def _performance_summary(root: Path) -> dict[str, Any]:

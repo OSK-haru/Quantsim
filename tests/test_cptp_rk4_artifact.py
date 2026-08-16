@@ -11,7 +11,9 @@ from core.rust_dense_kernel import is_rust_kernel_available
 
 ROOT = Path(__file__).resolve().parents[1]
 JSON_PATH = ROOT / "validation_results" / "cptp_rk4_comparison.json"
-MARKDOWN_PATH = ROOT / "docs" / "validation" / "cptp-rk4-comparison.md"
+MARKDOWN_PATH = (
+    ROOT / "docs_for_develop" / "validation" / "cptp-rk4-comparison.md"
+)
 
 
 class CPTPRK4ArtifactTests(unittest.TestCase):

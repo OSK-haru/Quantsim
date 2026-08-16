@@ -220,10 +220,31 @@ with targets and start times. Drives may overlap. Pulse detuning is represented
 as a phase ramp in the target's local rotating frame. The implementation uses
 three local levels and q0-most-significant tensor-basis order.
 
-The network path is fixed-step RK4 only. Before allocating the full response,
-the service enforces `steps * hilbert_dimension^3 <= 30_000_000` and
-`sample_count * hilbert_dimension^2 <= 250_000`. It has core invariant and API
-regression tests but no independent QuTiP comparison yet.
+The network path is fixed-step RK4 only, and it always integrates with the
+NumPy dense kernel: the request still accepts `backend`, but that field selects
+the python or rust kernel for the other pulse models only, and the network
+response reports `numpy_dense` as the resolved backend. Jump operators are
+applied through the register's tensor structure rather than as dense products,
+which is what keeps four transmons affordable.
+
+Before allocating the full response, the service enforces
+`steps * (hilbert_dimension^3 + 12_000) <= 1_200_000_000` and
+`sample_count * hilbert_dimension^2 <= 250_000`. The per-step overhead term
+records that one internal step costs a fixed setup plus dense work, so the same
+budget bounds runtime at every register size: roughly 94,000 two-transmon,
+37,000 three-transmon, or 2,200 four-transmon internal steps.
+
+Drive start and end times are always integration boundaries, and the provider
+resolves the active drive set per segment. A drive edge inside a segment is an
+error rather than a silent loss of accuracy, because a pulse that switches
+inside a step is only seen by part of the RK4 stages.
+
+Validation: core invariants, API regression tests, solver-independent physics
+checks (analytic exchange oscillation, closed-system purity and excitation
+number, agreement with the single-qutrit model in the uncoupled limit) and an
+independent QuTiP audit over two to four transmons
+(`scripts/validate_pulse_transmon_network_qutip.py`, artifact
+`validation_results/pulse_transmon_network_qutip_audit.json`).
 
 Current capability meanings:
 

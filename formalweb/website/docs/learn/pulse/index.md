@@ -62,7 +62,7 @@ Coupled transmon network (3^N, 2≤N≤4)
 P7だけは全モデルに横断的にかかります。
 
 :::info[実験扱いのモデルがあります]
-Coupled transmon pair と Coupled transmon network は状態 **experimental** です。Networkは2〜4台に限定され、固定ステップRK4のみです。独立ソルバー比較はPairまでで、Networkは物理不変量とAPI回帰試験の段階です。P6で交換結合、P7で次元増大と作業量を扱います。
+Coupled transmon pair と Coupled transmon network は状態 **experimental** です。Networkは2〜4台に限定され、固定ステップRK4のみです。独立ソルバー比較はPairとNetworkの両方にあり、Networkは2〜4台の6ケース(最大要素誤差 2.28e-9)で突き合わせています。P6で交換結合、P7で次元増大と作業量を扱います。
 :::
 
 ## 読みかたの2コース

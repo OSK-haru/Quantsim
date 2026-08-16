@@ -1,7 +1,7 @@
 {
   "validation": "PULSE-EXTENSION-B-FREEZE",
   "freeze_schema_version": 1,
-  "generated_at_utc": "2026-07-25T11:57:25.785388+00:00",
+  "generated_at_utc": "2026-08-16T15:20:33.051393+00:00",
   "decision": "PASS WITH RESTRICTIONS",
   "overall_pass": true,
   "frozen_contract": {
@@ -26,7 +26,7 @@
     "leakage_definition": "population_2_without_renormalization",
     "dephasing_model": "number_operator_adjacent_rate_v1",
     "qutrit_core_work_ceiling": 25000,
-    "qutrit_api_work_ceiling": 4000
+    "qutrit_api_work_ceiling": 25000
   },
   "baseline_a_compatibility": {
     "model_id": "driven_two_level_rwa_experimental_v1",
@@ -42,7 +42,7 @@
     }
   },
   "qutrit_api_audit": {
-    "openapi_contract_sha256": "531ce1b5dd6e399fb21bb7f98b8ae6ab61e1dc5b068a1e85aa8a56f0e8b48c3f",
+    "openapi_contract_sha256": "f4d08e78536dea48ba1af85f2e3079bb05d227d80b477c299a423755454f17dd",
     "direct_rates_smoke": {
       "input_mode": "direct_rates",
       "state_levels": 3,
@@ -55,7 +55,7 @@
       "final_population_sum": 1.0000000000000002,
       "final_leakage": 0.007914285203979207,
       "minimum_cleaned_eigenvalue": 0.0,
-      "api_runtime_ms": 1540.2428000088548
+      "api_runtime_ms": 2289.823900006013
     },
     "physical_smoke": {
       "input_mode": "physical",
@@ -69,147 +69,147 @@
       "final_population_sum": 1.0,
       "final_leakage": 0.007769218843346921,
       "minimum_cleaned_eigenvalue": 0.0,
-      "api_runtime_ms": 1510.7234000024619
+      "api_runtime_ms": 2162.032399995951
     },
     "over_budget_smoke": {
       "rejected": true,
       "exception": "PulseExecutionLimitError",
-      "message": "Qutrit pulse request exceeds the internal-step limit: estimated 15874 steps, maximum 4000."
+      "message": "Qutrit pulse request exceeds the internal-step limit: estimated 50528 steps, maximum 25000."
     }
   },
   "source_revision": {
-    "base_git_commit": "28b28a5aa82ddbcef1ae22c974846f7ea5ff2c0d",
+    "base_git_commit": "7214d817216a4a66183a33c5af7f6634d6166e51",
     "working_tree_dirty": true,
-    "working_tree_change_count": 59,
-    "critical_source_tree_sha256": "ea6449ce1a07a3a9ccc7b70019617c8623078f061dace8db07a59434e96ce6cd",
+    "working_tree_change_count": 26,
+    "critical_source_tree_sha256": "8187daac4a10b345c705b3c0f5a45c4bb219379bc2bc994174ec308febbfafc0",
     "critical_source_files": [
       {
         "file": "core/pulse_qutrit_contract.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "69b4cdfebab24699cb971dcd657e41e46a16b1ad535d2171a5410a646971b842",
-        "size_bytes": 3917
+        "sha256": "4d0479198e9f96ae55491d471fa6e64e79aa2cd7d403f5e639818c0765fd8452",
+        "size_bytes": 4049
       },
       {
         "file": "core/pulse_qutrit.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "bd84b6fc9ede7d2fb1822b3fe7c2a9dbc50a5fd6e4ac816e003fa327f1d6d8b3",
-        "size_bytes": 9470
+        "sha256": "f906ed91ad2244f8862096980138df05fbe2491a1cae6fa8bb19d02e77a5dd6b",
+        "size_bytes": 9938
       },
       {
         "file": "core/pulse_qutrit_open_system.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "bf29bb266f765371ce61d55bfd8c3cca8da4e309068976981cb2c28e87ca28f3",
-        "size_bytes": 16178
+        "sha256": "70189da6baf107a7068f484fa7134ac53aeaf320527fcbc152a47cba3b3626d3",
+        "size_bytes": 20339
       },
       {
         "file": "core/pulse_step_policy.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "3f1b6ebcea6684ff5a29c6846bf6a509521c9e644b46d8657ae43f06cd3d1ea8",
-        "size_bytes": 13109
+        "sha256": "bcc0291adc6b9636c5b85384532ca34f3ffff451eadd62663ce30ac729e5a5c9",
+        "size_bytes": 13496
       },
       {
         "file": "api/pulse_models.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "31a2f5d6508974d21bd537b4236b1219a649a632729e4511a6ab7f2ad4f4d402",
-        "size_bytes": 22512
+        "sha256": "4cc36c6c263c9f1d92a7cb2510bf964b359e4c99905c836c37fcba01638bb3cd",
+        "size_bytes": 38900
       },
       {
         "file": "api/pulse_service.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "8620d25c6532805e65f9e55d0e12e4dcba56025800a649b3817e548c34e7cbcb",
-        "size_bytes": 17928
+        "sha256": "455fd37014a2df1d76eb2039248435c805e849c5be5578631e40a795a376a029",
+        "size_bytes": 23123
       },
       {
         "file": "api/pulse_qutrit_service.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "3609b9eba87f8bff782522f601f42a1339b88041d94a0d01b584fc2ff4c140d5",
-        "size_bytes": 13719
+        "sha256": "db1d07c070d8e8879c7a23a9d61c48e0cf74b74350a144fbb433ac070ec8be25",
+        "size_bytes": 29605
       },
       {
         "file": "api/main.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "7b121a29dd5dbd473acc2027ce904cb7fbc646ccac0b9762b36b2c1c393bd514",
-        "size_bytes": 19203
+        "sha256": "1a5b0e6f82257a839cd3ae486b06cf7f841bad00b16422c49833d2cfbe6204c2",
+        "size_bytes": 36902
       },
       {
         "file": "frontend/src/types/pulse.ts",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "76c17a3aa90daba30d2d386b14efa95119dde007965e79472b702d5648b04472",
-        "size_bytes": 5279
+        "sha256": "660bbc0f0e01272571b70ddf81aaa99527815a7401a0e710bc2e72a67a0ca5ac",
+        "size_bytes": 9973
       },
       {
         "file": "frontend/src/utils/pulseLab.ts",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "ad3f41b269848af73dbae5b1e95cd3c721a24659f6f62525fd6b2010f216a2d1",
-        "size_bytes": 13425
+        "sha256": "ec0e4282094f1157ef0e5ad7c44720a32f18c2b1efcf5a6c9c31594994b683d7",
+        "size_bytes": 34527
       },
       {
         "file": "frontend/src/pages/PulseLabPage.tsx",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "d872731ebd00a39f5c14b350e145175f2cff3a6086bb697fdf3342adedd6fed1",
-        "size_bytes": 12579
+        "sha256": "659903f7ac4754cf9b598a36d134e0bf6bd3afccf178ab82760f3856a978a31e",
+        "size_bytes": 43408
       },
       {
         "file": "validation_pulse/extension_b_freeze.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "3cc4c9f5f327baa4fb14dc9b5cac170f561a2a552743c0d60c57b25f16f89e75",
-        "size_bytes": 17735
+        "sha256": "a0a120bbe43f97a3e820b99b655f5b055e54cafff967ed62fc451a237b0c2140",
+        "size_bytes": 19483
       },
       {
         "file": "scripts/validate_pulse_extension_b_freeze.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "e203f3fe55b8e927cf3165d5e6d73c1cae286bd46cd87b23989f9c065e0e4d2e",
-        "size_bytes": 1333
+        "sha256": "824636e84b999f193118c030817b06504e1fd8cf47dad266b989b610f5bb92ee",
+        "size_bytes": 1386
       },
       {
         "file": "scripts/audit_pulse_extension_b_markdown_links.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "b8256419bc11ad18492ee2e649544069e0eff6e14ea0ec6f3f0eea030e486051",
-        "size_bytes": 3024
+        "sha256": "4e67887c78b9b1df5beaa3b24cf24823d59d97ad9a8996b849e0674bb1bdb6f1",
+        "size_bytes": 3238
       },
       {
         "file": "scripts/validate_qutip_comparison.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "bd88697d0e718f534744a8c1062b645c62f9f0ed05c9feb52d0da9bb36b8ee9d",
-        "size_bytes": 13298
+        "sha256": "70ab6b570a364ee8d494ea43c8a00f6a1d92be9f17f0fac11409ece205aeb93c",
+        "size_bytes": 13319
       },
       {
         "file": "tests/test_validation_qutip_csv_contract.py",
         "exists": true,
         "validation": null,
         "pass": null,
-        "sha256": "bb445ecc4ddfc87c1e73060a0ea1a7352d98c34cf3108319ca2a41119df096c5",
-        "size_bytes": 635
+        "sha256": "db527659d4e028369f22307cd1bdf15b494885bd41f9be647cda272eb1025e96",
+        "size_bytes": 657
       }
     ]
   },
@@ -255,8 +255,8 @@
       "exists": true,
       "validation": "PULSE-B1-CLOSED-QUTRIT",
       "pass": true,
-      "sha256": "aa3021fb5fd67686c140851a3075ed4e412ae3012aa8407f0bd030afad176b0f",
-      "size_bytes": 5502
+      "sha256": "5ceb3124d329313d9f4b6700f91de598c1a7995c1e7a0181951b1535e176b861",
+      "size_bytes": 5503
     },
     {
       "file": "validation_results/pulse_b_closed_qutrit.csv",
@@ -287,8 +287,8 @@
       "exists": true,
       "validation": "PULSE-B2-QUTRIT-DISSIPATION",
       "pass": true,
-      "sha256": "5b0dc4e4a476c73d23cb9a291c534f29686d66ea3998abbaa8bd9f0b94c3d594",
-      "size_bytes": 8872
+      "sha256": "3b765fbd980abbff9001c575aff9b5d9f678a182bdcccbd9cca8b32de64c27c4",
+      "size_bytes": 8873
     },
     {
       "file": "validation_results/pulse_b_qutrit_dissipation.csv",
@@ -407,7 +407,7 @@
       "exists": true,
       "validation": "PULSE-EXTENSION-B-MARKDOWN-LINKS",
       "pass": true,
-      "sha256": "df4bff5055c88ffc5b07f73b01fcd6dbf4b7113226f5726d53e276fe4a192e17",
+      "sha256": "9bd263221d64a5f59220b7723836dbe29cc777d0c01ad385305da1775519592c",
       "size_bytes": 158
     },
     {
@@ -415,82 +415,82 @@
       "exists": true,
       "validation": "PULSE-EXTENSION-B-REGRESSION",
       "pass": true,
-      "sha256": "74fa2d00a9930cb3269cba0da6f46fb2197c1cca575b617dc22d566531b0ae10",
-      "size_bytes": 2936
+      "sha256": "41e2ec8281f3311e9a1b53b59a9009ec272d85076a844bbf34e152b43085920a",
+      "size_bytes": 3017
     }
   ],
   "document_audit": [
     {
-      "file": "docs/physics/pulse-extension-b-qutrit-contract.md",
+      "file": "docs_for_develop/physics/pulse-extension-b-qutrit-contract.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "42150ed72aac7cd44277c5682d98ec5fe9f36ad0151aac515322f64f8c2de2e5",
-      "size_bytes": 8457
+      "sha256": "b6d6c0496684123be092fc180321f20f6a09cfa25c4f4f4b35ff3f7d7053fd5e",
+      "size_bytes": 8876
     },
     {
-      "file": "docs/physics/pulse-extension-b-qutrit-model.md",
+      "file": "docs_for_develop/physics/pulse-extension-b-qutrit-model.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "466477a3412e46aab6617781cf6b6fa3ac7f4193c3ccc20d4936dca0cb8746d3",
-      "size_bytes": 5347
+      "sha256": "551ae954f34dbfb52806616d4c32fba9074e768928bb7ed27a34d2060681c598",
+      "size_bytes": 5909
     },
     {
-      "file": "docs/architecture/pulse-api-contract.md",
+      "file": "docs_for_develop/architecture/pulse-api-contract.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "8624e948add58ba9a3da301e66e3ce6de37bc62eff7cd5308e7ad3c3e4f616ad",
-      "size_bytes": 5745
+      "sha256": "4b54748ab4b3ac166a091a21e6ab0f932918ce9e5354d0b26971f77739ef316f",
+      "size_bytes": 8754
     },
     {
-      "file": "docs/validation/pulse-extension-b-report.md",
+      "file": "docs_for_develop/validation/pulse-extension-b-report.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "058566529930694049e1bebb2b0f27e86459d781774626973f709b220f5fa644",
-      "size_bytes": 6548
+      "sha256": "4963bac6e5c7e9cb0eb8a944424ddd13706290eec7cb55a41bf53dc74349c4c3",
+      "size_bytes": 7194
     },
     {
-      "file": "docs/validation/pulse-b-pulse-lab-ui.md",
+      "file": "docs_for_develop/validation/pulse-b-pulse-lab-ui.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "03f3b51b9e7e14b6dcc5fffbab5837aa183755559517bc161573edf377d326a6",
-      "size_bytes": 3394
+      "sha256": "b7971b8e40f0982f0cb302bf481b9e979c629c94aa96fa9ea5b801d931748dc4",
+      "size_bytes": 3482
     },
     {
-      "file": "docs/development/pulse-extension-b/README.md",
+      "file": "docs_for_develop/development/pulse-extension-b/README.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "26355cd09c5fe1b9c7d02b3dd53f7112af24427394ad5f47aad2ef099218209d",
-      "size_bytes": 6008
+      "sha256": "3121cd8fbad2efaff69b47221cf5abaa698256c9bc73657f51ac5e6966ab1e86",
+      "size_bytes": 6224
     },
     {
-      "file": "docs/development/pulse-extension-b/phase-b7-integration-and-freeze.md",
+      "file": "docs_for_develop/development/pulse-extension-b/phase-b7-integration-and-freeze.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "c541487621b9cf89a1123dcd1f7f694a7558bf6312020ec6547fa18ef1ac016e",
-      "size_bytes": 4952
+      "sha256": "a327b68d652317c025b5978e7a4170a35ea8abc3aedd45a94e6a28a9bf3b83b9",
+      "size_bytes": 5144
     },
     {
-      "file": "docs/README.md",
+      "file": "docs_for_develop/README.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "36edfee54ec26dc1a82f1acec706fc8b34b9c9a86cd864411132599bdd5433ad",
-      "size_bytes": 6194
+      "sha256": "72bb088f5e9e9d395773affa5ca6a3260efdde5ed24ad71b35c736b1f62200df",
+      "size_bytes": 9330
     },
     {
       "file": "frontend/README.md",
       "exists": true,
       "validation": null,
       "pass": null,
-      "sha256": "288fcf935b35d13f92950766d62368cdf56e9699e646bef0abb690d441bd009a",
-      "size_bytes": 2587
+      "sha256": "700c76a4b5545493f23275346fc7fae09a5384a4493ef42b3a883d55f8896de9",
+      "size_bytes": 2796
     }
   ],
   "regression_evidence": {
@@ -587,7 +587,7 @@
     "api_policy": {
       "maximum_concurrent_requests": 2,
       "wait_timeout_seconds": 15,
-      "qutrit_internal_step_ceiling": 4000,
+      "qutrit_internal_step_ceiling": 25000,
       "limit_decision": "retained after B-7; not raised to fit demonstrations"
     }
   },

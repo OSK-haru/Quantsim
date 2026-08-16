@@ -1,7 +1,7 @@
 {
   "validation": "CPTP-MODEL-FREEZE-C10",
   "freeze_schema_version": 1,
-  "generated_at_utc": "2026-08-13T00:34:32.565940+00:00",
+  "generated_at_utc": "2026-08-16T15:01:01.255010+00:00",
   "decision": "PASS WITH RESTRICTIONS",
   "overall_pass": true,
   "frozen_contract": {
@@ -143,68 +143,68 @@
     }
   },
   "source_revision": {
-    "git_commit": "bd3c2c093c9ae7f1455f1a974a7e7ed414561aa5",
-    "critical_source_tree_sha256": "8482cd00257e33fdf4202527e166aad479e0e07883a08271ae0f1820d755d905",
+    "git_commit": "7214d817216a4a66183a33c5af7f6634d6166e51",
+    "critical_source_tree_sha256": "3f13cfd2aeb48711c1fe34ac8341c54a830245797df474deed7c79b8cc8d5c0e",
     "files": [
       {
         "file": "core/cptp.py",
         "exists": true,
-        "sha256": "245633fbc5c1f22603ca33653ef4593f33a510ab52f66197149fa55af5acdd4b"
+        "sha256": "b619b7f7a297b529fb313d5a3cfd28bccb925bf3cd6ae3c568829232316f4cb7"
       },
       {
         "file": "core/cptp_qutrit.py",
         "exists": true,
-        "sha256": "af37841056f91167fb7f5aa8c1375cf67e2eeba3ba8318f4cb4da41ed54d7679"
+        "sha256": "285d5107f20360f20668ac557e51461f73ebcea13f33cbe3db2d6d859dccad2c"
       },
       {
         "file": "core/cptp_liouvillian.py",
         "exists": true,
-        "sha256": "5b808800c933e635f93b3ddb3632aca31a2f6293fb32ccfe8237f9bf3b0354b6"
+        "sha256": "52469c2035cd940edc83dc180151f434670c0d20f40c18da0e85450c47764aff"
       },
       {
         "file": "core/cptp_piecewise.py",
         "exists": true,
-        "sha256": "a5bd2a5c08c5bdcebc7a6eb9fd43ba51abcb6fe7a71a517a602e7c00d0f46253"
+        "sha256": "96b52c2f69684d9d3f9bb0eb78d227e74b54178930e09fd1d82bf0372311b03a"
       },
       {
         "file": "core/cptp_rust.py",
         "exists": true,
-        "sha256": "fa150a2ce1f3ed9629d713b92eda15638829dfc810fb1f81ce55e6833270094a"
+        "sha256": "ca13b1d47496fd8538490b42527bc6f2b3c3b63b3d4b3a76ef5e262d83809850"
       },
       {
         "file": "core/cptp_evolution.py",
         "exists": true,
-        "sha256": "b60a74e403ee15c30afa0c658de537f9395c4bcc1bc7b4763c1d47fc1a4c45fd"
+        "sha256": "345fa65097967ba0a4da1e47450455ac0df39718f5343aeb9dd6d108c15ab541"
       },
       {
         "file": "core/pulse_open_system.py",
         "exists": true,
-        "sha256": "99cc23508902f1693c9180ca0e0443535b45f0177909ad3400324e9bb312e32a"
+        "sha256": "eb6969b1bb1b156f4a30215b4e36d85089ad8df5757bcebc27a0456ce3a19d0a"
       },
       {
         "file": "core/pulse_qutrit_open_system.py",
         "exists": true,
-        "sha256": "0c0517f2e09b4c8b565affbda18a1ccdfb191da229dcb4561f595a1355a461fa"
+        "sha256": "70189da6baf107a7068f484fa7134ac53aeaf320527fcbc152a47cba3b3626d3"
       },
       {
         "file": "core/rust_dense_kernel.py",
         "exists": true,
-        "sha256": "16de3e6707c2f34dcd6186ed706039eae7f45e873dfed57b9b0306692cb99fb6"
+        "sha256": "839f9968e504077b122dfeb9f7f3ac381b0a4d3a323980d88b49369bbb1159df"
       },
       {
         "file": "rust_kernels/yuragi_strider_rust/src/lib.rs",
         "exists": true,
-        "sha256": "0495afcedc53e2f795b0f6012ae33e877931dce8034469d540f216f46d8bf66e"
+        "sha256": "f49f4e3e0164687a2334eee1908dfd8c219563a789dbb025432e45faa03033ec"
       },
       {
         "file": "api/pulse_models.py",
         "exists": true,
-        "sha256": "8a892e5dc339129fb0aa72431785da12f5195bb5116f32e7e85682afc5e0865c"
+        "sha256": "4cc36c6c263c9f1d92a7cb2510bf964b359e4c99905c836c37fcba01638bb3cd"
       },
       {
         "file": "api/pulse_service.py",
         "exists": true,
-        "sha256": "3c500e79d668bf53ecd54538996fc944e25e7b44d49fa35e4511d1436866b576"
+        "sha256": "455fd37014a2df1d76eb2039248435c805e849c5be5578631e40a795a376a029"
       },
       {
         "file": "api/pulse_qutrit_service.py",
@@ -214,82 +214,82 @@
       {
         "file": "frontend/src/types/pulse.ts",
         "exists": true,
-        "sha256": "784b30d30784a8d986ae5f5832d4017efe82d9d7a1e56098195f78d8d8465895"
+        "sha256": "660bbc0f0e01272571b70ddf81aaa99527815a7401a0e710bc2e72a67a0ca5ac"
       },
       {
         "file": "frontend/src/utils/pulseLab.ts",
         "exists": true,
-        "sha256": "6da2827e5c4a1d50f6ed4c5cac2d01cf5e0fa16be5a2b5d3d64699d4d116aa05"
+        "sha256": "ec0e4282094f1157ef0e5ad7c44720a32f18c2b1efcf5a6c9c31594994b683d7"
       },
       {
         "file": "frontend/src/components/PulseParameterPanel.tsx",
         "exists": true,
-        "sha256": "75e1b78d1f00ce38c7e05cc4b0ac0650175f57231caa723492fb8a85b7239a06"
+        "sha256": "aeb8baf8719a4c6a9d93e51358c927417b84016c4afe6352a39ec1874b13081b"
       },
       {
         "file": "frontend/src/pages/PulseLabPage.tsx",
         "exists": true,
-        "sha256": "d5a595f7ae4a16674450787b8881b77e91a9088d149afa87e361e3e96bdba863"
+        "sha256": "659903f7ac4754cf9b598a36d134e0bf6bd3afccf178ab82760f3856a978a31e"
       },
       {
         "file": "tests/test_cptp_qubit_channels.py",
         "exists": true,
-        "sha256": "f1539aacd3915c6d25b1a6936046e3a16f2dc6ddd3e0d5671dc82592ce726efe"
+        "sha256": "f792bd30389203abe99fa9c4121b0bc3ed0e6c432dbfed9a37d529e34c4e6d55"
       },
       {
         "file": "tests/test_cptp_qutrit_channels.py",
         "exists": true,
-        "sha256": "b52e34f36f192df7ff3a101241767676cbb75bef8d4688517a8c0b49dd71485c"
+        "sha256": "be098451831aa74b4c72b5b008e5a1e09bfe5c5629a8e9b74c8b9af76251d0cb"
       },
       {
         "file": "tests/test_cptp_choi_audit.py",
         "exists": true,
-        "sha256": "d51245ad06cc202f1e86bcf18aa1b6b54789c3fbccc5a4c06f1927ab124eb6c6"
+        "sha256": "22430d813cdb0f595448d5b55a99158782038f65cb3388c873dba63257e85f10"
       },
       {
         "file": "tests/test_cptp_composition.py",
         "exists": true,
-        "sha256": "23f0397839dc3a69e8466c8c19b1dfe3dfbefab6eb75109310df568f5fa7d1a7"
+        "sha256": "97b04ae00b4b3cf9b58e7b171e9631e9f0dc63364da9740f523d5d978089bddf"
       },
       {
         "file": "tests/test_cptp_liouvillian.py",
         "exists": true,
-        "sha256": "c762d60458dbc8c8b737b7c1845e3c56f1f114f6ea5b9260b800ffc583983789"
+        "sha256": "4947fe77284e7ad83247cad550b92f7475db5fccda2f82700123553351d9fd36"
       },
       {
         "file": "tests/test_cptp_piecewise.py",
         "exists": true,
-        "sha256": "142eba6232d206186f36d8ed3f5fa9c08884b54ae59cf3f45c1053dfc63e6aa7"
+        "sha256": "cb71e7fcd01d5e3de27d61a4ddad86a48e3dcdf24db3606628b2046336552a3c"
       },
       {
         "file": "tests/test_cptp_rust_parity.py",
         "exists": true,
-        "sha256": "f9476fc7ca804065aedfd47fcb751da30e218ed1fb6881e95010fd153e02ca0b"
+        "sha256": "618c17a0bcc14f16bb81ea66446900e0833edd885ad8cc676594aba8227d53fa"
       },
       {
         "file": "tests/test_cptp_rk4_comparison.py",
         "exists": true,
-        "sha256": "556a8b20d9e436d8c5779beef6a6a968796cbae96d29c02d6542634ad11a4e55"
+        "sha256": "ce1b139d4b3ea2a4ea6ea5030c4924ceb07155382cb6d30d76974a9901c58a2b"
       },
       {
         "file": "tests/test_pulse_cptp_api_integration.py",
         "exists": true,
-        "sha256": "49172be0825c6429e4741e5342b49e30f5b0ad73c9846f2c837d8985ebe56ab1"
+        "sha256": "b2b113071534b1a913de7a4b10cb2c41e986045ad6f58f884e6a8fb282a38df9"
       },
       {
         "file": "tests/test_cptp_model_freeze.py",
         "exists": true,
-        "sha256": "8896088907bc285a23926723fbc50fcf606bb416a45286178159faa02c34ba8e"
+        "sha256": "dd3aa5affd4a315b4aa82a688d2192eeaecb5138e392aa53600f8c004e6150f3"
       },
       {
         "file": "validation_cptp/model_freeze.py",
         "exists": true,
-        "sha256": "0167665cfd8dc81ceecd2dcab761e6f8e56f07e72c8aa4709bc1c45295820a5e"
+        "sha256": "69af6b1c632456699e0532518ceebf9fd01b42a8c46155663f965ca41fc38a12"
       },
       {
         "file": "scripts/freeze_cptp_model.py",
         "exists": true,
-        "sha256": "b89700e424a82f6c7f0708b518e04632ba7c528ef891c0efa2556d3832eefbcf"
+        "sha256": "2e626f5b3007f7282d716215385786befb99d8027563503abf2c8f07236a9e6b"
       }
     ]
   },
@@ -307,17 +307,17 @@
     {
       "file": "docs_for_develop/development/physical-model-finalization/phase2-explicit-cptp-path.md",
       "exists": true,
-      "sha256": "f85e3a2767079ef2c675af2d04362c65c544e8a0479afcc941f1bd8e56d00e6f"
+      "sha256": "0c1454214dae821a1f374a817a1c801a65c11856931a1449add343f0f66c0653"
     },
     {
       "file": "docs_for_develop/physics/model_identity.md",
       "exists": true,
-      "sha256": "9975c6c358418c55b03da9cd6f785a2e3d5856eff5f83e766a74fdc6f9e98505"
+      "sha256": "233c5dd695fecb6b35ba7b1e3d143e8b0e8c765529a915720e019d5d8d1ad901"
     },
     {
       "file": "docs_for_develop/validation/cptp-model-freeze.md",
       "exists": true,
-      "sha256": "1f686efa68b9998db48f2b018dfcd9dc72bec40aa2d5d93242d69bbdc640366f"
+      "sha256": "34456a79188bda32e86e577358d20783aeeb188b5c3068c9d7e60ce0f9147b78"
     }
   ],
   "environment": {

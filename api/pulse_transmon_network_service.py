@@ -18,9 +18,8 @@ from core.pulse_envelopes import (
 )
 from core.pulse_evolution import (
     TimeDependentCheckpoint,
-    evolve_time_dependent_segment,
+    evolve_dense_time_dependent_segment,
     physicality_metrics,
-    resolve_time_dependent_backend,
 )
 from core.pulse_qutrit_contract import transmon_anharmonicity_rad_per_us
 from core.pulse_qutrit_open_system import (
@@ -34,19 +33,32 @@ from core.pulse_transmon_network import (
     TransmonExchangeCoupling,
     computational_basis_labels,
     network_basis_labels,
-    network_collapse_operators,
     network_initial_density_matrix,
     network_joint_populations,
     network_leakage_probability,
+    network_site_local_dissipator,
 )
 from core.results import EnvironmentConfig
 
 
 NETWORK_CONTRACT_VERSION = "pulse-transmon-network-v1"
-# A dimension-aware proxy for dense RK4 work.  This equals roughly 41,000
-# two-transmon steps, 1,500 three-transmon steps, or 56 four-transmon steps.
-NETWORK_MAX_DENSE_WORK_UNITS = 30_000_000
+NETWORK_DENSE_KERNEL_ID = "numpy_dense"
+# One internal step costs a fixed per-step setup plus dense work that grows
+# with hilbert_dimension^3, so the budget charges both.  The overhead term is
+# expressed in the same units as the dense term: on the reference machine a
+# step at Hilbert dimension 9 costs about as much as 12000 units of dense work.
+NETWORK_STEP_OVERHEAD_UNITS = 12_000
+# Roughly 94,000 two-transmon steps, 37,000 three-transmon steps, or 2,200
+# four-transmon steps, which keeps the slowest accepted request near 20 s on
+# the reference machine and inside the 90 s API timeout on slower hosts.
+NETWORK_MAX_DENSE_WORK_UNITS = 1_200_000_000
 NETWORK_MAX_RESPONSE_MATRIX_ELEMENTS = 250_000
+
+
+def network_step_work_units(dimension: int) -> int:
+    """Return the budgeted cost of one internal step at this dimension."""
+
+    return dimension ** 3 + NETWORK_STEP_OVERHEAD_UNITS
 
 
 def run_coupled_transmon_network_request(
@@ -57,7 +69,6 @@ def run_coupled_transmon_network_request(
     started = perf_counter()
     count = request.transmon_count
     dimension = 3 ** count
-    resolved_backend = resolve_time_dependent_backend(request.backend)
     envelopes = tuple(_build_envelope(item.pulse) for item in request.drives)
     rates = _build_rates(request)
     alphas = tuple(
@@ -128,13 +139,18 @@ def run_coupled_transmon_network_request(
         coupling_step_limit or math.inf,
     )
     estimated_steps = _estimated_steps(sample_times, integration_step)
-    work_units = estimated_steps * dimension ** 3
-    maximum_steps_for_dimension = NETWORK_MAX_DENSE_WORK_UNITS // dimension ** 3
+    step_work_units = network_step_work_units(dimension)
+    work_units = estimated_steps * step_work_units
+    maximum_steps_for_dimension = (
+        NETWORK_MAX_DENSE_WORK_UNITS // step_work_units
+    )
     if work_units > NETWORK_MAX_DENSE_WORK_UNITS:
         raise PulseExecutionLimitError(
             "Transmon network request exceeds the dimension-aware dense-work "
             f"limit: {estimated_steps} steps at Hilbert dimension {dimension} "
-            f"({work_units} units), maximum {NETWORK_MAX_DENSE_WORK_UNITS}."
+            f"({work_units} units), maximum {NETWORK_MAX_DENSE_WORK_UNITS}. "
+            f"At this dimension the request must stay within "
+            f"{maximum_steps_for_dimension} internal steps."
         )
 
     hamiltonian = CoupledTransmonNetworkHamiltonian(
@@ -144,15 +160,13 @@ def run_coupled_transmon_network_request(
         drives=scheduled_drives,
     )
     initial = network_initial_density_matrix(request.initial_state, count)
-    collapse_ops = network_collapse_operators(rates)
-    evolution = evolve_time_dependent_segment(
+    evolution = evolve_dense_time_dependent_segment(
         initial,
         hamiltonian,
-        collapse_ops,
+        network_site_local_dissipator(rates),
         request.total_simulation_time_us,
         integration_step,
         checkpoint_times_us=sample_times,
-        backend=resolved_backend,
     )
 
     trajectory = [
@@ -197,7 +211,7 @@ def run_coupled_transmon_network_request(
         },
         "rates": [rate.to_dict() for rate in rates],
         "step_policy": {
-            "policy_id": "coupled_transmon_network_dense_work_v1",
+            "policy_id": "coupled_transmon_network_dense_work_v2",
             "selected_internal_step_cap_us": integration_step,
             "single_qutrit_step_cap_us": min(
                 policy.selected_internal_step_cap_us
@@ -206,6 +220,8 @@ def run_coupled_transmon_network_request(
             "coupling_step_limit_us": coupling_step_limit,
             "estimated_internal_step_count": estimated_steps,
             "maximum_internal_step_count_for_dimension": maximum_steps_for_dimension,
+            "dense_work_units_per_step": step_work_units,
+            "step_overhead_work_units": NETWORK_STEP_OVERHEAD_UNITS,
             "estimated_dense_work_units": work_units,
             "maximum_dense_work_units": NETWORK_MAX_DENSE_WORK_UNITS,
             "estimated_response_matrix_elements": response_elements,
@@ -227,13 +243,17 @@ def run_coupled_transmon_network_request(
             "api_runtime_ms": (perf_counter() - started) * 1000.0,
             "backend": {
                 "requested": request.backend,
-                "resolved": resolved_backend,
-                "fallback_used": request.backend == "auto" and resolved_backend == "python",
+                "resolved": NETWORK_DENSE_KERNEL_ID,
+                "fallback_used": False,
+                "note": (
+                    "the network path always uses the NumPy dense kernel; the "
+                    "python and rust selection applies to other pulse models"
+                ),
             },
             "evolution": {
                 "requested": request.evolution_method,
                 "resolved": request.evolution_method,
-                "method_id": "coupled_transmon_network_fixed_step_rk4_v1",
+                "method_id": "coupled_transmon_network_fixed_step_rk4_v2",
                 "cptp_guaranteed_by_construction": False,
                 "cleanup_applied": True,
                 "open_pulse_audit": None,
@@ -247,10 +267,21 @@ def run_coupled_transmon_network_request(
                 "drive_model": "independently scheduled local rotating-frame I/Q envelopes",
                 "pulse_detuning_model": "phase ramp in each local rotating frame",
             },
+            "dissipator": {
+                "model": "site-local qutrit jump operators",
+                "application": (
+                    "one 9x9 sum_j l_j (x) conj(l_j) kernel per transmon on the "
+                    "paired row and column axes"
+                ),
+                "coherent_term": (
+                    "non-Hermitian effective Hamiltonian H - 0.5j sum_j "
+                    "l_j^dagger l_j"
+                ),
+            },
         },
         "warnings": [
             "Experimental educational transmon-network model; not calibrated hardware.",
-            "Dense-matrix cost grows as 3^(3N) per RK4 matrix multiplication proxy.",
+            "Coherent RK4 cost grows as 3^(3N) per matrix multiplication proxy.",
         ],
         "limitations": [
             "Two to four transmons with three local levels each.",

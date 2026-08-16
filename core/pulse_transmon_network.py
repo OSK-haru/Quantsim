@@ -11,15 +11,13 @@ import math
 from dataclasses import dataclass, field
 from itertools import product
 
+import numpy as np
+
 from core.gates import (
     Matrix,
-    add,
     density_from_ket,
     identity_matrix,
-    matmul,
     prepare_collapse_operators,
-    scale,
-    subtract,
     tensor,
 )
 from core.pulse_envelopes import GaussianPulseEnvelope, PulseEnvelope
@@ -37,6 +35,9 @@ from core.pulse_qutrit_open_system import (
 LOCAL_DIMENSION = 3
 MIN_TRANSMON_COUNT = 2
 MAX_TRANSMON_COUNT = 4
+# Drive edges reach the integrator as the same floats the schedule produced, so
+# this only absorbs the sample-time deduplication in the request service.
+SEGMENT_BOUNDARY_TOLERANCE_US = 1e-12
 
 
 def network_basis_labels(transmon_count: int) -> tuple[str, ...]:
@@ -72,6 +73,24 @@ def embed_network_local_operator(
     result = factors[0]
     for factor in factors[1:]:
         result = tensor(result, factor)
+    return result
+
+
+def _local_array(operator: Matrix) -> np.ndarray:
+    return np.asarray(operator, dtype=np.complex128)
+
+
+def _embed_local_array(
+    operator: np.ndarray,
+    subsystem: int,
+    transmon_count: int,
+) -> np.ndarray:
+    """Return the NumPy twin of :func:`embed_network_local_operator`."""
+
+    identity = np.eye(LOCAL_DIMENSION, dtype=np.complex128)
+    result = operator if subsystem == 0 else identity
+    for position in range(1, transmon_count):
+        result = np.kron(result, operator if position == subsystem else identity)
     return result
 
 
@@ -152,9 +171,9 @@ class CoupledTransmonNetworkHamiltonian:
     detunings_rad_per_us: tuple[float, ...]
     couplings: tuple[TransmonExchangeCoupling, ...]
     drives: tuple[ScheduledTransmonDrive, ...]
-    _static_hamiltonian: Matrix = field(init=False, repr=False)
-    _drive_x_operators: tuple[Matrix, ...] = field(init=False, repr=False)
-    _drive_y_operators: tuple[Matrix, ...] = field(init=False, repr=False)
+    _static_array: np.ndarray = field(init=False, repr=False)
+    _drive_x_arrays: tuple[np.ndarray, ...] = field(init=False, repr=False)
+    _drive_y_arrays: tuple[np.ndarray, ...] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         count = _validate_transmon_count(len(self.anharmonicities_rad_per_us))
@@ -175,84 +194,147 @@ class CoupledTransmonNetworkHamiltonian:
         if any(drive.target >= count for drive in self.drives):
             raise ValueError("drive target is outside the transmon register")
 
-        static_terms: list[Matrix] = []
-        drive_x_operators: list[Matrix] = []
-        drive_y_operators: list[Matrix] = []
+        dimension = LOCAL_DIMENSION ** count
+        static_array = np.zeros((dimension, dimension), dtype=np.complex128)
+        drive_x_arrays: list[np.ndarray] = []
+        drive_y_arrays: list[np.ndarray] = []
         for index, (alpha, detuning) in enumerate(zip(
             self.anharmonicities_rad_per_us,
             self.detunings_rad_per_us,
             strict=True,
         )):
-            local_static = qutrit_rotating_frame_hamiltonian(
-                detuning,
-                alpha,
-                0.0,
-                0.0,
+            local_static = _local_array(
+                qutrit_rotating_frame_hamiltonian(detuning, alpha, 0.0, 0.0)
             )
-            local_x = subtract(
-                qutrit_rotating_frame_hamiltonian(detuning, alpha, 1.0, 0.0),
-                local_static,
-            )
-            local_y = subtract(
-                qutrit_rotating_frame_hamiltonian(detuning, alpha, 0.0, 1.0),
-                local_static,
-            )
-            static_terms.append(embed_network_local_operator(local_static, index, count))
-            drive_x_operators.append(embed_network_local_operator(local_x, index, count))
-            drive_y_operators.append(embed_network_local_operator(local_y, index, count))
+            local_x = _local_array(
+                qutrit_rotating_frame_hamiltonian(detuning, alpha, 1.0, 0.0)
+            ) - local_static
+            local_y = _local_array(
+                qutrit_rotating_frame_hamiltonian(detuning, alpha, 0.0, 1.0)
+            ) - local_static
+            static_array += _embed_local_array(local_static, index, count)
+            drive_x_arrays.append(_embed_local_array(local_x, index, count))
+            drive_y_arrays.append(_embed_local_array(local_y, index, count))
 
         embedded_annihilation = tuple(
-            embed_network_local_operator(ANNIHILATION_QUTRIT, index, count)
+            _embed_local_array(_local_array(ANNIHILATION_QUTRIT), index, count)
             for index in range(count)
         )
         embedded_creation = tuple(
-            embed_network_local_operator(CREATION_QUTRIT, index, count)
+            _embed_local_array(_local_array(CREATION_QUTRIT), index, count)
             for index in range(count)
         )
         for coupling in self.couplings:
-            static_terms.append(scale(
-                coupling.strength_rad_per_us,
-                add(
-                    matmul(
-                        embedded_creation[coupling.left],
-                        embedded_annihilation[coupling.right],
-                    ),
-                    matmul(
-                        embedded_annihilation[coupling.left],
-                        embedded_creation[coupling.right],
-                    ),
-                ),
-            ))
+            static_array += coupling.strength_rad_per_us * (
+                embedded_creation[coupling.left]
+                @ embedded_annihilation[coupling.right]
+                + embedded_annihilation[coupling.left]
+                @ embedded_creation[coupling.right]
+            )
 
-        object.__setattr__(self, "_static_hamiltonian", add(*static_terms))
-        object.__setattr__(self, "_drive_x_operators", tuple(drive_x_operators))
-        object.__setattr__(self, "_drive_y_operators", tuple(drive_y_operators))
+        static_array.setflags(write=False)
+        object.__setattr__(self, "_static_array", static_array)
+        object.__setattr__(self, "_drive_x_arrays", tuple(drive_x_arrays))
+        object.__setattr__(self, "_drive_y_arrays", tuple(drive_y_arrays))
 
     @property
     def transmon_count(self) -> int:
         return len(self.anharmonicities_rad_per_us)
 
+    def for_segment(
+        self,
+        start_time_us: float,
+        end_time_us: float,
+    ) -> "CoupledTransmonNetworkSegmentHamiltonian":
+        """Return the provider for one segment with a fixed active drive set.
+
+        Every drive edge must be an integration boundary, so a drive either
+        covers the whole segment or none of it. Pinning the set here means the
+        RK4 stage that lands exactly on a pulse edge belongs to the segment it
+        is integrating, which is what removes the edge error a closed support
+        test leaves behind for square envelopes.
+        """
+
+        tolerance = SEGMENT_BOUNDARY_TOLERANCE_US
+        active: list[ScheduledTransmonDrive] = []
+        for drive in self.drives:
+            if drive.start_time_us >= end_time_us - tolerance:
+                continue
+            if drive.end_time_us <= start_time_us + tolerance:
+                continue
+            if (
+                drive.start_time_us > start_time_us + tolerance
+                or drive.end_time_us < end_time_us - tolerance
+            ):
+                raise ValueError(
+                    "a drive edge falls inside the integration segment; "
+                    "drive start and end times must be integration boundaries"
+                )
+            active.append(drive)
+        return CoupledTransmonNetworkSegmentHamiltonian(
+            static_array=self._static_array,
+            drive_x_arrays=self._drive_x_arrays,
+            drive_y_arrays=self._drive_y_arrays,
+            drives=tuple(active),
+        )
+
+    def evaluate_array(self, local_time_us: float) -> np.ndarray:
+        """Return the instantaneous network Hamiltonian as a NumPy array."""
+
+        return CoupledTransmonNetworkSegmentHamiltonian(
+            static_array=self._static_array,
+            drive_x_arrays=self._drive_x_arrays,
+            drive_y_arrays=self._drive_y_arrays,
+            drives=self.drives,
+        ).evaluate_array(local_time_us)
+
     def evaluate(self, local_time_us: float) -> Matrix:
-        omega_x = [0.0 for _ in range(self.transmon_count)]
-        omega_y = [0.0 for _ in range(self.transmon_count)]
+        return tuple(
+            tuple(complex(value) for value in row)
+            for row in self.evaluate_array(local_time_us)
+        )
+
+
+@dataclass(frozen=True)
+class CoupledTransmonNetworkSegmentHamiltonian:
+    """Network Hamiltonian with the active drive set already resolved."""
+
+    static_array: np.ndarray
+    drive_x_arrays: tuple[np.ndarray, ...]
+    drive_y_arrays: tuple[np.ndarray, ...]
+    drives: tuple[ScheduledTransmonDrive, ...]
+
+    def for_segment(
+        self,
+        start_time_us: float,
+        end_time_us: float,
+    ) -> "CoupledTransmonNetworkSegmentHamiltonian":
+        del start_time_us, end_time_us
+        return self
+
+    def evaluate_array(self, local_time_us: float) -> np.ndarray:
+        transmon_count = len(self.drive_x_arrays)
+        omega_x = [0.0 for _ in range(transmon_count)]
+        omega_y = [0.0 for _ in range(transmon_count)]
         for drive in self.drives:
             drive_x, drive_y = drive.quadratures(local_time_us)
             omega_x[drive.target] += drive_x
             omega_y[drive.target] += drive_y
-        drive_terms = [
-            scale(value, operator)
-            for values, operators in (
-                (omega_x, self._drive_x_operators),
-                (omega_y, self._drive_y_operators),
-            )
-            for value, operator in zip(values, operators, strict=True)
-            if value != 0.0
-        ]
-        return (
-            self._static_hamiltonian
-            if not drive_terms
-            else add(self._static_hamiltonian, *drive_terms)
-        )
+        hamiltonian = self.static_array
+        accumulated = False
+        for values, operators in (
+            (omega_x, self.drive_x_arrays),
+            (omega_y, self.drive_y_arrays),
+        ):
+            for value, operator in zip(values, operators, strict=True):
+                if value == 0.0:
+                    continue
+                if accumulated:
+                    hamiltonian += value * operator
+                else:
+                    hamiltonian = self.static_array + value * operator
+                    accumulated = True
+        return hamiltonian
 
 
 def network_initial_density_matrix(initial_state: str, transmon_count: int) -> Matrix:
@@ -285,6 +367,84 @@ def network_collapse_operators(
     rates: tuple[QutritDissipationRates, ...],
 ):
     return prepare_collapse_operators(network_collapse_operator_matrices(rates))
+
+
+@dataclass(frozen=True)
+class NetworkSiteLocalDissipator:
+    """Apply the network jump operators through their tensor structure.
+
+    Every qutrit jump operator acts on one subsystem, so the whole jump sum of
+    that subsystem collapses into one nine-dimensional kernel
+    ``sum_j l_j (x) conj(l_j)`` acting on the paired row and column axes of
+    that transmon. One small product per transmon then replaces two dense
+    products per jump operator: at four transmons that is four 9x9 kernels
+    instead of forty 81x81 products per Lindblad evaluation.
+    """
+
+    transmon_count: int
+    jumps: tuple[tuple[int, np.ndarray], ...]
+    _kernels: tuple[tuple[int, np.ndarray], ...] = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        kernel_size = LOCAL_DIMENSION ** 2
+        kernels: dict[int, np.ndarray] = {}
+        for subsystem, local_operator in self.jumps:
+            if local_operator.shape != (LOCAL_DIMENSION, LOCAL_DIMENSION):
+                raise ValueError("network jump operators must be local qutrit operators")
+            if subsystem < 0 or subsystem >= self.transmon_count:
+                raise ValueError("jump subsystem is outside the transmon register")
+            kernels.setdefault(
+                subsystem,
+                np.zeros((kernel_size, kernel_size), dtype=np.complex128),
+            )
+            kernels[subsystem] += np.kron(local_operator, local_operator.conj())
+        object.__setattr__(self, "_kernels", tuple(sorted(kernels.items())))
+
+    def relaxation_array(self, dimension: int) -> np.ndarray:
+        if dimension != LOCAL_DIMENSION ** self.transmon_count:
+            raise ValueError("state dimension does not match the transmon register")
+        relaxation = np.zeros((dimension, dimension), dtype=np.complex128)
+        for subsystem, local_operator in self.jumps:
+            relaxation += _embed_local_array(
+                local_operator.conj().T @ local_operator,
+                subsystem,
+                self.transmon_count,
+            )
+        return relaxation
+
+    def apply_jumps(self, rho: np.ndarray) -> np.ndarray:
+        count = self.transmon_count
+        shape = (LOCAL_DIMENSION,) * (2 * count)
+        kernel_size = LOCAL_DIMENSION ** 2
+        result = np.zeros_like(rho)
+        for subsystem, kernel in self._kernels:
+            paired = np.moveaxis(
+                rho.reshape(shape),
+                (subsystem, count + subsystem),
+                (0, 1),
+            )
+            remaining_shape = paired.shape[2:]
+            transformed = (kernel @ paired.reshape(kernel_size, -1)).reshape(
+                (LOCAL_DIMENSION, LOCAL_DIMENSION, *remaining_shape)
+            )
+            result += np.moveaxis(
+                transformed,
+                (0, 1),
+                (subsystem, count + subsystem),
+            ).reshape(rho.shape)
+        return result
+
+
+def network_site_local_dissipator(
+    rates: tuple[QutritDissipationRates, ...],
+) -> NetworkSiteLocalDissipator:
+    count = _validate_transmon_count(len(rates))
+    jumps = tuple(
+        (subsystem, _local_array(operator))
+        for subsystem, local_rates in enumerate(rates)
+        for operator in qutrit_collapse_operator_matrices(local_rates)
+    )
+    return NetworkSiteLocalDissipator(transmon_count=count, jumps=jumps)
 
 
 def network_joint_populations(

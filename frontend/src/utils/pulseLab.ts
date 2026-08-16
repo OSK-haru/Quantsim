@@ -25,7 +25,13 @@ const TWO_LEVEL_API_MAX_STEPS = 200000
 const EPSILON_H = 0.02
 const EPSILON_D = 0.02
 const QUTRIT_SAMPLES_PER_SIGMA = 32
-const NETWORK_MAX_DENSE_WORK_UNITS = 30000000
+const MHZ_TO_RAD_PER_US = 2 * Math.PI
+/*
+ * api/pulse_transmon_network_service.py と同じ予算。1ステップの費用は
+ * 固定オーバーヘッドと dim^3 の密行列演算の和として数える。
+ */
+const NETWORK_STEP_OVERHEAD_UNITS = 12000
+const NETWORK_MAX_DENSE_WORK_UNITS = 1200000000
 const NETWORK_MAX_RESPONSE_MATRIX_ELEMENTS = 250000
 
 export const initialPulseLabForm: PulseLabForm = {
@@ -479,30 +485,148 @@ export function estimateTransmonNetworkCost(
   form: PulseLabForm,
   circuit: PulseCircuitState,
 ): PulseCostEstimate {
-  const forms = circuit.lanes.flatMap((lane) => lane.steps
+  const driveForms = circuit.lanes.flatMap((lane) => lane.steps
     .filter(isDrivePulseStep)
-    .map((step) => applyPulseStepToForm(form, step.pulse)))
+    .map((step) => ({
+      transmonIndex: lane.transmonIndex,
+      form: applyPulseStepToForm(form, step.pulse),
+    })))
   const dimension = 3 ** circuit.transmons.length
   const effectiveSnapshotCount = Math.min(
     form.snapshotCount,
     Math.max(
       2,
       Math.floor(NETWORK_MAX_RESPONSE_MATRIX_ELEMENTS / (dimension * dimension))
-        - 2 * forms.length,
+        - 2 * driveForms.length,
     ),
   )
-  const estimatedInternalSteps = Math.max(
-    effectiveSnapshotCount,
-    ...forms.map((driveForm) => estimatePulseCost({
-      ...driveForm,
-      modelId: QUTRIT_PULSE_MODEL,
-      snapshotCount: effectiveSnapshotCount,
-    }).estimatedInternalSteps),
+  /*
+   * 刻み幅はAPIの step policy と同じ量で決める。ハミルトニアンの
+   * 固有値スパンを上界で置き換えるとAPIが受け付ける要求までUIが
+   * 止めてしまうため、ここでは3準位の固有値スパンを直接使う。
+   */
+  const anharmonicityRadPerUs = MHZ_TO_RAD_PER_US * Math.min(
+    ...circuit.transmons.map((transmon) => transmon.anharmonicityMhz),
   )
+  const couplingStepLimitUs = form.pairExchangeCouplingRadPerUs > 0
+    ? EPSILON_H / (4 * Math.abs(form.pairExchangeCouplingRadPerUs))
+    : Number.POSITIVE_INFINITY
+  const stepCapUs = Math.min(
+    couplingStepLimitUs,
+    ...driveForms.map(({ transmonIndex, form: driveForm }) => qutritStepCapUs(
+      driveForm,
+      anharmonicityRadPerUs,
+      Math.abs(networkBaseDetuningRadPerUs(form, transmonIndex))
+        + Math.abs(driveForm.detuningRadPerUs),
+    )),
+  )
+  const estimatedInternalSteps = driveForms.length === 0 || !(stepCapUs > 0)
+    ? effectiveSnapshotCount
+    : Math.ceil(form.totalSimulationTimeUs / stepCapUs) + effectiveSnapshotCount
   const maximumInternalSteps = Math.floor(
-    NETWORK_MAX_DENSE_WORK_UNITS / dimension ** 3,
+    NETWORK_MAX_DENSE_WORK_UNITS / (dimension ** 3 + NETWORK_STEP_OVERHEAD_UNITS),
   )
   return costResult(estimatedInternalSteps, maximumInternalSteps)
+}
+
+export function networkBaseDetuningRadPerUs(
+  form: PulseLabForm,
+  transmonIndex: number,
+): number {
+  if (transmonIndex === 0) {
+    return form.pairDetuningQ0RadPerUs
+  }
+  return transmonIndex === 1 ? form.pairDetuningQ1RadPerUs : 0
+}
+
+/*
+ * `recommended_qutrit_step_policy` のTypeScript版。刻み幅を決める4つの
+ * 上限（パルス長・固有値スパン・散逸・Gaussianの分解能）を同じ式で評価する。
+ */
+function qutritStepCapUs(
+  form: PulseLabForm,
+  anharmonicityRadPerUs: number,
+  detuningRadPerUs: number,
+): number {
+  const duration = pulseDurationUs(form)
+  const driveMagnitude = maximumDriveMagnitudeRadPerUs(form)
+  const spectralDiameter = Math.max(
+    qutritSpectralDiameterRadPerUs(detuningRadPerUs, anharmonicityRadPerUs, 0),
+    qutritSpectralDiameterRadPerUs(
+      detuningRadPerUs,
+      anharmonicityRadPerUs,
+      driveMagnitude,
+    ),
+  )
+  const dissipationScale = form.environmentMode === 'direct_rates'
+    ? form.gamma10DownPerUs
+      + form.gamma01UpPerUs
+      + form.gamma21DownPerUs
+      + form.gamma12UpPerUs
+      + 4 * form.gammaPhiAdjacentPerUs
+    : 0
+  const limits = [
+    duration,
+    ...(spectralDiameter > 0 ? [EPSILON_H / spectralDiameter] : []),
+    ...(dissipationScale > 0 ? [EPSILON_D / dissipationScale] : []),
+    ...(form.shape === 'gaussian' ? [form.sigmaUs / QUTRIT_SAMPLES_PER_SIGMA] : []),
+  ]
+  return Math.min(...limits.filter((value) => Number.isFinite(value) && value > 0))
+}
+
+function maximumDriveMagnitudeRadPerUs(form: PulseLabForm): number {
+  const peak = Math.abs(peakAmplitude(form))
+  if (form.shape !== 'gaussian' || form.dragBetaUs === 0) {
+    return peak
+  }
+  /*
+   * DRAGでは sqrt(Omega^2 + (beta dOmega/dt)^2) の最大値を取る。
+   * 端点と、存在する場合の停留点を比べる。
+   */
+  const ratio = Math.abs(form.dragBetaUs) / form.sigmaUs
+  const candidates = [0, form.truncationSigma]
+  if (ratio > 1) {
+    const stationary = Math.sqrt(1 - 1 / (ratio * ratio))
+    if (stationary <= form.truncationSigma) {
+      candidates.push(stationary)
+    }
+  }
+  return Math.max(...candidates.map((normalized) => peak
+    * Math.exp(-0.5 * normalized * normalized)
+    * Math.sqrt(1 + (ratio * normalized) ** 2)))
+}
+
+/*
+ * 3準位回転系ハミルトニアンの固有値スパン。実対称三重対角なので
+ * 対称3x3の解析解をそのまま使える。
+ */
+function qutritSpectralDiameterRadPerUs(
+  detuningRadPerUs: number,
+  anharmonicityRadPerUs: number,
+  amplitudeRadPerUs: number,
+): number {
+  const coupling01 = 0.5 * amplitudeRadPerUs
+  const coupling12 = Math.SQRT2 * coupling01
+  const diagonal = [
+    0,
+    -detuningRadPerUs,
+    -2 * detuningRadPerUs + anharmonicityRadPerUs,
+  ]
+  const offDiagonalSquares = coupling01 ** 2 + coupling12 ** 2
+  const mean = (diagonal[0] + diagonal[1] + diagonal[2]) / 3
+  const shifted = diagonal.map((value) => value - mean)
+  const scale = Math.sqrt(
+    (shifted[0] ** 2 + shifted[1] ** 2 + shifted[2] ** 2 + 2 * offDiagonalSquares) / 6,
+  )
+  if (scale === 0) {
+    return 0
+  }
+  const determinant = (
+    shifted[0] * (shifted[1] * shifted[2] - coupling12 ** 2)
+    - coupling01 * (coupling01 * shifted[2])
+  ) / scale ** 3
+  const angle = Math.acos(Math.max(-1, Math.min(1, determinant / 2))) / 3
+  return 2 * scale * (Math.cos(angle) - Math.cos(angle + (2 * Math.PI) / 3))
 }
 
 function qutritPulsePayload(form: PulseLabForm): Record<string, unknown> {

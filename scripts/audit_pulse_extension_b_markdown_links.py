@@ -65,14 +65,15 @@ def main() -> int:
 
 def _documents() -> list[Path]:
     patterns = (
-        "docs/README.md",
-        "docs/development/pulse-extension-b/*.md",
-        "docs/development/physical-model-finalization/*.md",
-        "docs/requirements/yuragi_strider_physical_model_finalization_plan.md",
-        "docs/physics/pulse-extension-b-*.md",
-        "docs/architecture/pulse-api-contract.md",
-        "docs/validation/pulse-b-*.md",
-        "docs/validation/pulse-extension-b-report.md",
+        "docs_for_develop/README.md",
+        "docs_for_develop/development/pulse-extension-b/*.md",
+        "docs_for_develop/development/physical-model-finalization/*.md",
+        "docs_for_develop/requirements/"
+        "yuragi_strider_physical_model_finalization_plan.md",
+        "docs_for_develop/physics/pulse-extension-b-*.md",
+        "docs_for_develop/architecture/pulse-api-contract.md",
+        "docs_for_develop/validation/pulse-b-*.md",
+        "docs_for_develop/validation/pulse-extension-b-report.md",
         "frontend/README.md",
     )
     return sorted(

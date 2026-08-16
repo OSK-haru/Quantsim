@@ -24,7 +24,7 @@ DEFAULT_CSV_PATH = Path(
     "validation_results/cptp_qutip_comparison.csv"
 )
 DEFAULT_MARKDOWN_PATH = Path(
-    "docs/validation/cptp-qutip-comparison.md"
+    "docs_for_develop/validation/cptp-qutip-comparison.md"
 )
 
 

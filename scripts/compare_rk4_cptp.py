@@ -40,7 +40,7 @@ DEFAULT_JSON_PATH = Path(
     "validation_results/cptp_rk4_comparison.json"
 )
 DEFAULT_MARKDOWN_PATH = Path(
-    "docs/validation/cptp-rk4-comparison.md"
+    "docs_for_develop/validation/cptp-rk4-comparison.md"
 )
 PHYSICALITY_TOLERANCE = 1e-10
 
