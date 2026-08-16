@@ -116,10 +116,15 @@
   padding: 20px 22px 22px;
   border: var(--tt-hair) solid var(--tt-accent);
   background: var(--tt-accent);
-  color: var(--tt-ink-max);
+  color: var(--tt-on-accent);
   text-align: left;
   cursor: pointer;
-  transition: background 120ms linear, color 120ms linear;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms linear,
+    border-color 120ms linear,
+    color 120ms linear;
 }
 
 .home-page__mode-unit {
@@ -154,7 +159,7 @@
 .home-page__mode:hover:not(:disabled) {
   border-color: var(--tt-accent-hot);
   background: var(--tt-accent-hot);
-  color: var(--tt-ink-max);
+  color: var(--tt-on-accent);
 }
 
 .home-page__mode--secondary {
@@ -167,6 +172,68 @@
   border-color: var(--tt-accent);
   background: var(--tt-accent-wash);
   color: var(--tt-ink-max);
+}
+
+/*
+ * The light substrate needs stronger depth cues than the CRT-dark treatment.
+ * Keep the shadows square and mechanical so the controls still read as part
+ * of the instrument panel rather than floating consumer UI cards.
+ */
+html[data-theme='light'] .home-page__spec {
+  border-color: var(--tt-rule-strong);
+  box-shadow: 4px 4px 0 var(--tt-rule);
+}
+
+html[data-theme='light'] .home-page__actions {
+  gap: 18px;
+  padding-bottom: 8px;
+}
+
+html[data-theme='light'] .home-page__mode {
+  border-width: 2px;
+  border-color: var(--tt-accent-deep);
+  box-shadow:
+    0 5px 0 var(--tt-accent-deep),
+    0 10px 20px rgb(var(--tt-ink-rgb) / 0.16);
+}
+
+html[data-theme='light'] .home-page__mode:hover:not(:disabled),
+html[data-theme='light'] .home-page__mode:focus-visible {
+  transform: translateY(-2px);
+  box-shadow:
+    0 7px 0 var(--tt-accent-deep),
+    0 14px 24px rgb(var(--tt-ink-rgb) / 0.2);
+}
+
+html[data-theme='light'] .home-page__mode:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    0 1px 0 var(--tt-accent-deep),
+    0 5px 10px rgb(var(--tt-ink-rgb) / 0.14);
+}
+
+html[data-theme='light'] .home-page__mode--secondary {
+  border-color: var(--tt-rule-strong);
+  background: var(--tt-panel);
+  color: var(--tt-ink-max);
+  box-shadow:
+    0 5px 0 var(--tt-rule-strong),
+    0 10px 20px rgb(var(--tt-ink-rgb) / 0.12);
+}
+
+html[data-theme='light'] .home-page__mode--secondary:hover:not(:disabled),
+html[data-theme='light'] .home-page__mode--secondary:focus-visible {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+  box-shadow:
+    0 7px 0 var(--tt-accent),
+    0 14px 24px rgb(var(--tt-ink-rgb) / 0.16);
+}
+
+html[data-theme='light'] .home-page__mode--secondary:active:not(:disabled) {
+  box-shadow:
+    0 1px 0 var(--tt-accent-deep),
+    0 5px 10px rgb(var(--tt-ink-rgb) / 0.12);
 }
 
 .home-page__mode--activated {
@@ -316,6 +383,28 @@
 .home-page__tutorial-button:focus-visible {
   outline: var(--tt-bar) solid var(--tt-accent);
   outline-offset: 2px;
+}
+
+html[data-theme='light'] .home-page__tutorial {
+  border-color: var(--tt-rule-strong);
+  box-shadow: 5px 5px 0 var(--tt-rule);
+}
+
+html[data-theme='light'] .home-page__tutorial-course {
+  border-color: var(--tt-rule-mid);
+  background: var(--tt-panel);
+  box-shadow: 3px 3px 0 var(--tt-rule);
+}
+
+html[data-theme='light'] .home-page__tutorial-button {
+  border-width: 2px;
+  box-shadow: 3px 3px 0 var(--tt-rule-strong);
+}
+
+html[data-theme='light'] .home-page__tutorial-button:hover {
+  color: var(--tt-on-accent);
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--tt-accent-deep);
 }
 
 /* --- Colophon ------------------------------------------------------------- */

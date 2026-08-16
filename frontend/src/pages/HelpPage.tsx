@@ -1,5 +1,6 @@
 import './HelpPage.css'
 import { MODEL_IDS, getModelLabel } from '../utils/modelLabels'
+import { documentationLinks } from '../utils/documentationLinks'
 
 const currentEvolutionLabel = getModelLabel(MODEL_IDS.evolutionMode).label
 const plannedModeLabel = getModelLabel(MODEL_IDS.plannedMode).label
@@ -63,6 +64,14 @@ export function HelpPage() {
             シミュレーション画面の見方、指標の比較、結果が変化する理由を説明します。
           </p>
         </div>
+        <a
+          className="help-page__docs-cta"
+          href={documentationLinks.home}
+          target="_blank"
+          rel="noreferrer"
+        >
+          詳しいドキュメントを開く <span aria-hidden="true">↗</span>
+        </a>
       </header>
 
       <section className="help-page__intro" aria-label="モデルについての注意">
@@ -72,6 +81,21 @@ export function HelpPage() {
           選択した環境設定による傾向を確認することを目的としています。
         </p>
       </section>
+
+      <nav className="help-page__resources" aria-label="詳しいドキュメント">
+        <a href={documentationLinks.gettingStarted} target="_blank" rel="noreferrer">
+          <span>はじめに</span>
+          <small>できることと使い始め方</small>
+        </a>
+        <a href={documentationLinks.appGuide} target="_blank" rel="noreferrer">
+          <span>画面別ガイド</span>
+          <small>各ワークスペースの操作方法</small>
+        </a>
+        <a href={documentationLinks.physicsModel} target="_blank" rel="noreferrer">
+          <span>物理モデル詳細</span>
+          <small>前提・計算方法・妥当性</small>
+        </a>
+      </nav>
 
       <section className="help-page__grid" aria-label="ヘルプの質問">
         {helpItems.map((item) => (

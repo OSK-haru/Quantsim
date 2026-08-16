@@ -46,6 +46,29 @@
   line-height: 1.6;
 }
 
+.help-page__docs-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 11px 14px;
+  border: var(--tt-hair) solid var(--tt-accent);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink-max);
+  font-family: var(--tt-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+.help-page__docs-cta:hover,
+.help-page__docs-cta:focus-visible {
+  background: var(--tt-accent);
+  color: var(--tt-on-accent);
+  outline: none;
+}
+
 .help-page__back {
   padding: 10px 16px;
   border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
@@ -77,6 +100,42 @@
   background: var(--tt-panel);
   color: var(--tt-ink);
   line-height: 1.65;
+}
+
+.help-page__resources {
+  width: min(960px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--tt-hair);
+  background: var(--tt-rule);
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+}
+
+.help-page__resources a {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-bottom: 3px solid transparent;
+  background: var(--tt-panel);
+  color: var(--tt-ink-max);
+  text-decoration: none;
+}
+
+.help-page__resources a:hover,
+.help-page__resources a:focus-visible {
+  border-bottom-color: var(--tt-accent);
+  background: var(--tt-accent-wash);
+  outline: none;
+}
+
+.help-page__resources span {
+  font-weight: 700;
+}
+
+.help-page__resources small {
+  color: var(--tt-ink-dim);
+  line-height: 1.45;
 }
 
 .help-page__grid {
@@ -117,6 +176,15 @@
 
   .help-page__header-actions {
     justify-content: start;
+  }
+
+  .help-page__docs-cta {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .help-page__resources {
+    grid-template-columns: 1fr;
   }
 
   .help-page__grid {

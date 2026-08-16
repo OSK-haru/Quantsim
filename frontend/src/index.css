@@ -29,6 +29,7 @@
   --tt-accent-hot: #ff2a2a;
   --tt-accent-deep: #7a0f0f;
   --tt-accent-wash: #24090a;
+  --tt-on-accent: #ffffff;
 
   /* -- Signal (terminal green) — reserved for live-run status ONLY ------- */
   --tt-signal: #4af626;
@@ -121,6 +122,7 @@ html[data-theme='light'] {
   --tt-accent-hot: #d81919;
   --tt-accent-deep: #760f0f;
   --tt-accent-wash: #f5dddd;
+  --tt-on-accent: #ffffff;
   --tt-signal: #197a25;
 
   --tt-ink-rgb: 37 35 32;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './AppNavigation.css'
 import { SettingsMenu } from './SettingsMenu'
+import { documentationLinks } from '../utils/documentationLinks'
 
 export type NavigationRoute =
   | 'home'
@@ -112,6 +113,16 @@ export function AppNavigation({ currentRoute, onNavigate }: AppNavigationProps) 
           SYS ONLINE
         </span>
 
+        <a
+          className="app-navigation__docs"
+          href={documentationLinks.home}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="ドキュメントサイトを新しいタブで開く"
+        >
+          DOCS <span aria-hidden="true">↗</span>
+        </a>
+
         <button
           className={`app-navigation__toggle${isOpen ? ' app-navigation__toggle--open' : ''}`}
           type="button"
@@ -120,9 +131,14 @@ export function AppNavigation({ currentRoute, onNavigate }: AppNavigationProps) 
           aria-controls="global-navigation-menu"
           onClick={() => setIsOpen((open) => !open)}
         >
-          <span aria-hidden="true" />
-          <span aria-hidden="true" />
-          <span aria-hidden="true" />
+          <span className="app-navigation__toggle-label" aria-hidden="true">
+            {isOpen ? 'CLOSE' : 'MENU'}
+          </span>
+          <span className="app-navigation__toggle-icon" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
         </button>
       </div>
       <nav
@@ -153,6 +169,15 @@ export function AppNavigation({ currentRoute, onNavigate }: AppNavigationProps) 
             <small>{item.detail}</small>
           </button>
         ))}
+        <a
+          className="app-navigation__item app-navigation__item--external"
+          href={documentationLinks.home}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span>ドキュメントサイト</span>
+          <small>Manual / Physics ↗</small>
+        </a>
         <SettingsMenu />
       </nav>
     </div>
