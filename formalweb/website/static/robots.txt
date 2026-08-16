@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yuragi-strider.23sam55781.workers.dev/sitemap.xml
