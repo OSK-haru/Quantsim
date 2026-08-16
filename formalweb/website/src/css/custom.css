@@ -46,6 +46,7 @@
   --tt-accent-hot: #ff2a2a;
   --tt-accent-deep: #7a0f0f;
   --tt-accent-wash: #24090a;
+  --tt-on-accent: #ffffff;
 
   /* -- Signal (terminal green) ------------------------------------------ */
   /*
@@ -85,17 +86,48 @@
   color-scheme: dark;
 }
 
+/* 本体アプリと同じ明色 substrate。テーマ間でも情報階層を変えない。 */
+html[data-theme='light'] {
+  --tt-void: #f4f2ed;
+  --tt-panel: #fffefa;
+  --tt-panel-2: #ebe8e0;
+  --tt-panel-3: #dedbd3;
+
+  --tt-rule: #d8d2c7;
+  --tt-rule-mid: #b9b2a5;
+  --tt-rule-strong: #7c756b;
+
+  --tt-ink: #252320;
+  --tt-ink-max: #090909;
+  --tt-ink-mid: #5c5850;
+  --tt-ink-dim: #777168;
+  --tt-ink-faint: #a29c92;
+
+  --tt-accent: #b71414;
+  --tt-accent-hot: #d81919;
+  --tt-accent-deep: #760f0f;
+  --tt-accent-wash: #f5dddd;
+  --tt-on-accent: #ffffff;
+  --tt-signal: #197a25;
+
+  --tt-ink-rgb: 37 35 32;
+  --tt-accent-rgb: 183 20 20;
+  --tt-blueprint: rgba(37, 35, 32, 0.05);
+
+  color-scheme: light;
+}
+
 /* ============================================================================
    2. INFIMA BRIDGE
-   Docusaurus のテーマ変数を上のトークンへ写す。ダーク確定なので :root と
-   [data-theme='dark'] の双方に同じ値を置き、どちらが当たっても崩れないようにする。
+   Docusaurus のテーマ変数を上のトークンへ写す。構造は明暗で共通にし、
+   色だけをテーマ別トークンで切り替える。
    ========================================================================= */
 
 :root,
 [data-theme='dark'],
 [data-theme='light'] {
   /* -- Primary = hazard red --------------------------------------------- */
-  --ifm-color-primary: #e61919;
+  --ifm-color-primary: var(--tt-accent);
   --ifm-color-primary-dark: #cf1616;
   --ifm-color-primary-darker: #c31515;
   --ifm-color-primary-darkest: #a01111;
@@ -193,14 +225,6 @@
   --ifm-menu-color-background-hover: var(--tt-panel-3);
   --ifm-menu-link-padding-horizontal: 14px;
   --ifm-menu-link-padding-vertical: 9px;
-  /*
-   * 折りたたみキャレットは黒い画像なので、暗い substrate では反転が必須。
-   * Docusaurus は [data-theme='dark'] の下でしか反転を当てないが、以前に
-   * light を localStorage に残した訪問者は data-theme='light' で戻ってくる。
-   * テーマ属性に依存させず、ここで常時反転させる。
-   */
-  --ifm-menu-link-sublist-icon-filter: invert(100%) sepia(6%) saturate(0%)
-    brightness(105%) contrast(98%);
   --docusaurus-collapse-button-bg: var(--tt-panel);
   --docusaurus-collapse-button-bg-hover: var(--tt-accent-wash);
 
@@ -269,6 +293,21 @@
   --ifm-avatar-intro-margin: 0;
 }
 
+[data-theme='dark'] {
+  --ifm-menu-link-sublist-icon-filter: invert(100%) sepia(6%) saturate(0%)
+    brightness(105%) contrast(98%);
+}
+
+[data-theme='light'] {
+  --ifm-color-primary-dark: #a51212;
+  --ifm-color-primary-darker: #9c1111;
+  --ifm-color-primary-darkest: #800e0e;
+  --ifm-color-primary-light: #c51a1a;
+  --ifm-color-primary-lighter: #ce1b1b;
+  --ifm-color-primary-lightest: #e33d3d;
+  --ifm-menu-link-sublist-icon-filter: none;
+}
+
 /* ============================================================================
    3. BASE
    ========================================================================= */
@@ -302,7 +341,7 @@ select {
 
 ::selection {
   background: var(--tt-accent);
-  color: var(--tt-ink-max);
+  color: var(--tt-on-accent);
 }
 
 :focus-visible {
@@ -657,6 +696,10 @@ body::after {
 
 .footer--dark {
   --ifm-footer-background-color: var(--tt-void);
+  --ifm-footer-color: var(--tt-ink-dim);
+  --ifm-footer-link-color: var(--tt-ink-mid);
+  --ifm-footer-link-hover-color: var(--tt-accent);
+  --ifm-footer-title-color: var(--tt-ink);
 }
 
 /*
@@ -1016,21 +1059,21 @@ body::after {
 
 .button:active {
   background: var(--tt-accent);
-  color: var(--tt-ink-max);
+  color: var(--tt-on-accent);
 }
 
 .button--primary,
 .button--secondary {
   border-color: var(--tt-accent);
   background: var(--tt-accent);
-  color: var(--tt-ink-max);
+  color: var(--tt-on-accent);
 }
 
 .button--primary:hover,
 .button--secondary:hover {
   border-color: var(--tt-accent-hot);
   background: var(--tt-accent-hot);
-  color: var(--tt-ink-max);
+  color: var(--tt-on-accent);
 }
 
 .button--outline {

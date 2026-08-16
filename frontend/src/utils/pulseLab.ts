@@ -1,4 +1,5 @@
 import {
+  COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
   QUTRIT_PULSE_MODEL,
   COUPLED_TRANSMON_PAIR_PULSE_MODEL,
   TWO_LEVEL_PULSE_MODEL,
@@ -10,6 +11,13 @@ import {
   type PulseWaveformPoint,
   type QutritPulsePoint,
 } from '../types/pulse'
+import type { PulseCircuitState } from '../types/pulseCircuit'
+import {
+  applyPulseStepToForm,
+  isDrivePulseStep,
+  normalizeFramePhase,
+  pulseStepDurationUs,
+} from './pulseCircuit'
 
 const QUTRIT_API_MAX_STEPS = 25000
 const PAIR_API_MAX_STEPS = 15000
@@ -17,6 +25,8 @@ const TWO_LEVEL_API_MAX_STEPS = 200000
 const EPSILON_H = 0.02
 const EPSILON_D = 0.02
 const QUTRIT_SAMPLES_PER_SIGMA = 32
+const NETWORK_MAX_DENSE_WORK_UNITS = 30000000
+const NETWORK_MAX_RESPONSE_MATRIX_ELEMENTS = 250000
 
 export const initialPulseLabForm: PulseLabForm = {
   modelId: QUTRIT_PULSE_MODEL,
@@ -213,6 +223,19 @@ export function validatePulseLabForm(form: PulseLabForm): PulseLabErrors {
       }
     }
   }
+  if (form.modelId === COUPLED_TRANSMON_NETWORK_PULSE_MODEL) {
+    if (!Number.isFinite(form.pairDetuningQ0RadPerUs)) {
+      errors.pairDetuningQ0RadPerUs = 'q0の基準離調は有限値にしてください。'
+    }
+    if (!Number.isFinite(form.pairDetuningQ1RadPerUs)) {
+      errors.pairDetuningQ1RadPerUs = 'q1の基準離調は有限値にしてください。'
+    }
+    nonnegative(
+      'pairExchangeCouplingRadPerUs',
+      form.pairExchangeCouplingRadPerUs,
+      '隣接交換結合',
+    )
+  }
 
   if (form.environmentMode === 'physical') {
     if (
@@ -354,6 +377,159 @@ export function buildPulsePayload(
       custom_times_us: [pulseDurationUs(form)],
     },
   }
+}
+
+export function buildTransmonNetworkPayload(
+  form: PulseLabForm,
+  circuit: PulseCircuitState,
+): Record<string, unknown> {
+  const transmonCount = circuit.transmons.length
+  const drives: Array<Record<string, unknown>> = []
+  const boundaryTimes = new Set<number>()
+
+  circuit.lanes.forEach((lane) => {
+    let startTimeUs = 0
+    let framePhaseRad = 0
+    lane.steps.forEach((step, stepIndex) => {
+      if (!isDrivePulseStep(step)) {
+        framePhaseRad = normalizeFramePhase(framePhaseRad + step.angleRad)
+        return
+      }
+      const pulseForm = applyPulseStepToForm(form, step.pulse)
+      const durationUs = pulseStepDurationUs(step.pulse)
+      drives.push({
+        target: lane.transmonIndex,
+        start_time_us: startTimeUs,
+        pulse: {
+          ...qutritPulsePayload(pulseForm),
+          phase_rad: normalizeFramePhase(pulseForm.phaseRad + framePhaseRad),
+        },
+      })
+      boundaryTimes.add(startTimeUs)
+      boundaryTimes.add(startTimeUs + durationUs)
+      const hasLaterDrive = lane.steps
+        .slice(stepIndex + 1)
+        .some(isDrivePulseStep)
+      startTimeUs += durationUs + (hasLaterDrive
+        ? circuit.executionConstraints.interPulseGapUs
+        : 0)
+    })
+  })
+
+  const dimension = 3 ** transmonCount
+  const boundaryReserve = Math.max(0, boundaryTimes.size - 2)
+  const snapshotLimit = Math.max(
+    2,
+    Math.floor(NETWORK_MAX_RESPONSE_MATRIX_ELEMENTS / (dimension * dimension))
+      - boundaryReserve,
+  )
+  const environment = form.environmentMode === 'physical'
+    ? {
+        input_mode: 'physical',
+        device_quality: form.deviceQuality,
+        temperature_mk: form.temperatureMk,
+        flux_noise_phi0: form.fluxNoisePhi0,
+        qubit_frequency_ghz: form.qubitFrequencyGhz,
+        t1_max_us: form.t1MaxUs,
+        tphi_max_us: form.tphiMaxUs,
+      }
+    : {
+        input_mode: 'direct_rates',
+        gamma_10_down_per_us: form.gamma10DownPerUs,
+        gamma_01_up_per_us: form.gamma01UpPerUs,
+        gamma_21_down_per_us: form.gamma21DownPerUs,
+        gamma_12_up_per_us: form.gamma12UpPerUs,
+        gamma_phi_adjacent_per_us: form.gammaPhiAdjacentPerUs,
+      }
+
+  return {
+    model_id: COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
+    transmon_count: transmonCount,
+    initial_state: '0'.repeat(transmonCount),
+    frequencies_ghz: circuit.transmons.map((transmon) => transmon.frequencyGhz),
+    anharmonicities_mhz: circuit.transmons.map((transmon) => transmon.anharmonicityMhz),
+    detunings_rad_per_us: Array.from(
+      { length: transmonCount },
+      (_, index) => index === 0
+        ? form.pairDetuningQ0RadPerUs
+        : index === 1
+          ? form.pairDetuningQ1RadPerUs
+          : 0,
+    ),
+    couplings: Array.from({ length: Math.max(0, transmonCount - 1) }, (_, left) => ({
+      left,
+      right: left + 1,
+      exchange_coupling_rad_per_us: form.pairExchangeCouplingRadPerUs,
+    })),
+    drives,
+    total_simulation_time_us: form.totalSimulationTimeUs,
+    evolution_method: 'fixed_step_rk4',
+    backend: form.backend,
+    environment,
+    snapshot_options: {
+      uniform_count: Math.min(form.snapshotCount, snapshotLimit),
+      custom_times_us: [...boundaryTimes].filter(
+        (timeUs) => timeUs <= form.totalSimulationTimeUs,
+      ),
+    },
+  }
+}
+
+export function estimateTransmonNetworkCost(
+  form: PulseLabForm,
+  circuit: PulseCircuitState,
+): PulseCostEstimate {
+  const forms = circuit.lanes.flatMap((lane) => lane.steps
+    .filter(isDrivePulseStep)
+    .map((step) => applyPulseStepToForm(form, step.pulse)))
+  const dimension = 3 ** circuit.transmons.length
+  const effectiveSnapshotCount = Math.min(
+    form.snapshotCount,
+    Math.max(
+      2,
+      Math.floor(NETWORK_MAX_RESPONSE_MATRIX_ELEMENTS / (dimension * dimension))
+        - 2 * forms.length,
+    ),
+  )
+  const estimatedInternalSteps = Math.max(
+    effectiveSnapshotCount,
+    ...forms.map((driveForm) => estimatePulseCost({
+      ...driveForm,
+      modelId: QUTRIT_PULSE_MODEL,
+      snapshotCount: effectiveSnapshotCount,
+    }).estimatedInternalSteps),
+  )
+  const maximumInternalSteps = Math.floor(
+    NETWORK_MAX_DENSE_WORK_UNITS / dimension ** 3,
+  )
+  return costResult(estimatedInternalSteps, maximumInternalSteps)
+}
+
+function qutritPulsePayload(form: PulseLabForm): Record<string, unknown> {
+  return form.shape === 'square'
+    ? {
+        shape: 'square',
+        amplitude_mode: form.amplitudeMode,
+        ...(form.amplitudeMode === 'target_rotation_angle'
+          ? { target_rotation_angle_rad: form.targetRotationAngleRad }
+          : { peak_amplitude_rad_per_us: form.peakAmplitudeRadPerUs }),
+        pulse_duration_us: form.pulseDurationUs,
+        phase_rad: form.phaseRad,
+        detuning_rad_per_us: form.detuningRadPerUs,
+        drag_beta_us: 0,
+      }
+    : {
+        shape: 'gaussian',
+        amplitude_mode: form.amplitudeMode,
+        ...(form.amplitudeMode === 'target_rotation_angle'
+          ? { target_rotation_angle_rad: form.targetRotationAngleRad }
+          : { peak_amplitude_rad_per_us: form.peakAmplitudeRadPerUs }),
+        sigma_us: form.sigmaUs,
+        truncation_sigma: form.truncationSigma,
+        phase_rad: form.phaseRad,
+        detuning_rad_per_us: form.detuningRadPerUs,
+        drag_beta_us: form.dragBetaUs,
+      }
 }
 
 export function pulseWaveform(form: PulseLabForm, count = 121): PulseWaveformPoint[] {

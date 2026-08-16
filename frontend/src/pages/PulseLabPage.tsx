@@ -11,7 +11,9 @@ import { pulseLabTips, pulseRunningStages } from '../utils/quantumPetTips'
 import { useInternalInfoVisible } from '../context/useAdminMode'
 import {
   isQutritPulseResponse,
+  isCoupledTransmonNetworkResponse,
   isCoupledTransmonPairResponse,
+  COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
   COUPLED_TRANSMON_PAIR_PULSE_MODEL,
   QUTRIT_PULSE_MODEL,
   type PulseLabForm,
@@ -21,10 +23,16 @@ import {
   type QutritPulseResponse,
   type PulseResponse,
 } from '../types/pulse'
-import type { PulseCircuitStep, PulseExecutionConstraints } from '../types/pulseCircuit'
+import type {
+  PulseCircuitState,
+  PulseCircuitStep,
+  PulseExecutionConstraints,
+} from '../types/pulseCircuit'
 import {
   buildPulsePayload,
+  buildTransmonNetworkPayload,
   estimatePulseCost,
+  estimateTransmonNetworkCost,
   hasPulseResponseShape,
   pulseDurationUs,
   pulseWaveform,
@@ -35,6 +43,7 @@ import {
   applyPulseStepToForm,
   isDrivePulseStep,
   normalizeFramePhase,
+  pulseStepDurationUs,
 } from '../utils/pulseCircuit'
 import './PulseLabPage.css'
 
@@ -45,6 +54,7 @@ const PET_CELEBRATION_MS = 7000
 type PulseLabPageProps = {
   form: PulseLabForm
   onFormChange: (form: PulseLabForm) => void
+  circuit: PulseCircuitState
   sequence: PulseCircuitStep[]
   activeTransmonIndex: number
   executionConstraints: PulseExecutionConstraints
@@ -54,6 +64,7 @@ type PulseLabPageProps = {
 export function PulseLabPage({
   form,
   onFormChange,
+  circuit,
   sequence,
   activeTransmonIndex,
   executionConstraints,
@@ -71,12 +82,17 @@ export function PulseLabPage({
   const [petCelebrating, setPetCelebrating] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
-  const executionPlan = sequenceExecutionPlan(form, sequence, executionConstraints)
+  const networkMode = form.modelId === COUPLED_TRANSMON_NETWORK_PULSE_MODEL
+  const executionPlan = networkMode
+    ? transmonNetworkExecutionPlan(form, circuit)
+    : sequenceExecutionPlan(form, sequence, executionConstraints)
   const executionForms = executionPlan
     .filter((operation): operation is SequenceDriveOperation => operation.kind === 'drive')
     .map((operation) => operation.form)
   const sequenceMode = form.modelId === QUTRIT_PULSE_MODEL && sequence.length > 0
-  const sequenceDurationUs = sequenceMode
+  const sequenceDurationUs = networkMode
+    ? transmonNetworkDurationUs(circuit)
+    : sequenceMode
     ? executionForms.reduce((total, executionForm) => total + pulseDurationUs(executionForm), 0)
       + Math.max(0, executionForms.length - 1) * executionConstraints.interPulseGapUs
     : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
@@ -92,19 +108,31 @@ export function PulseLabPage({
   const executionErrors = executionForms.flatMap((executionForm) =>
     Object.values(validatePulseLabForm(executionForm)),
   )
-  const cost = combinedPulseCost(executionForms)
+  const cost = networkMode
+    ? estimateTransmonNetworkCost(form, circuit)
+    : combinedPulseCost(executionForms)
   const waveform = pulseWaveform(form)
   const constraintIssues = [
     ...validateExecutionConstraints(executionPlan, executionConstraints),
     ...validatePairSecondaryConstraints(form, executionConstraints),
+    ...(networkMode
+      ? validateTransmonNetworkScope(circuit, sequenceDurationUs, form.totalSimulationTimeUs)
+      : []),
   ]
   const isValid = Object.keys(errors).length === 0
     && executionErrors.length === 0
     && constraintIssues.length === 0
     && (!sequenceMode || executionForms.length > 0)
+    && (!networkMode || (
+      circuit.transmons.length >= 2
+      && circuit.transmons.length <= 4
+      && executionForms.length > 0
+      && sequenceDurationUs <= form.totalSimulationTimeUs
+    ))
   const canRun = isValid && !cost.overBudget && status !== 'loading'
   const qutritResult = result && isQutritPulseResponse(result) ? result : null
   const pairResult = result && isCoupledTransmonPairResponse(result) ? result : null
+  const networkResult = result && isCoupledTransmonNetworkResponse(result) ? result : null
   const activeResultForm = resultForm ?? form
 
   useEffect(() => {
@@ -148,7 +176,7 @@ export function PulseLabPage({
     const payloads: Record<string, unknown>[] = []
     const timeoutId = window.setTimeout(
       () => controller.abort(),
-      form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
+      form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL || networkMode
         ? 90000
         : Math.min(
             120000,
@@ -169,7 +197,25 @@ export function PulseLabPage({
       const virtualEvents: SequenceVirtualEvent[] = []
       let latestQutritPoint: QutritPulsePoint | null = null
       let framePhaseRad = 0
-      for (const operation of executionPlan) {
+      if (networkMode) {
+        const payload = buildTransmonNetworkPayload(form, circuit)
+        payloads.push(payload)
+        const response = await fetch(apiUrl('/api/pulse/simulate'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          throw new Error(await pulseApiError(response))
+        }
+        const parsed: unknown = await response.json()
+        if (!hasPulseResponseShape(parsed) || !isCoupledTransmonNetworkResponse(parsed)) {
+          throw new Error('複数トランズモンAPIが不正な形式のレスポンスを返しました。')
+        }
+        responses.push(parsed)
+      } else for (const operation of executionPlan) {
         if (operation.kind === 'virtual_z') {
           initialDensityMatrix = applyVirtualZToDensityMatrix(
             initialDensityMatrix ?? groundQutritDensityMatrix(),
@@ -294,9 +340,11 @@ export function PulseLabPage({
       </header>
 
       <aside className="pulse-lab__scope-note" aria-label="Pulseラボの適用範囲">
-        <strong>{sequenceMode ? `q${activeTransmonIndex} シーケンス実行。` : '単一Pulse実験。'}</strong>
+        <strong>{networkMode ? '複数レーン同時実行。' : sequenceMode ? `q${activeTransmonIndex} シーケンス実行。` : '単一Pulse実験。'}</strong>
         <span>
-          {form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
+          {networkMode
+            ? `${circuit.transmons.length}台の3準位トランズモンと全レーンのPulseを、${3 ** circuit.transmons.length}次元の密度行列で同時に発展させます。`
+            : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
             ? `q${form.pairDriveTarget}への現在の局所Pulseと、q0-q1交換結合を9次元密度行列で実行します。回路レーンの同時driveは未接続です。`
             : sequenceMode
             ? `${sequence.length}個のPulseを、密度行列と共通環境を引き継いで順番に実行します。`
@@ -310,6 +358,8 @@ export function PulseLabPage({
           <strong>
             {form.modelId === QUTRIT_PULSE_MODEL
               ? '3準位トランズモン qutrit'
+              : networkMode
+                ? `${circuit.transmons.length}トランズモン・ネットワーク / 3^${circuit.transmons.length}準位`
               : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
                 ? '結合トランズモンペア / 3 x 3準位'
               : '2準位ベースライン'}
@@ -435,6 +485,13 @@ export function PulseLabPage({
                 basisLabels={pairResult.model.basis_order}
               />
             ) : null}
+            {networkResult ? (
+              <PulseDensityMatrixHeatmap
+                key={`network-density-${networkResult.model.hilbert_dimension}`}
+                matrix={networkResult.final.density_matrix}
+                basisLabels={networkResult.model.basis_order}
+              />
+            ) : null}
 
             <div className="pulse-lab__drawers">
               {/*
@@ -543,6 +600,40 @@ type SequenceVirtualEvent = {
   point: QutritPulsePoint
   angleRad: number
   framePhaseRad: number
+}
+
+function transmonNetworkExecutionPlan(
+  globalForm: PulseLabForm,
+  circuit: PulseCircuitState,
+): SequenceExecutionOperation[] {
+  let stepIndex = 0
+  return circuit.lanes.flatMap((lane) => lane.steps.map((step) => {
+    const currentIndex = stepIndex
+    stepIndex += 1
+    return isDrivePulseStep(step)
+      ? {
+          kind: 'drive' as const,
+          stepIndex: currentIndex,
+          label: `q${lane.transmonIndex} / ${step.label}`,
+          form: applyPulseStepToForm(globalForm, step.pulse),
+        }
+      : {
+          kind: 'virtual_z' as const,
+          stepIndex: currentIndex,
+          label: `q${lane.transmonIndex} / ${step.label}`,
+          angleRad: step.angleRad,
+        }
+  }))
+}
+
+function transmonNetworkDurationUs(circuit: PulseCircuitState): number {
+  return Math.max(0, ...circuit.lanes.map((lane) => {
+    const driveSteps = lane.steps.filter(isDrivePulseStep)
+    return driveSteps.reduce(
+      (total, step) => total + pulseStepDurationUs(step.pulse),
+      0,
+    ) + Math.max(0, driveSteps.length - 1) * circuit.executionConstraints.interPulseGapUs
+  }))
 }
 
 function sequenceExecutionPlan(
@@ -735,6 +826,29 @@ function validatePairSecondaryConstraints(
   )
   if (peak > constraints.maximumDriveAmplitudeRadPerUs * (1 + 1e-9)) {
     issues.push({ stepIndex: -2, label: '副駆動', message: `波形のピーク ${peak.toPrecision(4)} rad/us が上限を超えています。` })
+  }
+  return issues
+}
+
+function validateTransmonNetworkScope(
+  circuit: PulseCircuitState,
+  scheduledDurationUs: number,
+  totalSimulationTimeUs: number,
+): PulseConstraintIssue[] {
+  const issues: PulseConstraintIssue[] = []
+  if (circuit.transmons.length < 2 || circuit.transmons.length > 4) {
+    issues.push({
+      stepIndex: -3,
+      label: 'トランズモン数',
+      message: '複数トランズモン・ネットワークは2〜4台で実行してください。',
+    })
+  }
+  if (scheduledDurationUs > totalSimulationTimeUs + 1e-14) {
+    issues.push({
+      stepIndex: -4,
+      label: 'ネットワーク時間軸',
+      message: `最長レーン ${scheduledDurationUs.toPrecision(4)} us が総観測時間 ${totalSimulationTimeUs.toPrecision(4)} us を超えています。`,
+    })
   }
   return issues
 }
@@ -955,9 +1069,11 @@ function PulseSummary({
 }) {
   const qutrit = isQutritPulseResponse(response)
   const pair = isCoupledTransmonPairResponse(response)
+  const network = isCoupledTransmonNetworkResponse(response)
+  const coupled = pair || network
   const pulseEnd = response.pulse_end
   const final = response.final
-  const fidelity = pair
+  const fidelity = coupled
     ? null
     : isQutritPulseResponse(response)
     ? Number(response.input.sequence_length ?? 1) > 1
@@ -975,18 +1091,18 @@ function PulseSummary({
         <strong>{final.purity.toFixed(6)}</strong>
       </article>
       <article>
-        <span>{qutrit ? '目標状態との重なり' : pair ? '結合モデル' : '最終忠実度'}</span>
+        <span>{qutrit ? '目標状態との重なり' : coupled ? '結合モデル' : '最終忠実度'}</span>
         <strong>{fidelity === null ? 'N/A' : fidelity.toFixed(6)}</strong>
         {qutrit ? <small>リーケージ非正規化</small> : null}
       </article>
-      {qutrit || pair ? (
+      {qutrit || coupled ? (
         <>
           <article className="pulse-lab__summary--leakage">
-            <span>{pair ? '計算空間外の最大値 |00..11>' : '最大リーケージ P2'}</span>
+            <span>{coupled ? '計算空間外の最大値' : '最大リーケージ P2'}</span>
             <strong>{response.leakage.maximum_recorded_leakage_probability.toFixed(6)}</strong>
           </article>
           <article className="pulse-lab__summary--leakage">
-            <span>{pair ? '計算空間外の最終値 |00..11>' : '最終リーケージ P2'}</span>
+            <span>{coupled ? '計算空間外の最終値' : '最終リーケージ P2'}</span>
             <strong>{response.leakage.leakage_at_final_time.toFixed(6)}</strong>
           </article>
         </>

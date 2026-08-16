@@ -114,7 +114,7 @@
   padding: 20px 22px 22px;
   border: var(--tt-hair) solid var(--tt-accent);
   background: var(--tt-accent);
-  color: var(--tt-ink-max);
+  color: var(--tt-on-accent);
   text-align: left;
   cursor: pointer;
   transition: background 120ms linear, border-color 120ms linear,
@@ -124,7 +124,7 @@
 .entry:hover {
   border-color: var(--tt-accent-hot);
   background: var(--tt-accent-hot);
-  color: var(--tt-ink-max);
+  color: var(--tt-on-accent);
   text-decoration: none;
 }
 

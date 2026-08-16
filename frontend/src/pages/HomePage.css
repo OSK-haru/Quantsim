@@ -5,8 +5,9 @@
    ========================================================================= */
 
 /*
- * 地は塗らない。body の --tt-void の上に QuantumFluctuationField が乗り、
- * その上にこのページの中身が乗る、という三層構造にする。
+ * 地は塗らない。:root の --tt-void の上に App が敷く
+ * QuantumFluctuationField（z-index:-1）が乗り、その上にこのページの中身が
+ * 乗る、という三層構造にする。他のページの地が半透明なのと同じ扱い。
  */
 .home-page {
   min-height: 100vh;
@@ -15,20 +16,6 @@
   padding: 0 0 64px;
   background: transparent;
   color: var(--tt-ink);
-}
-
-/*
- * ゆらぎの層（position:fixed / z-index:0）より前に出す。ここを
- * `.home-page > *` でまとめて指定すると QuantumPet の position:fixed まで
- * 上書きしてしまうので、対象を名指しする。
- */
-.home-page > .tt-hazard,
-.home-page__hero,
-.home-page__selector,
-.home-page__tutorial,
-.home-page__colophon {
-  position: relative;
-  z-index: 1;
 }
 
 /* --- Macro typography ----------------------------------------------------- */

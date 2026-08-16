@@ -7,6 +7,7 @@ import { CircuitProvider } from './context/CircuitContext'
 import { TutorialProvider } from './context/TutorialContext'
 import { TutorialOverlay } from './components/TutorialOverlay'
 import { TutorialCircuitWatcher } from './components/TutorialCircuitWatcher'
+import { QuantumFluctuationField } from './components/QuantumFluctuationField'
 import { AlgorithmLibraryPage } from './pages/AlgorithmLibraryPage'
 import { CircuitStudioPage } from './pages/CircuitStudioPage'
 import { HomePage } from './pages/HomePage'
@@ -27,6 +28,7 @@ import {
   createDefaultPulseCircuit,
 } from './utils/pulseCircuit'
 import type { PulseCircuitState, PulseStepParameters } from './types/pulseCircuit'
+import { modeAtTurn, type ModeId } from './utils/homeModes'
 
 const mockDiagnostics: SimulationDiagnostics = {
   simulation_model: 'gate_aware_open_system',
@@ -85,6 +87,21 @@ function navigationDomainForRoute(route: NavigationRoute): 'home' | 'gate-aware'
   return route === 'pulse-lab' || route === 'pulse-circuit-studio'
     ? 'pulse'
     : 'gate-aware'
+}
+
+/*
+ * 背景のゆらぎの相。画面の役割をそのまま場の性格に写す。
+ * ホームだけはドラムが正面に出している面で決まる。
+ * ヘルプは中身が説明文なので、ドキュメントと同じ凪いだ相に置く。
+ */
+function fieldRegimeForScreen(screen: Screen, homeModeTurn: number): ModeId {
+  if (screen === 'home') {
+    return modeAtTurn(homeModeTurn)
+  }
+  if (screen === 'help') {
+    return 'docs'
+  }
+  return navigationDomainForRoute(screen) === 'pulse' ? 'pulse' : 'gate-aware'
 }
 
 function screenFromPath(pathname: string): Screen {
@@ -150,6 +167,12 @@ function App() {
     createDefaultPulseCircuit(initialPulseLabForm),
   )
   const [activePulseTransmonIndex, setActivePulseTransmonIndex] = useState(0)
+  /*
+   * ホームのドラムの回転数。ここで持っているのは、背景のゆらぎが
+   * 全画面で1枚きりだから。ホームを離れても値が残るので、戻ってきたときに
+   * 続きから回る。
+   */
+  const [homeModeTurn, setHomeModeTurn] = useState(0)
 
   function selectPulseForRun(transmonIndex: number, pulse: PulseStepParameters) {
     setActivePulseTransmonIndex(transmonIndex)
@@ -188,6 +211,8 @@ function App() {
         <>
           <AppNavigation currentRoute={screen} onNavigate={navigate} />
           <HomePage
+            modeTurn={homeModeTurn}
+            onModeTurnChange={setHomeModeTurn}
             onStartSimulation={() => navigate('simulate')}
             onOpenPulseLab={() => navigate('pulse-lab')}
           />
@@ -203,6 +228,7 @@ function App() {
             <PulseLabPage
               form={pulseLabForm}
               onFormChange={setPulseLabForm}
+              circuit={pulseCircuit}
               sequence={pulseCircuit.lanes[activePulseTransmonIndex]?.steps ?? []}
               activeTransmonIndex={activePulseTransmonIndex}
               executionConstraints={pulseCircuit.executionConstraints}
@@ -276,6 +302,15 @@ function App() {
    */
   return (
     <TutorialProvider currentRoute={screen} onNavigate={navigate}>
+      {/*
+        真空のゆらぎの下地は、全画面を通して1枚だけ。ページごとに置くと
+        画面を移るたびに作り直されて模様が途切れるが、ここに置けば
+        相（regime）と出し具合（presence）が緩和で滑らかにつながる。
+      */}
+      <QuantumFluctuationField
+        regime={fieldRegimeForScreen(screen, homeModeTurn)}
+        presence={screen === 'home' ? 'feature' : 'ambient'}
+      />
       {renderScreen()}
       <TutorialOverlay />
     </TutorialProvider>

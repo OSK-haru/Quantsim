@@ -1,35 +1,33 @@
 import './HomePage.css'
-import { useState } from 'react'
+import { type Dispatch, type SetStateAction } from 'react'
 import { HomeModeDrum } from '../components/HomeModeDrum'
-import { modeAtTurn } from '../utils/homeModes'
-import { QuantumFluctuationField } from '../components/QuantumFluctuationField'
 import { QuantumPet } from '../components/QuantumPet'
 import { useTutorial } from '../context/useTutorial'
 import { homeTips } from '../utils/quantumPetTips'
 import { tutorialCourseList } from '../utils/tutorialScript'
 
 type HomePageProps = {
+  /*
+   * ドラムの回転数。App が持っている。背景のゆらぎは全画面で1枚きりなので、
+   * 「今どの面が正面か」もそこまで届いている必要がある。
+   */
+  modeTurn: number
+  onModeTurnChange: Dispatch<SetStateAction<number>>
   onStartSimulation: () => void
   onOpenPulseLab: () => void
 }
 
-export function HomePage({ onStartSimulation, onOpenPulseLab }: HomePageProps) {
+export function HomePage({
+  modeTurn,
+  onModeTurnChange,
+  onStartSimulation,
+  onOpenPulseLab,
+}: HomePageProps) {
   const tutorial = useTutorial()
 
-  /*
-   * ドラムの回転数はここで持つ。ドラムの中に閉じ込めると、同じ値で背景の
-   * ゆらぎを動かせない。面が変わるたびに背景の相も乗り換わる。
-   */
-  const [modeTurn, setModeTurn] = useState(0)
-
   return (
+    /* 地は塗らない。App が敷いている真空のゆらぎを透かして見せる。 */
     <main className="home-page">
-      {/*
-        画面の地は塗らない。背後で走らせている真空のゆらぎを、パネルの
-        隙間と半透明の地から透かして見せる。ホームだけの扱い。
-      */}
-      <QuantumFluctuationField regime={modeAtTurn(modeTurn)} />
-
       <div className="tt-hazard" aria-hidden="true" />
 
       <section className="home-page__hero" data-tutorial-anchor="home-hero">
@@ -80,7 +78,7 @@ export function HomePage({ onStartSimulation, onOpenPulseLab }: HomePageProps) {
       <div className="home-page__selector">
         <HomeModeDrum
           turn={modeTurn}
-          onTurnChange={setModeTurn}
+          onTurnChange={onModeTurnChange}
           onStartSimulation={onStartSimulation}
           onOpenPulseLab={onOpenPulseLab}
         />

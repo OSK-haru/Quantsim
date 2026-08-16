@@ -5,7 +5,6 @@ import { MessageReceiveStateTransferView } from '../components/MessageReceiveSta
 import { DensityMatrixViewer } from '../components/DensityMatrixViewer'
 import { MetricTimeline } from '../components/MetricTimeline'
 import { PhysicalTimelinePlayback } from '../components/PhysicalTimelinePlayback'
-import { MeasurementResults } from '../components/MeasurementResults'
 import { OutputProbabilities } from '../components/OutputProbabilities'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { StateProbabilityComparison } from '../components/StateProbabilityComparison'
@@ -27,11 +26,11 @@ type StateExplorerPageProps = {
   onOpenSimulation: () => void
 }
 
-type ExplorerPanelKey = 'physical' | 'metrics' | 'probabilities' | 'output' | 'measurement' | 'bloch' | 'density' | 'transfer'
+type ExplorerPanelKey = 'physical' | 'metrics' | 'probabilities' | 'output' | 'bloch' | 'density' | 'transfer'
 const EXPLORER_PANEL_LABELS: Record<ExplorerPanelKey, string> = {
   transfer: 'Message → Receive',
   physical: '物理時間', metrics: '指標タイムライン',
-  probabilities: '確率比較', output: '出力確率', measurement: '測定結果', bloch: 'Bloch球', density: '密度行列',
+  probabilities: '確率比較', output: '出力確率', bloch: 'Bloch球', density: '密度行列',
 }
 function CollapsiblePanel({ panelKey, open, onToggle, children }: { panelKey: ExplorerPanelKey; open: boolean; onToggle: () => void; children: ReactNode }) {
   return <section className={`state-explorer-panel${open ? '' : ' state-explorer-panel--collapsed'}`}>
@@ -156,7 +155,7 @@ export function StateExplorerPage({
   const [snapshotIndex, setSnapshotIndex] = useState(() => preferredSnapshotIndex(snapshots))
   const [playbackSimulationTimeUs, setPlaybackSimulationTimeUs] = useState(0)
   const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
-    physical: false, metrics: false, probabilities: true, output: false, measurement: false, bloch: true, density: false, transfer: false,
+    physical: false, metrics: false, probabilities: true, output: false, bloch: true, density: false, transfer: false,
   })
   const togglePanel = useCallback((panelKey: ExplorerPanelKey) => {
     setOpenPanels((current) => ({ ...current, [panelKey]: !current[panelKey] }))
@@ -199,7 +198,7 @@ export function StateExplorerPage({
   const availablePanelKeys = useMemo(
     () => (Object.keys(EXPLORER_PANEL_LABELS) as ExplorerPanelKey[]).filter((panelKey) => {
       if (panelKey === 'transfer') return hasTransfer
-      if (panelKey === 'probabilities' || panelKey === 'measurement') return qubitCount !== null
+      if (panelKey === 'probabilities') return qubitCount !== null
       if (panelKey === 'bloch' || panelKey === 'density') return snapshots.length > 0
       return true
     }),
@@ -316,14 +315,6 @@ export function StateExplorerPage({
               defaultOpen
             />
           </CollapsiblePanel>
-          {qubitCount === null ? null : (
-            <CollapsiblePanel panelKey="measurement" open={visiblePanels.measurement} onToggle={() => togglePanel('measurement')}>
-            <MeasurementResults
-              measurement={activeResponse.measurement}
-              qubitCount={qubitCount}
-            />
-            </CollapsiblePanel>
-          )}
           <section className="state-explorer-page__summary" aria-label="シミュレーション結果の概要">
             <span>{qubitCount === null ? '量子ビット数不明' : `量子ビット ${qubitCount}`}</span>
             {matrixDimension === null ? null : <span>{matrixDimension} x {matrixDimension}</span>}

@@ -234,10 +234,16 @@ function packField(matrix: ValidatedDensityMatrix): Float32Array {
 type DensityMatrixCanvasProps = {
   matrix: ValidatedDensityMatrix
   mode: DensityMatrixMode
+  selectedCell?: { row: number; column: number } | null
   onInspect: (cell: DensityMatrixCell | null) => void
 }
 
-export function DensityMatrixCanvas({ matrix, mode, onInspect }: DensityMatrixCanvasProps) {
+export function DensityMatrixCanvas({
+  matrix,
+  mode,
+  selectedCell = null,
+  onInspect,
+}: DensityMatrixCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const runtimeRef = useRef<GlRuntime | null>(null)
   /* 2D経路の下絵。ホバーのたびに描き直さないようキャッシュする。 */
@@ -459,8 +465,8 @@ export function DensityMatrixCanvas({ matrix, mode, onInspect }: DensityMatrixCa
    */
   const redrawRef = useRef<() => void>(() => {})
   useEffect(() => {
-    redrawRef.current = () => render(cursor)
-  }, [cursor, render])
+    redrawRef.current = () => render(cursor ?? selectedCell)
+  }, [cursor, render, selectedCell])
 
   /* 表示サイズに追従。 */
   useEffect(() => {
@@ -491,8 +497,8 @@ export function DensityMatrixCanvas({ matrix, mode, onInspect }: DensityMatrixCa
   }, [])
 
   useEffect(() => {
-    render(cursor)
-  }, [cursor, render])
+    render(cursor ?? selectedCell)
+  }, [cursor, render, selectedCell])
 
   function cellFromPointer(event: ReactPointerEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -505,7 +511,7 @@ export function DensityMatrixCanvas({ matrix, mode, onInspect }: DensityMatrixCa
   }
 
   function moveCursor(rowDelta: number, columnDelta: number) {
-    const base = cursor ?? { row: 0, column: 0 }
+    const base = cursor ?? selectedCell ?? { row: 0, column: 0 }
     const next = {
       row: Math.max(0, Math.min(base.row + rowDelta, dimension - 1)),
       column: Math.max(0, Math.min(base.column + columnDelta, dimension - 1)),
@@ -559,7 +565,9 @@ export function DensityMatrixCanvas({ matrix, mode, onInspect }: DensityMatrixCa
       ) : null}
       <p className="density-matrix-canvas__hint">
         {cursor === null
-          ? 'カーソルを合わせるか、フォーカスして矢印キーでセルを調べられます。'
+          ? selectedCell === null
+            ? 'カーソルを合わせるか、フォーカスして矢印キーでセルを調べられます。'
+            : `検索位置: 行 ${matrix.labels[selectedCell.row]} / 列 ${matrix.labels[selectedCell.column]}`
           : `行 ${matrix.labels[cursor.row]} / 列 ${matrix.labels[cursor.column]}`}
       </p>
     </div>

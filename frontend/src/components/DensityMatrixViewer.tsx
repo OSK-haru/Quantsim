@@ -3,6 +3,7 @@ import './DensityMatrixViewer.css'
 import type { StateSnapshot } from '../types/simulation'
 import { DensityMatrixCanvas } from './DensityMatrixCanvas'
 import {
+  densityCellAt,
   formatDensityValue,
   formatSnapshotProgress,
   formatSnapshotTimeUs,
@@ -10,6 +11,7 @@ import {
   validateDensityMatrixSnapshot,
   type DensityMatrixCell,
   type DensityMatrixMode,
+  type ValidatedDensityMatrix,
 } from '../utils/densityMatrix'
 
 type DensityView = 'grid' | 'raster'
@@ -37,6 +39,13 @@ type ActiveCellSelection = {
   cell: DensityMatrixCell
 }
 
+type MatrixCoordinate = {
+  row: number
+  column: number
+}
+
+const NEIGHBORHOOD_SIZE = 5
+
 export function DensityMatrixViewer({
   snapshots,
   snapshotIndex: controlledSnapshotIndex,
@@ -47,12 +56,13 @@ export function DensityMatrixViewer({
   const [mode, setMode] = useState<DensityMatrixMode>('magnitude')
   const [preferredView, setPreferredView] = useState<DensityView | null>(null)
   const [activeCellSelection, setActiveCellSelection] = useState<ActiveCellSelection | null>(null)
+  const [rowQuery, setRowQuery] = useState('')
+  const [columnQuery, setColumnQuery] = useState('')
+  const [searchedCoordinate, setSearchedCoordinate] = useState<MatrixCoordinate | null>(null)
+  const [searchError, setSearchError] = useState<string | null>(null)
   const requestedSnapshotIndex = controlledSnapshotIndex ?? internalSnapshotIndex
   const snapshotIndex = clamp(requestedSnapshotIndex, 0, Math.max(safeSnapshots.length - 1, 0))
   const activeCellKey = `${snapshotIndex}:${mode}`
-  const activeCell = activeCellSelection?.key === activeCellKey
-    ? activeCellSelection.cell
-    : null
 
   const activeSnapshot = safeSnapshots[snapshotIndex]
 
@@ -64,6 +74,12 @@ export function DensityMatrixViewer({
     () => validateDensityMatrixSnapshot(activeSnapshot, mode),
     [activeSnapshot, mode],
   )
+  const searchedCell = validation.valid && searchedCoordinate !== null
+    ? densityCellAt(validation.matrix, searchedCoordinate.row, searchedCoordinate.column)
+    : null
+  const activeCell = activeCellSelection?.key === activeCellKey
+    ? activeCellSelection.cell
+    : searchedCell
 
   if (safeSnapshots.length === 0) {
     return (
@@ -88,6 +104,35 @@ export function DensityMatrixViewer({
 
   function goToNextSnapshot() {
     selectSnapshot(snapshotIndex + 1)
+  }
+
+  function searchMatrixElement() {
+    if (!validation.valid) {
+      return
+    }
+
+    const { dimension, qubitCount } = validation.matrix
+    const row = parseBasisIndex(rowQuery, dimension, qubitCount)
+    const column = parseBasisIndex(columnQuery, dimension, qubitCount)
+    if (row === null || column === null) {
+      setSearchError(
+        `行と列には、${qubitCount}ビットの基底ラベルまたは0〜${dimension - 1}の番号を入力してください。`,
+      )
+      return
+    }
+
+    selectSearchedCoordinate({ row, column }, validation.matrix.labels)
+  }
+
+  function selectSearchedCoordinate(
+    coordinate: MatrixCoordinate,
+    labels: string[],
+  ) {
+    setSearchedCoordinate(coordinate)
+    setRowQuery(labels[coordinate.row])
+    setColumnQuery(labels[coordinate.column])
+    setSearchError(null)
+    setActiveCellSelection(null)
   }
 
   return (
@@ -195,16 +240,99 @@ export function DensityMatrixViewer({
             )}
           </div>
 
+          <section
+            className="density-matrix-viewer__search"
+            aria-label="行列要素を検索"
+          >
+            <div className="density-matrix-viewer__search-heading">
+              <div>
+                <h4>行列要素を検索</h4>
+                <p>
+                  行と列を指定すると、その要素を中心に周辺を拡大表示します。
+                </p>
+              </div>
+              {searchedCoordinate === null ? null : (
+                <button
+                  className="density-matrix-viewer__search-clear"
+                  type="button"
+                  onClick={() => {
+                    setSearchedCoordinate(null)
+                    setSearchError(null)
+                    setActiveCellSelection(null)
+                  }}
+                >
+                  選択を解除
+                </button>
+              )}
+            </div>
+
+            <form
+              className="density-matrix-viewer__search-form"
+              onSubmit={(event) => {
+                event.preventDefault()
+                searchMatrixElement()
+              }}
+            >
+              <label className="density-matrix-viewer__search-field">
+                <span>行の基底状態</span>
+                <input
+                  className="density-matrix-viewer__search-input"
+                  value={rowQuery}
+                  inputMode="numeric"
+                  placeholder={validation.matrix.labels[0]}
+                  aria-invalid={searchError !== null}
+                  onChange={(event) => {
+                    setRowQuery(event.currentTarget.value)
+                    setSearchError(null)
+                  }}
+                />
+              </label>
+              <label className="density-matrix-viewer__search-field">
+                <span>列の基底状態</span>
+                <input
+                  className="density-matrix-viewer__search-input"
+                  value={columnQuery}
+                  inputMode="numeric"
+                  placeholder={validation.matrix.labels[validation.matrix.dimension - 1]}
+                  aria-invalid={searchError !== null}
+                  onChange={(event) => {
+                    setColumnQuery(event.currentTarget.value)
+                    setSearchError(null)
+                  }}
+                />
+              </label>
+              <button className="density-matrix-viewer__search-submit" type="submit">
+                周辺を表示
+              </button>
+              <p className="density-matrix-viewer__search-help">
+                {validation.matrix.qubitCount}ビットの2進基底ラベル（例:
+                {' '}
+                {validation.matrix.labels[Math.min(1, validation.matrix.dimension - 1)]}）または
+                10進番号（0〜{validation.matrix.dimension - 1}）で指定できます。
+              </p>
+              {searchError === null ? null : (
+                <p className="density-matrix-viewer__search-error" role="alert">
+                  {searchError}
+                </p>
+              )}
+            </form>
+          </section>
+
           {resolveView(preferredView, validation.matrix.gridRenderable) === 'raster' ? (
             <DensityMatrixCanvas
               matrix={validation.matrix}
               mode={mode}
+              selectedCell={searchedCell === null ? null : searchedCoordinate}
               onInspect={(cell) => setActiveCellSelection(
                 cell === null ? null : { key: activeCellKey, cell },
               )}
             />
           ) : (
-          <div className="density-matrix-viewer__matrix-scroll" tabIndex={0}>
+          <div
+            className="density-matrix-viewer__matrix-scroll"
+            tabIndex={0}
+            onMouseLeave={() => setActiveCellSelection(null)}
+          >
             <div
               className="density-matrix-viewer__matrix"
               style={{
@@ -254,6 +382,10 @@ export function DensityMatrixViewer({
                         <div
                           className="density-matrix-viewer__cell"
                           data-sign={renderedSign}
+                          data-selected={
+                            searchedCoordinate?.row === cell.row
+                            && searchedCoordinate.column === cell.column
+                          }
                           role="gridcell"
                           tabIndex={0}
                           key={`${cell.row}-${cell.column}`}
@@ -273,6 +405,20 @@ export function DensityMatrixViewer({
               ))}
             </div>
           </div>
+          )}
+
+          {searchedCoordinate === null || searchedCell === null ? null : (
+            <DensityMatrixNeighborhood
+              matrix={validation.matrix}
+              mode={mode}
+              selected={searchedCoordinate}
+              activeCellKey={activeCellKey}
+              onInspect={setActiveCellSelection}
+              onSelect={(coordinate) => selectSearchedCoordinate(
+                coordinate,
+                validation.matrix.labels,
+              )}
+            />
           )}
 
           <div className="density-matrix-viewer__details" aria-live="polite">
@@ -300,6 +446,109 @@ export function DensityMatrixViewer({
   )
 }
 
+type DensityMatrixNeighborhoodProps = {
+  matrix: ValidatedDensityMatrix
+  mode: DensityMatrixMode
+  selected: MatrixCoordinate
+  activeCellKey: string
+  onInspect: (selection: ActiveCellSelection | null) => void
+  onSelect: (coordinate: MatrixCoordinate) => void
+}
+
+function DensityMatrixNeighborhood({
+  matrix,
+  mode,
+  selected,
+  activeCellKey,
+  onInspect,
+  onSelect,
+}: DensityMatrixNeighborhoodProps) {
+  const rowIndices = neighborhoodIndices(selected.row, matrix.dimension, NEIGHBORHOOD_SIZE)
+  const columnIndices = neighborhoodIndices(selected.column, matrix.dimension, NEIGHBORHOOD_SIZE)
+  const selectedCell = densityCellAt(matrix, selected.row, selected.column)
+
+  if (selectedCell === null) {
+    return null
+  }
+
+  return (
+    <section className="density-matrix-viewer__neighborhood" aria-label="検索した行列要素の周辺">
+      <div className="density-matrix-viewer__neighborhood-heading">
+        <div>
+          <span className="density-matrix-viewer__neighborhood-eyebrow">検索結果</span>
+          <h4>
+            ρ[{selectedCell.rowLabel}, {selectedCell.columnLabel}] の周辺
+          </h4>
+        </div>
+        <span>
+          行 {selectedCell.row} / 列 {selectedCell.column}
+        </span>
+      </div>
+
+      <div className="density-matrix-viewer__neighborhood-scroll">
+        <div
+          className="density-matrix-viewer__neighborhood-matrix"
+          style={{
+            gridTemplateColumns: `var(--density-neighborhood-label-size) repeat(${columnIndices.length}, var(--density-neighborhood-cell-size))`,
+          }}
+          role="grid"
+          aria-label={`ρ[${selectedCell.rowLabel}, ${selectedCell.columnLabel}] を中心とした周辺要素`}
+          onMouseLeave={() => onInspect(null)}
+        >
+          <div className="density-matrix-viewer__neighborhood-corner" aria-hidden="true" />
+          {columnIndices.map((column) => (
+            <div
+              className="density-matrix-viewer__neighborhood-axis"
+              role="columnheader"
+              key={`neighborhood-column-${column}`}
+            >
+              {matrix.labels[column]}
+            </div>
+          ))}
+
+          {rowIndices.map((row) => (
+            <Fragment key={`neighborhood-row-${row}`}>
+              <div className="density-matrix-viewer__neighborhood-axis" role="rowheader">
+                {matrix.labels[row]}
+              </div>
+              {columnIndices.map((column) => {
+                const cell = densityCellAt(matrix, row, column)!
+                const renderedSign = mode === 'magnitude' ? 'positive' : cell.sign
+                const cellStyle = densityCellStyle(cell, mode)
+                const isSelected = row === selected.row && column === selected.column
+
+                return (
+                  <button
+                    className="density-matrix-viewer__cell density-matrix-viewer__cell--neighborhood"
+                    data-sign={renderedSign}
+                    data-selected={isSelected}
+                    type="button"
+                    role="gridcell"
+                    key={`${row}-${column}`}
+                    style={cellStyle}
+                    title={cellTitle(cell)}
+                    aria-label={`${cellTitle(cell)}${isSelected ? '\n検索した要素' : ''}`}
+                    onFocus={() => onInspect({ key: activeCellKey, cell })}
+                    onMouseEnter={() => onInspect({ key: activeCellKey, cell })}
+                    onClick={() => onSelect({ row, column })}
+                  >
+                    <span className="density-matrix-viewer__cell-value">
+                      {formatNeighborhoodValue(cell.value)}
+                    </span>
+                  </button>
+                )
+              })}
+            </Fragment>
+          ))}
+        </div>
+      </div>
+      <p className="density-matrix-viewer__neighborhood-note">
+        赤枠が検索した要素です。周辺のセルを選ぶと、その位置を中心に表示し直します。
+      </p>
+    </section>
+  )
+}
+
 /* 格子が読めるサイズならグリッド既定、超えたら強制的にラスター。 */
 function resolveView(preferred: DensityView | null, gridRenderable: boolean): DensityView {
   if (!gridRenderable) {
@@ -318,6 +567,40 @@ function cellTitle(cell: DensityMatrixCell): string {
   ].join('\n')
 }
 
+function densityCellStyle(cell: DensityMatrixCell, mode: DensityMatrixMode): DensityCellStyle {
+  const renderedSign = mode === 'magnitude' ? 'positive' : cell.sign
+  const alpha = 0.08 + cell.intensity * 0.82
+  return {
+    '--density-cell-alpha': `${alpha}`,
+    '--density-cell-ink':
+      renderedSign === 'positive' && alpha > 0.45
+        ? 'var(--tt-void)'
+        : 'var(--tt-ink-max)',
+  }
+}
+
+function parseBasisIndex(query: string, dimension: number, qubitCount: number): number | null {
+  const normalized = query.trim().replace(/^\|/, '').replace(/[>⟩]$/, '').trim()
+  if (new RegExp(`^[01]{${qubitCount}}$`).test(normalized)) {
+    return Number.parseInt(normalized, 2)
+  }
+  if (!/^\d+$/.test(normalized)) {
+    return null
+  }
+  const index = Number.parseInt(normalized, 10)
+  return index >= 0 && index < dimension ? index : null
+}
+
+function neighborhoodIndices(center: number, dimension: number, size: number): number[] {
+  const visibleSize = Math.min(size, dimension)
+  const start = clamp(
+    center - Math.floor(visibleSize / 2),
+    0,
+    dimension - visibleSize,
+  )
+  return Array.from({ length: visibleSize }, (_, offset) => start + offset)
+}
+
 function formatPhase(value: number): string {
   if (!Number.isFinite(value) || Math.abs(value) < 0.0000005) {
     return '0 rad'
@@ -333,6 +616,16 @@ function formatCellValue(value: number): string {
     return value.toFixed(1)
   }
   return value.toFixed(2)
+}
+
+function formatNeighborhoodValue(value: number): string {
+  if (Math.abs(value) < 0.0000005) {
+    return '0'
+  }
+  if (Math.abs(value) < 0.001) {
+    return value.toExponential(1)
+  }
+  return value.toFixed(3)
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

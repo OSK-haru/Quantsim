@@ -12,12 +12,12 @@ Pulse-levelモデルは、ゲートを論理的な単位としてではなく、
 Gate-awareモデルより低いレイヤーを扱うため、漏れ(leakage)、DRAG補正、パルス形状の影響といった、論理ゲートでは表現できない現象を観察できます。
 
 :::info[Pulse LabとCircuit Studioの関係]
-Pulse-levelモデルは**単発パルスのフロー**であり、Circuit Studioで作った回路を消費しません。回路を扱うのはGate-awareモデルです。2つのモデルは現在連携していません。
+単一qutritモデルは選択レーンを順次実行します。複数トランズモン・ネットワークモデルは、Pulse Circuit Studioの2〜4レーンを1本の時間軸へまとめ、同時駆動を含む全レーンを1回のAPI要求で実行します。Gate-awareの論理回路とは状態を共有しません。
 :::
 
 ## 共通の前提
 
-3つのパルスモデルはすべて次を共有します。
+4つのパルスモデルはすべて次を共有します。
 
 ```text
 frame          : rotating(回転系)
@@ -33,17 +33,17 @@ $$
 \Delta = \omega_d - \omega_{01}
 $$
 
-## 3つのモデル
+## 4つのモデル
 
-| | Baseline A | Extension B | Coupled pair |
-|---|---|---|---|
-| model_id | `driven_two_level_rwa_experimental_v1` | `driven_transmon_qutrit_rwa_experimental_v1` | `driven_coupled_transmon_pair_rwa_experimental_v1` |
-| contract | `pulse-baseline-a-v1` | `pulse-extension-b-v1` | `pulse-coupled-pair-v1` |
-| 準位数 | 2 | 3 | 3⊗3 = 9 |
-| 状態 | available | available | **experimental** |
-| DRAG | 不可(β = 0 強制) | Gaussianのみ | Gaussianのみ・ドライブ別 |
-| 準静的ノイズ | 非対応 | 対応(次数 3/5/7/9) | 対応(次数 3/5、相関あり) |
-| 作業上限 | 200,000 ステップ | 25,000 ステップ | 15,000 RK4 / 500 CPTP区間 |
+| | Baseline A | Extension B | Coupled pair | Coupled network |
+|---|---|---|---|---|
+| model_id | `driven_two_level_rwa_experimental_v1` | `driven_transmon_qutrit_rwa_experimental_v1` | `driven_coupled_transmon_pair_rwa_experimental_v1` | `driven_coupled_transmon_network_rwa_experimental_v1` |
+| contract | `pulse-baseline-a-v1` | `pulse-extension-b-v1` | `pulse-coupled-pair-v1` | `pulse-transmon-network-v1` |
+| 準位数 | 2 | 3 | 3⊗3 = 9 | $3^N$、$2\le N\le4$ |
+| 状態 | available | available | **experimental** | **experimental** |
+| DRAG | 不可(β = 0 強制) | Gaussianのみ | Gaussianのみ・ドライブ別 | Gaussianのみ・スケジュール別 |
+| 準静的ノイズ | 非対応 | 対応(次数 3/5/7/9) | 対応(次数 3/5、相関あり) | 非対応 |
+| 作業上限 | 200,000 ステップ | 25,000 ステップ | 15,000 RK4 / 500 CPTP区間 | 次元依存のdense work 30,000,000 |
 
 いずれも同一のエンドポイント `POST /api/pulse/simulate` から `model_id` による判別で利用します。
 
@@ -138,6 +138,26 @@ $$
 
 **制限**: 厳密に N = 2、交換結合とRWAのみ、クロストーク・可変結合器・校正は非対応。
 
+## Coupled transmon network(結合2〜4トランズモン)
+
+結合ペアを小規模ネットワークへ一般化したモデルです。各トランズモンを3準位で切り、基底順はq0を最上位とする辞書順です。ハミルトニアンは
+
+$$
+H(t)=\sum_i H_i(t)+\sum_{(i,j)\in E}J_{ij}
+\left(a_i^\dagger a_j+a_i a_j^\dagger\right)
+$$
+
+です。APIの `couplings` は任意の辺集合を、`drives` は `target`・`start_time_us`・局所Pulseを指定します。重なった時間帯のドライブは同時に加算されます。Pulseごとの離調は、各局所回転フレーム内の位相ランプとして適用されます。
+
+Pulse Circuit Studioから実行すると、各レーンは時刻0から始まり、レーン内のdriveはPulse間隔を挟んで直列、異なるレーン同士は並列に配置されます。Virtual Zは時間を進めず、そのレーンの後続Pulse位相へ加算されます。UIは現在、隣接レーンへ共通の $J$ を設定しますが、API自体は辺ごとに異なる $J_{ij}$ を受け付けます。
+
+密度行列の次元は $3^N$、要素数は $3^{2N}$ です。実行前に次の2つを検査します。
+
+- `estimated_steps × (3^N)^3 ≤ 30,000,000` の次元依存作業量
+- `sample_count × (3^N)^2 ≤ 250,000` の応答行列要素数
+
+このため4台は短い実験だけが対象です。ネットワークモデルは固定ステップRK4のみで、明示的CPTP経路、準静的ノイズ、クロストーク、伝達関数、可変結合器ダイナミクスは未対応です。物理入力モードでは、`frequencies_ghz` の各周波数からトランズモンごとの散逸率を計算します。直接レート入力は全トランズモンで同じ値を使います。
+
 ## 準静的ノイズ
 
 ショットごとに固定され、1ショット内では変化しないGaussian離調のゆらぎを扱います。
@@ -160,13 +180,13 @@ APIは同時に最大2つのパルスジョブを実行します。
 |---|---|
 | 422 | スキーマ・タイミング・モード・作業量の拒否 |
 | 503 | 実行スロットが両方とも使用中 |
-| 504 | 15秒の待機タイムアウトを超過 |
+| 504 | 90秒の待機タイムアウトを超過 |
 
 作業量が上限を超える要求は、数値計算の**実行前**に 422 で拒否されます。
 
 ## 検証状況
 
-3モデルすべてがQuTiP 5.2.3との独立比較を通過しています。
+既存3モデルはQuTiP 5.2.3との独立比較を通過しています。ネットワークモデルは現在、テンソル基底、Hermiticity、交換結合の励起数保存、3台API応答の回帰試験までで、独立ソルバー比較は未実施です。
 
 | モデル | ケース数 | 許容誤差 | 最大誤差 | 判定 |
 |---|---|---|---|---|

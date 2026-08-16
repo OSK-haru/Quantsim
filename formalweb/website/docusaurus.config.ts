@@ -82,21 +82,18 @@ const config: Config = {
     // substrate で作った 1200x630 のカードを使う。
     image: 'img/yuragi-strider-social-card.jpg',
 
-    /*
-     * 本体アプリは `color-scheme: dark` のダーク確定 UI なので、ドキュメント側も
-     * ダーク固定にしてテーマ切替を出さない。明色テーマを残すと、同じ製品の中に
-     * 2つの substrate が存在することになってしまう。
-     */
+    /* 本体アプリと同様に、OS 設定を初期値として明暗を手動で切り替えられる。 */
     colorMode: {
       defaultMode: 'dark',
-      disableSwitch: true,
-      respectPrefersColorScheme: false,
+      disableSwitch: false,
+      respectPrefersColorScheme: true,
     },
     navbar: {
       title: 'Yuragi-Strider',
       logo: {
         alt: 'Yuragi-Strider Logo',
-        src: 'img/logo.svg',
+        src: 'img/logo-light.svg',
+        srcDark: 'img/logo.svg',
       },
       items: [
         {
@@ -174,8 +171,7 @@ const config: Config = {
       copyright: `&copy; ${new Date().getFullYear()} YURAGI&ndash;STRIDER &nbsp;/&nbsp; NO WARRANTY &mdash; RESEARCH INSTRUMENT`,
     },
     prism: {
-      // ダーク確定なので明色テーマは使わない。vsDark が void substrate に一番近い。
-      theme: prismThemes.vsDark,
+      theme: prismThemes.github,
       darkTheme: prismThemes.vsDark,
     },
   } satisfies Preset.ThemeConfig,

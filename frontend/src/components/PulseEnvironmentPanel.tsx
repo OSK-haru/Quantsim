@@ -5,6 +5,7 @@ import type {
   QuasiStaticQuadratureOrder,
 } from '../types/pulse'
 import {
+  COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
   COUPLED_TRANSMON_PAIR_PULSE_MODEL,
   QUTRIT_PULSE_MODEL,
   TWO_LEVEL_PULSE_MODEL,
@@ -39,6 +40,7 @@ export function PulseEnvironmentPanel({
   const isQutrit = form.modelId === QUTRIT_PULSE_MODEL
   const isTransmon = form.modelId !== TWO_LEVEL_PULSE_MODEL
   const isPair = form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
+  const isNetwork = form.modelId === COUPLED_TRANSMON_NETWORK_PULSE_MODEL
   const activeDeviceProfile = matchingPulseDeviceProfile(executionConstraints)
   const setNumber = (field: keyof PulseLabForm, value: number) => {
     onChange({ ...form, [field]: value })
@@ -66,13 +68,16 @@ export function PulseEnvironmentPanel({
             onChange={(event) => onChange({
               ...form,
               modelId: event.target.value as PulseModelId,
-              evolutionMethod: form.evolutionMethod,
+              evolutionMethod: event.target.value === COUPLED_TRANSMON_NETWORK_PULSE_MODEL
+                ? 'fixed_step_rk4'
+                : form.evolutionMethod,
               dragBetaUs: event.target.value === TWO_LEVEL_PULSE_MODEL ? 0 : form.dragBetaUs,
             })}
           >
             <option value={TWO_LEVEL_PULSE_MODEL}>2準位モデル</option>
             <option value={QUTRIT_PULSE_MODEL}>Qutrit（漏れ準位あり）</option>
             <option value={COUPLED_TRANSMON_PAIR_PULSE_MODEL}>2トランズモン結合（9次元）</option>
+            <option value={COUPLED_TRANSMON_NETWORK_PULSE_MODEL}>複数トランズモン・ネットワーク（2〜4台）</option>
           </select>
         </label>
         <label>
@@ -100,7 +105,7 @@ export function PulseEnvironmentPanel({
             })}
           >
             <option value="fixed_step_rk4">固定ステップ RK4</option>
-            <option value="explicit_cptp">明示的 CPTP 写像</option>
+            <option value="explicit_cptp" disabled={isNetwork}>明示的 CPTP 写像</option>
           </select>
         </label>
         {/*
@@ -229,6 +234,23 @@ export function PulseEnvironmentPanel({
               <NumberField field="pairSecondaryDragBetaUs" label="副DRAG β [us]" value={form.pairSecondaryDragBetaUs} error={errors.pairSecondaryDragBetaUs} step={0.0001} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
             ) : null}
           </div>
+        </div>
+      ) : null}
+
+      {isNetwork ? (
+        <div className="pulse-parameters__environment">
+          <h3>複数トランズモン・ネットワーク</h3>
+          <p className="pulse-parameters__model-note">
+            Pulse Circuit Studio の2〜4レーンを同時に実行します。各トランズモンは3準位で、隣接レーン間に同じ交換結合 J を適用します。
+          </p>
+          <div className="pulse-parameters__grid">
+            <NumberField field="pairDetuningQ0RadPerUs" label="q0 基準離調 [rad/us]" value={form.pairDetuningQ0RadPerUs} error={errors.pairDetuningQ0RadPerUs} step={1} disabled={disabled} onChange={setNumber} />
+            <NumberField field="pairDetuningQ1RadPerUs" label="q1 基準離調 [rad/us]" value={form.pairDetuningQ1RadPerUs} error={errors.pairDetuningQ1RadPerUs} step={1} disabled={disabled} onChange={setNumber} />
+            <NumberField field="pairExchangeCouplingRadPerUs" label="隣接交換結合 J [rad/us]" value={form.pairExchangeCouplingRadPerUs} error={errors.pairExchangeCouplingRadPerUs} step={0.5} min={0} disabled={disabled} onChange={setNumber} />
+          </div>
+          <p className="pulse-parameters__model-note">
+            q2以降の基準離調は現在0です。密度行列は 3<sup>N</sup> 次元になるため、台数に応じて計算量とスナップショット数を自動制限します。
+          </p>
         </div>
       ) : null}
 

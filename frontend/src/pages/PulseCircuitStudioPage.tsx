@@ -185,7 +185,7 @@ export function PulseCircuitStudioPage({
       </header>
 
       <aside className="pulse-circuit-studio__notice">
-        回路データは複数トランズモン対応です。現行バックエンドは選択中の単一Pulseのみ実行し、複数トランズモン結合は将来の実行エンジンで接続します。
+        2〜4台では、Pulse Lab の「複数トランズモン・ネットワーク」から全レーンを同時実行できます。5〜8台は回路編集のみ対応し、密度行列の計算量上限により実行対象外です。
       </aside>
 
       <section className="pulse-circuit-studio__environment" aria-label="Pulse回路の環境設定">

@@ -37,6 +37,7 @@ PROFILE_MODULES: dict[str, tuple[str, ...]] = {
         "tests.test_pulse_api_baseline_a",
         "tests.test_pulse_api_qutrit",
         "tests.test_pulse_api_transmon_pair",
+        "tests.test_pulse_api_transmon_network",
     ),
 }
 

@@ -94,7 +94,7 @@ const initialSnapshotOptions: SnapshotOptions = {
   include_after_circuit: true,
 }
 
-const initialMeasurementOptions: MeasurementOptions = {
+const defaultMeasurementOptions: MeasurementOptions = {
   shots: 1024,
   seed: 0,
 }
@@ -452,9 +452,6 @@ export function SimulatePage({
   const [gateDurationErrors, setGateDurationErrors] =
     useState<GateDurationDefaultErrors>({})
   const [snapshotOptions, setSnapshotOptions] = useState<SnapshotOptions>(initialSnapshotOptions)
-  const [measurementOptions, setMeasurementOptions] = useState<MeasurementOptions>(
-    initialMeasurementOptions,
-  )
   const [customSnapshotTimesInput, setCustomSnapshotTimesInput] = useState('')
   const [snapshotOptionsError, setSnapshotOptionsError] = useState<string | null>(null)
   const [requestErrorKind, setRequestErrorKind] = useState<RequestErrorKind>('none')
@@ -674,7 +671,7 @@ export function SimulatePage({
         input_mode: 'physical',
         circuit_config: circuitConfig,
         gate_duration_defaults: gateDurationDefaults,
-        measurement_options: measurementOptions,
+        measurement_options: defaultMeasurementOptions,
         snapshot_options: requestedSnapshotOptions,
         parameters: simulationParameters,
       }
@@ -883,7 +880,7 @@ export function SimulatePage({
               className="simulate-page__advanced-header"
               icon="wrench"
               eyebrow="詳細設定"
-              title="計算パラメーター・測定・スナップショット"
+              title="計算パラメーター・スナップショット"
               description="通常は既定値のままで実行できます。上級者向けの調整はここから行えます。"
               headingLevel="h2"
             />
@@ -899,48 +896,6 @@ export function SimulatePage({
               onEditableParametersChange={handleSimulationParametersChange}
               onGateDurationDefaultsChange={handleGateDurationDefaultsChange}
             />
-            <section className="simulate-page__snapshot-controls" aria-labelledby="measurement-controls-title">
-              <div className="simulate-page__snapshot-heading">
-                <div>
-                  <span className="simulate-page__section-eyebrow">測定</span>
-                  <h2 id="measurement-controls-title">最終読み出しのshots</h2>
-                </div>
-              </div>
-              <p className="simulate-page__snapshot-help">
-                最終状態を計算基底で有限回測定します。同じseedでは同じカウントを再現できます。
-                回路中のMゲートは、結果を保存しない非選択測定として密度行列へ作用します。
-              </p>
-              <div className="simulate-page__snapshot-grid">
-                <label>
-                  shots
-                  <input
-                    type="number"
-                    min={1}
-                    max={100000}
-                    step={1}
-                    value={measurementOptions.shots}
-                    onChange={(event) => setMeasurementOptions((current) => ({
-                      ...current,
-                      shots: clampInteger(event.currentTarget.valueAsNumber, 1, 100000),
-                    }))}
-                  />
-                </label>
-                <label>
-                  seed
-                  <input
-                    type="number"
-                    min={0}
-                    max={4294967295}
-                    step={1}
-                    value={measurementOptions.seed}
-                    onChange={(event) => setMeasurementOptions((current) => ({
-                      ...current,
-                      seed: clampInteger(event.currentTarget.valueAsNumber, 0, 4294967295),
-                    }))}
-                  />
-                </label>
-              </div>
-            </section>
             <section className="simulate-page__snapshot-controls" aria-labelledby="snapshot-controls-title">
               <div className="simulate-page__snapshot-heading">
                 <div>
@@ -1121,13 +1076,6 @@ export function SimulatePage({
       <QuantumPet phase={petPhase} message={petMessage} tips={simulateTips} />
     </main>
   )
-}
-
-function clampInteger(value: number, minimum: number, maximum: number): number {
-  if (!Number.isFinite(value)) {
-    return minimum
-  }
-  return Math.min(maximum, Math.max(minimum, Math.round(value)))
 }
 
 function getRunRequestTimeoutMs(

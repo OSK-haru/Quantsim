@@ -86,9 +86,23 @@ gate_aware_hamiltonian_lindblad_v1
 - Independent QuTiP comparison and numerical audit both report PASS.
 - Capability status: `experimental`.
 
+### Pulse Coupled Transmon Network
+
+- `POST /api/pulse/simulate` with `model_id: "driven_coupled_transmon_network_rwa_experimental_v1"`.
+- Contract version `pulse-transmon-network-v1`.
+- Two to four Duffing qutrit transmons, scheduled simultaneous local drives,
+  arbitrary exchange-coupling edges, rotating frames, and RWA.
+- Pulse Circuit Studio sends all 2-4 lanes as one scheduled request; Virtual Z
+  updates the following local-drive phase without consuming time.
+- Fixed-step RK4 only.  Dense work and returned density-matrix elements have
+  dimension-aware preflight ceilings.
+- Capability status: `experimental`; independent QuTiP comparison is not yet
+  complete.
+
 ### Explicitly Not Implemented
 
-- Multi-qubit pulse control beyond the coupled transmon-pair model above.
+- Pulse networks above four transmons, network explicit-CPTP evolution, and
+  network quasi-static-noise ensembles.
 - Explicit CPTP above 5 noisy qubits; 6-8 noisy qubits are RK4 only.
 - Calibrated real-hardware prediction.
 - Pulse execution through Rust. The Rust preview kernel covers only the

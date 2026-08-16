@@ -54,8 +54,24 @@ const PAIR_MIN_REACH = 26
 const PAIR_MAX_REACH = 190
 const PAIR_LIFETIME_PER_PX = 0.0135
 
-/* 背景なので描画は 30fps で足りる。 */
-const FRAME_INTERVAL_MS = 1000 / 30
+/*
+ * 背景なので描画は 30fps で足りる。作業画面ではさらに落とす。あちらは
+ * 重いキャンバスが同時に何枚も回っているので、下地に払う予算は少ない方がいい。
+ */
+const FEATURE_FRAME_INTERVAL_MS = 1000 / 30
+const AMBIENT_FRAME_INTERVAL_MS = 1000 / 20
+
+/*
+ * 下地としての出しゃばり具合。
+ *   feature … ホーム。ここでは主役なので素の濃さで出す。
+ *   ambient … 作業画面。データを読む邪魔にならないところまで引く。
+ */
+const PRESENCE_LEVELS = {
+  feature: 1,
+  ambient: 0.38,
+} as const
+
+export type FieldPresence = keyof typeof PRESENCE_LEVELS
 
 /* タブを離れて戻ったときに位相が飛ばないよう、1フレームの刻みを頭打ちにする。 */
 const MAX_TIME_STEP = 0.1
@@ -217,29 +233,36 @@ function createPair(
 }
 
 type QuantumFluctuationFieldProps = {
-  /* 正面に出ているモード。場の相をこれで切り替える。 */
+  /* 今いる画面に対応する相。場の性格をこれで切り替える。 */
   regime: ModeId
+  /* 下地としてどれだけ前に出るか。既定は控えめな ambient。 */
+  presence?: FieldPresence
 }
 
-export function QuantumFluctuationField({ regime }: QuantumFluctuationFieldProps) {
+export function QuantumFluctuationField({
+  regime,
+  presence = 'ambient',
+}: QuantumFluctuationFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const { animationsEnabled } = useAnimationSettings()
   const { theme } = useTheme()
   const prefersReducedMotion = usePrefersReducedMotion()
 
   /*
-   * 相は ref で渡す。prop を effect の依存に入れると、面が変わるたびに
-   * キャンバスごと作り直されて模様がリセットされてしまう。走っている
-   * ループに値だけ差し込みたい。
+   * 相と出し具合は ref で渡す。prop を effect の依存に入れると、画面を
+   * 移るたびにキャンバスごと作り直されて模様がリセットされる。走っている
+   * ループに値だけ差し込んで、あとは緩和で追わせたい。
    */
   const regimeRef = useRef(regime)
-  /* アニメーションを切っている環境で、相の変更を1枚だけ焼き直すための口。 */
+  const presenceRef = useRef(presence)
+  /* アニメーションを切っている環境で、変更を1枚だけ焼き直すための口。 */
   const redrawRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     regimeRef.current = regime
+    presenceRef.current = presence
     redrawRef.current?.()
-  }, [regime])
+  }, [regime, presence])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -264,6 +287,7 @@ export function QuantumFluctuationField({ regime }: QuantumFluctuationFieldProps
 
     /* 今の相。目標（regimeRef）へ向けて毎フレーム緩和させる。 */
     const current: FieldRegime = { ...REGIMES[regimeRef.current] }
+    let presenceLevel = PRESENCE_LEVELS[presenceRef.current]
 
     let width = 0
     let height = 0
@@ -320,6 +344,7 @@ export function QuantumFluctuationField({ regime }: QuantumFluctuationFieldProps
       current.pairRate += (target.pairRate - current.pairRate) * blend
       current.troughThreshold += (target.troughThreshold - current.troughThreshold) * blend
       current.intensity += (target.intensity - current.intensity) * blend
+      presenceLevel += (PRESENCE_LEVELS[presenceRef.current] - presenceLevel) * blend
 
       /* ω と零点振幅は、そのときの質量と k の倍率から引き直す。 */
       let amplitudeTotal = 0
@@ -376,7 +401,7 @@ export function QuantumFluctuationField({ regime }: QuantumFluctuationFieldProps
 
       /* 実効的な最大振幅は総和より小さいので、少し持ち上げてから飽和させる。 */
       const gain = 1.85
-      const alpha = palette.fieldAlpha * current.intensity
+      const alpha = palette.fieldAlpha * current.intensity * presenceLevel
       const threshold = current.troughThreshold
       const data = image.data
       const [inkR, inkG, inkB] = palette.ink
@@ -424,7 +449,11 @@ export function QuantumFluctuationField({ regime }: QuantumFluctuationFieldProps
          */
         const envelope = Math.sin(Math.PI * age)
         const separation = envelope * pair.reach * 0.5
-        const alpha = envelope ** 0.7 * palette.pairAlpha * current.intensity
+        /*
+         * 対だけは presence を二乗で効かせる。輪郭のはっきりした点は
+         * 滲んだ場より目を引くので、引くときは場より深く引く。
+         */
+        const alpha = envelope ** 0.7 * palette.pairAlpha * current.intensity * presenceLevel ** 2
 
         const particleX = pair.centerX + pair.directionX * separation
         const particleY = pair.centerY + pair.directionY * separation
@@ -452,7 +481,11 @@ export function QuantumFluctuationField({ regime }: QuantumFluctuationFieldProps
 
     const render = (timestamp: number) => {
       frame = window.requestAnimationFrame(render)
-      if (timestamp - lastFrameAt < FRAME_INTERVAL_MS) {
+
+      const interval = presenceRef.current === 'feature'
+        ? FEATURE_FRAME_INTERVAL_MS
+        : AMBIENT_FRAME_INTERVAL_MS
+      if (timestamp - lastFrameAt < interval) {
         return
       }
 

@@ -1,11 +1,13 @@
 export const TWO_LEVEL_PULSE_MODEL = 'driven_two_level_rwa_experimental_v1' as const
 export const QUTRIT_PULSE_MODEL = 'driven_transmon_qutrit_rwa_experimental_v1' as const
 export const COUPLED_TRANSMON_PAIR_PULSE_MODEL = 'driven_coupled_transmon_pair_rwa_experimental_v1' as const
+export const COUPLED_TRANSMON_NETWORK_PULSE_MODEL = 'driven_coupled_transmon_network_rwa_experimental_v1' as const
 
 export type PulseModelId =
   | typeof TWO_LEVEL_PULSE_MODEL
   | typeof QUTRIT_PULSE_MODEL
   | typeof COUPLED_TRANSMON_PAIR_PULSE_MODEL
+  | typeof COUPLED_TRANSMON_NETWORK_PULSE_MODEL
 export type PulseShape = 'square' | 'gaussian'
 export type PulseAmplitudeMode = 'target_rotation_angle' | 'peak_amplitude'
 export type PulseEnvironmentMode = 'physical' | 'direct_rates'
@@ -229,6 +231,32 @@ export type CoupledTransmonPairResponse = {
   limitations: string[]
 }
 
+export type CoupledTransmonNetworkResponse = {
+  contract_version: 'pulse-transmon-network-v1'
+  model: Record<string, unknown> & {
+    model_id: typeof COUPLED_TRANSMON_NETWORK_PULSE_MODEL
+    description: string
+    logical_qubits: number
+    hilbert_dimension: number
+    basis_order: string[]
+  }
+  input: Record<string, unknown>
+  rates: Array<Record<string, unknown>>
+  step_policy: Record<string, unknown>
+  sample_times_us: number[]
+  trajectory: CoupledTransmonPairPoint[]
+  leakage: {
+    maximum_recorded_leakage_probability: number
+    leakage_at_pulse_end: number
+    leakage_at_final_time: number
+  }
+  pulse_end: CoupledTransmonPairPoint
+  final: CoupledTransmonPairPoint
+  diagnostics: Record<string, unknown> & PulseDiagnostics
+  warnings: string[]
+  limitations: string[]
+}
+
 type PulseUnits = {
   time: 'us'
   angular_frequency: 'rad/us'
@@ -257,7 +285,11 @@ type PulseDiagnostics = {
   minimum_cleaned_eigenvalue: number
 } & Record<string, unknown>
 
-export type PulseResponse = TwoLevelPulseResponse | QutritPulseResponse | CoupledTransmonPairResponse
+export type PulseResponse =
+  | TwoLevelPulseResponse
+  | QutritPulseResponse
+  | CoupledTransmonPairResponse
+  | CoupledTransmonNetworkResponse
 
 export type PulseWaveformPoint = {
   timeUs: number
@@ -284,4 +316,10 @@ export function isCoupledTransmonPairResponse(
   response: PulseResponse,
 ): response is CoupledTransmonPairResponse {
   return response.model.model_id === COUPLED_TRANSMON_PAIR_PULSE_MODEL
+}
+
+export function isCoupledTransmonNetworkResponse(
+  response: PulseResponse,
+): response is CoupledTransmonNetworkResponse {
+  return response.model.model_id === COUPLED_TRANSMON_NETWORK_PULSE_MODEL
 }

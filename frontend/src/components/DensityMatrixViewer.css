@@ -17,7 +17,9 @@
 }
 
 .density-matrix-viewer__button,
-.density-matrix-viewer__mode {
+.density-matrix-viewer__mode,
+.density-matrix-viewer__search-clear,
+.density-matrix-viewer__search-submit {
   border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
   background: rgb(var(--tt-void-rgb) / 0.34);
   color: var(--tt-ink);
@@ -34,12 +36,17 @@
 }
 
 .density-matrix-viewer__button:not(:disabled):hover,
-.density-matrix-viewer__mode:hover {
+.density-matrix-viewer__mode:hover,
+.density-matrix-viewer__search-clear:hover,
+.density-matrix-viewer__search-submit:hover {
   border-color: rgb(var(--tt-ink-mid-rgb) / 0.42);
 }
 
 .density-matrix-viewer__button:focus-visible,
 .density-matrix-viewer__mode:focus-visible,
+.density-matrix-viewer__search-clear:focus-visible,
+.density-matrix-viewer__search-submit:focus-visible,
+.density-matrix-viewer__search-input:focus-visible,
 .density-matrix-viewer__slider:focus-visible,
 .density-matrix-viewer__cell:focus-visible,
 .density-matrix-viewer__matrix-scroll:focus-visible {
@@ -112,6 +119,89 @@
 
 .density-matrix-viewer__caption {
   justify-content: space-between;
+}
+
+.density-matrix-viewer__search {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.2);
+  background: rgb(var(--tt-panel-rgb) / 0.46);
+}
+
+.density-matrix-viewer__search-heading,
+.density-matrix-viewer__neighborhood-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+}
+
+.density-matrix-viewer__search-heading h4,
+.density-matrix-viewer__neighborhood-heading h4 {
+  margin: 0;
+  color: var(--tt-ink-max);
+  font-size: 0.95rem;
+}
+
+.density-matrix-viewer__search-heading p,
+.density-matrix-viewer__neighborhood-note {
+  margin: 4px 0 0;
+  color: var(--tt-ink-mid);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.density-matrix-viewer__search-clear,
+.density-matrix-viewer__search-submit {
+  padding: 9px 12px;
+  white-space: nowrap;
+}
+
+.density-matrix-viewer__search-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.density-matrix-viewer__search-field {
+  display: grid;
+  gap: 6px;
+  color: var(--tt-ink-mid);
+  font-size: 0.76rem;
+}
+
+.density-matrix-viewer__search-input {
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 11px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.28);
+  border-radius: 0;
+  background: var(--tt-void);
+  color: var(--tt-ink-max);
+  font-family: var(--tt-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.density-matrix-viewer__search-input[aria-invalid='true'] {
+  border-color: var(--tt-accent);
+}
+
+.density-matrix-viewer__search-help,
+.density-matrix-viewer__search-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.density-matrix-viewer__search-help {
+  color: var(--tt-ink-dim);
+}
+
+.density-matrix-viewer__search-error {
+  color: var(--tt-accent);
 }
 
 .density-matrix-viewer__matrix-scroll {
@@ -217,6 +307,78 @@
   outline: none;
 }
 
+.density-matrix-viewer__cell[data-selected='true'] {
+  position: relative;
+  z-index: 1;
+  border-color: var(--tt-accent);
+  outline: 3px solid var(--tt-accent);
+  outline-offset: -3px;
+}
+
+.density-matrix-viewer__neighborhood {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.38);
+  background: rgb(var(--tt-void-rgb) / 0.24);
+}
+
+.density-matrix-viewer__neighborhood-heading > span {
+  padding: 5px 8px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.18);
+  color: var(--tt-ink-mid);
+  font-family: var(--tt-mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.density-matrix-viewer__neighborhood-eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--tt-accent);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.density-matrix-viewer__neighborhood-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.16);
+}
+
+.density-matrix-viewer__neighborhood-matrix {
+  --density-neighborhood-label-size: 76px;
+  --density-neighborhood-cell-size: 86px;
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+  background: var(--tt-panel);
+}
+
+.density-matrix-viewer__neighborhood-corner,
+.density-matrix-viewer__neighborhood-axis {
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+  background: var(--tt-panel);
+  color: var(--tt-ink-mid);
+  font-family: var(--tt-mono);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.density-matrix-viewer__cell--neighborhood {
+  width: var(--density-neighborhood-cell-size);
+  height: 56px;
+  border-color: var(--tt-panel);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
 .density-matrix-viewer__empty,
 .density-matrix-viewer__note {
   margin: 0;
@@ -243,6 +405,26 @@
   .density-matrix-viewer__button,
   .density-matrix-viewer__mode {
     flex: 1;
+  }
+
+  .density-matrix-viewer__search-form {
+    grid-template-columns: 1fr;
+  }
+
+  .density-matrix-viewer__search-help,
+  .density-matrix-viewer__search-error {
+    grid-column: 1;
+  }
+
+  .density-matrix-viewer__search-heading,
+  .density-matrix-viewer__neighborhood-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .density-matrix-viewer__search-clear,
+  .density-matrix-viewer__search-submit {
+    width: 100%;
   }
 
   .density-matrix-viewer__matrix {

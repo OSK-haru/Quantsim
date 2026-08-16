@@ -147,9 +147,14 @@ body,
   margin: 0;
 }
 
+/*
+ * 地の色は :root 側だけが持つ。body にも塗ると、QuantumFluctuationField の
+ * ような z-index:-1 の固定レイヤーが body の背景に隠れてしまう（負の
+ * z-index はルートの背景の上・通常フローのブロック背景の下に入るため）。
+ */
 body {
   min-height: 100vh;
-  background: var(--tt-void);
+  background: transparent;
 }
 
 * {

@@ -19,7 +19,7 @@ assert(
   'Pulse Lab must not link to the gate-aware State Explorer',
 )
 assert(
-  pulseLabPageSource.includes('Single-pulse experiment.'),
+  pulseLabPageSource.includes('複数レーン同時実行。'),
   'Pulse Lab scope boundary is not visible',
 )
 
@@ -29,7 +29,13 @@ mkdirSync(path.join(temporarySource, 'utils'), { recursive: true })
 mkdirSync(path.join(temporarySource, 'types'), { recursive: true })
 writeFileSync(path.join(temporaryRoot, 'package.json'), '{"type":"commonjs"}')
 
-for (const relativePath of ['src/types/pulse.ts', 'src/utils/pulseLab.ts']) {
+for (const relativePath of [
+  'src/types/pulse.ts',
+  'src/types/pulseCircuit.ts',
+  'src/utils/pulseDeviceProfiles.ts',
+  'src/utils/pulseCircuit.ts',
+  'src/utils/pulseLab.ts',
+]) {
   const sourcePath = path.join(root, relativePath)
   const outputPath = path.join(
     temporaryRoot,
@@ -48,10 +54,15 @@ for (const relativePath of ['src/types/pulse.ts', 'src/utils/pulseLab.ts']) {
 const require = createRequire(import.meta.url)
 const {
   buildPulsePayload,
+  buildTransmonNetworkPayload,
   estimatePulseCost,
   initialPulseLabForm,
   pulseWaveform,
 } = require(path.join(temporarySource, 'utils', 'pulseLab.js'))
+const {
+  createDefaultPulseCircuit,
+  resizePulseCircuit,
+} = require(path.join(temporarySource, 'utils', 'pulseCircuit.js'))
 
 const qutritPayload = buildPulsePayload(initialPulseLabForm)
 assert(
@@ -75,6 +86,21 @@ assert(!('sigma_us' in twoLevelPayload.pulse), 'inactive Gaussian field leaked')
 assert('gamma_down_per_us' in twoLevelPayload.environment, 'two-level direct rates missing')
 assert(!('gamma_10_down_per_us' in twoLevelPayload.environment), 'qutrit rate leaked')
 
+const networkForm = {
+  ...initialPulseLabForm,
+  modelId: 'driven_coupled_transmon_network_rwa_experimental_v1',
+  totalSimulationTimeUs: 0.05,
+}
+const networkCircuit = resizePulseCircuit(
+  createDefaultPulseCircuit(networkForm),
+  3,
+)
+const networkPayload = buildTransmonNetworkPayload(networkForm, networkCircuit)
+assert(networkPayload.transmon_count === 3, 'network transmon count missing')
+assert(networkPayload.drives.length === 2, 'network lane schedule missing')
+assert(networkPayload.couplings.length === 2, 'network nearest-neighbor couplings missing')
+assert(networkPayload.evolution_method === 'fixed_step_rk4', 'network must use RK4')
+
 const cptpPayload = buildPulsePayload({
   ...initialPulseLabForm,
   evolutionMethod: 'explicit_cptp',
@@ -88,7 +114,7 @@ const costly = estimatePulseCost({
   ...initialPulseLabForm,
   anharmonicityMhz: -250,
   sigmaUs: 0.02,
-  totalSimulationTimeUs: 0.2,
+  totalSimulationTimeUs: 0.5,
 })
 assert(costly.overBudget, 'known costly qutrit request was not blocked')
 

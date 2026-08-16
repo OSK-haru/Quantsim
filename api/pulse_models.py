@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from core.capabilities import (
+    DRIVEN_COUPLED_TRANSMON_NETWORK_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL,
@@ -569,10 +570,136 @@ class CoupledTransmonPairPulseSimulateRequest(StrictPulseModel):
         return self
 
 
+class TransmonNetworkCouplingRequest(StrictPulseModel):
+    left: int = Field(ge=0, le=3)
+    right: int = Field(ge=0, le=3)
+    exchange_coupling_rad_per_us: float = Field(ge=0.0)
+
+    @model_validator(mode="after")
+    def validate_coupling(self) -> "TransmonNetworkCouplingRequest":
+        if self.left == self.right:
+            raise ValueError("network coupling endpoints must be different")
+        if not math.isfinite(self.exchange_coupling_rad_per_us):
+            raise ValueError("network coupling strength must be finite")
+        return self
+
+
+class ScheduledTransmonPulseRequest(StrictPulseModel):
+    target: int = Field(ge=0, le=3)
+    start_time_us: float = Field(ge=0.0)
+    pulse: QutritPulseEnvelopeRequest
+
+    @field_validator("start_time_us")
+    @classmethod
+    def validate_start_time(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("network drive start_time_us must be finite")
+        return value
+
+    @property
+    def end_time_us(self) -> float:
+        return self.start_time_us + self.pulse.derived_pulse_duration_us
+
+
+class CoupledTransmonNetworkPulseSimulateRequest(StrictPulseModel):
+    """Bounded 2-4 transmon request with scheduled local drives."""
+
+    model_id: Literal[
+        "driven_coupled_transmon_network_rwa_experimental_v1"
+    ] = DRIVEN_COUPLED_TRANSMON_NETWORK_RWA_EXPERIMENTAL_MODEL
+    transmon_count: int = Field(ge=2, le=4)
+    initial_state: str = Field(pattern=r"^[01]{2,4}$")
+    frequencies_ghz: list[float] = Field(min_length=2, max_length=4)
+    anharmonicities_mhz: list[float] = Field(min_length=2, max_length=4)
+    detunings_rad_per_us: list[float] = Field(min_length=2, max_length=4)
+    couplings: list[TransmonNetworkCouplingRequest] = Field(
+        default_factory=list,
+        max_length=6,
+    )
+    drives: list[ScheduledTransmonPulseRequest] = Field(
+        min_length=1,
+        max_length=32,
+    )
+    total_simulation_time_us: float = Field(gt=0.0)
+    backend: Literal["python", "rust", "auto"] = "auto"
+    evolution_method: Literal["fixed_step_rk4"] = "fixed_step_rk4"
+    environment: QutritPulseEnvironmentRequest
+    snapshot_options: PulseSnapshotOptionsRequest = Field(
+        default_factory=PulseSnapshotOptionsRequest
+    )
+
+    @field_validator(
+        "frequencies_ghz",
+        "anharmonicities_mhz",
+        "detunings_rad_per_us",
+    )
+    @classmethod
+    def validate_network_values(cls, values: list[float]) -> list[float]:
+        if any(not math.isfinite(value) for value in values):
+            raise ValueError("network transmon values must be finite")
+        return values
+
+    @field_validator("frequencies_ghz")
+    @classmethod
+    def validate_network_frequencies(cls, values: list[float]) -> list[float]:
+        if any(value <= 0.0 for value in values):
+            raise ValueError("network frequencies must be positive")
+        return values
+
+    @field_validator("anharmonicities_mhz")
+    @classmethod
+    def validate_network_anharmonicities(cls, values: list[float]) -> list[float]:
+        if any(value >= 0.0 for value in values):
+            raise ValueError("network anharmonicities must be negative")
+        return values
+
+    @model_validator(mode="after")
+    def validate_network(self) -> "CoupledTransmonNetworkPulseSimulateRequest":
+        count = self.transmon_count
+        for field_name in (
+            "frequencies_ghz",
+            "anharmonicities_mhz",
+            "detunings_rad_per_us",
+        ):
+            if len(getattr(self, field_name)) != count:
+                raise ValueError(f"{field_name} must match transmon_count")
+        if len(self.initial_state) != count:
+            raise ValueError("initial_state length must match transmon_count")
+        if not math.isfinite(self.total_simulation_time_us):
+            raise ValueError("total_simulation_time_us must be finite")
+
+        coupling_edges: set[tuple[int, int]] = set()
+        for coupling in self.couplings:
+            if coupling.left >= count or coupling.right >= count:
+                raise ValueError("network coupling endpoint is outside the register")
+            edge = tuple(sorted((coupling.left, coupling.right)))
+            if edge in coupling_edges:
+                raise ValueError("network coupling edges must be unique")
+            coupling_edges.add(edge)
+        for drive in self.drives:
+            if drive.target >= count:
+                raise ValueError("network drive target is outside the register")
+            if drive.end_time_us > self.total_simulation_time_us + 1e-14:
+                raise ValueError("network drive must end within total simulation time")
+        if any(
+            time_us > self.total_simulation_time_us
+            for time_us in self.snapshot_options.custom_times_us
+        ):
+            raise ValueError("snapshot times must not exceed total time")
+        for frequency, anharmonicity in zip(
+            self.frequencies_ghz,
+            self.anharmonicities_mhz,
+            strict=True,
+        ):
+            transition_12_frequency_ghz(frequency, anharmonicity)
+        return self
+
+
 PulseApiRequest = Annotated[
     PulseSimulateRequest
     | QutritPulseSimulateRequest
-    | CoupledTransmonPairPulseSimulateRequest,
+    | CoupledTransmonPairPulseSimulateRequest
+    | CoupledTransmonNetworkPulseSimulateRequest,
     Field(discriminator="model_id"),
 ]
 
@@ -892,8 +1019,25 @@ class CoupledTransmonPairPulseSimulateResponse(StrictPulseModel):
     limitations: list[str]
 
 
+class CoupledTransmonNetworkPulseSimulateResponse(StrictPulseModel):
+    contract_version: Literal["pulse-transmon-network-v1"]
+    model: dict[str, object]
+    input: dict[str, object]
+    rates: list[QutritPulseRatesResponse]
+    step_policy: dict[str, object]
+    sample_times_us: list[float]
+    trajectory: list[CoupledTransmonPairTrajectoryPointResponse]
+    leakage: QutritLeakageResponse
+    pulse_end: CoupledTransmonPairTrajectoryPointResponse
+    final: CoupledTransmonPairTrajectoryPointResponse
+    diagnostics: dict[str, object]
+    warnings: list[str]
+    limitations: list[str]
+
+
 PulseApiResponse = (
     PulseSimulateResponse
     | QutritPulseSimulateResponse
     | CoupledTransmonPairPulseSimulateResponse
+    | CoupledTransmonNetworkPulseSimulateResponse
 )

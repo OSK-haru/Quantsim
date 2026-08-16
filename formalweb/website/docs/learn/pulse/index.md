@@ -30,15 +30,15 @@ Gate-awareモデルが「ゲートは所要時間を持つ行列」という抽�
 |---|---|---|
 | [P1. トランズモンの物理](./transmon.md) | Josephson接合から $\alpha$ が出るまで | 全モデルの前提 |
 | [P2. パルス整形と周波数領域](./envelopes.md) | 包絡線・帯域・打ち切り・正規化 | 全モデル |
-| [P3. 漏れとDRAG](./leakage-drag.md) | 漏れの見積もりと抑制の原理 | Extension B / Coupled pair |
-| [P4. 多準位系の散逸](./qutrit-dissipation.md) | 遷移別レートと数演算子形式 | Extension B / Coupled pair |
+| [P3. 漏れとDRAG](./leakage-drag.md) | 漏れの見積もりと抑制の原理 | Extension B / Coupled pair / Network |
+| [P4. 多準位系の散逸](./qutrit-dissipation.md) | 遷移別レートと数演算子形式 | Extension B / Coupled pair / Network |
 | [P5. 準静的ノイズ](./quasi-static-noise.md) | 非マルコフノイズと決定論的求積 | Extension B / Coupled pair |
-| [P6. 結合トランズモン対](./two-transmon.md) | 交換結合と2量子ビットゲート | Coupled pair |
+| [P6. 結合トランズモン対](./two-transmon.md) | 交換結合と2量子ビットゲート | Coupled pair / Networkの各辺 |
 | [P7. パルス計算の数値的作法](./numerics.md) | ステップ方針・作業量・物理性診断 | 全モデル |
 
-## 3つのモデルとの対応
+## 4つのモデルとの対応
 
-Yuragi-Striderのパルスモデルは3段階に積み上がっています。パルス編もこの順に難しくなります。
+Yuragi-Striderのパルスモデルは4段階に積み上がっています。パルス編もこの順に難しくなります。
 
 ```text
 Baseline A (2準位)
@@ -53,12 +53,16 @@ Extension B (qutrit)
        ▼ 2つ繋ぐ
 Coupled transmon pair (3⊗3)
   └─ 交換結合・2量子ビットゲート    ← P6
+       │
+       ▼ 交換結合グラフと時間スケジュールへ一般化
+Coupled transmon network (3^N, 2≤N≤4)
+  └─ 複数レーンの同時局所drive       ← P2, P3, P6, P7
 ```
 
 P7だけは全モデルに横断的にかかります。
 
 :::info[実験扱いのモデルがあります]
-Coupled transmon pair は状態 **experimental** です。API契約は凍結されていますが、他の2モデルより検証の範囲が狭く、非対称なペアを表現できないなどの制限があります。P6でその内容を扱います。
+Coupled transmon pair と Coupled transmon network は状態 **experimental** です。Networkは2〜4台に限定され、固定ステップRK4のみです。独立ソルバー比較はPairまでで、Networkは物理不変量とAPI回帰試験の段階です。P6で交換結合、P7で次元増大と作業量を扱います。
 :::
 
 ## 読みかたの2コース

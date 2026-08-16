@@ -4,11 +4,12 @@
 
 ```text
 endpoint: POST /api/pulse/simulate
-contract_versions: pulse-baseline-a-v1 | pulse-extension-b-v1 | pulse-coupled-pair-v1
+contract_versions: pulse-baseline-a-v1 | pulse-extension-b-v1 | pulse-coupled-pair-v1 | pulse-transmon-network-v1
 model_ids:
   driven_two_level_rwa_experimental_v1
   driven_transmon_qutrit_rwa_experimental_v1
   driven_coupled_transmon_pair_rwa_experimental_v1
+  driven_coupled_transmon_network_rwa_experimental_v1
 status: experimental
 ```
 
@@ -22,7 +23,7 @@ The top-level request contains:
 
 | Field | Meaning |
 |---|---|
-| `model_id` | One of the three `model_ids` above. It selects the contract version, and the accepted `pulse`/`environment` fields follow from it. |
+| `model_id` | One of the four `model_ids` above. It selects the contract version, and the accepted pulse/network/environment fields follow from it. |
 | `initial_state` | `"0"` or `"1"` |
 | `pulse` | Envelope, amplitude, phase, and detuning |
 | `total_simulation_time_us` | Pulse plus optional observation/idle time |
@@ -203,6 +204,26 @@ The same `POST /api/pulse/simulate` endpoint serves this model via the
 `model_id` discriminator. It simulates two coupled two-level transmons with
 exchange coupling in the rotating frame under RWA. An independent QuTiP
 comparison and a numerical audit both report PASS.
+
+## Pulse Coupled Transmon Network Contract
+
+```text
+model_id: driven_coupled_transmon_network_rwa_experimental_v1
+contract_version: pulse-transmon-network-v1
+capability status: experimental
+transmon_count: 2..4
+```
+
+The network request supplies per-transmon frequencies, anharmonicities and
+base detunings; unique exchange-coupling edges; and scheduled local drives
+with targets and start times. Drives may overlap. Pulse detuning is represented
+as a phase ramp in the target's local rotating frame. The implementation uses
+three local levels and q0-most-significant tensor-basis order.
+
+The network path is fixed-step RK4 only. Before allocating the full response,
+the service enforces `steps * hilbert_dimension^3 <= 30_000_000` and
+`sample_count * hilbert_dimension^2 <= 250_000`. It has core invariant and API
+regression tests but no independent QuTiP comparison yet.
 
 Current capability meanings:
 
