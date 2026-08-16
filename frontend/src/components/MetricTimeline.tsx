@@ -11,6 +11,8 @@ type MetricTimelineProps = {
   idealTimeline?: MetricPoint[]
   stateSnapshots?: StateSnapshot[]
   cursorSimulationTimeUs?: number | null
+  fidelityThreshold?: number | null
+  effectiveTimeUs?: number | null
 }
 
 type StateChangePoint = {
@@ -150,6 +152,8 @@ export function MetricTimeline({
   idealTimeline = [],
   stateSnapshots = [],
   cursorSimulationTimeUs = null,
+  fidelityThreshold = null,
+  effectiveTimeUs = null,
 }: MetricTimelineProps) {
   const hasTimeline = timeline.length > 0
   const stateChanges = stateChangeSeries(stateSnapshots)
@@ -189,6 +193,27 @@ export function MetricTimeline({
     0,
   )
   const isDense = timeline.length > denseTimelineThreshold
+  const resolvedFidelityThreshold = typeof fidelityThreshold === 'number'
+    && Number.isFinite(fidelityThreshold)
+    && fidelityThreshold >= 0
+    && fidelityThreshold <= 1
+    ? fidelityThreshold
+    : null
+  const thresholdY = resolvedFidelityThreshold === null
+    ? null
+    : scaleY(resolvedFidelityThreshold)
+  const firstThresholdCrossing = resolvedFidelityThreshold === null
+    ? undefined
+    : timeline.find((point) => (
+        point.fidelity !== null && point.fidelity < resolvedFidelityThreshold
+      ))
+  const reportedEffectiveTimeUs = typeof effectiveTimeUs === 'number'
+    && Number.isFinite(effectiveTimeUs)
+    ? effectiveTimeUs
+    : null
+  const displayedEffectiveTimeUs = firstThresholdCrossing
+    ? reportedEffectiveTimeUs ?? firstThresholdCrossing.time_us
+    : null
   const cursorX = cursorSimulationTimeUs === null
     ? null
     : scaleX(
@@ -250,6 +275,20 @@ export function MetricTimeline({
 
             <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="metric-timeline__axis" />
             <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="metric-timeline__axis" />
+
+            {thresholdY === null || resolvedFidelityThreshold === null ? null : (
+              <g className="metric-timeline__threshold">
+                <title>{`忠実度のしきい値 ${resolvedFidelityThreshold.toFixed(3)}`}</title>
+                <line x1={padding} y1={thresholdY} x2={width - padding} y2={thresholdY} />
+                <text
+                  x={width - padding - 4}
+                  y={Math.min(height - padding - 4, thresholdY + 14)}
+                  textAnchor="end"
+                >
+                  {`しきい値 ${resolvedFidelityThreshold.toFixed(3)}`}
+                </text>
+              </g>
+            )}
 
             <path d={fidelityPath} className="metric-timeline__line metric-timeline__line--fidelity" />
             <path d={purityPath} className="metric-timeline__line metric-timeline__line--purity" />
@@ -321,6 +360,17 @@ export function MetricTimeline({
                 {finalPoint ? safeMetric(finalPoint.purity).toFixed(4) : '利用できません'}
               </strong>
             </article>
+            {resolvedFidelityThreshold !== null ? (
+              <article className="metric-timeline__value-card metric-timeline__value-card--effective-time">
+                <span className="metric-timeline__label">有効操作時間</span>
+                <strong className="metric-timeline__value">
+                  {displayedEffectiveTimeUs === null
+                    ? '観測区間では未到達'
+                    : `${displayedEffectiveTimeUs.toFixed(4)} μs`}
+                </strong>
+                <small>忠実度が {resolvedFidelityThreshold.toFixed(3)} を下回る時刻</small>
+              </article>
+            ) : null}
             {stateChanges.length > 0 ? (
               <article className="metric-timeline__value-card">
                 <span className="metric-timeline__label">最大区間状態変化</span>

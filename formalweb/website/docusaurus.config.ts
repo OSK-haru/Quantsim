@@ -122,7 +122,7 @@ const config: Config = {
         },
         {
           href: 'https://yuragi-strider-app.23sam55781.workers.dev',
-          label: 'アプリを試す',
+          label: 'アプリを試してみる',
           position: 'right',
           className: 'navbar__item--app-cta',
         },

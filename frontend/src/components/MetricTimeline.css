@@ -92,6 +92,20 @@
   opacity: 0.9;
 }
 
+.metric-timeline__threshold line {
+  stroke: var(--tt-ink-mid);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  opacity: 0.5;
+}
+
+.metric-timeline__threshold text {
+  fill: var(--tt-ink-mid);
+  font-family: var(--tt-mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+
 .metric-timeline__dot {
   stroke: var(--tt-void);
   stroke-width: 2;
@@ -159,6 +173,14 @@
   display: block;
   color: var(--tt-ink);
   font-size: 1rem;
+}
+
+.metric-timeline__value-card--effective-time small {
+  display: block;
+  margin-top: 6px;
+  color: var(--tt-ink-dim);
+  font-size: 0.72rem;
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {

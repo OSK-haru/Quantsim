@@ -291,6 +291,8 @@ export function StateExplorerPage({
             idealTimeline={idealTimeline}
             stateSnapshots={snapshots}
             cursorSimulationTimeUs={playbackSimulationTimeUs}
+            fidelityThreshold={activeResponse.parameters.fidelity_threshold}
+            effectiveTimeUs={activeResponse.summary.effective_time_us}
           />
           </CollapsiblePanel>
           {qubitCount === null ? null : (
