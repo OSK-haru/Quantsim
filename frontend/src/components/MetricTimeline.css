@@ -1,4 +1,11 @@
 .metric-timeline {
+  --metric-fidelity-start: #f2ecdf;
+  --metric-fidelity-end: #c8bbaa;
+  --metric-purity-start: #e0bc70;
+  --metric-purity-end: #a97d3f;
+  --metric-state-change: #ad86bd;
+  --metric-threshold: #85817b;
+
   padding: 24px;
   border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.2);
   background: var(--tt-void);
@@ -29,24 +36,28 @@
 }
 
 .metric-timeline__swatch {
-  width: 12px;
-  height: 12px;
+  width: 22px;
+  height: 3px;
 }
 
 .metric-timeline__swatch--fidelity {
-  background: var(--tt-ink-mid);
+  background: linear-gradient(90deg, var(--metric-fidelity-start), var(--metric-fidelity-end));
 }
 
 .metric-timeline__swatch--purity {
-  background: var(--tt-ink-dim);
+  background: linear-gradient(90deg, var(--metric-purity-start), var(--metric-purity-end));
 }
 
 .metric-timeline__swatch--ideal {
-  background: var(--tt-accent);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--tt-accent) 0 6px,
+    transparent 6px 10px
+  );
 }
 
 .metric-timeline__swatch--state-change {
-  background: var(--tt-accent);
+  background: var(--metric-state-change);
 }
 
 .metric-timeline__legend-item--ideal {
@@ -78,11 +89,13 @@
 
 .metric-timeline__line--purity {
   stroke: url(#purityGradient);
+  stroke-width: 2.6;
 }
 
 .metric-timeline__line--state-change {
-  stroke: var(--tt-accent);
-  stroke-width: 2.4;
+  stroke: var(--metric-state-change);
+  stroke-width: 2;
+  stroke-dasharray: 2 4;
 }
 
 .metric-timeline__ideal-line {
@@ -93,14 +106,17 @@
 }
 
 .metric-timeline__threshold line {
-  stroke: var(--tt-ink-mid);
+  stroke: var(--metric-threshold);
   stroke-width: 1;
-  stroke-dasharray: 3 5;
-  opacity: 0.5;
+  stroke-dasharray: 2 6;
+  opacity: 0.55;
 }
 
 .metric-timeline__threshold text {
-  fill: var(--tt-ink-mid);
+  fill: var(--metric-threshold);
+  stroke: var(--tt-void);
+  stroke-width: 4px;
+  paint-order: stroke fill;
   font-family: var(--tt-mono);
   font-size: 10px;
   letter-spacing: 0.03em;
@@ -112,15 +128,15 @@
 }
 
 .metric-timeline__dot--fidelity {
-  fill: var(--tt-ink-mid);
+  fill: var(--metric-fidelity-start);
 }
 
 .metric-timeline__dot--purity {
-  fill: var(--tt-ink-dim);
+  fill: var(--metric-purity-start);
 }
 
 .metric-timeline__dot--state-change {
-  fill: var(--tt-accent);
+  fill: var(--metric-state-change);
 }
 
 .metric-timeline__interpretation {
@@ -194,3 +210,12 @@
 }
 .metric-timeline__cursor line { stroke: var(--tt-accent); stroke-width: 2; }
 .metric-timeline__cursor circle { fill: var(--tt-accent); }
+
+html[data-theme='light'] .metric-timeline {
+  --metric-fidelity-start: #3f3933;
+  --metric-fidelity-end: #776c60;
+  --metric-purity-start: #83591f;
+  --metric-purity-end: #b17c2f;
+  --metric-state-change: #775982;
+  --metric-threshold: #77716a;
+}

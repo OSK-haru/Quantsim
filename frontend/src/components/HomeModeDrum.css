@@ -1,0 +1,517 @@
+/* ============================================================================
+   HOME MODE DRUM // ROTARY SELECTOR
+   正三角柱のドラム。面が3枚、120°ごと。回転半径は面の高さ h に対して
+   r = h / (2·tan 60°) = 0.2887·h。高さを1つ決めれば残りは従属する。
+   ========================================================================= */
+
+.mode-drum {
+  --drum-height: clamp(330px, 34vw, 392px);
+  --drum-radius: calc(var(--drum-height) * 0.2887);
+  --drum-face-tint: 0.62;
+  --drum-frame-tint: 0.18;
+
+  display: grid;
+  gap: var(--tt-hair);
+}
+
+/* --- Housing -------------------------------------------------------------- */
+
+.mode-drum__frame {
+  position: relative;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  background: rgb(var(--tt-panel-rgb) / var(--drum-frame-tint));
+}
+
+@supports (backdrop-filter: blur(2px)) {
+  .mode-drum__frame {
+    backdrop-filter: blur(3px) saturate(1.06);
+  }
+}
+
+/* 角の見当合わせ。四隅に短い直交ハッチを置いて、筐体らしさを出す。 */
+.mode-drum__frame::before,
+.mode-drum__frame::after {
+  position: absolute;
+  z-index: 2;
+
+  width: 14px;
+  height: 14px;
+
+  content: '';
+  pointer-events: none;
+}
+
+.mode-drum__frame::before {
+  top: -1px;
+  left: -1px;
+  border-top: var(--tt-bar) solid var(--tt-accent);
+  border-left: var(--tt-bar) solid var(--tt-accent);
+}
+
+.mode-drum__frame::after {
+  right: -1px;
+  bottom: -1px;
+  border-right: var(--tt-bar) solid var(--tt-accent);
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+}
+
+/* --- Barrel --------------------------------------------------------------- */
+
+.mode-drum__stage {
+  position: relative;
+
+  height: var(--drum-height);
+
+  perspective: 1700px;
+  overflow: hidden;
+}
+
+.mode-drum__barrel {
+  position: absolute;
+  inset: 0;
+
+  transform: translateZ(calc(-1 * var(--drum-radius))) rotateX(var(--drum-angle, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.22, 0.9, 0.16, 1);
+}
+
+.mode-drum__face {
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 260px);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-areas:
+    'head     head'
+    'title    readouts'
+    'tagline  readouts'
+    'detail   cta';
+  column-gap: 36px;
+  row-gap: 12px;
+
+  padding: 26px 30px 28px;
+
+  background: rgb(var(--tt-panel-rgb) / var(--drum-face-tint));
+
+  transform: rotateX(calc(120deg * var(--face-index, 0))) translateZ(var(--drum-radius));
+  backface-visibility: hidden;
+  transition: opacity 520ms ease;
+  opacity: 0.15;
+}
+
+.mode-drum__face--active {
+  opacity: 1;
+}
+
+/* 面ごとに左端の帯だけ色を変える。回っている最中でも今どの面か分かる。 */
+.mode-drum__face::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  width: 3px;
+
+  background: var(--tt-accent);
+
+  content: '';
+}
+
+.mode-drum__face--pulse::before {
+  background: repeating-linear-gradient(
+    180deg,
+    var(--tt-accent) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+.mode-drum__face--docs::before {
+  background: var(--tt-rule-strong);
+}
+
+/* --- Face content --------------------------------------------------------- */
+
+.mode-drum__face-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+  justify-content: space-between;
+
+  grid-area: head;
+  padding-bottom: 12px;
+
+  border-bottom: var(--tt-hair) solid var(--tt-rule);
+}
+
+.mode-drum__unit {
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.mode-drum__signature {
+  width: 96px;
+  height: 32px;
+  overflow: visible;
+}
+
+.mode-drum__signature-rule {
+  fill: none;
+  stroke: var(--tt-ink-faint);
+  stroke-width: 1;
+}
+
+.mode-drum__signature-trace {
+  fill: none;
+  stroke: var(--tt-ink-mid);
+  stroke-width: 1.4;
+}
+
+.mode-drum__signature-accent {
+  fill: none;
+  stroke: var(--tt-accent);
+  stroke-width: 1.4;
+}
+
+.mode-drum__signature-node {
+  fill: var(--tt-accent);
+}
+
+.mode-drum__title {
+  grid-area: title;
+  margin: 0;
+
+  color: var(--tt-ink-max);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.9rem, 4.2vw, 2.9rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+}
+
+.mode-drum__tagline {
+  grid-area: tagline;
+  margin: 0;
+
+  color: var(--tt-ink);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.mode-drum__detail {
+  grid-area: detail;
+  align-self: start;
+  margin: 0;
+  max-width: 54ch;
+
+  color: var(--tt-ink-mid);
+  font-size: 0.8rem;
+  line-height: 1.75;
+}
+
+.mode-drum__readouts {
+  display: grid;
+  align-content: start;
+  gap: var(--tt-hair);
+
+  grid-area: readouts;
+  margin: 0;
+
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-rule);
+}
+
+.mode-drum__readouts > div {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+
+  padding: 7px 11px;
+
+  background: rgb(var(--tt-panel-2-rgb) / 0.85);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+}
+
+.mode-drum__readouts dt {
+  color: var(--tt-ink-dim);
+}
+
+.mode-drum__readouts dd {
+  margin: 0;
+  color: var(--tt-ink);
+  text-align: right;
+}
+
+/* --- Call to action ------------------------------------------------------- */
+
+.mode-drum__cta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  align-self: end;
+
+  grid-area: cta;
+  padding: 14px 18px;
+
+  border: var(--tt-hair) solid var(--tt-accent);
+  background: var(--tt-accent);
+
+  color: var(--tt-on-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+
+  cursor: pointer;
+
+  transition:
+    background 120ms linear,
+    border-color 120ms linear,
+    transform 120ms ease;
+}
+
+.mode-drum__cta-mark {
+  opacity: 0.6;
+}
+
+.mode-drum__cta:hover {
+  border-color: var(--tt-accent-hot);
+  background: var(--tt-accent-hot);
+  transform: translateX(2px);
+}
+
+.mode-drum__face--docs .mode-drum__cta {
+  border-color: var(--tt-ink);
+  background: transparent;
+  color: var(--tt-ink);
+}
+
+.mode-drum__face--docs .mode-drum__cta:hover {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent);
+  color: var(--tt-on-accent);
+}
+
+.mode-drum__cta--latched {
+  animation: mode-drum-latch 180ms steps(2, end);
+}
+
+@keyframes mode-drum-latch {
+  50% {
+    border-color: var(--tt-ink);
+    background: var(--tt-ink);
+    color: var(--tt-void);
+  }
+}
+
+/* --- Detent rail ---------------------------------------------------------- */
+
+.mode-drum__rail {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+
+  margin: 0;
+  padding: 12px 10px;
+
+  border-left: var(--tt-hair) solid var(--tt-rule);
+  list-style: none;
+}
+
+.mode-drum__detent {
+  display: grid;
+  place-items: center;
+
+  width: 30px;
+  height: 30px;
+
+  border: var(--tt-hair) solid transparent;
+  background: transparent;
+
+  color: var(--tt-ink-faint);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+
+  cursor: pointer;
+
+  transition:
+    color 160ms linear,
+    border-color 160ms linear,
+    background 160ms linear;
+}
+
+.mode-drum__detent:hover {
+  color: var(--tt-ink);
+  border-color: var(--tt-rule-strong);
+}
+
+.mode-drum__detent--active {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent);
+  color: var(--tt-on-accent);
+}
+
+/* --- Transport ------------------------------------------------------------ */
+
+.mode-drum__transport {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  padding: 8px 12px;
+
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: rgb(var(--tt-panel-rgb) / 0.42);
+}
+
+.mode-drum__step {
+  width: 28px;
+  height: 24px;
+
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  background: transparent;
+
+  color: var(--tt-ink-mid);
+  font-family: var(--tt-mono);
+  font-size: 0.7rem;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition: color 120ms linear, border-color 120ms linear;
+}
+
+.mode-drum__step:hover {
+  border-color: var(--tt-accent);
+  color: var(--tt-ink-max);
+}
+
+.mode-drum__gauge {
+  flex: 1;
+  height: 3px;
+
+  background: var(--tt-rule);
+}
+
+.mode-drum__gauge-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  background: var(--tt-accent);
+
+  transform-origin: left center;
+  animation: mode-drum-dwell var(--dwell, 7200ms) linear forwards;
+}
+
+.mode-drum__gauge-fill--held {
+  animation-play-state: paused;
+}
+
+@keyframes mode-drum-dwell {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.mode-drum__count {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.14em;
+}
+
+/* --- Light substrate ------------------------------------------------------ */
+
+/*
+ * 明るい下地では、背後のゆらぎが同じ不透明度でも強く抜けてくる。
+ * 面の地をひと段上げて本文のコントラストを守る。
+ */
+html[data-theme='light'] .mode-drum {
+  --drum-face-tint: 0.78;
+  --drum-frame-tint: 0.3;
+}
+
+html[data-theme='light'] .mode-drum__frame {
+  border-width: var(--tt-bar);
+  border-color: var(--tt-rule-strong);
+  box-shadow: 6px 6px 0 rgb(var(--tt-rule-rgb) / 0.7);
+}
+
+html[data-theme='light'] .mode-drum__cta {
+  border-width: 2px;
+  border-color: var(--tt-accent-deep);
+  box-shadow: 0 4px 0 var(--tt-accent-deep);
+}
+
+html[data-theme='light'] .mode-drum__cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--tt-accent-deep);
+}
+
+html[data-theme='light'] .mode-drum__face--docs .mode-drum__cta {
+  border-color: var(--tt-rule-strong);
+  box-shadow: 0 4px 0 var(--tt-rule-strong);
+}
+
+/* --- Narrow ---------------------------------------------------------------- */
+
+@media (max-width: 860px) {
+  .mode-drum {
+    --drum-height: 505px;
+  }
+
+  .mode-drum__face {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(5, auto) minmax(0, 1fr);
+    grid-template-areas:
+      'head'
+      'title'
+      'tagline'
+      'detail'
+      'readouts'
+      'cta';
+    padding: 22px 22px 24px;
+  }
+
+  .mode-drum__cta {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .mode-drum {
+    --drum-height: 540px;
+  }
+
+  .mode-drum__signature {
+    display: none;
+  }
+}
+
+/*
+ * 動きを切った環境では、ドラムを回さず面を切り替えるだけにする。
+ * 3D の遷移が消えても、面の入れ替わり自体は opacity で読み取れる。
+ */
+html[data-animations='off'] .mode-drum__barrel,
+html[data-animations='off'] .mode-drum__face {
+  transition: none;
+}

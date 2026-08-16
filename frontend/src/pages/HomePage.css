@@ -1,16 +1,34 @@
 /* ============================================================================
    HOME // PRIMARY TERMINAL
    Bimodal density: dense monospace slug lines framing viewport-bleeding
-   macro typography.
+   macro typography — laid over a live vacuum-fluctuation substrate.
    ========================================================================= */
 
+/*
+ * 地は塗らない。body の --tt-void の上に QuantumFluctuationField が乗り、
+ * その上にこのページの中身が乗る、という三層構造にする。
+ */
 .home-page {
   min-height: 100vh;
   display: grid;
   align-content: start;
   padding: 0 0 64px;
-  background: var(--tt-void);
+  background: transparent;
   color: var(--tt-ink);
+}
+
+/*
+ * ゆらぎの層（position:fixed / z-index:0）より前に出す。ここを
+ * `.home-page > *` でまとめて指定すると QuantumPet の position:fixed まで
+ * 上書きしてしまうので、対象を名指しする。
+ */
+.home-page > .tt-hazard,
+.home-page__hero,
+.home-page__selector,
+.home-page__tutorial,
+.home-page__colophon {
+  position: relative;
+  z-index: 1;
 }
 
 /* --- Macro typography ----------------------------------------------------- */
@@ -31,14 +49,26 @@
   text-transform: uppercase;
 }
 
+/*
+ * 2行目は地の役。ゆらぎが透けてほしいので、塗りではなく輪郭で置く。
+ * -webkit-text-stroke に対応しない環境では従来どおり弱い塗りに落ちる。
+ */
 .home-page__wordmark span:last-child {
   color: var(--tt-ink-faint);
+}
+
+@supports (-webkit-text-stroke: 1px currentColor) {
+  .home-page__wordmark span:last-child {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--tt-ink-dim);
+  }
 }
 
 .home-page__wordmark sup {
   font-size: 0.18em;
   vertical-align: super;
   letter-spacing: 0;
+  -webkit-text-stroke: 0;
 }
 
 .home-page__hero-body {
@@ -83,7 +113,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 8px 12px;
-  background: var(--tt-panel);
+  background: rgb(var(--tt-panel-rgb) / 0.72);
   font-family: var(--tt-mono);
   font-size: 0.68rem;
   letter-spacing: 0.1em;
@@ -101,151 +131,8 @@
 
 /* --- Mode selection ------------------------------------------------------- */
 
-/* 2つのモードは対等な入口なので、幅も中身の段組みも左右で揃える。 */
-.home-page__actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--tt-hair);
+.home-page__selector {
   padding: 32px 24px 0;
-}
-
-.home-page__mode {
-  display: grid;
-  align-content: start;
-  gap: 10px;
-  padding: 20px 22px 22px;
-  border: var(--tt-hair) solid var(--tt-accent);
-  background: var(--tt-accent);
-  color: var(--tt-on-accent);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease,
-    background 120ms linear,
-    border-color 120ms linear,
-    color 120ms linear;
-}
-
-.home-page__mode-unit {
-  font-family: var(--tt-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  opacity: 0.72;
-}
-
-.home-page__mode-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--tt-mono);
-  font-size: 0.88rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.home-page__mode-index {
-  opacity: 0.55;
-}
-
-.home-page__mode-detail {
-  font-size: 0.78rem;
-  line-height: 1.65;
-  opacity: 0.85;
-}
-
-.home-page__mode:hover:not(:disabled) {
-  border-color: var(--tt-accent-hot);
-  background: var(--tt-accent-hot);
-  color: var(--tt-on-accent);
-}
-
-.home-page__mode--secondary {
-  border-color: var(--tt-rule-strong);
-  background: var(--tt-panel);
-  color: var(--tt-ink);
-}
-
-.home-page__mode--secondary:hover:not(:disabled) {
-  border-color: var(--tt-accent);
-  background: var(--tt-accent-wash);
-  color: var(--tt-ink-max);
-}
-
-/*
- * The light substrate needs stronger depth cues than the CRT-dark treatment.
- * Keep the shadows square and mechanical so the controls still read as part
- * of the instrument panel rather than floating consumer UI cards.
- */
-html[data-theme='light'] .home-page__spec {
-  border-color: var(--tt-rule-strong);
-  box-shadow: 4px 4px 0 var(--tt-rule);
-}
-
-html[data-theme='light'] .home-page__actions {
-  gap: 18px;
-  padding-bottom: 8px;
-}
-
-html[data-theme='light'] .home-page__mode {
-  border-width: 2px;
-  border-color: var(--tt-accent-deep);
-  box-shadow:
-    0 5px 0 var(--tt-accent-deep),
-    0 10px 20px rgb(var(--tt-ink-rgb) / 0.16);
-}
-
-html[data-theme='light'] .home-page__mode:hover:not(:disabled),
-html[data-theme='light'] .home-page__mode:focus-visible {
-  transform: translateY(-2px);
-  box-shadow:
-    0 7px 0 var(--tt-accent-deep),
-    0 14px 24px rgb(var(--tt-ink-rgb) / 0.2);
-}
-
-html[data-theme='light'] .home-page__mode:active:not(:disabled) {
-  transform: translateY(4px);
-  box-shadow:
-    0 1px 0 var(--tt-accent-deep),
-    0 5px 10px rgb(var(--tt-ink-rgb) / 0.14);
-}
-
-html[data-theme='light'] .home-page__mode--secondary {
-  border-color: var(--tt-rule-strong);
-  background: var(--tt-panel);
-  color: var(--tt-ink-max);
-  box-shadow:
-    0 5px 0 var(--tt-rule-strong),
-    0 10px 20px rgb(var(--tt-ink-rgb) / 0.12);
-}
-
-html[data-theme='light'] .home-page__mode--secondary:hover:not(:disabled),
-html[data-theme='light'] .home-page__mode--secondary:focus-visible {
-  border-color: var(--tt-accent);
-  background: var(--tt-accent-wash);
-  box-shadow:
-    0 7px 0 var(--tt-accent),
-    0 14px 24px rgb(var(--tt-ink-rgb) / 0.16);
-}
-
-html[data-theme='light'] .home-page__mode--secondary:active:not(:disabled) {
-  box-shadow:
-    0 1px 0 var(--tt-accent-deep),
-    0 5px 10px rgb(var(--tt-ink-rgb) / 0.12);
-}
-
-.home-page__mode--activated {
-  animation: home-page-button-latch 180ms steps(2, end);
-}
-
-@keyframes home-page-button-latch {
-  50% {
-    border-color: var(--tt-ink);
-    background: var(--tt-ink);
-    color: var(--tt-void);
-  }
 }
 
 /* --- Guided tour ---------------------------------------------------------- */
@@ -258,12 +145,18 @@ html[data-theme='light'] .home-page__mode--secondary:active:not(:disabled) {
   display: grid;
   gap: 16px;
 
-  margin: var(--tt-hair) 24px 0;
+  margin: 24px 24px 0;
   padding: 16px 20px 20px;
 
   border: var(--tt-hair) solid var(--tt-rule-strong);
   border-left: 3px solid var(--tt-accent);
-  background: var(--tt-panel);
+  background: rgb(var(--tt-panel-rgb) / 0.55);
+}
+
+@supports (backdrop-filter: blur(2px)) {
+  .home-page__tutorial {
+    backdrop-filter: blur(3px) saturate(1.06);
+  }
 }
 
 .home-page__tutorial-intro {
@@ -310,7 +203,7 @@ html[data-theme='light'] .home-page__mode--secondary:active:not(:disabled) {
   padding: 16px 18px 18px;
 
   border: var(--tt-hair) solid var(--tt-rule);
-  background: var(--tt-panel-2);
+  background: rgb(var(--tt-panel-2-rgb) / 0.78);
 }
 
 .home-page__tutorial-course-head {
@@ -360,7 +253,7 @@ html[data-theme='light'] .home-page__mode--secondary:active:not(:disabled) {
   padding: 12px 22px;
 
   border: var(--tt-hair) solid var(--tt-ink);
-  background: var(--tt-void);
+  background: rgb(var(--tt-void-rgb) / 0.6);
 
   color: var(--tt-ink);
   font-family: var(--tt-mono);
@@ -385,6 +278,21 @@ html[data-theme='light'] .home-page__mode--secondary:active:not(:disabled) {
   outline-offset: 2px;
 }
 
+/*
+ * The light substrate needs stronger depth cues than the CRT-dark treatment,
+ * and the fluctuation field reads hotter through a pale panel — so the tints
+ * come up a step here.
+ */
+html[data-theme='light'] .home-page__spec {
+  border-color: var(--tt-rule-strong);
+  box-shadow: 4px 4px 0 var(--tt-rule);
+}
+
+html[data-theme='light'] .home-page__spec > div,
+html[data-theme='light'] .home-page__tutorial {
+  background: rgb(var(--tt-panel-rgb) / 0.82);
+}
+
 html[data-theme='light'] .home-page__tutorial {
   border-color: var(--tt-rule-strong);
   box-shadow: 5px 5px 0 var(--tt-rule);
@@ -392,7 +300,7 @@ html[data-theme='light'] .home-page__tutorial {
 
 html[data-theme='light'] .home-page__tutorial-course {
   border-color: var(--tt-rule-mid);
-  background: var(--tt-panel);
+  background: rgb(var(--tt-panel-rgb) / 0.88);
   box-shadow: 3px 3px 0 var(--tt-rule);
 }
 
@@ -434,16 +342,12 @@ html[data-theme='light'] .home-page__tutorial-button:hover {
     padding: 28px 16px 0;
   }
 
-  .home-page__actions {
+  .home-page__selector {
     padding-inline: 16px;
   }
 
   .home-page__colophon,
   .home-page__tutorial {
     margin-inline: 16px;
-  }
-
-  .home-page__actions {
-    grid-template-columns: minmax(0, 1fr);
   }
 }

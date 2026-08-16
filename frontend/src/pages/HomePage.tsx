@@ -1,5 +1,8 @@
 import './HomePage.css'
 import { useState } from 'react'
+import { HomeModeDrum } from '../components/HomeModeDrum'
+import { modeAtTurn } from '../utils/homeModes'
+import { QuantumFluctuationField } from '../components/QuantumFluctuationField'
 import { QuantumPet } from '../components/QuantumPet'
 import { useTutorial } from '../context/useTutorial'
 import { homeTips } from '../utils/quantumPetTips'
@@ -11,16 +14,22 @@ type HomePageProps = {
 }
 
 export function HomePage({ onStartSimulation, onOpenPulseLab }: HomePageProps) {
-  const [activeMode, setActiveMode] = useState<'gate-aware' | 'pulse' | null>(null)
   const tutorial = useTutorial()
 
-  function triggerMode(mode: 'gate-aware' | 'pulse', callback: () => void) {
-    setActiveMode(mode)
-    window.setTimeout(callback, 180)
-  }
+  /*
+   * ドラムの回転数はここで持つ。ドラムの中に閉じ込めると、同じ値で背景の
+   * ゆらぎを動かせない。面が変わるたびに背景の相も乗り換わる。
+   */
+  const [modeTurn, setModeTurn] = useState(0)
 
   return (
-    <main className={`home-page${activeMode ? ' home-page--activated' : ''}`}>
+    <main className="home-page">
+      {/*
+        画面の地は塗らない。背後で走らせている真空のゆらぎを、パネルの
+        隙間と半透明の地から透かして見せる。ホームだけの扱い。
+      */}
+      <QuantumFluctuationField regime={modeAtTurn(modeTurn)} />
+
       <div className="tt-hazard" aria-hidden="true" />
 
       <section className="home-page__hero" data-tutorial-anchor="home-hero">
@@ -64,45 +73,18 @@ export function HomePage({ onStartSimulation, onOpenPulseLab }: HomePageProps) {
       </section>
 
       {/*
-        ここは2つのモードの入口。以前は Gate-aware 側だけ2つ（シミュレーション と
-        状態エクスプローラー）並んでいて、モード選択と画面選択が混ざっていた。
-        状態エクスプローラーは Gate-aware の中の1画面なので、ナビゲーションと
-        実行後の導線に任せ、ここはモードだけを左右対称に見せる。
+        入口はここ1か所に集約した。以前は2つのモードを左右に並べていたが、
+        「どちらを選ぶか」を横並びで迫るより、1つずつ正面に出して読ませる方が
+        中身の違いが伝わる。公式ドキュメントも同格の行き先として同じ列に置く。
       */}
-      <nav className="home-page__actions" aria-label="モードの選択">
-        <button
-          className={`home-page__mode${activeMode === 'gate-aware' ? ' home-page__mode--activated' : ''}`}
-          type="button"
-          onClick={() => triggerMode('gate-aware', onStartSimulation)}
-        >
-          <span className="home-page__mode-unit">Gate-aware / 標準</span>
-          <span className="home-page__mode-title">
-            <span className="home-page__mode-index" aria-hidden="true">
-              &gt;&gt;&gt;
-            </span>
-            通常モードを開始
-          </span>
-          <span className="home-page__mode-detail">
-            量子ゲートで回路を組み、ノイズの下で状態がどうずれるかを調べます。まずはこちら。
-          </span>
-        </button>
-        <button
-          className={`home-page__mode home-page__mode--secondary${activeMode === 'pulse' ? ' home-page__mode--activated' : ''}`}
-          type="button"
-          onClick={() => triggerMode('pulse', onOpenPulseLab)}
-        >
-          <span className="home-page__mode-unit">Pulse / 実験的</span>
-          <span className="home-page__mode-title">
-            <span className="home-page__mode-index" aria-hidden="true">
-              &gt;&gt;&gt;
-            </span>
-            PULSEモードを開始
-          </span>
-          <span className="home-page__mode-detail">
-            ゲートより下の層へ。マイクロ波パルスの波形そのものから量子ビットの応答を追います。
-          </span>
-        </button>
-      </nav>
+      <div className="home-page__selector">
+        <HomeModeDrum
+          turn={modeTurn}
+          onTurnChange={setModeTurn}
+          onStartSimulation={onStartSimulation}
+          onOpenPulseLab={onOpenPulseLab}
+        />
+      </div>
 
       {/*
         はじめて来た人の入口。モード選択の下に置いて、

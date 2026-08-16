@@ -264,12 +264,12 @@ export function MetricTimeline({
           >
             <defs>
               <linearGradient id="fidelityGradient" x1="0%" x2="100%" y1="0%" y2="0%">
-                <stop offset="0%" stopColor="#60a5fa" />
-                <stop offset="100%" stopColor="#93c5fd" />
+                <stop offset="0%" stopColor="var(--metric-fidelity-start)" />
+                <stop offset="100%" stopColor="var(--metric-fidelity-end)" />
               </linearGradient>
               <linearGradient id="purityGradient" x1="0%" x2="100%" y1="0%" y2="0%">
-                <stop offset="0%" stopColor="#34d399" />
-                <stop offset="100%" stopColor="#6ee7b7" />
+                <stop offset="0%" stopColor="var(--metric-purity-start)" />
+                <stop offset="100%" stopColor="var(--metric-purity-end)" />
               </linearGradient>
             </defs>
 
@@ -281,9 +281,9 @@ export function MetricTimeline({
                 <title>{`忠実度のしきい値 ${resolvedFidelityThreshold.toFixed(3)}`}</title>
                 <line x1={padding} y1={thresholdY} x2={width - padding} y2={thresholdY} />
                 <text
-                  x={width - padding - 4}
+                  x={padding + 8}
                   y={Math.min(height - padding - 4, thresholdY + 14)}
-                  textAnchor="end"
+                  textAnchor="start"
                 >
                   {`しきい値 ${resolvedFidelityThreshold.toFixed(3)}`}
                 </text>
