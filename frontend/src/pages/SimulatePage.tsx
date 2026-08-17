@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './SimulatePage.css'
 import { CircuitSummaryCard } from '../components/CircuitSummaryCard'
 import { DensityMatrixSummaryCard } from '../components/DensityMatrixSummaryCard'
@@ -20,6 +20,7 @@ import { useTutorial } from '../context/useTutorial'
 import { hasExtendedDuration, hasShortT1 } from '../utils/tutorialProgress'
 import { useInternalInfoVisible } from '../context/useAdminMode'
 import type {
+  CircuitCompilation,
   GateDurationDefaultErrors,
   GateDurationDefaults,
   GateAwareEvolutionMethod,
@@ -71,6 +72,9 @@ const API_EXAMPLE_TIMEOUT_MS = 10000
 const PET_CELEBRATION_MS = 7000
 const RUN_REQUEST_MIN_TIMEOUT_MS = 15000
 const RUN_REQUEST_TIMEOUT_PER_STEP_MS = 25
+/* ドラッグ中の1操作ごとにリクエストが飛ばない程度の、体感では気づかない待ち。 */
+const COMPILE_PREVIEW_DEBOUNCE_MS = 250
+const COMPILE_PREVIEW_TIMEOUT_MS = 8000
 
 const initialSimulationParameters: SimulateRequestParameters = {
   device_quality: 0.8,
@@ -447,6 +451,11 @@ export function SimulatePage({
     useState<GateCompilationMode>('logical_direct')
   const [simulationBackend, setSimulationBackend] =
     useState<SimulationBackend>('python_dense')
+  /* 直近に取得できたプレビューと、その取得元の回路。null は取得失敗を表す。 */
+  const [compilationPreviewResult, setCompilationPreviewResult] = useState<{
+    body: string
+    compilation: CircuitCompilation | null
+  } | null>(null)
   const [parameterErrors, setParameterErrors] =
     useState<SimulateRequestParameterErrors>({})
   const [gateDurationErrors, setGateDurationErrors] =
@@ -471,6 +480,82 @@ export function SimulatePage({
     reportCondition('t1-lowered', tutorialShortT1)
     reportCondition('duration-extended', tutorialLongDuration)
   }, [reportCondition, tutorialShortT1, tutorialLongDuration])
+
+  /*
+   * 実行前プレビュー。/api/circuit/compile は時間発展をまったく走らせず、
+   * ゲート分解だけを返すので、編集のたびに呼んでも実行枠も計算時間も食わない。
+   * 送る中身を文字列に畳んでおくと、実体が同じ編集状態で再実行しなくて済む。
+   */
+  const compilationPreviewBody = useMemo(() => {
+    const circuitConfig = circuitEditorStateToConfig(circuitState)
+    if (!validateCircuitConfigForRun(circuitConfig).valid) {
+      return null
+    }
+
+    return JSON.stringify({
+      compilation_mode: compilationMode,
+      circuit_config: circuitConfig,
+      gate_duration_defaults: gateDurationDefaults,
+    })
+  }, [circuitState, compilationMode, gateDurationDefaults])
+
+  /*
+   * 新しいプレビューを取りに行っている間も、直前のプレビューは出したままにする。
+   * 編集のたびに図が消えて実行済みの図に戻る、というちらつきを避けるため。
+   */
+  const compilationPreview =
+    compilationPreviewBody === null ? null : compilationPreviewResult?.compilation ?? null
+  const compilationPreviewPending =
+    compilationPreviewBody !== null && compilationPreviewResult?.body !== compilationPreviewBody
+
+  useEffect(() => {
+    if (compilationPreviewBody === null) {
+      return
+    }
+
+    const controller = new AbortController()
+    let timeoutId: number | undefined
+
+    const debounceId = window.setTimeout(() => {
+      timeoutId = window.setTimeout(() => controller.abort(), COMPILE_PREVIEW_TIMEOUT_MS)
+      void (async () => {
+        try {
+          const apiResponse = await fetch(apiUrl('/api/circuit/compile'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: compilationPreviewBody,
+            cache: 'no-store',
+            signal: controller.signal,
+          })
+          if (!apiResponse.ok) {
+            throw new Error(`HTTP ${apiResponse.status}`)
+          }
+
+          const parsed = (await apiResponse.json()) as { compilation?: CircuitCompilation }
+          if (controller.signal.aborted) {
+            return
+          }
+          setCompilationPreviewResult({
+            body: compilationPreviewBody,
+            compilation: parsed.compilation ?? null,
+          })
+        } catch {
+          /* プレビューは補助情報なので、失敗しても実行の邪魔はしない。 */
+          if (!controller.signal.aborted) {
+            setCompilationPreviewResult({ body: compilationPreviewBody, compilation: null })
+          }
+        } finally {
+          window.clearTimeout(timeoutId)
+        }
+      })()
+    }, COMPILE_PREVIEW_DEBOUNCE_MS)
+
+    return () => {
+      window.clearTimeout(debounceId)
+      window.clearTimeout(timeoutId)
+      controller.abort()
+    }
+  }, [compilationPreviewBody])
 
   function handleSimulationParametersChange(nextParameters: SimulateRequestParameters) {
     const validation = validateSimulationParameters(nextParameters)
@@ -978,6 +1063,8 @@ export function SimulatePage({
         </details>
         <RunPanel
           run={response.run}
+          compilationPreview={compilationPreview}
+          compilationPreviewPending={compilationPreviewPending}
           costEstimate={costEstimate}
           connectionLabel={connectionLabel}
           dataSourceLabel={dataSourceLabel}

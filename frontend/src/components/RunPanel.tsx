@@ -6,6 +6,7 @@ import { RunCostNotice } from './RunCostNotice'
 import { SimulationProgressIndicator } from './SimulationProgressIndicator'
 import { useInternalInfoVisible } from '../context/useAdminMode'
 import type {
+  CircuitCompilation,
   GateAwareEvolutionMethod,
   GateCompilationMode,
   RunPanelData,
@@ -16,6 +17,12 @@ import type { SimulationCostEstimate } from '../utils/simulationCost'
 
 type RunPanelProps = {
   run: RunPanelData
+  /**
+   * 実行前に、いま編集中の回路をコンパイルした結果。実行済みの結果より
+   * こちらを優先して描く（利用者が見ているのは編集中の回路なので）。
+   */
+  compilationPreview?: CircuitCompilation | null
+  compilationPreviewPending?: boolean
   costEstimate: SimulationCostEstimate
   connectionLabel: string
   dataSourceLabel: string
@@ -97,6 +104,8 @@ function formatElapsedMs(value: number | null) {
 
 export function RunPanel({
   run,
+  compilationPreview = null,
+  compilationPreviewPending = false,
   costEstimate,
   connectionLabel,
   dataSourceLabel,
@@ -128,6 +137,9 @@ export function RunPanel({
   const backendDescription = internalInfoVisible
     ? backendDescriptions[simulationBackend]
     : publicBackendDescriptions[simulationBackend]
+  // 編集中の回路のプレビューがあればそれを、なければ直近の実行結果を描く。
+  const compilation = compilationPreview ?? run.compilation ?? null
+  const isCompilationPreview = compilationPreview !== null
 
   return (
     <section className="run-panel" aria-label="シミュレーションの実行" data-load-status={loadStatus}>
@@ -238,21 +250,33 @@ export function RunPanel({
         */}
       </div>
 
-      {run.compilation ? (
+      {compilation ? (
         <ResultDrawer
           eyebrow="GATE COMPILER"
-          title="分解後の回路"
+          title={isCompilationPreview ? '分解後の回路（実行前プレビュー）' : '分解後の回路'}
           icon="chip"
-          description="実際にGate-awareモデルへ渡された基本ゲート列を、そのまま回路図として描いています。"
-          defaultOpen={run.compilation.mode === 'auto_decompose'}
+          description={
+            isCompilationPreview
+              ? '実行するとGate-awareモデルへ渡される基本ゲート列を、実行前に先読みして描いています。回路や実行方法を変えると即座に更新されます。'
+              : '実際にGate-awareモデルへ渡された基本ゲート列を、そのまま回路図として描いています。'
+          }
+          defaultOpen={compilation.mode === 'auto_decompose'}
         >
+          <p className="run-panel__compilation-summary">
+            論理 {compilation.logical_gate_count} ゲート / 深さ {compilation.logical_depth}
+            {' → '}
+            分解後 {compilation.compiled_gate_count} ゲート / 深さ {compilation.compiled_depth}
+            {compilationPreviewPending ? (
+              <span className="run-panel__compilation-pending">更新中…</span>
+            ) : null}
+          </p>
           <CompiledCircuitDiagram
-            circuit={run.compilation.compiled_circuit}
-            sourceMap={run.compilation.source_map}
+            circuit={compilation.compiled_circuit}
+            sourceMap={compilation.source_map}
           />
-          {run.compilation.decomposition_rules_used.length > 0 ? (
+          {compilation.decomposition_rules_used.length > 0 ? (
             <p className="run-panel__rules">
-              適用した分解規則: {run.compilation.decomposition_rules_used.join(' / ')}
+              適用した分解規則: {compilation.decomposition_rules_used.join(' / ')}
             </p>
           ) : null}
         </ResultDrawer>

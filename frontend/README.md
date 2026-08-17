@@ -48,6 +48,8 @@ routing dependency:
 - Delete, drag-out deletion, Clear, Undo, and Redo.
 - Circuit JSON import/export.
 - Arbitrary `circuit_config` submission to `POST /api/simulate`.
+- Pre-run decomposed-circuit preview via `POST /api/circuit/compile`, which
+  compiles without simulating.
 - Summary, timeline, output probability, diagnostic, model, warning, and API
   detail views.
 - State snapshot requests and State Explorer visualization.

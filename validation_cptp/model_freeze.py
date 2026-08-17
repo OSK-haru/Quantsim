@@ -53,7 +53,7 @@ CRITICAL_SOURCE_FILES = (
     "api/pulse_qutrit_service.py",
     "frontend/src/types/pulse.ts",
     "frontend/src/utils/pulseLab.ts",
-    "frontend/src/components/PulseParameterPanel.tsx",
+    "frontend/src/components/PulseEnvironmentPanel.tsx",
     "frontend/src/pages/PulseLabPage.tsx",
     "tests/test_cptp_qubit_channels.py",
     "tests/test_cptp_qutrit_channels.py",

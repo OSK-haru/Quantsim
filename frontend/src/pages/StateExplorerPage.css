@@ -49,14 +49,6 @@
   line-height: 1.55;
 }
 
-.state-explorer-page__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: end;
-  gap: 10px;
-}
-
-.state-explorer-page__actions button,
 .state-explorer-page__empty button {
   padding: 10px 14px;
   border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.28);
@@ -65,7 +57,6 @@
   cursor: pointer;
 }
 
-.state-explorer-page__actions button:hover,
 .state-explorer-page__empty button:hover {
   border-color: var(--tt-ink-mid);
 }
@@ -318,10 +309,6 @@
 
   .state-explorer-page__header {
     flex-direction: column;
-  }
-
-  .state-explorer-page__actions {
-    justify-content: start;
   }
 
   .state-explorer-page__workspace {

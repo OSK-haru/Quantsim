@@ -1400,14 +1400,3 @@ export function getGateIdAtSlot(
   )
   return cnotGate ? cnotGate.id : null
 }
-
-export function getSelectedGateTypeFromGate(
-  circuit: CircuitEditorState,
-  gateId: string,
-) {
-  const gate = circuit.columns
-    .flatMap((column) => column.gates)
-    .find((candidate) => candidate.id === gateId)
-
-  return gate?.type ?? null
-}

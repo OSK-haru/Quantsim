@@ -6,6 +6,7 @@ from concurrent.futures import (
     ThreadPoolExecutor,
     TimeoutError as FuturesTimeoutError,
 )
+import logging
 import math
 import os
 from threading import BoundedSemaphore
@@ -14,7 +15,7 @@ from time import perf_counter
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field, root_validator, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from api.pulse_models import (
     PulseApiRequest,
@@ -27,9 +28,12 @@ from api.pulse_service import (
 from core.circuit_model import CircuitAnnotation, CircuitConfig, GateColumn, GateOperation
 from core.physical_environment import INPUT_MODE_NORMALIZED, INPUT_MODE_PHYSICAL
 from core.results import EnvironmentConfig, SimulationConfig
+from core.gate_compiler import compile_gate_aware_circuit
 from core.simulator import run_simulation
-from core.ui_response import simulation_result_to_ui_response
+from core.ui_response import compilation_response, simulation_result_to_ui_response
 
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Yuragi-Strider API", version="0.1.0")
 
@@ -51,14 +55,53 @@ if _ALLOWED_ORIGINS:
         allow_headers=["*"],
     )
 
+def _optional_int_env(name: str) -> int | None:
+    """Read an optional integer env var without crashing the app at import.
+
+    A typo in a deploy dashboard should degrade to "cap not set" and say so in
+    the logs, not take the whole service down with an import-time traceback.
+    """
+
+    raw = os.environ.get(name)
+    if not raw or not raw.strip():
+        return None
+    try:
+        return int(raw.strip())
+    except ValueError:
+        logger.warning("Ignoring non-integer %s=%r; the cap stays unset.", name, raw)
+        return None
+
+
 # Dense simulation cost is O(8^n); the desktop app and test suite rely on the
 # full le=18 validation range, but a publicly reachable server shares memory
 # across every visitor, so it gets its own, stricter cap via env var. Unset
 # by default so existing (non-public) deployments are unaffected.
-_PUBLIC_MAX_LOGICAL_QUBITS = os.environ.get("PUBLIC_MAX_LOGICAL_QUBITS")
-PUBLIC_MAX_LOGICAL_QUBITS = (
-    int(_PUBLIC_MAX_LOGICAL_QUBITS) if _PUBLIC_MAX_LOGICAL_QUBITS else None
+PUBLIC_MAX_LOGICAL_QUBITS = _optional_int_env("PUBLIC_MAX_LOGICAL_QUBITS")
+
+# str(exc) can carry file paths and internal state. The hosted web demo is the
+# deployment that sets ALLOWED_ORIGINS (frontend and API on separate origins),
+# so the same signal defaults public deploys to type-only errors, while local
+# dev and the desktop launcher keep the full message their admin-mode
+# diagnostics panel displays. EXPOSE_INTERNAL_ERRORS overrides either way.
+_EXPOSE_INTERNAL_ERRORS_ENV = os.environ.get("EXPOSE_INTERNAL_ERRORS", "").strip()
+EXPOSE_INTERNAL_ERRORS = (
+    _EXPOSE_INTERNAL_ERRORS_ENV.lower() in {"1", "true", "yes", "on"}
+    if _EXPOSE_INTERNAL_ERRORS_ENV
+    else not _ALLOWED_ORIGINS
 )
+
+
+def _failure_detail(message: str, exc: Exception) -> dict[str, object]:
+    """Build a 500 detail body, withholding the raw message off-origin."""
+
+    detail: dict[str, object] = {
+        "message": message,
+        "error_type": exc.__class__.__name__,
+    }
+    if EXPOSE_INTERNAL_ERRORS:
+        detail["error"] = str(exc)
+    return detail
+
 
 PULSE_API_TIMEOUT_SECONDS = 90.0
 PULSE_API_MAX_CONCURRENT_REQUESTS = 2
@@ -69,6 +112,24 @@ _PULSE_EXECUTOR = ThreadPoolExecutor(
 _PULSE_EXECUTION_SLOTS = BoundedSemaphore(
     PULSE_API_MAX_CONCURRENT_REQUESTS
 )
+
+# Circuit simulation gets the same shape of budget the pulse endpoint already
+# has. Without it a single request with a large time_steps pins a shared host
+# indefinitely: the logical-qubit cap above bounds the matrix size, not the
+# number of steps taken through it.
+SIMULATE_API_TIMEOUT_SECONDS = 120.0
+SIMULATE_API_MAX_CONCURRENT_REQUESTS = 2
+_SIMULATE_EXECUTOR = ThreadPoolExecutor(
+    max_workers=SIMULATE_API_MAX_CONCURRENT_REQUESTS,
+    thread_name_prefix="yuragi-strider-simulate",
+)
+_SIMULATE_EXECUTION_SLOTS = BoundedSemaphore(
+    SIMULATE_API_MAX_CONCURRENT_REQUESTS
+)
+# Generous next to real use (the validation suite tops out at 101 steps and
+# 200 us) but finite, so an absurd request is rejected before any compute.
+MAX_API_TIME_STEPS = 2001
+MAX_API_DURATION_US = 10_000.0
 
 
 class GateDurationDefaultsRequest(BaseModel):
@@ -96,22 +157,25 @@ class GateDurationDefaultsRequest(BaseModel):
 class SnapshotOptionsRequest(BaseModel):
     enabled: bool = True
     uniform_count: int = Field(default=0, ge=0, le=100)
-    custom_times_us: list[float] = Field(default_factory=list, max_items=100)
+    custom_times_us: list[float] = Field(default_factory=list, max_length=100)
     include_initial: bool = True
     include_final: bool = True
     include_column_boundaries: bool = True
     include_after_circuit: bool = True
 
-    @validator("uniform_count")
+    @field_validator("uniform_count")
+    @classmethod
     def validate_uniform_count(cls, value: int) -> int:
         if value == 1:
             raise ValueError("uniform_count must be 0 or an integer from 2 to 100")
         return value
 
-    @validator("custom_times_us", each_item=True)
-    def validate_custom_time(cls, value: float) -> float:
-        if not math.isfinite(value) or value < 0.0:
-            raise ValueError("custom_times_us must contain finite, non-negative times")
+    @field_validator("custom_times_us")
+    @classmethod
+    def validate_custom_times(cls, value: list[float]) -> list[float]:
+        for time_us in value:
+            if not math.isfinite(time_us) or time_us < 0.0:
+                raise ValueError("custom_times_us must contain finite, non-negative times")
         return value
 
 
@@ -131,8 +195,8 @@ class SimulationParametersRequest(BaseModel):
     t1_max_us: float | None = Field(default=None, gt=0.0)
     tphi_max_us: float | None = Field(default=None, gt=0.0)
     ideal_reference: bool = False
-    duration_us: float | None = Field(default=None, gt=0.0)
-    time_steps: int | None = Field(default=None, ge=2)
+    duration_us: float | None = Field(default=None, gt=0.0, le=MAX_API_DURATION_US)
+    time_steps: int | None = Field(default=None, ge=2, le=MAX_API_TIME_STEPS)
     fidelity_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
@@ -144,7 +208,8 @@ class CircuitGateParamsRequest(BaseModel):
     animation_parameter_t: float | None = None
     marked_index: float | None = None
 
-    @validator("marked_index")
+    @field_validator("marked_index")
+    @classmethod
     def validate_marked_index(cls, value: float | None) -> float | None:
         if value is None:
             return value
@@ -152,7 +217,8 @@ class CircuitGateParamsRequest(BaseModel):
             raise ValueError("marked_index must be a non-negative integer.")
         return value
 
-    @validator("duration_us")
+    @field_validator("duration_us")
+    @classmethod
     def validate_duration_us(cls, value: float | None) -> float | None:
         if value is None:
             return value
@@ -160,13 +226,15 @@ class CircuitGateParamsRequest(BaseModel):
             raise ValueError("duration_us must be finite and greater than or equal to 0.")
         return value
 
-    @validator("theta_rad")
+    @field_validator("theta_rad")
+    @classmethod
     def validate_theta_rad(cls, value: float | None) -> float | None:
         if value is not None and not math.isfinite(value):
             raise ValueError("theta_rad must be finite.")
         return value
 
-    @validator("animation_parameter_t")
+    @field_validator("animation_parameter_t")
+    @classmethod
     def validate_animation_parameter_t(cls, value: float | None) -> float | None:
         if value is not None and not math.isfinite(value):
             raise ValueError("animation_parameter_t must be finite.")
@@ -187,11 +255,11 @@ class CircuitGateRequest(BaseModel):
     condition: ClassicalConditionRequest | None = None
     conditions: list[ClassicalConditionRequest] = Field(default_factory=list)
 
-    @root_validator(skip_on_failure=True)
-    def validate_gate_shape(cls, values: dict[str, object]) -> dict[str, object]:
-        gate_type = values.get("type")
-        targets = values.get("targets") or []
-        controls = values.get("controls") or []
+    @model_validator(mode="after")
+    def validate_gate_shape(self) -> CircuitGateRequest:
+        gate_type = self.type
+        targets = self.targets or []
+        controls = self.controls or []
 
         if gate_type == "CNOT":
             if len(controls) < 1:
@@ -202,8 +270,7 @@ class CircuitGateRequest(BaseModel):
                 raise ValueError(
                     "CNOT controls and target must all be different qubits."
                 )
-            params = values.get("params")
-            control_state = getattr(params, "control_state", None)
+            control_state = self.params.control_state
             if control_state is not None and control_state >= 2 ** len(controls):
                 raise ValueError("CNOT control_state is outside the control-bit range.")
         elif gate_type in {"CZ", "CP"}:
@@ -235,8 +302,7 @@ class CircuitGateRequest(BaseModel):
             if len(set(targets)) != len(targets):
                 raise ValueError(f"{gate_type} target qubits must all be different.")
             if gate_type == "ORACLE":
-                params = values.get("params")
-                marked = getattr(params, "marked_index", None)
+                marked = self.params.marked_index
                 if marked is not None and not 0 <= int(marked) < 2 ** len(targets):
                     raise ValueError(
                         "ORACLE marked_index must be inside the register range "
@@ -248,7 +314,7 @@ class CircuitGateRequest(BaseModel):
             if controls:
                 raise ValueError(f"{gate_type} does not accept control qubits.")
 
-        return values
+        return self
 
 
 class CircuitColumnRequest(BaseModel):
@@ -272,7 +338,8 @@ class AnimationParameterRequest(BaseModel):
     column_index: int = Field(ge=0)
     gate_index: int = Field(ge=0)
 
-    @validator("value")
+    @field_validator("value")
+    @classmethod
     def validate_value(cls, value: float) -> float:
         if not math.isfinite(value):
             raise ValueError("animation parameter value must be finite")
@@ -286,15 +353,12 @@ class CircuitConfigRequest(BaseModel):
     columns: list[CircuitColumnRequest] = Field(default_factory=list)
     annotations: list[CircuitAnnotationRequest] = Field(default_factory=list)
 
-    @root_validator(skip_on_failure=True)
-    def validate_circuit_config(cls, values: dict[str, object]) -> dict[str, object]:
-        logical_qubits = values.get("logical_qubits")
-        initial_states = values.get("initial_states") or []
-        columns = values.get("columns") or []
-        classical_bits = values.get("classical_bits") or 0
-
-        if not isinstance(logical_qubits, int):
-            return values
+    @model_validator(mode="after")
+    def validate_circuit_config(self) -> CircuitConfigRequest:
+        logical_qubits = self.logical_qubits
+        initial_states = self.initial_states or []
+        columns = self.columns or []
+        classical_bits = self.classical_bits or 0
 
         if len(initial_states) != logical_qubits:
             raise ValueError("initial_states must match logical_qubits.")
@@ -342,12 +406,12 @@ class CircuitConfigRequest(BaseModel):
                         "MEASURE classical_targets must match the measured targets."
                     )
 
-        for annotation in values.get("annotations") or []:
+        for annotation in self.annotations or []:
             for qubit in annotation.qubits:
                 if qubit < 0 or qubit >= logical_qubits:
                     raise ValueError("Annotation qubit is outside the logical qubit range.")
 
-        return values
+        return self
 
 
 class SimulateRequest(BaseModel):
@@ -371,8 +435,13 @@ class SimulateRequest(BaseModel):
     )
     parameters: SimulationParametersRequest
 
-    @root_validator(pre=True)
-    def validate_parameters_for_input_mode(cls, values: dict[str, object]) -> dict[str, object]:
+    @model_validator(mode="before")
+    @classmethod
+    def validate_parameters_for_input_mode(cls, values: object) -> object:
+        # A "before" validator sees the raw input, which is a mapping for the
+        # JSON request path but not for e.g. model_validate on an instance.
+        if not isinstance(values, dict):
+            return values
         if values.get("circuit_config") is None and values.get("circuit_preset") is None:
             raise ValueError("circuit_preset or circuit_config is required")
         input_mode = values.get("input_mode", INPUT_MODE_NORMALIZED)
@@ -395,6 +464,33 @@ class SimulateRequest(BaseModel):
             duration_us = parameters.get("duration_us")
             if duration_us is not None and any(isinstance(time_us, (int, float)) and time_us > duration_us for time_us in (snapshot_options.get("custom_times_us") or [])):
                 raise ValueError("snapshot_options.custom_times_us must not exceed parameters.duration_us")
+        return values
+
+
+class CompilePreviewRequest(BaseModel):
+    """Everything the gate compiler needs, and nothing the simulator needs.
+
+    Compilation is a pure circuit rewrite, so the preview deliberately does not
+    accept environment parameters, backends, or snapshot options: the diagram it
+    returns depends only on the circuit, the mode, and the gate durations.
+    """
+
+    circuit_preset: Literal["bell", "teleportation", "bit_flip_repetition"] | None = None
+    compilation_mode: Literal["logical_direct", "auto_decompose"] = (
+        "logical_direct"
+    )
+    gate_duration_defaults: GateDurationDefaultsRequest = Field(
+        default_factory=GateDurationDefaultsRequest
+    )
+    circuit_config: CircuitConfigRequest | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_circuit_source(cls, values: object) -> object:
+        if not isinstance(values, dict):
+            return values
+        if values.get("circuit_config") is None and values.get("circuit_preset") is None:
+            raise ValueError("circuit_preset or circuit_config is required")
         return values
 
 
@@ -598,6 +694,22 @@ def build_example_config() -> SimulationConfig:
     )
 
 
+def _build_requested_circuit(
+    circuit_config: CircuitConfigRequest | None,
+    circuit_preset: str | None,
+    gate_duration_defaults: GateDurationDefaultsRequest,
+) -> CircuitConfig:
+    """Resolve the circuit a request asked for, by config or by preset name."""
+
+    if circuit_config is not None:
+        return build_custom_circuit(circuit_config, gate_duration_defaults)
+    if circuit_preset == "teleportation":
+        return build_teleportation_circuit(gate_duration_defaults)
+    if circuit_preset == "bit_flip_repetition":
+        return build_bit_flip_repetition_circuit(gate_duration_defaults)
+    return build_bell_circuit(gate_duration_defaults)
+
+
 def build_config_from_simulate_request(request: SimulateRequest) -> SimulationConfig:
     parameters = request.parameters
     if request.input_mode == INPUT_MODE_PHYSICAL:
@@ -628,14 +740,11 @@ def build_config_from_simulate_request(request: SimulateRequest) -> SimulationCo
             noise_level=_required(parameters.noise_level, "noise_level"),
         )
 
-    if request.circuit_config is not None:
-        circuit = build_custom_circuit(request.circuit_config, request.gate_duration_defaults)
-    elif request.circuit_preset == "teleportation":
-        circuit = build_teleportation_circuit(request.gate_duration_defaults)
-    elif request.circuit_preset == "bit_flip_repetition":
-        circuit = build_bit_flip_repetition_circuit(request.gate_duration_defaults)
-    else:
-        circuit = build_bell_circuit(request.gate_duration_defaults)
+    circuit = _build_requested_circuit(
+        request.circuit_config,
+        request.circuit_preset,
+        request.gate_duration_defaults,
+    )
 
     if request.animation_parameter is not None:
         circuit = apply_animation_parameter(circuit, request.animation_parameter)
@@ -739,6 +848,63 @@ def simulation_example() -> dict[str, object]:
 
 
 @app.post(
+    "/api/circuit/compile",
+    responses={
+        422: {"description": "Invalid or over-budget circuit."},
+    },
+)
+def compile_circuit_preview(request: CompilePreviewRequest) -> dict[str, object]:
+    """Compile a circuit without simulating it, for the pre-run preview.
+
+    This is the same rewrite `/api/simulate` performs internally, returned in
+    the same shape, so the editor can show the decomposed circuit before anyone
+    pays for a run. It never touches the simulator, so it stays cheap enough to
+    call on every circuit edit and needs no execution slot.
+    """
+
+    if (
+        PUBLIC_MAX_LOGICAL_QUBITS is not None
+        and request.circuit_config is not None
+        and request.circuit_config.logical_qubits > PUBLIC_MAX_LOGICAL_QUBITS
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "logical_qubits exceeds the public demo limit.",
+                "maximum_logical_qubits": PUBLIC_MAX_LOGICAL_QUBITS,
+            },
+        )
+
+    try:
+        circuit = _build_requested_circuit(
+            request.circuit_config,
+            request.circuit_preset,
+            request.gate_duration_defaults,
+        )
+        compilation = compile_gate_aware_circuit(
+            circuit,
+            request.compilation_mode,
+            {
+                name: float(value)
+                for name, value in request.gate_duration_defaults.model_dump().items()
+            },
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=_failure_detail("Circuit compilation failed.", exc),
+        ) from exc
+    except Exception as exc:
+        logger.exception("Circuit compilation preview failed.")
+        raise HTTPException(
+            status_code=500,
+            detail=_failure_detail("Circuit compilation failed.", exc),
+        ) from exc
+
+    return {"compilation": compilation_response(compilation.diagnostics)}
+
+
+@app.post(
     "/api/pulse/simulate",
     response_model=PulseApiResponse,
     responses={
@@ -789,30 +955,14 @@ def pulse_simulate(request: PulseApiRequest) -> dict[str, object]:
     except HTTPException:
         raise
     except Exception as exc:
+        logger.exception("Pulse simulation failed.")
         raise HTTPException(
             status_code=500,
-            detail={
-                "message": "Pulse simulation failed.",
-                "error_type": exc.__class__.__name__,
-                "error": str(exc),
-            },
+            detail=_failure_detail("Pulse simulation failed.", exc),
         ) from exc
 
 
-@app.post("/api/simulate")
-def simulate(request: SimulateRequest) -> dict[str, object]:
-    if (
-        PUBLIC_MAX_LOGICAL_QUBITS is not None
-        and request.circuit_config is not None
-        and request.circuit_config.logical_qubits > PUBLIC_MAX_LOGICAL_QUBITS
-    ):
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "message": "logical_qubits exceeds the public demo limit.",
-                "maximum_logical_qubits": PUBLIC_MAX_LOGICAL_QUBITS,
-            },
-        )
+def _run_simulate_request(request: SimulateRequest) -> dict[str, object]:
     request_started_at = perf_counter()
     try:
         config_started_at = perf_counter()
@@ -855,11 +1005,62 @@ def simulate(request: SimulateRequest) -> dict[str, object]:
     except HTTPException:
         raise
     except Exception as exc:
+        logger.exception("Simulation failed.")
         raise HTTPException(
             status_code=500,
+            detail=_failure_detail("Simulation failed.", exc),
+        ) from exc
+
+
+@app.post(
+    "/api/simulate",
+    responses={
+        422: {"description": "Invalid or over-budget simulation request."},
+        503: {"description": "Simulation capacity is busy."},
+        504: {"description": "Simulation exceeded the API timeout."},
+    },
+)
+def simulate(request: SimulateRequest) -> dict[str, object]:
+    if (
+        PUBLIC_MAX_LOGICAL_QUBITS is not None
+        and request.circuit_config is not None
+        and request.circuit_config.logical_qubits > PUBLIC_MAX_LOGICAL_QUBITS
+    ):
+        raise HTTPException(
+            status_code=422,
             detail={
-                "message": "Simulation failed.",
-                "error_type": exc.__class__.__name__,
-                "error": str(exc),
+                "message": "logical_qubits exceeds the public demo limit.",
+                "maximum_logical_qubits": PUBLIC_MAX_LOGICAL_QUBITS,
+            },
+        )
+
+    if not _SIMULATE_EXECUTION_SLOTS.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "Simulation capacity is busy.",
+                "maximum_concurrent_requests": (
+                    SIMULATE_API_MAX_CONCURRENT_REQUESTS
+                ),
+            },
+        )
+    try:
+        future = _SIMULATE_EXECUTOR.submit(_run_simulate_request, request)
+    except Exception:
+        _SIMULATE_EXECUTION_SLOTS.release()
+        raise
+    future.add_done_callback(
+        lambda completed: _SIMULATE_EXECUTION_SLOTS.release()
+    )
+    try:
+        return future.result(timeout=SIMULATE_API_TIMEOUT_SECONDS)
+    except FuturesTimeoutError as exc:
+        future.cancel()
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "message": "Simulation timed out.",
+                "timeout_seconds": SIMULATE_API_TIMEOUT_SECONDS,
+                "previous_results_preserved": True,
             },
         ) from exc

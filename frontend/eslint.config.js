@@ -19,4 +19,13 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  // Build/validation scripts run under Node, not the browser, and are plain
+  // JS. Without this block they matched no config entry and went unchecked.
+  {
+    files: ['scripts/**/*.{js,mjs}', '*.config.{js,mjs}'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ])

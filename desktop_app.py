@@ -80,15 +80,30 @@ def configure_static_ui(ui_directory: Path) -> None:
 
     app.mount("/assets", StaticFiles(directory=assets_directory), name="desktop-assets")
 
+    ui_root = ui_directory.resolve()
+    index_file = ui_root / "index.html"
+
     @app.get("/{requested_path:path}", include_in_schema=False)
     def desktop_spa(requested_path: str) -> FileResponse:
         if requested_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="API endpoint not found.")
 
-        candidate = ui_directory / requested_path
-        if requested_path and candidate.is_file():
+        if not requested_path:
+            return FileResponse(index_file)
+
+        # `ui_root / requested_path` is not a containment check on its own: an
+        # absolute request path replaces the base outright, so "/C:/Windows/
+        # win.ini" would otherwise be served verbatim. Resolve the join and
+        # confirm the result is still under the built frontend; anything else
+        # falls through to the SPA entry point like an unknown route.
+        try:
+            candidate = (ui_root / requested_path).resolve()
+        except (OSError, ValueError):
+            return FileResponse(index_file)
+
+        if candidate.is_relative_to(ui_root) and candidate.is_file():
             return FileResponse(candidate)
-        return FileResponse(ui_directory / "index.html")
+        return FileResponse(index_file)
 
 
 def open_when_ready(url: str, host: str, port: int) -> None:

@@ -70,8 +70,3 @@ export function getModelLabel(id: string): ModelLabelInfo {
     }
   )
 }
-
-export function modelStatusText(id: string) {
-  const info = getModelLabel(id)
-  return info.status === 'planned' ? `${info.label}（未提供）` : info.label
-}

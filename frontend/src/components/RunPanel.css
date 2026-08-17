@@ -13,13 +13,6 @@
   margin-bottom: 18px;
 }
 
-.run-panel__note {
-  margin: 2px 0 0;
-  max-width: 34ch;
-  color: var(--tt-ink-mid);
-  line-height: 1.6;
-}
-
 .run-panel__meta {
   display: grid;
   justify-items: end;
@@ -205,6 +198,24 @@
   font-size: 0.92rem;
   line-height: 1.45;
   word-break: break-word;
+}
+
+.run-panel__compilation-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--tt-ink-mid);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.run-panel__compilation-pending {
+  color: var(--tt-ink-soft, var(--tt-ink-mid));
+  font-size: 0.72rem;
+  opacity: 0.75;
 }
 
 .run-panel__rules {

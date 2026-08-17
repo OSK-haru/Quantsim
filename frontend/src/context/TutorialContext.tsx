@@ -82,16 +82,22 @@ export function TutorialProvider({ currentRoute, onNavigate, children }: Tutoria
   const isBeatSatisfied = beat === null || beat.waitFor === undefined || conditions[beat.waitFor]
 
   const markCompleted = useCallback((completedId: TutorialCourseId) => {
-    setCompletedCourses((current) => {
-      if (current.includes(completedId)) {
-        return current
-      }
-
-      const next = [...current, completedId]
-      window.localStorage.setItem(STORAGE_KEY, next.join(','))
-      return next
-    })
+    setCompletedCourses((current) => (
+      current.includes(completedId) ? current : [...current, completedId]
+    ))
   }, [])
+
+  /*
+   * 保存は更新関数の外で行う。StrictMode は更新関数を2回呼ぶので、
+   * その中に副作用を置いてはいけない。未修了は既定値なので書かない。
+   */
+  useEffect(() => {
+    if (completedCourses.length === 0) {
+      return
+    }
+
+    window.localStorage.setItem(STORAGE_KEY, completedCourses.join(','))
+  }, [completedCourses])
 
   const start = useCallback((nextCourseId: TutorialCourseId) => {
     wentBackRef.current = false

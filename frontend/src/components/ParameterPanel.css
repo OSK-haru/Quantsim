@@ -136,31 +136,6 @@ details[open] > .parameter-panel__section-summary .parameter-panel__section-togg
   line-height: 1.4;
 }
 
-.parameter-panel__list {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-}
-
-.parameter-panel__item {
-  display: grid;
-  gap: 4px;
-}
-
-.parameter-panel__item dt {
-  color: var(--tt-ink-mid);
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.parameter-panel__item dd {
-  margin: 0;
-  color: var(--tt-ink-max);
-  font-size: 0.98rem;
-  line-height: 1.45;
-}
-
 .parameter-panel__fields {
   display: grid;
   gap: 14px;

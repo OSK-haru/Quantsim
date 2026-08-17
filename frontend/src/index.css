@@ -300,63 +300,12 @@ body::after {
 
 /* ============================================================================
    TELEMETRY PRIMITIVES
-   Shared structural classes consumed across pages.
    ========================================================================= */
-
-/* Blueprint grid: 1px gaps over a rule-coloured parent render as hairlines. */
-.tt-grid {
-  display: grid;
-  gap: var(--tt-hair);
-  background: var(--tt-rule);
-  border: var(--tt-hair) solid var(--tt-rule);
-}
-
-.tt-grid > * {
-  background: var(--tt-panel);
-}
-
-/* Compartment: a bordered operational unit. */
-.tt-panel {
-  border: var(--tt-hair) solid var(--tt-rule);
-  background: var(--tt-panel);
-}
-
-/* Bracketed label: [ DELIVERY SYSTEMS ] */
-.tt-bracket::before {
-  content: '[ ';
-}
-
-.tt-bracket::after {
-  content: ' ]';
-}
-
-/* Directional run-in marker. */
-.tt-vector::before {
-  content: '>>> ';
-  color: var(--tt-accent);
-}
 
 /* Registration mark used as a structural glyph, not legal text. */
 .tt-reg {
   color: var(--tt-accent);
   font-family: var(--tt-mono);
-}
-
-/* Micro label: unit IDs, coordinates, field names. */
-.tt-meta {
-  font-family: var(--tt-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--tt-ink-dim);
-}
-
-/* Numeric readout. */
-.tt-readout {
-  font-family: var(--tt-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-  color: var(--tt-ink);
 }
 
 /* Hazard stripe: thick diagonal warning band. */
@@ -367,37 +316,6 @@ body::after {
     var(--tt-accent) 0 8px,
     var(--tt-void) 8px 16px
   );
-}
-
-/* Barcode: repeating vertical rules used as a structural filler. */
-.tt-barcode {
-  width: 168px;
-  height: 20px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--tt-ink) 0 1px,
-    transparent 1px 3px,
-    var(--tt-ink) 3px 5px,
-    transparent 5px 8px
-  );
-  opacity: 0.55;
-}
-
-/* Crosshair anchored at a grid intersection. */
-.tt-crosshair {
-  position: relative;
-}
-
-.tt-crosshair::after {
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  color: var(--tt-accent);
-  font-family: var(--tt-mono);
-  font-size: 0.75rem;
-  line-height: 1;
-  content: '+';
-  pointer-events: none;
 }
 
 /* ============================================================================

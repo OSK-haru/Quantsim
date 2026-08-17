@@ -536,6 +536,37 @@ def _output_probabilities(result: SimulationResult) -> dict[str, float]:
     }
 
 
+def compilation_response(diagnostics: Mapping[str, Any]) -> dict[str, Any]:
+    """Shape gate-compiler diagnostics into the UI's `run.compilation` block.
+
+    The pre-run preview endpoint compiles without simulating, so it produces the
+    same diagnostics dict and reuses this adapter to stay byte-identical with
+    what the run path later reports.
+    """
+
+    return {
+        "mode": str(diagnostics.get("compilation_mode", "logical_direct")),
+        "native_gate_set_id": str(
+            diagnostics.get("native_gate_set_id", "gate_aware_hxyzst_rz_cnot_v3")
+        ),
+        "logical_gate_count": int(diagnostics.get("logical_gate_count", 0)),
+        "compiled_gate_count": int(diagnostics.get("compiled_gate_count", 0)),
+        "logical_depth": int(diagnostics.get("logical_depth", 0)),
+        "compiled_depth": int(diagnostics.get("compiled_depth", 0)),
+        "logical_duration_us": _safe_float_or_none(
+            diagnostics.get("logical_declared_duration_us")
+        ),
+        "compiled_duration_us": _safe_float_or_none(
+            diagnostics.get("compiled_duration_us")
+        ),
+        "decomposition_rules_used": list(
+            diagnostics.get("decomposition_rules_used", [])
+        ),
+        "source_map": list(diagnostics.get("source_map", [])),
+        "compiled_circuit": dict(diagnostics.get("compiled_circuit", {})),
+    }
+
+
 def _run_response(result: SimulationResult) -> dict[str, Any]:
     selected_backend = str(
         result.diagnostics.get(
@@ -543,29 +574,7 @@ def _run_response(result: SimulationResult) -> dict[str, Any]:
             result.config.simulation_backend,
         )
     )
-    compilation = {
-        "mode": str(result.diagnostics.get("compilation_mode", "logical_direct")),
-        "native_gate_set_id": str(
-            result.diagnostics.get("native_gate_set_id", "gate_aware_hxyzst_rz_cnot_v3")
-        ),
-        "logical_gate_count": int(result.diagnostics.get("logical_gate_count", 0)),
-        "compiled_gate_count": int(result.diagnostics.get("compiled_gate_count", 0)),
-        "logical_depth": int(result.diagnostics.get("logical_depth", 0)),
-        "compiled_depth": int(result.diagnostics.get("compiled_depth", 0)),
-        "logical_duration_us": _safe_float_or_none(
-            result.diagnostics.get("logical_declared_duration_us")
-        ),
-        "compiled_duration_us": _safe_float_or_none(
-            result.diagnostics.get("compiled_duration_us")
-        ),
-        "decomposition_rules_used": list(
-            result.diagnostics.get("decomposition_rules_used", [])
-        ),
-        "source_map": list(result.diagnostics.get("source_map", [])),
-        "compiled_circuit": dict(
-            result.diagnostics.get("compiled_circuit", {})
-        ),
-    }
+    compilation = compilation_response(result.diagnostics)
     return {
         "status": (
             "Completed with issues"

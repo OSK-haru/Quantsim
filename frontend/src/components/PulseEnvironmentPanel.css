@@ -127,21 +127,6 @@
   color: var(--tt-accent);
 }
 
-.pulse-parameters__expert {
-  padding-top: 18px;
-  margin-top: 18px;
-  border-top: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.16);
-}
-
-.pulse-parameters__expert summary {
-  color: var(--tt-ink-mid);
-  cursor: pointer;
-}
-
-.pulse-parameters__expert .pulse-parameters__grid {
-  margin-top: 14px;
-}
-
 @media (max-width: 900px) {
   .pulse-parameters__selectors,
   .pulse-parameters__grid {

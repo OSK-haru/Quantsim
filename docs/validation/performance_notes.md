@@ -10,13 +10,13 @@ longer windows with noise; run `scripts/benchmark_rust_dense.py` for that.
 
 | Operation | Elapsed seconds |
 | --- | ---: |
-| 1-qubit H | 0.007177 |
-| 1-qubit X | 0.003861 |
-| 2-qubit Bell | 0.005486 |
-| 1-qubit comparison | 0.005817 |
-| 2-qubit comparison | 0.009374 |
-| expert data generation | 0.002923 |
-| result JSON export | 0.000585 |
-| result CSV export | 0.000122 |
-| Markdown export | 0.003157 |
-| save/load config | 0.015754 |
+| 1-qubit H | 0.006165 |
+| 1-qubit X | 0.006464 |
+| 2-qubit Bell | 0.009902 |
+| 1-qubit comparison | 0.004866 |
+| 2-qubit comparison | 0.007484 |
+| expert data generation | 0.003379 |
+| result JSON export | 0.000599 |
+| result CSV export | 0.000133 |
+| Markdown export | 0.002713 |
+| save/load config | 0.008698 |

@@ -48,29 +48,6 @@
   line-height: 1.6;
 }
 
-.simulate-page__back {
-  padding: 10px 16px;
-  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
-  background: var(--tt-panel);
-  color: var(--tt-ink);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.simulate-page__back--active {
-  border-color: var(--tt-ink-mid);
-  background: var(--tt-panel-2);
-  color: var(--tt-ink-max);
-  cursor: default;
-}
-
-.simulate-page__header-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: end;
-}
-
 .simulate-page__core-stack,
 .simulate-page__drawer-stack {
   width: min(960px, 100%);
@@ -280,10 +257,6 @@
     flex-direction: column;
   }
 
-  .simulate-page__header-actions {
-    justify-content: start;
-  }
-
 }
 
 /* --- TELEMETRY SHELL NORMALISATION --------------------- */
@@ -336,22 +309,4 @@
   color: var(--tt-ink-mid);
   font-size: 0.86rem;
   line-height: 1.7;
-}
-
-.simulate-page__back {
-  padding: 10px 16px;
-  border: var(--tt-hair) solid var(--tt-rule-strong);
-  background: var(--tt-panel);
-  color: var(--tt-ink);
-  font-family: var(--tt-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.simulate-page__back:hover {
-  border-color: var(--tt-accent);
-  background: var(--tt-accent-wash);
-  color: var(--tt-ink-max);
 }

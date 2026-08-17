@@ -53,11 +53,15 @@ export function estimateSimulationCost({
     }
   }
 
+  // 独立した if で順に評価する。else if で繋ぐと最初の枝で連鎖を抜けてしまい、
+  // 例えば gatePressure 20 の low 構成が medium 止まりになる。
   if (gatePressure >= 10 && level === 'low') {
     level = 'medium'
-  } else if (gatePressure >= 14 && level === 'medium') {
+  }
+  if (gatePressure >= 14 && level === 'medium') {
     level = 'high'
-  } else if (gatePressure >= 18 && level === 'high') {
+  }
+  if (gatePressure >= 18 && level === 'high') {
     level = 'very_high'
   }
 

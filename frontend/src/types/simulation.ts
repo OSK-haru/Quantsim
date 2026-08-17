@@ -291,24 +291,31 @@ export type CompiledSourceMapEntry = {
   }>
 }
 
+/**
+ * The gate compiler's report. `/api/simulate` returns it for the run that just
+ * finished; `/api/circuit/compile` returns the same shape for the circuit being
+ * edited, before any run.
+ */
+export type CircuitCompilation = {
+  mode: GateCompilationMode
+  native_gate_set_id: string
+  logical_gate_count: number
+  compiled_gate_count: number
+  logical_depth: number
+  compiled_depth: number
+  logical_duration_us: number | null
+  compiled_duration_us: number | null
+  decomposition_rules_used: string[]
+  source_map: CompiledSourceMapEntry[]
+  compiled_circuit: CompiledCircuitData
+}
+
 export type RunPanelData = {
   status: string
   selected_backend: string
   last_run_label: string
   can_run?: boolean
-  compilation?: {
-    mode: GateCompilationMode
-    native_gate_set_id: string
-    logical_gate_count: number
-    compiled_gate_count: number
-    logical_depth: number
-    compiled_depth: number
-    logical_duration_us: number | null
-    compiled_duration_us: number | null
-    decomposition_rules_used: string[]
-    source_map: CompiledSourceMapEntry[]
-    compiled_circuit: CompiledCircuitData
-  }
+  compilation?: CircuitCompilation
   comparison?: {
     ideal_timeline: MetricPoint[]
     ideal_state_snapshots: StateSnapshot[]

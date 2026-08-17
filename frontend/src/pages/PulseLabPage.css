@@ -49,26 +49,12 @@
   color: var(--tt-accent);
 }
 
-.pulse-lab__nav {
-  display: flex;
-  max-width: 490px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.pulse-lab__nav button,
 .pulse-lab__run button {
   padding: 9px 13px;
   border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.28);
   background: var(--tt-void);
   color: var(--tt-ink);
   cursor: pointer;
-}
-
-.pulse-lab__nav button:hover {
-  border-color: var(--pulse-teal);
-  color: var(--tt-ink-max);
 }
 
 .pulse-lab__scope-note {
@@ -260,10 +246,6 @@
 @media (max-width: 800px) {
   .pulse-lab__header {
     display: grid;
-  }
-
-  .pulse-lab__nav {
-    justify-content: flex-start;
   }
 
   .pulse-lab__scope-note {

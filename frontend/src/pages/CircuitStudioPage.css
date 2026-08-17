@@ -74,38 +74,6 @@
   white-space: nowrap;
 }
 
-.circuit-studio-page__header-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: end;
-}
-
-.circuit-studio-page__nav {
-  padding: 8px 12px;
-  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
-  background: var(--tt-panel);
-  color: var(--tt-ink);
-  cursor: pointer;
-  font: inherit;
-  white-space: nowrap;
-}
-
-.circuit-studio-page__nav:hover {
-  border-color: rgb(var(--tt-ink-mid-rgb) / 0.48);
-}
-
-.circuit-studio-page__nav:focus-visible {
-  outline: 2px solid var(--tt-ink-mid);
-  outline-offset: 2px;
-}
-
-.circuit-studio-page__nav--primary {
-  border-color: var(--tt-ink-mid);
-  background: rgb(var(--tt-rule-strong-rgb) / 0.2);
-  color: var(--tt-ink-max);
-}
-
 .circuit-studio-page__stack {
   width: min(1360px, 100%);
   margin: 0 auto;
@@ -128,9 +96,6 @@
     justify-content: start;
   }
 
-  .circuit-studio-page__header-actions {
-    justify-content: start;
-  }
 }
 
 /* --- TELEMETRY SHELL NORMALISATION --------------------- */

@@ -17,7 +17,7 @@ import {
   pulseDeviceProfiles,
 } from '../utils/pulseDeviceProfiles'
 import { useInternalInfoVisible } from '../context/useAdminMode'
-import './PulseParameterPanel.css'
+import './PulseEnvironmentPanel.css'
 
 type PulseEnvironmentPanelProps = {
   form: PulseLabForm

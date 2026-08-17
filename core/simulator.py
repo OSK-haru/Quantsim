@@ -1910,22 +1910,6 @@ def _column_unitary_cache_key(column, n_qubits: int) -> tuple[object, ...]:
     )
 
 
-def _fidelity_series(states: Sequence[Matrix], ideal_states: Sequence[Matrix]) -> list[float]:
-    if len(states) != len(ideal_states):
-        raise ValueError("states and ideal_states must have the same length")
-    return [
-        _state_fidelity(state, ideal_state)
-        for state, ideal_state in zip(states, ideal_states)
-    ]
-
-
-def _purity_series(states: Sequence[Matrix]) -> list[float]:
-    return [
-        _state_purity(state)
-        for state in states
-    ]
-
-
 def _state_fidelity(state: Matrix, ideal_state: Matrix) -> float:
     ideal_purity = _trace_product_real_fast(ideal_state, ideal_state)
     # Unitary reference trajectories can accumulate backend-dependent roundoff
@@ -2155,52 +2139,6 @@ def _evolve_stable_with_substeps(
             profile,
         )
     return evolved
-
-
-def _try_rust_sampled_batch(
-    state: Matrix,
-    hamiltonian: Matrix,
-    collapse_ops: Sequence[CachedCollapseOperator],
-    current_time: float,
-    target_times: Sequence[float],
-    stop_time: float,
-    substep_counter,
-    kernel_stats: _KernelStats | None,
-    include_boundary: bool,
-) -> tuple[tuple[Matrix, ...], list[float], list[int]] | None:
-    if kernel_stats is None or not kernel_stats.wants_rust:
-        return None
-    plan = _sampled_batch_plan(
-        current_time,
-        target_times,
-        stop_time,
-        substep_counter,
-        include_boundary,
-    )
-    if plan is None:
-        return None
-    sample_times, sample_substeps, sub_dt, blocked_by_boundary = plan
-
-    try:
-        session = _rust_dense_session(state, collapse_ops, kernel_stats)
-        states = session.evolve_piecewise_cleaned_samples(
-            state,
-            [hamiltonian] * len(sample_substeps),
-            [sub_dt] * len(sample_substeps),
-            sample_substeps,
-        )
-    except Exception as exc:
-        kernel_stats.record_sampled_batch_fallback(str(exc))
-        return None
-
-    kernel_stats.record_sampled_batch(
-        len(states),
-        sum(sample_substeps),
-        blocked_by_sampling=True,
-        blocked_by_boundary=blocked_by_boundary,
-    )
-    kernel_stats.rust_kernel_piecewise_segment_count += len(sample_substeps)
-    return states, sample_times, sample_substeps
 
 
 def _try_rust_paired_sampled_batch(

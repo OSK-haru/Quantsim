@@ -14,6 +14,9 @@ services:
     dockerfilePath: ./Dockerfile
     plan: free
     envVars:
+      # Setting ALLOWED_ORIGINS also marks this as a public, split-origin
+      # deploy, which withholds raw exception text from 5xx bodies. Set
+      # EXPOSE_INTERNAL_ERRORS=1 to override that while debugging.
       - key: ALLOWED_ORIGINS
         value: https://yuragi-strider-app.23sam55781.workers.dev
       - key: PUBLIC_MAX_LOGICAL_QUBITS
