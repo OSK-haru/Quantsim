@@ -132,46 +132,7 @@ const config: Config = {
     },
     footer: {
       style: 'dark',
-      links: [
-        {
-          title: 'ドキュメント',
-          items: [
-            {
-              label: 'Yuragi-Striderとは',
-              to: '/docs/overview/introduction',
-            },
-            {
-              label: 'ダウンロード',
-              to: '/docs/getting-started/download',
-            },
-            {
-              label: '制限事項',
-              to: '/docs/limitations/current-limitations',
-            },
-          ],
-        },
-        {
-          title: '物理モデル',
-          items: [
-            {
-              label: '理論を学ぶ',
-              to: '/docs/learn/',
-            },
-            {
-              label: '物理モデルの概要',
-              to: '/docs/physics-model/overview',
-            },
-            {
-              label: '妥当性検証',
-              to: '/docs/physics-model/validations/',
-            },
-            {
-              label: '参考文献',
-              to: '/docs/physics-model/references',
-            },
-          ],
-        },
-      ],
+      links: [],
       // 本体ホームの colophon と同じ並び。
       copyright: `&copy; ${new Date().getFullYear()} YURAGI&ndash;STRIDER &nbsp;/&nbsp; NO WARRANTY &mdash; RESEARCH INSTRUMENT`,
     },

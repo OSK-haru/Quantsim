@@ -98,24 +98,22 @@
   text-align: right;
 }
 
-/* --- Entry selection: 本体のモード選択ボタンと同じ左右対称の2枚 ----------- */
+/* --- Entry selection: ドキュメント本体への入口を一手に絞ったボタン ------- */
 
 .entries {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--tt-hair);
+  display: flex;
+  justify-content: center;
   padding: 32px 24px 0;
 }
 
 .entry {
-  display: grid;
-  align-content: start;
-  gap: 10px;
-  padding: 20px 22px 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 32px;
   border: var(--tt-hair) solid var(--tt-accent);
   background: var(--tt-accent);
   color: var(--tt-on-accent);
-  text-align: left;
   cursor: pointer;
   transition: background 120ms linear, border-color 120ms linear,
     color 120ms linear;
@@ -128,45 +126,20 @@
   text-decoration: none;
 }
 
-.entryUnit {
-  font-family: var(--tt-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  opacity: 0.72;
+.entryMark {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
 }
 
 .entryTitle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   font-family: var(--tt-mono);
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.entryVector {
-  opacity: 0.55;
-}
-
-.entryDetail {
-  font-size: 0.78rem;
-  line-height: 1.65;
-  opacity: 0.85;
-}
-
-.entrySecondary {
-  border-color: var(--tt-rule-strong);
-  background: var(--tt-panel);
-  color: var(--tt-ink);
-}
-
-.entrySecondary:hover {
-  border-color: var(--tt-accent);
-  background: var(--tt-accent-wash);
-  color: var(--tt-ink-max);
 }
 
 /* --- Document map: 文書区画をヘアラインで区切ったコンパートメント --------- */
@@ -255,9 +228,5 @@
   .entries,
   .map {
     padding-inline: 16px;
-  }
-
-  .entries {
-    grid-template-columns: minmax(0, 1fr);
   }
 }

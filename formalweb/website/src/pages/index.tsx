@@ -56,35 +56,32 @@ function HomepageHeader(): ReactNode {
   );
 }
 
+/**
+ * 文書一枚を折り返した図。区画ごとの入口を並べるのはやめて、
+ * ここは「ドキュメントへ入る」一手だけに絞っている。
+ */
+function DocumentMark(): ReactNode {
+  return (
+    <svg
+      className={styles.entryMark}
+      viewBox="0 0 48 48"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true">
+      <path d="M11 5H29L37 13V43H11Z" />
+      <path d="M29 5V13H37" />
+      <path d="M17 21H31M17 27H31M17 33H25" />
+    </svg>
+  );
+}
+
 function HomepageEntries(): ReactNode {
   return (
     <nav className={styles.entries} aria-label="主な入口">
       <Link className={styles.entry} to="/docs/overview/introduction">
-        <span className={styles.entryUnit}>Overview / 概要</span>
-        <span className={styles.entryTitle}>
-          <span className={styles.entryVector} aria-hidden="true">
-            &gt;&gt;&gt;
-          </span>
-          Yuragi-Striderとは
-        </span>
-        <span className={styles.entryDetail}>
-          どんな問題を解く道具なのか。まずはこちら。
-        </span>
-      </Link>
-
-      <Link
-        className={`${styles.entry} ${styles.entrySecondary}`}
-        to="/docs/physics-model/overview">
-        <span className={styles.entryUnit}>Physics / 物理モデル</span>
-        <span className={styles.entryTitle}>
-          <span className={styles.entryVector} aria-hidden="true">
-            &gt;&gt;&gt;
-          </span>
-          物理モデルを見る
-        </span>
-        <span className={styles.entryDetail}>
-          Lindblad方程式から時間発展まで、計算の中身を定式で確認する。
-        </span>
+        <DocumentMark />
+        <span className={styles.entryTitle}>ドキュメントを見る</span>
       </Link>
     </nav>
   );
