@@ -415,7 +415,7 @@
   background: var(--tt-accent);
 
   transform-origin: left center;
-  animation: mode-drum-dwell var(--dwell, 7200ms) linear forwards;
+  animation: mode-drum-dwell var(--dwell, 5000ms) linear forwards;
 }
 
 .mode-drum__gauge-fill--held {

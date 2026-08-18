@@ -30,7 +30,7 @@ import {
  * 面が回るのはただの妨害なので。
  */
 
-const ROTATION_INTERVAL_MS = 7200
+const ROTATION_INTERVAL_MS = 5000
 
 const PULSE_SIGNATURE = gaussianPulsePath()
 
