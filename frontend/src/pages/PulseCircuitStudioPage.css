@@ -6,8 +6,10 @@
   min-height: 100vh;
   box-sizing: border-box;
   padding: 34px clamp(18px, 4vw, 58px) 70px;
-  background: repeating-linear-gradient(90deg, transparent 0 79px, rgb(var(--tt-ink-mid-rgb) / 0.025) 79px 80px), rgb(var(--tt-panel-3-rgb) / 0.18);
-  color: var(--pulse-ink);
+  background:
+    repeating-linear-gradient(90deg, var(--tt-blueprint) 0 1px, transparent 1px 80px),
+    var(--tt-void);
+  color: var(--tt-ink);
 }
 
 .pulse-circuit-studio__header,
@@ -24,9 +26,10 @@
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
 }
 
-.pulse-circuit-studio__eyebrow,
 .pulse-circuit-studio__palette span,
 .pulse-circuit-studio__sequence-heading span {
   color: var(--pulse-teal);
@@ -35,10 +38,34 @@
   letter-spacing: 0.15em;
 }
 
+.pulse-circuit-studio__eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.pulse-circuit-studio__eyebrow::before {
+  content: '[ ';
+}
+
+.pulse-circuit-studio__eyebrow::after {
+  content: ' ]';
+}
+
 .pulse-circuit-studio h1 {
   margin: 5px 0 10px;
-  font: var(--tt-mono);
+  color: var(--tt-ink);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.9rem, 4.5vw, 3.2rem);
+  font-weight: 900;
+  line-height: 0.88;
   letter-spacing: -0.045em;
+  text-transform: uppercase;
 }
 
 .pulse-circuit-studio__header p {
@@ -57,26 +84,62 @@
   background: var(--tt-void);
 }
 
+/* --- ヘッダーのサマリー：回路長と制約違反を常設で出す ------------------ */
+
 .pulse-circuit-studio__summary {
   display: grid;
-  gap: 6px;
-  min-width: 150px;
-  padding: 15px 17px;
+  grid-template-columns: repeat(2, minmax(84px, auto));
+  gap: 1px;
+  margin: 0;
+  padding: 1px;
+  background: rgb(var(--tt-ink-mid-rgb) / 0.2);
 }
 
-.pulse-circuit-studio__summary span,
-.pulse-circuit-studio__notice,
-.pulse-circuit-studio__step small {
+.pulse-circuit-studio__summary > div {
+  display: grid;
+  gap: 3px;
+  padding: 10px 13px;
+  background: var(--tt-void);
+}
+
+.pulse-circuit-studio__summary dt {
   color: var(--pulse-muted);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+}
+
+.pulse-circuit-studio__summary dd {
+  margin: 0;
+  font-family: var(--tt-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pulse-circuit-studio__summary > div[data-tone='alert'] dd {
+  color: var(--tt-accent-hot);
+}
+
+.pulse-circuit-studio__summary > div[data-tone='ok'] dd {
+  color: var(--tt-signal);
 }
 
 .pulse-circuit-studio__notice {
   box-sizing: border-box;
   margin-bottom: 18px;
   padding: 13px 16px;
-  border-color: rgb(var(--tt-accent-rgb) / 0.25);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.25);
+  color: var(--pulse-muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.pulse-circuit-studio__notice[data-tone='alert'] {
+  border-color: rgb(var(--tt-accent-rgb) / 0.45);
+  background: var(--tt-accent-wash);
   color: var(--tt-accent-hot);
 }
+
+/* --- システム全体の設定バー ------------------------------------------- */
 
 .pulse-circuit-studio__environment {
   display: flex;
@@ -116,7 +179,7 @@
 }
 
 .pulse-circuit-studio__transmon-count select {
-  min-width: 110px;
+  min-width: 130px;
   padding: 8px 10px;
   border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.26);
   background: var(--tt-void);
@@ -128,7 +191,8 @@
   gap: 2px;
   min-width: 96px;
   padding: 7px 9px;
-  background: var(--tt-void);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.14);
+  background: var(--tt-panel);
 }
 
 .pulse-circuit-studio__environment dt {
@@ -140,6 +204,8 @@
   margin: 0;
   font-size: 0.82rem;
 }
+
+/* --- ワークスペース --------------------------------------------------- */
 
 .pulse-circuit-studio__workspace {
   display: grid;
@@ -162,6 +228,19 @@
   display: flex;
   flex-direction: column;
   gap: 9px;
+  align-content: start;
+}
+
+.pulse-circuit-studio__palette-hint {
+  margin: -8px 0 4px;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.pulse-circuit-studio__palette-hint strong {
+  color: var(--tt-accent-hot);
+  font-family: var(--tt-mono);
 }
 
 .pulse-circuit-studio__palette button,
@@ -177,11 +256,21 @@
   display: grid;
   gap: 3px;
   padding: 11px 12px;
+  border-left: 3px solid rgb(var(--gate-rotation-rgb) / 0.7);
   text-align: left;
+}
+
+.pulse-circuit-studio__palette button[data-operation='virtual_z'] {
+  border-left-color: rgb(var(--gate-phase-rgb) / 0.8);
 }
 
 .pulse-circuit-studio__palette button:hover {
   border-color: var(--pulse-teal);
+  background: var(--tt-panel-3);
+}
+
+.pulse-circuit-studio__palette button:active {
+  cursor: grabbing;
 }
 
 .pulse-circuit-studio__sequence-heading {
@@ -193,6 +282,14 @@
 
 .pulse-circuit-studio__clear {
   padding: 9px 12px;
+  white-space: nowrap;
+}
+
+.pulse-circuit-studio__clear[data-armed='true'] {
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-deep);
+  color: var(--tt-ink-max);
+  font-weight: 700;
 }
 
 .pulse-circuit-studio button:disabled {
@@ -200,42 +297,293 @@
   opacity: 0.35;
 }
 
-.pulse-circuit-studio__track {
-  display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
-  min-height: 150px;
-  align-items: center;
-  border-block: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+.pulse-circuit-studio__scale-note {
+  margin: 0 0 12px;
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
 }
+
+/* --- レーン ----------------------------------------------------------- */
 
 .pulse-circuit-studio__lanes {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 16px;
 }
 
+.pulse-circuit-studio__track {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: stretch;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+  border-left: 3px solid transparent;
+}
+
 .pulse-circuit-studio__track[data-active='true'] {
-  border-color: rgb(var(--tt-ink-mid-rgb) / 0.34);
-  background: rgb(var(--tt-void-rgb) / 0.2);
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.28);
+  border-left-color: var(--tt-accent);
+  background: rgb(var(--tt-panel-rgb) / 0.55);
+}
+
+.pulse-circuit-studio__track[data-drop='true'] {
+  border-color: rgb(var(--tt-accent-rgb) / 0.5);
 }
 
 .pulse-circuit-studio__line-label {
   display: grid;
-  gap: 3px;
+  gap: 2px;
+  align-content: center;
+  padding: 10px 8px;
+  border: 0;
+  border-right: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+  background: transparent;
   color: var(--pulse-muted);
   font-size: 0.75rem;
-  padding: 10px 6px;
-  border: 0;
-  background: transparent;
   text-align: left;
   cursor: pointer;
 }
 
-.pulse-circuit-studio__lane-empty {
-  margin: 0;
-  color: var(--pulse-muted);
-  font-size: 0.78rem;
+.pulse-circuit-studio__line-label strong {
+  color: var(--pulse-teal);
+  font-family: var(--tt-mono);
+  font-size: 0.95rem;
 }
+
+.pulse-circuit-studio__track[data-active='true'] .pulse-circuit-studio__line-label strong {
+  color: var(--tt-accent-hot);
+}
+
+.pulse-circuit-studio__line-label small {
+  font-size: 0.63rem;
+}
+
+.pulse-circuit-studio__line-total {
+  margin-top: 3px;
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+}
+
+.pulse-circuit-studio__lane-empty {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+}
+
+.pulse-circuit-studio__lane-empty button {
+  width: 100%;
+  padding: 14px 12px;
+  border: 1px dashed rgb(var(--tt-ink-mid-rgb) / 0.3);
+  background: transparent;
+  color: var(--pulse-muted);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.pulse-circuit-studio__lane-empty[data-drop='true'] button,
+.pulse-circuit-studio__lane-empty button:hover {
+  border-color: var(--tt-accent);
+  color: var(--tt-accent-hot);
+}
+
+/* --- ブロック --------------------------------------------------------- */
+
+.pulse-circuit-studio__steps {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 12px 0;
+  overflow-x: auto;
+}
+
+/*
+ * ブロックの隙間そのものを挿入位置のドロップ先にしている。
+ * ドラッグ中だけ広がって、掴んだPulseの落ちる場所が読めるようにする。
+ */
+.pulse-circuit-studio__drop-marker {
+  flex: 0 0 10px;
+  align-self: stretch;
+  border-left: 2px solid transparent;
+  transition: flex-basis 90ms linear;
+}
+
+.pulse-circuit-studio__drop-marker[data-dragging='true'] {
+  flex-basis: 14px;
+}
+
+.pulse-circuit-studio__drop-marker[data-active='true'] {
+  flex-basis: 30px;
+  border-left-color: var(--tt-accent);
+  background: rgb(var(--tt-accent-rgb) / 0.14);
+}
+
+.pulse-circuit-studio__step {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  flex: 0 0 var(--step-width, 96px);
+  width: var(--step-width, 96px);
+  border: 1px solid rgb(var(--gate-rotation-rgb) / 0.45);
+  border-top: 3px solid rgb(var(--gate-rotation-rgb) / 0.85);
+  background: var(--tt-panel);
+  cursor: grab;
+}
+
+.pulse-circuit-studio__step[data-operation='virtual_z'] {
+  border-color: rgb(var(--gate-phase-rgb) / 0.45);
+  border-top-color: rgb(var(--gate-phase-rgb) / 0.9);
+  background: var(--tt-panel-3);
+}
+
+.pulse-circuit-studio__step[data-selected='true'] {
+  border-color: var(--pulse-orange);
+  box-shadow: inset 0 0 0 1px rgb(var(--tt-accent-rgb) / 0.55);
+}
+
+.pulse-circuit-studio__step[data-invalid='true'] {
+  border-color: var(--tt-accent-hot);
+  background:
+    repeating-linear-gradient(135deg, rgb(var(--tt-accent-rgb) / 0.13) 0 6px, transparent 6px 12px),
+    var(--tt-panel);
+}
+
+.pulse-circuit-studio__step[data-dragging='true'] {
+  opacity: 0.4;
+}
+
+.pulse-circuit-studio__step-main {
+  display: grid;
+  width: 100%;
+  gap: 4px;
+  align-content: start;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pulse-circuit-studio__step-index {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--pulse-teal);
+  font-family: var(--tt-mono);
+  font-size: 0.66rem;
+}
+
+.pulse-circuit-studio__step-flag {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  background: var(--tt-accent);
+  color: var(--tt-ink-max);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.pulse-circuit-studio__step-main strong {
+  font-family: var(--tt-mono);
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.pulse-circuit-studio__step-main small {
+  color: var(--pulse-muted);
+  font-family: var(--tt-mono);
+  font-size: 0.66rem;
+}
+
+.pulse-circuit-studio__step-main .pulse-circuit-studio__step-time {
+  color: var(--tt-ink-dim);
+  font-size: 0.62rem;
+}
+
+.pulse-circuit-studio__step[data-dirty='true'] .pulse-circuit-studio__step-index::after {
+  content: '未保存';
+  padding: 1px 4px;
+  background: var(--tt-accent-deep);
+  color: var(--tt-ink-max);
+  font-size: 0.58rem;
+}
+
+/*
+ * 4つのボタンを1列に並べると 82px 幅のブロックで最後のボタンが切れるので、
+ * 2×2 に折る。トラック幅は minmax(0, 1fr) にして内容による押し出しも防ぐ。
+ */
+.pulse-circuit-studio__step-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 5px;
+  border-top: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+}
+
+.pulse-circuit-studio__step-actions button {
+  min-width: 0;
+  min-height: 26px;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.pulse-circuit-studio__step-actions button:hover:not(:disabled) {
+  border-color: var(--tt-accent);
+  color: var(--tt-accent-hot);
+}
+
+/* --- 制約違反の一覧 --------------------------------------------------- */
+
+.pulse-circuit-studio__violations {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.45);
+  background: var(--tt-accent-wash);
+}
+
+.pulse-circuit-studio__violations > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--tt-accent-hot);
+  font-size: 0.84rem;
+}
+
+.pulse-circuit-studio__violations ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pulse-circuit-studio__violations li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--pulse-ink);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.pulse-circuit-studio__violations li button {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.5);
+  background: transparent;
+  color: var(--tt-accent-hot);
+  font-family: var(--tt-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.pulse-circuit-studio__violations li button:hover {
+  background: rgb(var(--tt-accent-rgb) / 0.16);
+}
+
+/* --- Virtual Z エディタ ----------------------------------------------- */
 
 .pulse-circuit-studio__virtual-z-editor {
   display: grid;
@@ -243,12 +591,12 @@
   gap: 16px;
   align-items: end;
   padding: 18px;
-  border: 1px solid rgb(var(--tt-ink-rgb) / 0.34);
+  border: 1px solid rgb(var(--gate-phase-rgb) / 0.45);
   background: var(--tt-panel);
 }
 
 .pulse-circuit-studio__virtual-z-editor span {
-  color: var(--tt-ink);
+  color: rgb(var(--gate-phase-rgb) / 1);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -262,6 +610,7 @@
   margin: 0;
   color: var(--pulse-muted);
   font-size: 0.82rem;
+  line-height: 1.55;
 }
 
 .pulse-circuit-studio__virtual-z-editor label {
@@ -297,75 +646,7 @@
 
 .pulse-circuit-studio__virtual-z-save {
   justify-self: end;
-}
-
-.pulse-circuit-studio__line-label strong {
-  color: var(--pulse-teal);
-  font-size: 0.95rem;
-}
-
-.pulse-circuit-studio__line-label small {
-  font-size: 0.65rem;
-}
-
-.pulse-circuit-studio__steps {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 28px 4px;
-}
-
-.pulse-circuit-studio__step {
-  flex: 0 0 116px;
-  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.2);
-  overflow: hidden;
-  background: var(--tt-panel);
-}
-
-.pulse-circuit-studio__step[data-selected='true'] {
-  border-color: var(--pulse-orange);
-}
-
-.pulse-circuit-studio__step[data-operation='virtual_z'] {
-  border-color: rgb(var(--tt-ink-rgb) / 0.42);
-  background: var(--tt-panel-3);
-}
-
-.pulse-circuit-studio__step[data-operation='virtual_z'][data-selected='true'] {
-  border-color: var(--tt-ink);
-}
-
-.pulse-circuit-studio__step-main {
-  display: grid;
-  width: 100%;
-  gap: 5px;
-  padding: 12px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}
-
-.pulse-circuit-studio__step-main > span {
-  color: var(--pulse-teal);
-  font-size: 0.68rem;
-}
-
-.pulse-circuit-studio__step-main strong {
-  font-size: 1.15rem;
-}
-
-.pulse-circuit-studio__step-actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding: 6px;
-  border-top: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
-}
-
-.pulse-circuit-studio__step-actions button {
-  min-height: 28px;
+  border-color: rgb(var(--tt-accent-rgb) / 0.5);
 }
 
 @media (max-width: 760px) {
@@ -396,50 +677,8 @@
   .pulse-circuit-studio__palette > div {
     grid-column: 1 / -1;
   }
-}
 
-/* --- TELEMETRY SHELL NORMALISATION --------------------- */
-
-.pulse-circuit-studio {
-  background:
-    repeating-linear-gradient(90deg, var(--tt-blueprint) 0 1px, transparent 1px 80px),
-    var(--tt-void);
-  color: var(--tt-ink);
-}
-
-.pulse-circuit-studio__header {
-  padding-bottom: 16px;
-  border-bottom: var(--tt-bar) solid var(--tt-accent);
-}
-
-.pulse-circuit-studio__eyebrow {
-  display: inline-block;
-  padding: 0;
-  margin-bottom: 10px;
-  border: 0;
-  background: none;
-  color: var(--tt-accent);
-  font-family: var(--tt-mono);
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.pulse-circuit-studio__eyebrow::before {
-  content: '[ ';
-}
-
-.pulse-circuit-studio__eyebrow::after {
-  content: ' ]';
-}
-
-.pulse-circuit-studio__header h1 {
-  color: var(--tt-ink);
-  font-family: var(--tt-macro);
-  font-size: clamp(1.9rem, 4.5vw, 3.2rem);
-  font-weight: 900;
-  line-height: 0.88;
-  letter-spacing: -0.045em;
-  text-transform: uppercase;
+  .pulse-circuit-studio__track {
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
 }

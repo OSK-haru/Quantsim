@@ -162,3 +162,32 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* --- 未保存状態とハード制約の警告 --------------------------------------- */
+
+.pulse-block-editor[data-dirty='true'] {
+  border-color: rgb(var(--tt-accent-rgb) / 0.7);
+}
+
+.pulse-block-editor__frame-note {
+  margin: 10px 0 0;
+  color: var(--tt-ink-dim);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.pulse-block-editor__constraints {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 12px 14px 12px 30px;
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.45);
+  background: var(--tt-accent-wash);
+  color: var(--tt-ink);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.pulse-block-editor__constraints li::marker {
+  color: var(--tt-accent-hot);
+}

@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import './PulseCircuitStudioPage.css'
 import { PulseBlockEditor } from '../components/PulseBlockEditor'
 import { QuantumPet } from '../components/QuantumPet'
 import type { PulseLabForm } from '../types/pulse'
 import type {
+  PulseCircuitLane,
   PulseCircuitState,
   PulseCircuitStep,
   PulsePrimitive,
@@ -16,6 +17,7 @@ import {
   pulseStepDurationUs,
   resizePulseCircuit,
 } from '../utils/pulseCircuit'
+import { pulseStepConstraintIssues } from '../utils/pulseConstraints'
 import { matchingPulseDeviceProfile } from '../utils/pulseDeviceProfiles'
 import { pulseCircuitStudioTips } from '../utils/quantumPetTips'
 
@@ -25,6 +27,24 @@ type PulseCircuitStudioPageProps = {
   onCircuitChange: (circuit: PulseCircuitState) => void
   onSelectPulseForRun: (transmonIndex: number, pulse: PulseStepParameters) => void
 }
+
+type DragPayload =
+  | { kind: 'palette'; primitive: PulsePrimitive }
+  | { kind: 'step'; transmonIndex: number; stepId: string }
+
+type DropTarget = { transmonIndex: number; index: number }
+
+/*
+ * ブロック幅は駆動時間に比例させる。等幅だと「4σ Gaussian」と「長いSquare」が
+ * 同じ見た目になり、タイムラインとしての情報量がゼロになるため。
+ * ただし極端に短いPulseが1pxへ潰れないよう下限を設ける。
+ */
+const MIN_STEP_WIDTH_PX = 82
+const MAX_STEP_WIDTH_PX = 232
+const VIRTUAL_Z_WIDTH_PX = 62
+
+/* 実行できるのは2〜4トランズモン。それ以上は編集専用。 */
+const RUNNABLE_TRANSMON_MAX = 4
 
 const palette: Array<{ primitive: PulsePrimitive; label: string; detail: string }> = [
   { primitive: 'x90', label: 'X/2', detail: 'X軸周りに+90°' },
@@ -50,70 +70,104 @@ export function PulseCircuitStudioPage({
   const [draftVirtualZAngle, setDraftVirtualZAngle] = useState<number | null>(
     firstStep?.operation === 'virtual_z' ? firstStep.angleRad : null,
   )
+  const [draftDirty, setDraftDirty] = useState(false)
+  const [dragPayload, setDragPayload] = useState<DragPayload | null>(null)
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
+  const [clearArmed, setClearArmed] = useState(false)
   const idCounter = useRef(circuit.lanes.reduce((count, lane) => count + lane.steps.length, 0))
+  const editorRef = useRef<HTMLDivElement | null>(null)
+  const clearTimer = useRef<number | null>(null)
+
   const selectedStep = findStep(circuit, selectedId)
   const totalPulseCount = circuit.lanes.reduce((count, lane) => count + lane.steps.length, 0)
   const transmonCount = circuit.transmons.length
   const deviceProfile = matchingPulseDeviceProfile(circuit.executionConstraints)
+  const exceedsRunnableScope = transmonCount > RUNNABLE_TRANSMON_MAX
 
-  function updateLane(transmonIndex: number, steps: PulseCircuitStep[]) {
-    onCircuitChange({
-      ...circuit,
-      lanes: circuit.lanes.map((lane) => (
-        lane.transmonIndex === transmonIndex ? { ...lane, steps } : lane
-      )),
+  /*
+   * 制約判定は1ブロックあたり129点の波形を評価するので、
+   * ドラッグ中の再描画で毎回走らないよう回路と共通設定でメモ化する。
+   */
+  const issuesByStepId = useMemo(() => {
+    const table = new Map<string, string[]>()
+    circuit.lanes.forEach((lane) => {
+      lane.steps.forEach((step) => {
+        const issues = pulseStepConstraintIssues(step, currentForm, circuit.executionConstraints)
+        if (issues.length > 0) {
+          table.set(step.id, issues)
+        }
+      })
     })
-  }
+    return table
+  }, [circuit.lanes, circuit.executionConstraints, currentForm])
 
-  function addStep(primitive: PulsePrimitive) {
-    const lane = circuit.lanes[selectedTransmonIndex]
-    if (!lane) {
-      return
-    }
-    idCounter.current += 1
-    const step = createPulseCircuitStep(
-      primitive,
-      currentForm,
-      `pulse-q${selectedTransmonIndex}-step-${idCounter.current}`,
-    )
-    updateLane(selectedTransmonIndex, [...lane.steps, step])
-    selectStep(selectedTransmonIndex, step)
-  }
+  const schedules = useMemo(
+    () => new Map(circuit.lanes.map((lane) => [
+      lane.transmonIndex,
+      laneSchedule(lane, circuit.executionConstraints.interPulseGapUs),
+    ])),
+    [circuit.lanes, circuit.executionConstraints.interPulseGapUs],
+  )
+  const circuitDurationUs = Math.max(0, ...[...schedules.values()].map((entry) => entry.totalUs))
+  const longestStepUs = Math.max(
+    0,
+    ...circuit.lanes.flatMap((lane) => lane.steps.filter(isDrivePulseStep).map(
+      (step) => finiteOrZero(pulseStepDurationUs(step.pulse)),
+    )),
+  )
+  const pxPerUs = longestStepUs > 0 ? MAX_STEP_WIDTH_PX / longestStepUs : 0
+  const violationCount = [...issuesByStepId.values()].reduce((total, issues) => total + issues.length, 0)
+  const editorOpen = draftPulse !== null || draftVirtualZAngle !== null
 
-  function removeStep(transmonIndex: number, id: string) {
-    const lane = circuit.lanes[transmonIndex]
-    if (!lane) {
-      return
+  useEffect(() => {
+    if (editorOpen) {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
-    const index = lane.steps.findIndex((step) => step.id === id)
-    const next = lane.steps.filter((step) => step.id !== id)
-    updateLane(transmonIndex, next)
-    if (selectedId === id) {
-      const nextSelected = next[Math.min(index, Math.max(next.length - 1, 0))] ?? null
-      setSelectedId(nextSelected?.id ?? null)
-      setDraftPulse(nextSelected && isDrivePulseStep(nextSelected) ? { ...nextSelected.pulse } : null)
-      setDraftVirtualZAngle(nextSelected?.operation === 'virtual_z' ? nextSelected.angleRad : null)
-      if (nextSelected && isDrivePulseStep(nextSelected)) {
-        onSelectPulseForRun(transmonIndex, nextSelected.pulse)
+  }, [selectedId, editorOpen])
+
+  useEffect(() => () => {
+    if (clearTimer.current !== null) {
+      window.clearTimeout(clearTimer.current)
+    }
+  }, [])
+
+  /*
+   * 未保存の下書きを持ったまま別ブロックへ移ると、編集内容が黙って消えていた。
+   * 回路を書き換える操作はすべてこれを通し、直前の下書きを確定させてから進む。
+   */
+  function commitDraft(base: PulseCircuitState): PulseCircuitState {
+    if (!selectedStep || !draftDirty) {
+      return base
+    }
+    const lane = base.lanes[selectedStep.transmonIndex]
+    if (!lane || !lane.steps.some((step) => step.id === selectedStep.step.id)) {
+      return base
+    }
+    if (selectedStep.step.operation === 'virtual_z') {
+      if (draftVirtualZAngle === null || !Number.isFinite(draftVirtualZAngle)) {
+        return base
       }
+      return withLane(base, selectedStep.transmonIndex, lane.steps.map((step) => (
+        step.id === selectedStep.step.id && step.operation === 'virtual_z'
+          ? { ...step, angleRad: normalizeFramePhase(draftVirtualZAngle) }
+          : step
+      )))
     }
+    if (!draftPulse) {
+      return base
+    }
+    return withLane(base, selectedStep.transmonIndex, lane.steps.map((step) => (
+      step.id === selectedStep.step.id && step.operation === 'drive'
+        ? { ...step, pulse: { ...draftPulse } }
+        : step
+    )))
   }
 
-  function moveStep(transmonIndex: number, index: number, offset: number) {
-    const lane = circuit.lanes[transmonIndex]
-    const destination = index + offset
-    if (!lane || destination < 0 || destination >= lane.steps.length) {
-      return
-    }
-    const next = [...lane.steps]
-    const [step] = next.splice(index, 1)
-    next.splice(destination, 0, step)
-    updateLane(transmonIndex, next)
-  }
-
-  function selectStep(transmonIndex: number, step: PulseCircuitStep) {
+  /* 選択状態だけを動かす。回路本体には触れない。 */
+  function focusStep(transmonIndex: number, step: PulseCircuitStep) {
     setSelectedTransmonIndex(transmonIndex)
     setSelectedId(step.id)
+    setDraftDirty(false)
     if (isDrivePulseStep(step)) {
       setDraftPulse({ ...step.pulse })
       setDraftVirtualZAngle(null)
@@ -124,51 +178,243 @@ export function PulseCircuitStudioPage({
     }
   }
 
-  function saveDraft() {
-    if (!selectedStep) {
-      return
+  function selectStep(transmonIndex: number, step: PulseCircuitStep) {
+    const base = commitDraft(circuit)
+    if (base !== circuit) {
+      onCircuitChange(base)
     }
-    const lane = circuit.lanes[selectedStep.transmonIndex]
+    focusStep(transmonIndex, findStep(base, step.id)?.step ?? step)
+  }
+
+  function mutateLane(transmonIndex: number, mutate: (steps: PulseCircuitStep[]) => PulseCircuitStep[]) {
+    const base = commitDraft(circuit)
+    const lane = base.lanes[transmonIndex]
     if (!lane) {
       return
     }
-    if (selectedStep.step.operation === 'virtual_z') {
-      if (draftVirtualZAngle === null || !Number.isFinite(draftVirtualZAngle)) {
+    setDraftDirty(false)
+    onCircuitChange(withLane(base, transmonIndex, mutate(lane.steps)))
+  }
+
+  function insertStep(primitive: PulsePrimitive, transmonIndex: number, index: number) {
+    const base = commitDraft(circuit)
+    const lane = base.lanes[transmonIndex]
+    if (!lane) {
+      return
+    }
+    idCounter.current += 1
+    const step = createPulseCircuitStep(
+      primitive,
+      currentForm,
+      `pulse-q${transmonIndex}-step-${idCounter.current}`,
+    )
+    const steps = [...lane.steps]
+    steps.splice(clampIndex(index, steps.length), 0, step)
+    onCircuitChange(withLane(base, transmonIndex, steps))
+    focusStep(transmonIndex, step)
+  }
+
+  function duplicateStep(transmonIndex: number, index: number) {
+    const base = commitDraft(circuit)
+    const lane = base.lanes[transmonIndex]
+    const source = lane?.steps[index]
+    if (!lane || !source) {
+      return
+    }
+    idCounter.current += 1
+    const id = `pulse-q${transmonIndex}-step-${idCounter.current}`
+    const copy: PulseCircuitStep = source.operation === 'drive'
+      ? { ...source, id, pulse: { ...source.pulse } }
+      : { ...source, id }
+    const steps = [...lane.steps]
+    steps.splice(index + 1, 0, copy)
+    onCircuitChange(withLane(base, transmonIndex, steps))
+    focusStep(transmonIndex, copy)
+  }
+
+  function removeStep(transmonIndex: number, id: string) {
+    const base = commitDraft(circuit)
+    const lane = base.lanes[transmonIndex]
+    if (!lane) {
+      return
+    }
+    const index = lane.steps.findIndex((step) => step.id === id)
+    const next = lane.steps.filter((step) => step.id !== id)
+    setDraftDirty(false)
+    onCircuitChange(withLane(base, transmonIndex, next))
+    if (selectedId !== id) {
+      return
+    }
+    const nextSelected = next[Math.min(index, Math.max(next.length - 1, 0))] ?? null
+    if (nextSelected) {
+      focusStep(transmonIndex, nextSelected)
+    } else {
+      setSelectedId(null)
+      setDraftPulse(null)
+      setDraftVirtualZAngle(null)
+    }
+  }
+
+  function moveStep(transmonIndex: number, index: number, offset: number) {
+    const destination = index + offset
+    const lane = circuit.lanes[transmonIndex]
+    if (!lane || destination < 0 || destination >= lane.steps.length) {
+      return
+    }
+    mutateLane(transmonIndex, (steps) => {
+      const next = [...steps]
+      const [step] = next.splice(index, 1)
+      next.splice(destination, 0, step)
+      return next
+    })
+  }
+
+  function moveStepTo(
+    payload: Extract<DragPayload, { kind: 'step' }>,
+    transmonIndex: number,
+    index: number,
+  ) {
+    const base = commitDraft(circuit)
+    const source = base.lanes[payload.transmonIndex]
+    const target = base.lanes[transmonIndex]
+    if (!source || !target) {
+      return
+    }
+    const sourceIndex = source.steps.findIndex((step) => step.id === payload.stepId)
+    if (sourceIndex < 0) {
+      return
+    }
+    const step = source.steps[sourceIndex]
+    setDraftDirty(false)
+
+    if (payload.transmonIndex === transmonIndex) {
+      const destination = index > sourceIndex ? index - 1 : index
+      if (destination === sourceIndex) {
+        /* 位置が変わらないドロップでも、確定済みの下書きは書き戻す。 */
+        if (base !== circuit) {
+          onCircuitChange(base)
+        }
         return
       }
-      updateLane(
-        selectedStep.transmonIndex,
-        lane.steps.map((step) => (
-          step.id === selectedStep.step.id && step.operation === 'virtual_z'
-            ? { ...step, angleRad: normalizeFramePhase(draftVirtualZAngle) }
-            : step
-        )),
-      )
+      const steps = [...source.steps]
+      steps.splice(sourceIndex, 1)
+      steps.splice(clampIndex(destination, steps.length), 0, step)
+      onCircuitChange(withLane(base, transmonIndex, steps))
+      return
+    }
+
+    const targetSteps = [...target.steps]
+    targetSteps.splice(clampIndex(index, targetSteps.length), 0, step)
+    onCircuitChange(withLane(
+      withLane(base, payload.transmonIndex, source.steps.filter((candidate) => candidate.id !== payload.stepId)),
+      transmonIndex,
+      targetSteps,
+    ))
+    focusStep(transmonIndex, step)
+  }
+
+  function saveDraft() {
+    const base = commitDraft(circuit)
+    if (base !== circuit) {
+      onCircuitChange(base)
+    }
+    setDraftDirty(false)
+    if (draftVirtualZAngle !== null && Number.isFinite(draftVirtualZAngle)) {
       setDraftVirtualZAngle(normalizeFramePhase(draftVirtualZAngle))
-      return
     }
-    if (!draftPulse) {
-      return
+    if (selectedStep && draftPulse) {
+      onSelectPulseForRun(selectedStep.transmonIndex, draftPulse)
     }
-    updateLane(selectedStep.transmonIndex, lane.steps.map((step) => (
-      step.id === selectedStep.step.id && step.operation === 'drive'
-        ? { ...step, pulse: { ...draftPulse } }
-        : step
-    )))
-    onSelectPulseForRun(selectedStep.transmonIndex, draftPulse)
+  }
+
+  /* 閉じる=破棄。保存済みの値に戻す。 */
+  function closeEditor() {
+    setDraftPulse(null)
+    setDraftVirtualZAngle(null)
+    setDraftDirty(false)
   }
 
   function changeTransmonCount(count: number) {
-    const next = resizePulseCircuit(circuit, count)
+    const next = resizePulseCircuit(commitDraft(circuit), count)
+    setDraftDirty(false)
     onCircuitChange(next)
-    const nextSelectedIndex = Math.min(selectedTransmonIndex, next.transmons.length - 1)
-    setSelectedTransmonIndex(nextSelectedIndex)
+    setSelectedTransmonIndex(Math.min(selectedTransmonIndex, next.transmons.length - 1))
     if (selectedStep && selectedStep.transmonIndex >= next.transmons.length) {
       setSelectedId(null)
       setDraftPulse(null)
       setDraftVirtualZAngle(null)
     }
   }
+
+  /* 全消去は取り消せないので二段階クリックで確認する。 */
+  function requestClearAll() {
+    if (clearTimer.current !== null) {
+      window.clearTimeout(clearTimer.current)
+    }
+    if (!clearArmed) {
+      setClearArmed(true)
+      clearTimer.current = window.setTimeout(() => setClearArmed(false), 4000)
+      return
+    }
+    setClearArmed(false)
+    setDraftDirty(false)
+    onCircuitChange({ ...circuit, lanes: circuit.lanes.map((lane) => ({ ...lane, steps: [] })) })
+    setSelectedId(null)
+    setDraftPulse(null)
+    setDraftVirtualZAngle(null)
+  }
+
+  function acceptDrag(event: React.DragEvent, target: DropTarget) {
+    if (!dragPayload) {
+      return
+    }
+    event.preventDefault()
+    event.dataTransfer.dropEffect = dragPayload.kind === 'palette' ? 'copy' : 'move'
+    setDropTarget((current) => (
+      current && current.transmonIndex === target.transmonIndex && current.index === target.index
+        ? current
+        : target
+    ))
+  }
+
+  function handleDrop(transmonIndex: number, index: number) {
+    const payload = dragPayload
+    setDragPayload(null)
+    setDropTarget(null)
+    if (!payload) {
+      return
+    }
+    if (payload.kind === 'palette') {
+      insertStep(payload.primitive, transmonIndex, index)
+      return
+    }
+    moveStepTo(payload, transmonIndex, index)
+  }
+
+  function endDrag() {
+    setDragPayload(null)
+    setDropTarget(null)
+  }
+
+  function dropMarker(transmonIndex: number, index: number) {
+    const active = dropTarget?.transmonIndex === transmonIndex && dropTarget.index === index
+    return (
+      <div
+        className="pulse-circuit-studio__drop-marker"
+        data-active={active}
+        data-dragging={dragPayload !== null}
+        onDragOver={(event) => acceptDrag(event, { transmonIndex, index })}
+        onDrop={(event) => {
+          event.preventDefault()
+          handleDrop(transmonIndex, index)
+        }}
+      />
+    )
+  }
+
+  const editorFramePhaseRad = selectedStep
+    ? framePhaseBefore(circuit.lanes[selectedStep.transmonIndex]?.steps ?? [], selectedStep.step.id)
+    : 0
 
   return (
     <main className="pulse-circuit-studio">
@@ -178,14 +424,21 @@ export function PulseCircuitStudioPage({
           <h1>Pulse 回路スタジオ</h1>
           <p>トランズモンごとの制御レーンへPulseを配置します。Gate-aware回路とは状態を共有しません。</p>
         </div>
-        <div className="pulse-circuit-studio__summary">
-          <span>{transmonCount} トランズモン</span>
-          <strong>{totalPulseCount} Pulse</strong>
-        </div>
+        <dl className="pulse-circuit-studio__summary">
+          <div><dt>トランズモン</dt><dd>{transmonCount}</dd></div>
+          <div><dt>Pulse</dt><dd>{totalPulseCount}</dd></div>
+          <div><dt>回路長</dt><dd>{formatDurationUs(circuitDurationUs)}</dd></div>
+          <div data-tone={violationCount > 0 ? 'alert' : 'ok'}>
+            <dt>ハード制約</dt>
+            <dd>{violationCount > 0 ? `${violationCount} 件違反` : '適合'}</dd>
+          </div>
+        </dl>
       </header>
 
-      <aside className="pulse-circuit-studio__notice">
-        2〜4台では、Pulse Lab の「複数トランズモン・ネットワーク」から全レーンを同時実行できます。5〜8台は回路編集のみ対応し、密度行列の計算量上限により実行対象外です。
+      <aside className="pulse-circuit-studio__notice" data-tone={exceedsRunnableScope ? 'alert' : 'info'}>
+        {exceedsRunnableScope
+          ? `現在 ${transmonCount} トランズモン。密度行列の計算量上限により、5台以上は回路編集のみで実行できません。実行するには4台以下にしてください。`
+          : '2〜4台では、Pulse Lab の「複数トランズモン・ネットワーク」から全レーンを同時実行できます。5〜8台は回路編集のみ対応です。'}
       </aside>
 
       <section className="pulse-circuit-studio__environment" aria-label="Pulse回路の環境設定">
@@ -196,7 +449,11 @@ export function PulseCircuitStudioPage({
         <label className="pulse-circuit-studio__transmon-count">
           トランズモン数
           <select value={transmonCount} onChange={(event) => changeTransmonCount(Number(event.target.value))}>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((count) => <option value={count} key={count}>{count}</option>)}
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((count) => (
+              <option value={count} key={count}>
+                {count}{count > RUNNABLE_TRANSMON_MAX ? '（編集のみ）' : ''}
+              </option>
+            ))}
           </select>
         </label>
         <dl>
@@ -213,11 +470,30 @@ export function PulseCircuitStudioPage({
       <section className="pulse-circuit-studio__workspace">
         <aside className="pulse-circuit-studio__palette" aria-label="Pulseパレット">
           <div>
-            <span>プリミティブ / q{selectedTransmonIndex}</span>
+            <span>プリミティブ</span>
             <h2>Pulseを追加</h2>
+            <p className="pulse-circuit-studio__palette-hint">
+              クリックで <strong>q{selectedTransmonIndex}</strong> の末尾へ追加。ドラッグすれば任意のレーンの任意の位置に挿入できます。
+            </p>
           </div>
           {palette.map((item) => (
-            <button type="button" key={item.primitive} onClick={() => addStep(item.primitive)}>
+            <button
+              type="button"
+              key={item.primitive}
+              data-operation={item.primitive === 'virtual_z' ? 'virtual_z' : 'drive'}
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = 'copy'
+                event.dataTransfer.setData('text/plain', `palette:${item.primitive}`)
+                setDragPayload({ kind: 'palette', primitive: item.primitive })
+              }}
+              onDragEnd={endDrag}
+              onClick={() => insertStep(
+                item.primitive,
+                selectedTransmonIndex,
+                circuit.lanes[selectedTransmonIndex]?.steps.length ?? 0,
+              )}
+            >
               <strong>{item.label}</strong>
               <small>{item.detail}</small>
             </button>
@@ -233,100 +509,262 @@ export function PulseCircuitStudioPage({
             <button
               type="button"
               className="pulse-circuit-studio__clear"
+              data-armed={clearArmed}
               disabled={totalPulseCount === 0}
-              onClick={() => {
-                onCircuitChange({
-                  ...circuit,
-                  lanes: circuit.lanes.map((lane) => ({ ...lane, steps: [] })),
-                })
-                setSelectedId(null)
-                setDraftPulse(null)
-                setDraftVirtualZAngle(null)
-              }}
+              onBlur={() => setClearArmed(false)}
+              onClick={requestClearAll}
             >
-              すべて削除
+              {clearArmed ? `本当に${totalPulseCount}個削除？` : 'すべて削除'}
             </button>
           </div>
 
+          <p className="pulse-circuit-studio__scale-note">
+            ブロック幅は駆動時間に比例（最長 {formatDurationUs(longestStepUs)} が基準。可読性のため最小幅あり）。
+            Virtual Zは時間を消費しないため固定幅で表示します。
+          </p>
+
           <div className="pulse-circuit-studio__lanes">
-            {circuit.lanes.map((lane) => (
-              <div
-                className="pulse-circuit-studio__track"
-                data-active={lane.transmonIndex === selectedTransmonIndex}
-                key={lane.transmonIndex}
-                onClick={() => setSelectedTransmonIndex(lane.transmonIndex)}
-              >
-                <button
-                  type="button"
-                  className="pulse-circuit-studio__line-label"
-                  aria-pressed={lane.transmonIndex === selectedTransmonIndex}
-                  onClick={() => setSelectedTransmonIndex(lane.transmonIndex)}
+            {circuit.lanes.map((lane) => {
+              const schedule = schedules.get(lane.transmonIndex)
+              const isActive = lane.transmonIndex === selectedTransmonIndex
+              return (
+                <div
+                  className="pulse-circuit-studio__track"
+                  data-active={isActive}
+                  data-drop={dropTarget?.transmonIndex === lane.transmonIndex}
+                  key={lane.transmonIndex}
                 >
-                  <strong>{circuit.transmons[lane.transmonIndex]?.label ?? `q${lane.transmonIndex}`}</strong>
-                  <small>|0⟩ / 駆動</small>
-                </button>
-                {lane.steps.length === 0 ? (
-                  <p className="pulse-circuit-studio__lane-empty">q{lane.transmonIndex}を選択してPulseを追加</p>
-                ) : (
-                  <div className="pulse-circuit-studio__steps">
-                    {lane.steps.map((step, index) => (
-                      <article
-                        className="pulse-circuit-studio__step"
-                        data-operation={step.operation}
-                        data-selected={step.id === selectedId}
-                        key={step.id}
-                      >
-                        <button type="button" className="pulse-circuit-studio__step-main" aria-pressed={step.id === selectedId} onClick={() => selectStep(lane.transmonIndex, step)}>
-                          <span>{index + 1}</span>
-                          <strong>{step.label}</strong>
-                          <small>
-                            {isDrivePulseStep(step)
-                              ? `${pulseStepDurationUs(step.pulse).toPrecision(3)} us`
-                              : `frame ${normalizeFramePhase(framePhaseAtStep(lane.steps, index)).toFixed(3)} rad`}
-                          </small>
-                        </button>
-                        <div className="pulse-circuit-studio__step-actions">
-                          <button type="button" aria-label="左へ移動" disabled={index === 0} onClick={() => moveStep(lane.transmonIndex, index, -1)}>←</button>
-                          <button type="button" aria-label="右へ移動" disabled={index === lane.steps.length - 1} onClick={() => moveStep(lane.transmonIndex, index, 1)}>→</button>
-                          <button type="button" aria-label={`${step.label}を削除`} onClick={() => removeStep(lane.transmonIndex, step.id)}>×</button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    className="pulse-circuit-studio__line-label"
+                    aria-pressed={isActive}
+                    onClick={() => setSelectedTransmonIndex(lane.transmonIndex)}
+                  >
+                    <strong>{circuit.transmons[lane.transmonIndex]?.label ?? `q${lane.transmonIndex}`}</strong>
+                    <small>|0⟩ / 駆動</small>
+                    <small className="pulse-circuit-studio__line-total">
+                      {schedule ? formatDurationUs(schedule.totalUs) : '—'}
+                    </small>
+                  </button>
+                  {lane.steps.length === 0 ? (
+                    <div
+                      className="pulse-circuit-studio__lane-empty"
+                      data-drop={dropTarget?.transmonIndex === lane.transmonIndex}
+                      onDragOver={(event) => acceptDrag(event, { transmonIndex: lane.transmonIndex, index: 0 })}
+                      onDrop={(event) => {
+                        event.preventDefault()
+                        handleDrop(lane.transmonIndex, 0)
+                      }}
+                    >
+                      <button type="button" onClick={() => setSelectedTransmonIndex(lane.transmonIndex)}>
+                        {isActive
+                          ? 'パレットをクリック、またはここへドラッグ'
+                          : `q${lane.transmonIndex} を選択してPulseを追加`}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="pulse-circuit-studio__steps">
+                      {lane.steps.map((step, index) => {
+                        const issues = issuesByStepId.get(step.id) ?? []
+                        const isSelected = step.id === selectedId
+                        const isDragged = dragPayload?.kind === 'step' && dragPayload.stepId === step.id
+                        return (
+                          <Fragment key={step.id}>
+                            {dropMarker(lane.transmonIndex, index)}
+                            <article
+                              className="pulse-circuit-studio__step"
+                              style={{ ['--step-width' as string]: `${stepWidthPx(step, pxPerUs)}px` }}
+                              data-operation={step.operation}
+                              data-selected={isSelected}
+                              data-invalid={issues.length > 0}
+                              data-dragging={isDragged}
+                              data-dirty={isSelected && draftDirty}
+                              draggable
+                              onDragStart={(event) => {
+                                event.dataTransfer.effectAllowed = 'move'
+                                event.dataTransfer.setData('text/plain', `step:${step.id}`)
+                                setDragPayload({ kind: 'step', transmonIndex: lane.transmonIndex, stepId: step.id })
+                              }}
+                              onDragEnd={endDrag}
+                              onDragOver={(event) => {
+                                if (!dragPayload) {
+                                  return
+                                }
+                                const bounds = event.currentTarget.getBoundingClientRect()
+                                const after = event.clientX > bounds.left + bounds.width / 2
+                                acceptDrag(event, {
+                                  transmonIndex: lane.transmonIndex,
+                                  index: index + (after ? 1 : 0),
+                                })
+                              }}
+                              onDrop={(event) => {
+                                event.preventDefault()
+                                handleDrop(lane.transmonIndex, dropTarget?.index ?? index)
+                              }}
+                            >
+                              <button
+                                type="button"
+                                className="pulse-circuit-studio__step-main"
+                                aria-pressed={isSelected}
+                                title={issues.length > 0 ? issues.join('\n') : undefined}
+                                onClick={() => selectStep(lane.transmonIndex, step)}
+                              >
+                                <span className="pulse-circuit-studio__step-index">
+                                  {index + 1}
+                                  {issues.length > 0 ? (
+                                    <em
+                                      className="pulse-circuit-studio__step-flag"
+                                      aria-label={`ハード制約違反 ${issues.length} 件`}
+                                    >
+                                      !
+                                    </em>
+                                  ) : null}
+                                </span>
+                                <strong>{step.label}</strong>
+                                {isDrivePulseStep(step) ? (
+                                  <>
+                                    <small>{formatDurationUs(pulseStepDurationUs(step.pulse))}</small>
+                                    <small className="pulse-circuit-studio__step-time">
+                                      t {formatDurationUs(schedule?.startUs[index] ?? 0)}
+                                    </small>
+                                  </>
+                                ) : (
+                                  <>
+                                    <small>{formatPhase(step.angleRad)}</small>
+                                    <small className="pulse-circuit-studio__step-time">
+                                      frame {normalizeFramePhase(framePhaseAtStep(lane.steps, index)).toFixed(3)}
+                                    </small>
+                                  </>
+                                )}
+                              </button>
+                              <div className="pulse-circuit-studio__step-actions">
+                                <button
+                                  type="button"
+                                  aria-label={`${step.label}を左へ移動`}
+                                  disabled={index === 0}
+                                  onClick={() => moveStep(lane.transmonIndex, index, -1)}
+                                >
+                                  ←
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`${step.label}を右へ移動`}
+                                  disabled={index === lane.steps.length - 1}
+                                  onClick={() => moveStep(lane.transmonIndex, index, 1)}
+                                >
+                                  →
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`${step.label}を複製`}
+                                  onClick={() => duplicateStep(lane.transmonIndex, index)}
+                                >
+                                  ⧉
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`${step.label}を削除`}
+                                  onClick={() => removeStep(lane.transmonIndex, step.id)}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </article>
+                          </Fragment>
+                        )
+                      })}
+                      {dropMarker(lane.transmonIndex, lane.steps.length)}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
-          {selectedStep?.step.operation === 'drive' && draftPulse ? (
-            <PulseBlockEditor
-              label={`q${selectedStep.transmonIndex} / ${selectedStep.step.label}`}
-              pulse={draftPulse}
-              globalForm={currentForm}
-              onChange={setDraftPulse}
-              onSave={saveDraft}
-              onClose={() => setDraftPulse(null)}
-            />
-          ) : null}
-          {selectedStep?.step.operation === 'virtual_z' && draftVirtualZAngle !== null ? (
-            <aside className="pulse-circuit-studio__virtual-z-editor">
-              <div>
-                <span>PHASE FRAME / q{selectedStep.transmonIndex}</span>
-                <h2>Virtual Zを編集</h2>
-                <p>時間を進めず、以後の論理位相フレームを更新します。</p>
-              </div>
-              <label>
-                回転角 λ [rad]
-                <input type="number" step="0.05" value={draftVirtualZAngle} onChange={(event) => setDraftVirtualZAngle(Number(event.target.value))} />
-              </label>
-              <div className="pulse-circuit-studio__virtual-z-presets">
-                {[Math.PI / 4, Math.PI / 2, Math.PI, -Math.PI / 2].map((angle) => (
-                  <button type="button" key={angle} onClick={() => setDraftVirtualZAngle(angle)}>{formatPhase(angle)}</button>
-                ))}
-              </div>
-              <button type="button" className="pulse-circuit-studio__virtual-z-save" disabled={!Number.isFinite(draftVirtualZAngle)} onClick={saveDraft}>フレーム更新を保存</button>
+          {violationCount > 0 ? (
+            <aside className="pulse-circuit-studio__violations" aria-label="ハードウェア制約の違反">
+              <strong>
+                {deviceProfile?.name ?? 'カスタムデバイス'} の制約に {violationCount} 件違反しています（このままでは実行できません）
+              </strong>
+              <ul>
+                {circuit.lanes.flatMap((lane) => lane.steps.flatMap((step, index) => (
+                  (issuesByStepId.get(step.id) ?? []).map((message, issueIndex) => (
+                    <li key={`${step.id}-${issueIndex}`}>
+                      <button type="button" onClick={() => selectStep(lane.transmonIndex, step)}>
+                        q{lane.transmonIndex} #{index + 1} {step.label}
+                      </button>
+                      <span>{message}</span>
+                    </li>
+                  ))
+                )))}
+              </ul>
             </aside>
           ) : null}
+
+          <div ref={editorRef}>
+            {selectedStep?.step.operation === 'drive' && draftPulse ? (
+              <PulseBlockEditor
+                label={`q${selectedStep.transmonIndex} / ${selectedStep.step.label}`}
+                pulse={draftPulse}
+                globalForm={currentForm}
+                constraints={circuit.executionConstraints}
+                framePhaseRad={editorFramePhaseRad}
+                dirty={draftDirty}
+                onChange={(pulse) => {
+                  setDraftPulse(pulse)
+                  setDraftDirty(true)
+                }}
+                onSave={saveDraft}
+                onClose={closeEditor}
+              />
+            ) : null}
+            {selectedStep?.step.operation === 'virtual_z' && draftVirtualZAngle !== null ? (
+              <aside className="pulse-circuit-studio__virtual-z-editor">
+                <div>
+                  <span>PHASE FRAME / q{selectedStep.transmonIndex}</span>
+                  <h2>Virtual Zを編集{draftDirty ? '（未保存）' : ''}</h2>
+                  <p>
+                    時間を進めず、以後の論理位相フレームを更新します。
+                    直前までの累積フレームは {editorFramePhaseRad.toFixed(3)} rad です。
+                  </p>
+                </div>
+                <label>
+                  回転角 λ [rad]
+                  <input
+                    type="number"
+                    step="0.05"
+                    value={draftVirtualZAngle}
+                    onChange={(event) => {
+                      setDraftVirtualZAngle(Number(event.target.value))
+                      setDraftDirty(true)
+                    }}
+                  />
+                </label>
+                <div className="pulse-circuit-studio__virtual-z-presets">
+                  {[Math.PI / 4, Math.PI / 2, Math.PI, -Math.PI / 2].map((angle) => (
+                    <button
+                      type="button"
+                      key={angle}
+                      onClick={() => {
+                        setDraftVirtualZAngle(angle)
+                        setDraftDirty(true)
+                      }}
+                    >
+                      {formatPhase(angle)}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="pulse-circuit-studio__virtual-z-save"
+                  disabled={!Number.isFinite(draftVirtualZAngle) || !draftDirty}
+                  onClick={saveDraft}
+                >
+                  {draftDirty ? 'フレーム更新を保存' : '保存済み'}
+                </button>
+              </aside>
+            ) : null}
+          </div>
         </section>
       </section>
       {/* ここは実行しない編集ページなので、ペットはガイド役だけ。 */}
@@ -335,11 +773,78 @@ export function PulseCircuitStudioPage({
   )
 }
 
+function withLane(
+  circuit: PulseCircuitState,
+  transmonIndex: number,
+  steps: PulseCircuitStep[],
+): PulseCircuitState {
+  return {
+    ...circuit,
+    lanes: circuit.lanes.map((lane) => (
+      lane.transmonIndex === transmonIndex ? { ...lane, steps } : lane
+    )),
+  }
+}
+
+function clampIndex(index: number, length: number): number {
+  return Math.min(Math.max(index, 0), length)
+}
+
+function finiteOrZero(value: number): number {
+  return Number.isFinite(value) && value > 0 ? value : 0
+}
+
+function stepWidthPx(step: PulseCircuitStep, pxPerUs: number): number {
+  if (!isDrivePulseStep(step)) {
+    return VIRTUAL_Z_WIDTH_PX
+  }
+  return Math.max(MIN_STEP_WIDTH_PX, Math.round(pxPerUs * finiteOrZero(pulseStepDurationUs(step.pulse))))
+}
+
+/* PulseLabPage の transmonNetworkDurationUs と同じ並べ方で開始時刻を数える。 */
+function laneSchedule(
+  lane: PulseCircuitLane,
+  interPulseGapUs: number,
+): { startUs: number[]; totalUs: number } {
+  let cursorUs = 0
+  let driveCount = 0
+  const startUs = lane.steps.map((step) => {
+    if (!isDrivePulseStep(step)) {
+      return cursorUs
+    }
+    if (driveCount > 0) {
+      cursorUs += interPulseGapUs
+    }
+    const start = cursorUs
+    cursorUs += finiteOrZero(pulseStepDurationUs(step.pulse))
+    driveCount += 1
+    return start
+  })
+  return { startUs, totalUs: cursorUs }
+}
+
 function framePhaseAtStep(steps: PulseCircuitStep[], inclusiveIndex: number): number {
   return steps.slice(0, inclusiveIndex + 1).reduce(
     (phase, step) => phase + (step.operation === 'virtual_z' ? step.angleRad : 0),
     0,
   )
+}
+
+function framePhaseBefore(steps: PulseCircuitStep[], stepId: string): number {
+  const index = steps.findIndex((step) => step.id === stepId)
+  return index <= 0 ? 0 : normalizeFramePhase(framePhaseAtStep(steps, index - 1))
+}
+
+function formatDurationUs(durationUs: number): string {
+  if (!Number.isFinite(durationUs)) {
+    return '— us'
+  }
+  if (durationUs === 0) {
+    return '0 us'
+  }
+  return durationUs < 0.001
+    ? `${(durationUs * 1000).toPrecision(3)} ns`
+    : `${durationUs.toPrecision(3)} us`
 }
 
 function formatPhase(angleRad: number): string {

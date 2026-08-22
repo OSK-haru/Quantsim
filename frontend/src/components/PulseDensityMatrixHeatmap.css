@@ -77,19 +77,77 @@
   grid-template-columns: repeat(var(--matrix-dimension, 3), minmax(98px, 1fr));
   gap: 8px;
   overflow-x: auto;
+  background: var(--tt-void);
 }
 
 .pulse-density__cell {
+  --cell-rgb: var(--tt-accent-rgb);
   position: relative;
   display: grid;
   min-height: 110px;
   padding: 13px;
   border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.18);
-  background: var(--tt-void);
+  /*
+   * ヒートマップ本体。--cell-strength は |rho| を平方根で伸ばした 0〜1。
+   * これを塗らないとセルが全部同じ色で、ヒートマップの意味が無くなる。
+   */
+  background:
+    linear-gradient(0deg, rgb(var(--cell-rgb) / calc(var(--cell-strength, 0) * 0.8)) 0 100%),
+    var(--tt-void);
   color: inherit;
   text-align: left;
   align-content: space-between;
   cursor: pointer;
+}
+
+.pulse-density__cell[data-tone='negative'] {
+  --cell-rgb: var(--gate-rotation-rgb);
+}
+
+/* --- 10次元以上：数値を捨てて色だけの密なヒートマップにする ------------- */
+
+.pulse-density__matrix[data-compact='true'] {
+  grid-template-columns: auto repeat(var(--matrix-dimension, 3), minmax(22px, 1fr));
+  gap: 1px;
+  padding: 1px;
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.18);
+}
+
+.pulse-density__matrix[data-compact='true'] .pulse-density__cell {
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+}
+
+.pulse-density__matrix[data-compact='true'] .pulse-density__cell:hover {
+  box-shadow: inset 0 0 0 1px var(--tt-ink);
+}
+
+.pulse-density__corner,
+.pulse-density__column-label,
+.pulse-density__row-label {
+  display: grid;
+  place-items: center;
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.58rem;
+  letter-spacing: -0.02em;
+}
+
+.pulse-density__row-label {
+  padding-right: 5px;
+  justify-items: end;
+}
+
+.pulse-density__column-label {
+  align-items: end;
+  height: 3.6em;
+}
+
+/* 3桁の基底ラベルは横に並べると入らないので、列側だけ縦書きにする。 */
+.pulse-density__column-label span {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }
 
 .pulse-density__cell[data-selected='true'] {

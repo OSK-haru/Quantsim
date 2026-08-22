@@ -322,3 +322,63 @@
   letter-spacing: -0.045em;
   text-transform: uppercase;
 }
+
+/* --- 実行対象の明示（どのレーンが走り、何次元になるか） ------------------ */
+
+.pulse-lab__run-scope {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
+  background: rgb(var(--tt-panel-rgb) / 0.5);
+}
+
+.pulse-lab__run-scope[data-tone='warn'] {
+  border-color: rgb(var(--tt-accent-rgb) / 0.55);
+  background: var(--tt-accent-wash);
+}
+
+.pulse-lab__run-scope dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  margin: 0;
+}
+
+.pulse-lab__run-scope dl div {
+  display: grid;
+  gap: 3px;
+}
+
+.pulse-lab__run-scope dt {
+  color: var(--tt-ink-mid);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+}
+
+.pulse-lab__run-scope dd {
+  margin: 0;
+  font-family: var(--tt-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.pulse-lab__run-scope[data-tone='warn'] dd {
+  color: var(--tt-accent-hot);
+}
+
+.pulse-lab__run-scope p {
+  margin: 0;
+  color: var(--tt-ink);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.pulse-lab__run-scope button {
+  justify-self: start;
+  border-color: var(--tt-accent);
+  background: var(--tt-accent-deep);
+  color: var(--tt-ink-max);
+  font-weight: 700;
+}

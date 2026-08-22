@@ -45,6 +45,12 @@ import {
   normalizeFramePhase,
   pulseStepDurationUs,
 } from '../utils/pulseCircuit'
+import {
+  constraintsAreWellFormed,
+  drivePulseConstraintIssues,
+  isAlignedToResolution,
+  virtualZConstraintIssues,
+} from '../utils/pulseConstraints'
 import './PulseLabPage.css'
 
 type RequestStatus = 'idle' | 'loading' | 'success' | 'error'
@@ -130,6 +136,26 @@ export function PulseLabPage({
       && sequenceDurationUs <= form.totalSimulationTimeUs
     ))
   const canRun = isValid && !cost.overBudget && status !== 'loading'
+  /*
+   * スタジオで複数レーンを組んでも、モデルがネットワークでなければ実行されるのは
+   * 選択中の1レーンだけ。密度行列の次元が回路と噛み合わない原因がこれなので、
+   * 何が走るのかを実行ボタンの手前で明示し、一斉実行へ1クリックで移れるようにする。
+   */
+  const lanesWithDrives = circuit.lanes.filter((lane) => lane.steps.some(isDrivePulseStep))
+  const networkDimension = 3 ** circuit.transmons.length
+  const networkRunAvailable = circuit.transmons.length >= 2 && circuit.transmons.length <= 4
+  const singleLaneWhileMultiLane = !networkMode && lanesWithDrives.length >= 2
+
+  function switchToNetworkRun() {
+    /* 総観測時間が最長レーンより短いと切り替えた瞬間に実行不可になるので、同時に伸ばす。 */
+    const requiredDurationUs = transmonNetworkDurationUs(circuit)
+    onFormChange({
+      ...form,
+      modelId: COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
+      evolutionMethod: 'fixed_step_rk4',
+      totalSimulationTimeUs: Math.max(form.totalSimulationTimeUs, requiredDurationUs),
+    })
+  }
   const qutritResult = result && isQutritPulseResponse(result) ? result : null
   const pairResult = result && isCoupledTransmonPairResponse(result) ? result : null
   const networkResult = result && isCoupledTransmonNetworkResponse(result) ? result : null
@@ -352,6 +378,8 @@ export function PulseLabPage({
         </span>
       </aside>
 
+      {/* モデル識別と発展方式の内訳は内部情報。 */}
+      {internalInfoVisible ? (
       <section className="pulse-lab__identity" aria-label="Pulseモデルの識別情報">
         <div>
           <span>モデル</span>
@@ -386,6 +414,7 @@ export function PulseLabPage({
           </strong>
         </div>
       </section>
+      ) : null}
 
       <div className="pulse-lab__workspace">
         <PulseEnvironmentPanel
@@ -407,6 +436,49 @@ export function PulseLabPage({
               {cost.maximumInternalSteps.toLocaleString()} ステップ。
             </p>
           </div>
+
+          <div className="pulse-lab__run-scope" data-tone={singleLaneWhileMultiLane ? 'warn' : 'info'}>
+            <dl>
+              <div>
+                <dt>実行対象</dt>
+                <dd>
+                  {networkMode
+                    ? `全 ${circuit.transmons.length} レーン同時（q0〜q${circuit.transmons.length - 1}）`
+                    : `q${activeTransmonIndex} のレーンのみ`}
+                </dd>
+              </div>
+              <div>
+                <dt>密度行列</dt>
+                <dd>
+                  {networkMode
+                    ? `${networkDimension} × ${networkDimension}（3^${circuit.transmons.length}）`
+                    : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
+                      ? '9 × 9（3 × 3）'
+                      : form.modelId === QUTRIT_PULSE_MODEL
+                        ? '3 × 3（1トランズモン）'
+                        : '2 × 2（1トランズモン）'}
+                </dd>
+              </div>
+            </dl>
+            {singleLaneWhileMultiLane ? (
+              <>
+                <p>
+                  回路には Pulse を持つレーンが {lanesWithDrives.length} 本ありますが、
+                  いまのモデルでは q{activeTransmonIndex} だけが実行され、残りは無視されます。
+                </p>
+                {networkRunAvailable ? (
+                  <button type="button" onClick={switchToNetworkRun} disabled={status === 'loading'}>
+                    全 {circuit.transmons.length} レーンを同時実行に切り替え（{networkDimension} 次元）
+                  </button>
+                ) : (
+                  <p>
+                    同時実行できるのは2〜4トランズモンです。回路スタジオでトランズモン数を調整してください。
+                  </p>
+                )}
+              </>
+            ) : null}
+          </div>
+
           <button
             type="button"
             disabled={!canRun}
@@ -414,9 +486,11 @@ export function PulseLabPage({
           >
             {status === 'loading'
               ? `${executionForms.length}個のブロックを実行中...`
-              : sequenceMode
-                ? `q${activeTransmonIndex} シーケンスを実行`
-                : 'Pulseシミュレーションを実行'}
+              : networkMode
+                ? `全 ${circuit.transmons.length} レーンを同時実行`
+                : sequenceMode
+                  ? `q${activeTransmonIndex} シーケンスのみ実行`
+                  : 'Pulseシミュレーションを実行'}
           </button>
           {!isValid ? (
             <p className="pulse-lab__run-error" role="alert">
@@ -448,18 +522,17 @@ export function PulseLabPage({
 
         {result ? (
           <>
+            {/* 実行系の内訳バナーも内部情報。 */}
+            {internalInfoVisible ? (
             <section className="pulse-lab__result-banner">
               <div>
                 <span>直近の有効な結果</span>
                 <strong>{result.model.description}</strong>
               </div>
-              {/* API のコントラクト版数は内部情報。 */}
-              {internalInfoVisible ? (
-                <div>
-                  <span>契約バージョン</span>
-                  <strong>{result.contract_version}</strong>
-                </div>
-              ) : null}
+              <div>
+                <span>契約バージョン</span>
+                <strong>{result.contract_version}</strong>
+              </div>
               <div>
                 <span>完了時刻</span>
                 <strong>{lastResponseAt ? new Date(lastResponseAt).toLocaleTimeString() : 'たった今'}</strong>
@@ -473,6 +546,7 @@ export function PulseLabPage({
                 </strong>
               </div>
             </section>
+            ) : null}
 
             <PulseSummary response={result} formAtRun={activeResultForm} />
             <PulsePopulationTimeline response={result} formAtRun={activeResultForm} />
@@ -693,20 +767,7 @@ function validateExecutionConstraints(
   executionPlan: SequenceExecutionOperation[],
   constraints: PulseExecutionConstraints,
 ): PulseConstraintIssue[] {
-  const issues: PulseConstraintIssue[] = []
-  const positiveValues = [
-    constraints.maximumDriveAmplitudeRadPerUs,
-    constraints.minimumPulseDurationUs,
-    constraints.awgSamplePeriodUs,
-    constraints.phaseResolutionRad,
-    constraints.amplitudeResolutionRadPerUs,
-    constraints.maximumDetuningRadPerUs,
-  ]
-  if (
-    positiveValues.some((value) => !Number.isFinite(value) || value <= 0)
-    || !Number.isFinite(constraints.interPulseGapUs)
-    || constraints.interPulseGapUs < 0
-  ) {
+  if (!constraintsAreWellFormed(constraints)) {
     return [{
       stepIndex: -1,
       label: '全体制約',
@@ -714,76 +775,16 @@ function validateExecutionConstraints(
     }]
   }
 
-  executionPlan.forEach((operation) => {
-    if (operation.kind === 'virtual_z') {
-      if (!isAligned(operation.angleRad, constraints.phaseResolutionRad)) {
-        issues.push({
-          stepIndex: operation.stepIndex,
-          label: operation.label,
-          message: `Virtual Zの角度は ${constraints.phaseResolutionRad.toPrecision(4)} rad の倍数である必要があります。`,
-        })
-      }
-      return
-    }
-
-    const durationUs = pulseDurationUs(operation.form)
-    if (durationUs < constraints.minimumPulseDurationUs) {
-      issues.push({
-        stepIndex: operation.stepIndex,
-        label: operation.label,
-        message: `Pulse幅は ${constraints.minimumPulseDurationUs} us 以上である必要があります。`,
-      })
-    }
-    if (!isAligned(durationUs, constraints.awgSamplePeriodUs)) {
-      issues.push({
-        stepIndex: operation.stepIndex,
-        label: operation.label,
-        message: `Pulse幅は AWG周期 ${constraints.awgSamplePeriodUs} us の倍数である必要があります。`,
-      })
-    }
-    if (Math.abs(operation.form.detuningRadPerUs) > constraints.maximumDetuningRadPerUs) {
-      issues.push({
-        stepIndex: operation.stepIndex,
-        label: operation.label,
-        message: `デチューニングが上限 ±${constraints.maximumDetuningRadPerUs} rad/us を超えています。`,
-      })
-    }
-    if (!isAligned(operation.form.phaseRad, constraints.phaseResolutionRad)) {
-      issues.push({
-        stepIndex: operation.stepIndex,
-        label: operation.label,
-        message: `位相は ${constraints.phaseResolutionRad.toPrecision(4)} rad の倍数である必要があります。`,
-      })
-    }
-
-    const maximumWaveformAmplitude = Math.max(
-      0,
-      ...pulseWaveform(operation.form, 129).map((point) => Math.hypot(point.omegaX, point.omegaY)),
-    )
-    if (maximumWaveformAmplitude > constraints.maximumDriveAmplitudeRadPerUs * (1 + 1e-9)) {
-      issues.push({
-        stepIndex: operation.stepIndex,
-        label: operation.label,
-        message: `波形のピーク ${maximumWaveformAmplitude.toPrecision(4)} rad/us が上限 ${constraints.maximumDriveAmplitudeRadPerUs} rad/us を超えています。`,
-      })
-    }
-    if (
-      operation.form.amplitudeMode === 'peak_amplitude'
-      && !isAligned(operation.form.peakAmplitudeRadPerUs, constraints.amplitudeResolutionRadPerUs)
-    ) {
-      issues.push({
-        stepIndex: operation.stepIndex,
-        label: operation.label,
-        message: `ピーク振幅は ${constraints.amplitudeResolutionRadPerUs} rad/us の倍数である必要があります。`,
-      })
-    }
+  return executionPlan.flatMap((operation) => {
+    const messages = operation.kind === 'virtual_z'
+      ? virtualZConstraintIssues(operation.angleRad, constraints)
+      : drivePulseConstraintIssues(operation.form, constraints)
+    return messages.map((message) => ({
+      stepIndex: operation.stepIndex,
+      label: operation.label,
+      message,
+    }))
   })
-  return issues
-}
-
-function isAligned(value: number, resolution: number): boolean {
-  const ratio = value / resolution
-  return Number.isFinite(ratio) && Math.abs(ratio - Math.round(ratio)) <= 1e-6
 }
 
 function validatePairSecondaryConstraints(
@@ -814,10 +815,10 @@ function validatePairSecondaryConstraints(
   if (duration < constraints.minimumPulseDurationUs) {
     issues.push({ stepIndex: -2, label: '副駆動', message: `Pulse幅は ${constraints.minimumPulseDurationUs} us 以上である必要があります。` })
   }
-  if (!isAligned(duration, constraints.awgSamplePeriodUs)) {
+  if (!isAlignedToResolution(duration, constraints.awgSamplePeriodUs)) {
     issues.push({ stepIndex: -2, label: '副駆動', message: `幅は ${constraints.awgSamplePeriodUs} us の倍数である必要があります。` })
   }
-  if (!isAligned(secondaryForm.phaseRad, constraints.phaseResolutionRad)) {
+  if (!isAlignedToResolution(secondaryForm.phaseRad, constraints.phaseResolutionRad)) {
     issues.push({ stepIndex: -2, label: '副駆動', message: `位相は ${constraints.phaseResolutionRad.toPrecision(4)} rad の倍数である必要があります。` })
   }
   const peak = Math.max(

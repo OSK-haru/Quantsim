@@ -1,14 +1,18 @@
 import './PulseBlockEditor.css'
 import type { PulseLabForm } from '../types/pulse'
-import type { PulseStepParameters } from '../types/pulseCircuit'
+import type { PulseExecutionConstraints, PulseStepParameters } from '../types/pulseCircuit'
 import { TWO_LEVEL_PULSE_MODEL } from '../types/pulse'
 import { pulseWaveform } from '../utils/pulseLab'
-import { applyPulseStepToForm, pulseStepDurationUs } from '../utils/pulseCircuit'
+import { applyPulseStepToForm, normalizeFramePhase, pulseStepDurationUs } from '../utils/pulseCircuit'
+import { drivePulseConstraintIssues } from '../utils/pulseConstraints'
 
 type PulseBlockEditorProps = {
   label: string
   pulse: PulseStepParameters
   globalForm: PulseLabForm
+  constraints: PulseExecutionConstraints
+  framePhaseRad: number
+  dirty: boolean
   onChange: (pulse: PulseStepParameters) => void
   onSave: () => void
   onClose: () => void
@@ -18,6 +22,9 @@ export function PulseBlockEditor({
   label,
   pulse,
   globalForm,
+  constraints,
+  framePhaseRad,
+  dirty,
   onChange,
   onSave,
   onClose,
@@ -39,6 +46,8 @@ export function PulseBlockEditor({
     && Number.isFinite(pulse.phaseRad)
     && Number.isFinite(pulse.detuningRadPerUs)
     && Number.isFinite(pulse.dragBetaUs)
+  /* 実行時と同じ判定を編集中にも出す。保存はできるが、そのままでは実行できない。 */
+  const constraintIssues = isValid ? drivePulseConstraintIssues(form, constraints) : []
   const peak = Math.max(...waveform.map((point) => Math.hypot(point.omegaX, point.omegaY)), 1e-12)
   const path = waveform.map((point, index) => {
     const x = 10 + (point.timeUs / duration) * 300
@@ -46,6 +55,7 @@ export function PulseBlockEditor({
     const y = 74 - (magnitude / peak) * 54
     return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
   }).join(' ')
+  const effectivePhaseRad = normalizeFramePhase(pulse.phaseRad + framePhaseRad)
 
   function setValue<Key extends keyof PulseStepParameters>(
     key: Key,
@@ -55,14 +65,21 @@ export function PulseBlockEditor({
   }
 
   return (
-    <aside className="pulse-block-editor" aria-labelledby="pulse-block-editor-title">
+    <aside className="pulse-block-editor" aria-labelledby="pulse-block-editor-title" data-dirty={dirty}>
       <div className="pulse-block-editor__heading">
         <div>
-          <span>Pulseブロック</span>
+          <span>Pulseブロック{dirty ? ' / 未保存' : ''}</span>
           <h2 id="pulse-block-editor-title">{label} をカスタマイズ</h2>
           <p>このブロック固有の制御波形だけを編集します。外界環境はPulse Labの共通設定です。</p>
         </div>
-        <button type="button" className="pulse-block-editor__close" aria-label="編集画面を閉じる" onClick={onClose}>×</button>
+        <button
+          type="button"
+          className="pulse-block-editor__close"
+          aria-label={dirty ? '編集を破棄して閉じる' : '編集画面を閉じる'}
+          onClick={onClose}
+        >
+          ×
+        </button>
       </div>
 
       <div className="pulse-block-editor__body">
@@ -112,16 +129,31 @@ export function PulseBlockEditor({
           </svg>
           <dl>
             <div><dt>位相</dt><dd>{pulse.phaseRad.toFixed(3)} rad</dd></div>
+            <div>
+              <dt>実効位相</dt>
+              <dd>{effectivePhaseRad.toFixed(3)} rad</dd>
+            </div>
             <div><dt>離調</dt><dd>{pulse.detuningRadPerUs.toFixed(3)} rad/us</dd></div>
             <div><dt>環境</dt><dd>グローバル</dd></div>
           </dl>
+          <p className="pulse-block-editor__frame-note">
+            実効位相 = 位相 {pulse.phaseRad.toFixed(3)} + 手前のVirtual Zフレーム {framePhaseRad.toFixed(3)} rad
+          </p>
         </section>
       </div>
 
+      {constraintIssues.length > 0 ? (
+        <ul className="pulse-block-editor__constraints" aria-label="ハードウェア制約の違反">
+          {constraintIssues.map((message) => <li key={message}>{message}</li>)}
+        </ul>
+      ) : null}
+
       <div className="pulse-block-editor__actions">
         {!isValid ? <span role="alert">有限値と0より大きいPulse長を入力してください。</span> : null}
-        <button type="button" onClick={onClose}>キャンセル</button>
-        <button type="button" className="pulse-block-editor__save" disabled={!isValid} onClick={onSave}>ブロックへ保存</button>
+        <button type="button" onClick={onClose}>{dirty ? '変更を破棄' : '閉じる'}</button>
+        <button type="button" className="pulse-block-editor__save" disabled={!isValid || !dirty} onClick={onSave}>
+          {dirty ? 'ブロックへ保存' : '保存済み'}
+        </button>
       </div>
     </aside>
   )
