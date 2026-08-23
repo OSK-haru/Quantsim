@@ -458,6 +458,31 @@
 }
 
 /*
+ * 置いたゲートはPointer Eventsで動かす。ブラウザ標準のドラッグ（SVGを画像として
+ * 掴む挙動など）が割り込むと座標が飛ぶので、掴む場所では止めておく。
+ * touch-action: none はタッチでの移動中に回路がスクロールしないようにするため。
+ */
+.circuit-preview__slot-group--grabbable {
+  -webkit-user-drag: none;
+  touch-action: none;
+}
+
+.circuit-preview__drag-ghost-box {
+  fill: var(--tt-panel);
+  stroke: var(--tt-accent);
+  stroke-width: 1.8;
+  opacity: 0.92;
+}
+
+.circuit-preview__drag-ghost-label {
+  fill: var(--tt-ink);
+  font-size: 15px;
+  font-weight: 800;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/*
  * 列と列のあいだのドロップマーカー。Pulseタイムラインの
  * .pulse-circuit-studio__drop-marker と同じ読み方（普段は細い線、
  * 狙っているあいだだけ太く光る）になるよう合わせている。

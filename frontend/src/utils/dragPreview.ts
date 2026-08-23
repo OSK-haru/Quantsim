@@ -13,9 +13,11 @@ export function setCircuitDragPreview(
   const title = document.createElement('strong')
   const detail = document.createElement('span')
   title.textContent = `Dragging ${label}`
-  /* 回路の外で放しても消えなくなったので、消し方ではなく落とし先を出す。 */
-  detail.textContent =
-    kind === 'palette' ? 'スロット、または列と列のあいだへ' : 'スロット、または列と列のあいだへ移動'
+  /*
+   * 残っている呼び出しはパレットからの配置だけ。回路内のゲート移動は Pointer Events
+   * になり、ブラウザのドラッグ画像ではなくSVG上の分身で位置を示している。
+   */
+  detail.textContent = 'スロット、または列と列のあいだへ'
   preview.append(title, detail)
   preview.setAttribute('aria-hidden', 'true')
 

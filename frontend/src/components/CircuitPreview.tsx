@@ -4,6 +4,7 @@ import {
   useState,
   type DragEvent,
   type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react'
 import './CircuitPreview.css'
@@ -34,8 +35,6 @@ import {
   CIRCUIT_LEFT_PADDING,
   CIRCUIT_TOP_PADDING,
 } from '../utils/circuitViewport'
-import { setCircuitDragPreview } from '../utils/dragPreview'
-
 type PendingCnotControl = {
   columnIndex: number
   qubitIndex: number
@@ -43,6 +42,10 @@ type PendingCnotControl = {
   additionalQubits?: number[]
   additionalControlValues?: Array<0 | 1>
 }
+
+type PointerDropTarget =
+  | { kind: 'slot'; columnIndex: number; qubitIndex: number }
+  | { kind: 'insert'; insertIndex: number; qubitIndex: number }
 
 type CircuitPreviewProps = {
   circuit: CircuitEditorState
@@ -81,6 +84,8 @@ const SLOT_SIZE = 42
  * 列ピッチ136pxの隙間(片側47px)に収める。
  */
 const COLUMN_INSERT_HIT_WIDTH = 26
+/* これ以上動いたら「掴んだ」と見なす。下回るあいだはクリック（選択）のまま。 */
+const POINTER_DRAG_THRESHOLD = 4
 const GATE_ACTION_SIZE = 19
 const GATE_ACTION_GAP = 3
 
@@ -173,6 +178,19 @@ export function CircuitPreview({
     { insertIndex: number; qubitIndex: number } | null
   >(null)
   const [hoveredQubitSlot, setHoveredQubitSlot] = useState<{ columnIndex: number; qubitIndex: number } | null>(null)
+  /* ポインタで移動中のゲートの見た目（カーソルに付いてくる分身）。 */
+  const [pointerDragVisual, setPointerDragVisual] = useState<
+    { x: number; y: number; label: string } | null
+  >(null)
+  const svgRef = useRef<SVGSVGElement | null>(null)
+  /*
+   * ドロップ用のコールバックは pointerdown 時点の render のものを掴んでしまうと、
+   * そこではまだ dragPayload が null なので、離した瞬間に何も起きない。
+   * 常に最新の render のものを呼べるようにしておく。
+   */
+  const dropHandlersRef = useRef({ onSlotDrop, onColumnInsertDrop, onDragEnd })
+  const pointerDragTeardownRef = useRef<(() => void) | null>(null)
+  const suppressClickRef = useRef(false)
   const internalViewportRef = useRef<HTMLDivElement | null>(null)
   const activeViewportRef = viewportRef ?? internalViewportRef
   const previousColumnCountRef = useRef<number>(Math.max(1, circuit.columns.length))
@@ -305,6 +323,12 @@ export function CircuitPreview({
   }
 
   useEffect(() => {
+    dropHandlersRef.current = { onSlotDrop, onColumnInsertDrop, onDragEnd }
+  })
+
+  useEffect(() => () => pointerDragTeardownRef.current?.(), [])
+
+  useEffect(() => {
     const previousColumnCount = previousColumnCountRef.current
     const tokenChanged = scrollToEndToken !== previousScrollTokenRef.current
 
@@ -379,23 +403,212 @@ export function CircuitPreview({
     onSlotDrop(columnIndex, qubitIndex)
   }
 
-  function handleCircuitDragStart(
-    event: DragEvent<SVGElement>,
-    gateId: string,
-    gateType: GateType,
+  /*
+   * 置いたゲートの移動は HTML5 の drag&drop ではなく Pointer Events で行う。
+   * draggable は HTMLElement の属性で、SVG要素に付けても dragstart が発火しない
+   * （パレットのボタンはHTMLなので効くが、回路図の中は効かない）。
+   * ポインタで直接追うことで、掴んだゲートがカーソルに付いてくる手応えも出る。
+   */
+  function toSvgPoint(clientX: number, clientY: number) {
+    const svg = svgRef.current
+    const screenMatrix = svg?.getScreenCTM()
+    if (!svg || !screenMatrix) {
+      return null
+    }
+
+    const point = new DOMPoint(clientX, clientY).matrixTransform(screenMatrix.inverse())
+    return { x: point.x, y: point.y }
+  }
+
+  /*
+   * ドロップ先は座標から直接求める。列の境目から ±COLUMN_INSERT_HIT_WIDTH/2 は
+   * 「あいだに割り込む」、それ以外は最寄りの列のスロット。DOMの当たり判定と同じ分け方。
+   */
+  function resolvePointerDropTarget(x: number, y: number): PointerDropTarget | null {
+    /* 量子ビット名のレールの下は見えないので、そこで放したら「行き先なし」にする。 */
+    if (x < CIRCUIT_LABEL_RAIL_WIDTH) {
+      return null
+    }
+
+    const qubitIndex = Math.round((y - CIRCUIT_TOP_PADDING) / CIRCUIT_CELL_HEIGHT)
+    if (
+      qubitIndex < 0 ||
+      qubitIndex >= circuit.logical_qubits ||
+      Math.abs(y - yForQubit(qubitIndex)) > CIRCUIT_CELL_HEIGHT / 2
+    ) {
+      return null
+    }
+
+    const firstCenterX = CIRCUIT_LEFT_PADDING + 20
+    const boundaryIndex = Math.round((x - firstCenterX + CIRCUIT_CELL_WIDTH / 2) / CIRCUIT_CELL_WIDTH)
+    const boundaryX = firstCenterX + boundaryIndex * CIRCUIT_CELL_WIDTH - CIRCUIT_CELL_WIDTH / 2
+    if (
+      onColumnInsertDrop &&
+      boundaryIndex >= 1 &&
+      boundaryIndex <= circuit.columns.length - 1 &&
+      Math.abs(x - boundaryX) <= COLUMN_INSERT_HIT_WIDTH / 2
+    ) {
+      return { kind: 'insert', insertIndex: boundaryIndex, qubitIndex }
+    }
+
+    const columnIndex = Math.round((x - firstCenterX) / CIRCUIT_CELL_WIDTH)
+    if (
+      columnIndex < 0 ||
+      columnIndex > circuit.columns.length ||
+      Math.abs(x - (firstCenterX + columnIndex * CIRCUIT_CELL_WIDTH)) > CIRCUIT_CELL_WIDTH / 2
+    ) {
+      return null
+    }
+
+    return { kind: 'slot', columnIndex, qubitIndex }
+  }
+
+  function beginPointerDrag(
+    event: ReactPointerEvent<SVGGElement>,
+    gate: CircuitGate,
     columnIndex: number,
     qubitIndex: number,
   ) {
-    event.stopPropagation()
-    if (!onCircuitGateDragStart) {
-      event.preventDefault()
+    if (event.button !== 0 || !onCircuitGateDragStart || !onSlotDrop) {
       return
     }
 
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', `circuit:${gateId}`)
-    setCircuitDragPreview(event, gateType, isMultiQubitGateType(gateType) ? 'cnot' : 'gate')
-    onCircuitGateDragStart(gateId, gateType, columnIndex, qubitIndex)
+    const start = toSvgPoint(event.clientX, event.clientY)
+    if (!start) {
+      return
+    }
+
+    const startX = start.x
+    const startY = start.y
+    const { pointerId } = event
+
+    /* 先に掴んでおくだけ。しきい値を超えるまではクリック（選択）のまま。 */
+    let started = false
+    let target: PointerDropTarget | null = null
+
+    function clearHover() {
+      setDragHoverSlot(null)
+      setInsertHoverSlot(null)
+    }
+
+    function applyTarget(next: PointerDropTarget | null) {
+      target = next
+      if (next === null) {
+        clearHover()
+        return
+      }
+      if (next.kind === 'insert') {
+        setDragHoverSlot(null)
+        setInsertHoverSlot({ insertIndex: next.insertIndex, qubitIndex: next.qubitIndex })
+        return
+      }
+      setInsertHoverSlot(null)
+      setDragHoverSlot({ columnIndex: next.columnIndex, qubitIndex: next.qubitIndex })
+    }
+
+    function teardown() {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+      window.removeEventListener('pointercancel', handleCancel)
+      window.removeEventListener('keydown', handleKeyDown)
+      pointerDragTeardownRef.current = null
+      setPointerDragVisual(null)
+      clearHover()
+    }
+
+    function handleMove(moveEvent: PointerEvent) {
+      if (moveEvent.pointerId !== pointerId) {
+        return
+      }
+
+      const point = toSvgPoint(moveEvent.clientX, moveEvent.clientY)
+      if (!point) {
+        return
+      }
+
+      if (!started) {
+        const travelled = Math.hypot(point.x - startX, point.y - startY)
+        if (travelled < POINTER_DRAG_THRESHOLD) {
+          return
+        }
+        started = true
+        onCircuitGateDragStart?.(gate.id, gate.type, columnIndex, qubitIndex)
+      }
+
+      moveEvent.preventDefault()
+      setPointerDragVisual({ x: point.x, y: point.y, label: getGateLabel(gate) })
+      applyTarget(resolvePointerDropTarget(point.x, point.y))
+    }
+
+    function handleUp(upEvent: PointerEvent) {
+      if (upEvent.pointerId !== pointerId) {
+        return
+      }
+
+      const dropTarget = target
+      const wasDragging = started
+      teardown()
+
+      if (!wasDragging) {
+        return
+      }
+
+      markClickSuppressed()
+
+      const handlers = dropHandlersRef.current
+      if (dropTarget?.kind === 'insert') {
+        handlers.onColumnInsertDrop?.(dropTarget.insertIndex, dropTarget.qubitIndex)
+      } else if (dropTarget?.kind === 'slot') {
+        handlers.onSlotDrop?.(dropTarget.columnIndex, dropTarget.qubitIndex)
+      }
+      handlers.onDragEnd?.()
+    }
+
+    function handleCancel(cancelEvent: PointerEvent) {
+      if (cancelEvent.pointerId !== pointerId) {
+        return
+      }
+      const wasDragging = started
+      teardown()
+      if (wasDragging) {
+        markClickSuppressed()
+        dropHandlersRef.current.onDragEnd?.()
+      }
+    }
+
+    function handleKeyDown(keyEvent: globalThis.KeyboardEvent) {
+      if (keyEvent.key !== 'Escape') {
+        return
+      }
+      keyEvent.preventDefault()
+      const wasDragging = started
+      teardown()
+      if (wasDragging) {
+        markClickSuppressed()
+        dropHandlersRef.current.onDragEnd?.()
+      }
+    }
+
+    pointerDragTeardownRef.current = teardown
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+    window.addEventListener('pointercancel', handleCancel)
+    window.addEventListener('keydown', handleKeyDown)
+  }
+
+  function markClickSuppressed() {
+    suppressClickRef.current = true
+    window.setTimeout(() => {
+      suppressClickRef.current = false
+    }, 0)
+  }
+
+  function consumeClickSuppression() {
+    if (!suppressClickRef.current) {
+      return false
+    }
+    suppressClickRef.current = false
+    return true
   }
 
   return (
@@ -437,6 +650,7 @@ export function CircuitPreview({
             ))}
           </div>
           <svg
+            ref={svgRef}
             className="circuit-preview__svg"
             viewBox={`0 0 ${wireWidth} ${height}`}
             width={renderedWireWidth}
@@ -937,6 +1151,8 @@ export function CircuitPreview({
                       ? `${cnotGateAtSlot?.type ?? 'controlled'} slot at q${qubitIndex}, column ${columnIndex}`
                       : `Empty slot at q${qubitIndex}, column ${columnIndex}`
                   const dragGate = gate ?? cnotGateAtSlot
+                  /* 読み取り専用のプレビューでは掴めない。タッチのスクロールも殺さない。 */
+                  const isGrabbable = Boolean(dragGate && onCircuitGateDragStart && onSlotDrop)
 
                   return (
                     <g
@@ -961,39 +1177,35 @@ export function CircuitPreview({
                           : ''
                       }${isDraggedGate || isDraggedCnot ? ' circuit-preview__slot-group--dragging' : ''}${
                         isStretchEligible ? ' circuit-preview__slot-group--draw-start' : ''
-                      }`}
+                      }${isGrabbable ? ' circuit-preview__slot-group--grabbable' : ''}`}
                       role={isClickable ? 'button' : undefined}
                       tabIndex={isClickable ? 0 : undefined}
                       aria-label={slotLabel}
-                      {...(dragGate ? { draggable: true } : {})}
-                      onDragStart={
-                        dragGate
-                          ? (event) =>
-                              handleCircuitDragStart(
-                                event,
-                                dragGate.id,
-                                dragGate.type,
-                                columnIndex,
-                                qubitIndex,
-                              )
-                          : undefined
-                      }
-                      onDragEnd={
-                        dragGate
-                          ? () => {
-                              setDragHoverSlot(null)
-                              onDragEnd?.()
-                            }
+                      onPointerDown={
+                        isGrabbable && dragGate
+                          ? (event) => beginPointerDrag(event, dragGate, columnIndex, qubitIndex)
                           : undefined
                       }
                       onClick={
-                        isControlMarkerTool && interactive
-                          ? () => handleSlotClick(columnIndex, qubitIndex)
-                          : selectable && gateIdAtSlot && onGateSelect
-                          ? () => onGateSelect(gateIdAtSlot)
-                          : interactive
-                            ? () => handleSlotClick(columnIndex, qubitIndex)
-                            : undefined
+                        isClickable
+                          ? () => {
+                              /* 直前がドラッグだったときは、選択し直さない。 */
+                              if (consumeClickSuppression()) {
+                                return
+                              }
+                              if (isControlMarkerTool && interactive) {
+                                handleSlotClick(columnIndex, qubitIndex)
+                                return
+                              }
+                              if (selectable && gateIdAtSlot && onGateSelect) {
+                                onGateSelect(gateIdAtSlot)
+                                return
+                              }
+                              if (interactive) {
+                                handleSlotClick(columnIndex, qubitIndex)
+                              }
+                            }
+                          : undefined
                       }
                       onKeyDown={
                         isControlMarkerTool && interactive
@@ -1076,20 +1288,6 @@ export function CircuitPreview({
                               : ''
                           }${isHighlightedGate(gate) ? ' circuit-preview__gate--active-operation' : ''
                           }${isDraggedGate ? ' circuit-preview__gate--dragging' : ''}`}
-                          {...(!isMultiQubitGateType(gate.type) ? { draggable: true } : {})}
-                          onDragStart={(event) =>
-                            handleCircuitDragStart(
-                              event,
-                              gate.id,
-                              gate.type,
-                              columnIndex,
-                              qubitIndex,
-                            )
-                          }
-                          onDragEnd={() => {
-                            setDragHoverSlot(null)
-                            onDragEnd?.()
-                          }}
                         />
                       ) : null}
                       {gate ? (
@@ -1109,20 +1307,6 @@ export function CircuitPreview({
                               : ''
                           }${isHighlightedGate(gate) ? ' circuit-preview__gate-hit-area--active-operation' : ''
                           }${isDraggedGate ? ' circuit-preview__gate-hit-area--dragging' : ''}`}
-                          {...(!isMultiQubitGateType(gate.type) ? { draggable: true } : {})}
-                          onDragStart={(event) =>
-                            handleCircuitDragStart(
-                              event,
-                              gate.id,
-                              gate.type,
-                              columnIndex,
-                              qubitIndex,
-                            )
-                          }
-                          onDragEnd={() => {
-                            setDragHoverSlot(null)
-                            onDragEnd?.()
-                          }}
                         />
                       ) : null}
                       {cnotGateAtSlot && cnotGateAtSlot.controls?.includes(qubitIndex) ? (
@@ -1133,20 +1317,6 @@ export function CircuitPreview({
                           className={`circuit-preview__cnot-drag-handle${
                             isDraggedCnot ? ' circuit-preview__cnot-drag-handle--dragging' : ''
                           }`}
-                          {...{ draggable: true }}
-                          onDragStart={(event) =>
-                            handleCircuitDragStart(
-                              event,
-                              cnotGateAtSlot.id,
-                              cnotGateAtSlot.type,
-                              columnIndex,
-                              qubitIndex,
-                            )
-                          }
-                          onDragEnd={() => {
-                            setDragHoverSlot(null)
-                            onDragEnd?.()
-                          }}
                         />
                       ) : null}
                       {cnotGateAtSlot && cnotGateAtSlot.targets.includes(qubitIndex) ? (
@@ -1157,20 +1327,6 @@ export function CircuitPreview({
                           className={`circuit-preview__cnot-drag-handle${
                             isDraggedCnot ? ' circuit-preview__cnot-drag-handle--dragging' : ''
                           }`}
-                          {...{ draggable: true }}
-                          onDragStart={(event) =>
-                            handleCircuitDragStart(
-                              event,
-                              cnotGateAtSlot.id,
-                              cnotGateAtSlot.type,
-                              columnIndex,
-                              qubitIndex,
-                            )
-                          }
-                          onDragEnd={() => {
-                            setDragHoverSlot(null)
-                            onDragEnd?.()
-                          }}
                         />
                       ) : null}
                       {cnotGateAtSlot && cnotQubitsAtSlot.includes(qubitIndex) ? (
@@ -1183,20 +1339,6 @@ export function CircuitPreview({
                           className={`circuit-preview__cnot-hit-area${
                             isDraggedCnot ? ' circuit-preview__cnot-hit-area--dragging' : ''
                           }`}
-                          {...{ draggable: true }}
-                          onDragStart={(event) =>
-                            handleCircuitDragStart(
-                              event,
-                              cnotGateAtSlot.id,
-                              cnotGateAtSlot.type,
-                              columnIndex,
-                              qubitIndex,
-                            )
-                          }
-                          onDragEnd={() => {
-                            setDragHoverSlot(null)
-                            onDragEnd?.()
-                          }}
                         />
                       ) : null}
                       {gate ? (
@@ -1268,6 +1410,28 @@ export function CircuitPreview({
                 )
               })
             : null}
+
+          {/* 掴んでいるゲートの分身。カーソルに付いてくるので、どこへ落ちるか迷わない。 */}
+          {pointerDragVisual ? (
+            <g className="circuit-preview__drag-ghost" style={{ pointerEvents: 'none' }}>
+              <rect
+                x={pointerDragVisual.x - 21}
+                y={pointerDragVisual.y - 17}
+                width="42"
+                height="34"
+                rx="9"
+                className="circuit-preview__drag-ghost-box"
+              />
+              <text
+                x={pointerDragVisual.x}
+                y={pointerDragVisual.y + 6}
+                textAnchor="middle"
+                className="circuit-preview__drag-ghost-label"
+              >
+                {pointerDragVisual.label}
+              </text>
+            </g>
+          ) : null}
 
           {selectedGateActionBar && !dragPayload ? (
             <g className="circuit-preview__gate-actions" aria-label="選択中のゲートの操作">
