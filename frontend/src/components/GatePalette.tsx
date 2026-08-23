@@ -66,7 +66,7 @@ export function GatePalette({
           + (gateType === 'ORACLE' ? '。配置後にインスペクタでマークする状態を指定します' : '')
         : isStretchType
           ? `${gateType} を選択し、量子ビットをクリックしてから接続先をクリック、またはドラッグして配置`
-          : `${gateType} をパレットからドラッグして配置`
+          : `${gateType} を選択してスロットをクリック、またはドラッグして配置。列と列のあいだに落とすと新しい列が入ります`
 
     return (
       <div
@@ -135,6 +135,11 @@ export function GatePalette({
           </p>
         ) : null}
       </div>
+
+      <p className="gate-palette__placement-hint">
+        ゲートを選んでスロットを<strong>クリック</strong>、または<strong>ドラッグ</strong>して配置。
+        列と列のあいだに落とすと新しい列が入ります。選択中のゲートは Delete で削除できます。
+      </p>
 
       <div className="gate-palette__group" role="toolbar" aria-label="1量子ビットゲート">
         <span className="gate-palette__label">1量子ビット</span>

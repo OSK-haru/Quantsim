@@ -48,7 +48,12 @@ export type CircuitContextValue = {
     fromQubit: number,
   ) => void
   handleGateDragEnd: () => void
-  handleCircuitSlotDrop: (columnIndex: number, qubitIndex: number) => void
+  handleCircuitSlotDrop: (columnIndex: number, qubitIndex: number, insertColumn?: boolean) => void
+  /** 列と列のあいだへのドロップ。新しい列を割り込ませてそこへ置く。 */
+  handleCircuitColumnInsertDrop: (insertIndex: number, qubitIndex: number) => void
+  handleDeleteGate: (gateId: string) => void
+  handleDuplicateGate: (gateId: string) => void
+  handleShiftGateColumn: (gateId: string, offset: -1 | 1) => void
   handleImportCircuitConfig: (file: File) => Promise<string>
 }
 

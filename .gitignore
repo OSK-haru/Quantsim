@@ -9,12 +9,8 @@ __pycache__/
 *.key
 secrets/
 .DS_Store
-# Agent tooling (local only)
-.claude/
 # Build outputs
 build/
 validation_hardware/processed/
-# Ad-hoc validation runs. The freeze/reference artifacts under this directory
-# are already tracked, and .gitignore does not apply to tracked files, so this
-# rule only keeps one-off local output from showing up in git status.
 validation_results/
+validation_results/*.csv

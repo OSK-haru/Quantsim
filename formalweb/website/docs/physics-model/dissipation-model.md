@@ -29,7 +29,7 @@ $N$ 量子ビット系では、各演算子が量子ビットごとにテンソ�
 
 ## 位相緩和の係数規約
 
-:::warning[$\sqrt{\gamma_\phi/2}$ の係数について]
+:::warning $\sqrt{\gamma_\phi/2}$ の係数について
 位相緩和の崩壊演算子は $\sqrt{\gamma_\phi}\,\sigma_z$ **ではなく** $\sqrt{\gamma_\phi/2}\,\sigma_z$ です。
 
 この規約により、非対角要素の減衰が次式になります。
@@ -90,6 +90,7 @@ $$
 ## qutritモデルの散逸
 
 3準位モデル(Pulse Extension B、Coupled transmon pair)では、遷移ごとに別々のレートを持ちます。
+
 
 - $0\leftrightarrow1$ 遷移: $\gamma_{10}^{\downarrow}$, $\gamma_{01}^{\uparrow}$
 - $1\leftrightarrow2$ 遷移: $\gamma_{21}^{\downarrow}$, $\gamma_{12}^{\uparrow}$

@@ -13,7 +13,9 @@ export function setCircuitDragPreview(
   const title = document.createElement('strong')
   const detail = document.createElement('span')
   title.textContent = `Dragging ${label}`
-  detail.textContent = kind === 'palette' ? 'Drop on a slot' : 'Move or release outside'
+  /* 回路の外で放しても消えなくなったので、消し方ではなく落とし先を出す。 */
+  detail.textContent =
+    kind === 'palette' ? 'スロット、または列と列のあいだへ' : 'スロット、または列と列のあいだへ移動'
   preview.append(title, detail)
   preview.setAttribute('aria-hidden', 'true')
 

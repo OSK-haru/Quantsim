@@ -64,6 +64,10 @@ type CircuitWorkspaceProps = {
   ) => void
   onDragEnd: () => void
   onSlotDrop: (columnIndex: number, qubitIndex: number) => void
+  onColumnInsertDrop: (insertIndex: number, qubitIndex: number) => void
+  onDeleteGate: (gateId: string) => void
+  onDuplicateGate: (gateId: string) => void
+  onShiftGateColumn: (gateId: string, offset: -1 | 1) => void
   onImportCircuitConfig: (file: File) => Promise<string>
 }
 
@@ -130,11 +134,12 @@ function getWorkspaceStatus({
 >) {
   if (dragPayload) {
     if (dragPayload.source === 'palette' && dragPayload.controlValue !== undefined) {
-      return `${dragPayload.controlValue === 1 ? '制御 ●' : '反制御 ○'}をドラッグ中`
+      return `${dragPayload.controlValue === 1 ? '制御 ●' : '反制御 ○'}をドラッグ中：繋げたい X や CNOT と同じ列へ`
     }
-    return dragPayload.source === 'circuit'
-      ? `${dragPayload.gateType} をドラッグ中`
-      : `パレットから ${dragPayload.gateType} をドラッグ中`
+    /* 列と列のあいだにもドロップ先があることは、掴んでいる最中にしか伝わらない。 */
+    return `${
+      dragPayload.source === 'circuit' ? '' : 'パレットから'
+    }${dragPayload.gateType} をドラッグ中：スロットに落とすか、列と列のあいだに落とすと新しい列が入ります`
   }
 
   if (selectedGateType && isMultiQubitGateType(selectedGateType) && pendingCnotControl) {
@@ -192,6 +197,10 @@ export function CircuitWorkspace({
   onCircuitGateDragStart,
   onDragEnd,
   onSlotDrop,
+  onColumnInsertDrop,
+  onDeleteGate,
+  onDuplicateGate,
+  onShiftGateColumn,
   onImportCircuitConfig,
 }: CircuitWorkspaceProps) {
   const [scrollToEndToken, setScrollToEndToken] = useState(0)
@@ -347,6 +356,10 @@ export function CircuitWorkspace({
           onCircuitGateDragStart={onCircuitGateDragStart}
           onDragEnd={onDragEnd}
           onSlotDrop={onSlotDrop}
+          onColumnInsertDrop={onColumnInsertDrop}
+          onDeleteGate={onDeleteGate}
+          onDuplicateGate={onDuplicateGate}
+          onShiftGateColumn={onShiftGateColumn}
         />
       </div>
 
@@ -423,7 +436,7 @@ export function CircuitWorkspace({
           <p className="circuit-workspace__status">{statusText}</p>
         </div>
         <p className="circuit-workspace__shortcut-hints">
-          Delete: 選択項目を削除 | F: 回路に合わせる | Home/End: 最初/最後
+          Delete/Backspace: 選択項目を削除 | Esc: 選択を解除 | F: 回路に合わせる | Home/End: 最初/最後
         </p>
         <p className="circuit-workspace__transfer-status" aria-live="polite">
           {transferStatus || ' '}

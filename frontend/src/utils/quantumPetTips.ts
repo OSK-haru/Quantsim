@@ -72,8 +72,12 @@ export const pulseLabTips = [
 
 export const circuitStudioTips = [
   'パレットのゲートを選ぶと、その置きかたをここで案内するよ。',
+  'パレットで選んでからスロットをクリックしても置けるし、ドラッグでも置けるよ。',
+  'ドラッグ中に列と列のあいだへ落とすと、そこに新しい列が割り込むよ。',
   '置いたゲートをクリックして選ぶと、Delete か Backspace で消せるよ。',
-  '置いたゲートを回路の外へドラッグして放しても、消せるよ。',
+  '選んだゲートの下に出る ← → ⧉ × で、列の移動・複製・削除ができるよ。',
+  '回路の外で放したドラッグは取りやめ。まちがえて消えることはないよ。',
+  'Escape を押すと、選択中のゲートや作りかけの制御点をまとめて解除できるよ。',
   'Ctrl（⌘）+ ＋ / − で拡大・縮小、Ctrl（⌘）+ 0 で等倍に戻せるよ。',
   'F キーで回路全体が画面に収まるよ。Home で先頭列、End で最終列へ飛べる。',
   'ショートカットは、入力欄にカーソルがあるあいだは効かないよ。',
@@ -113,11 +117,14 @@ export function gatePlacementGuide(gateType: GateType): string {
   }
 
   if (gateType === 'CCX') {
-    return 'CCX：パレットからドラッグして置いてね。3量子ビット以上の回路でだけ使えるよ。'
+    return (
+      'CCX：置きたいスロットをクリックするか、パレットからドラッグして置いてね。'
+      + '3量子ビット以上の回路でだけ使えるよ。'
+    )
   }
 
   if (gateType === 'MEASURE') {
-    return 'MEASURE：パレットの「M」をドラッグして、測定したい行に落としてね。'
+    return 'MEASURE：パレットの「M」を選んで測定したい行をクリック、またはドラッグして落としてね。'
   }
 
   if (gateType === 'MESSAGE' || gateType === 'RECEIVED') {
@@ -128,10 +135,13 @@ export function gatePlacementGuide(gateType: GateType): string {
   }
 
   if (isThetaGateType(gateType)) {
-    return `${gateType}：パレットからドラッグして落としたあと、インスペクターで角度θを入れてね。`
+    return `${gateType}：クリックかドラッグで置いたあと、インスペクターで角度θを入れてね。`
   }
 
-  return `${gateType}：パレットからドラッグして、置きたい行と列のスロットに落としてね。`
+  return (
+    `${gateType}：置きたいスロットをクリックするか、パレットからドラッグして落としてね。`
+    + '列と列のあいだに落とすと、そこに新しい列が入るよ。'
+  )
 }
 
 /*

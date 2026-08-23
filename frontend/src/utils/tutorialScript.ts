@@ -132,7 +132,7 @@ const firstCircuitBeats: TutorialBeat[] = [
     mood: 'point',
     anchors: ['circuit-canvas'],
     anchorLabel: '回路図',
-    text: 'そしてこっちが回路図。横線が q0・q1 の 2 本ある。パレットのゲートをつまんで、この線の上に落とすと置けるよ。置いたゲートはドラッグで動かせるし、外へ放り出すと消える。',
+    text: 'そしてこっちが回路図。横線が q0・q1 の 2 本ある。パレットでゲートを選んでマスをクリックするか、つまんで線の上に落とすと置けるよ。置いたゲートはドラッグで動かせて、選んで Delete で消せる。',
   },
 
   /* --- 5. ベル回路を組む ------------------------------------------------ */
@@ -152,7 +152,7 @@ const firstCircuitBeats: TutorialBeat[] = [
     mood: 'point',
     anchors: ['gate-H', 'circuit-canvas'],
     anchorLabel: '手順1: H を置く',
-    text: '手順1。パレットの「H」を、いちばん上の線（q0）のいちばん左のマスへドラッグして置いてみて。q0 が 0 と 1 の重ね合わせになるよ。',
+    text: '手順1。パレットの「H」を選んで、いちばん上の線（q0）のいちばん左のマスをクリック（ドラッグして落としてもOK）。q0 が 0 と 1 の重ね合わせになるよ。',
     waitFor: 'h-placed',
     waitingHint: 'H を置くのを待っているよ。',
     autoAdvance: true,

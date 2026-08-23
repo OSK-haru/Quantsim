@@ -124,6 +124,126 @@ export function appendEmptyColumn(circuit: CircuitEditorState): CircuitEditorSta
   }
 }
 
+/*
+ * 列と列のあいだへのドロップを受けるための空列。Pulseタイムラインの
+ * ドロップマーカーと同じで、「いまある列の間に割り込ませる」を1手で終わらせる。
+ * step は書き出し時の column_index になるので、通し番号を振り直す。
+ */
+export function insertEmptyColumnAt(
+  circuit: CircuitEditorState,
+  columnIndex: number,
+): CircuitEditorState {
+  const insertIndex = Math.min(Math.max(columnIndex, 0), circuit.columns.length)
+  const columns = [
+    ...circuit.columns.slice(0, insertIndex),
+    createEmptyCircuitColumn(insertIndex),
+    ...circuit.columns.slice(insertIndex),
+  ]
+
+  return {
+    ...circuit,
+    columns: columns.map((column, index) => (
+      column.step === index ? column : { ...column, step: index }
+    )),
+  }
+}
+
+/*
+ * 複製は「同じ量子ビットのまま、すぐ右に列を作って置く」。既存の列へ入れると
+ * 空きの有無で成否が変わり、Pulseの⧉（押せば必ず隣に増える）と挙動がずれる。
+ */
+export function duplicateGateById(
+  circuit: CircuitEditorState,
+  gateId: string,
+  nextGateId: string,
+): CircuitEditorState {
+  const location = findGateLocationById(circuit, gateId)
+  if (!location) {
+    return circuit
+  }
+
+  const targetIndex = location.columnIndex + 1
+  const inserted = insertEmptyColumnAt(circuit, targetIndex)
+
+  return {
+    ...inserted,
+    columns: inserted.columns.map((column, index) => (
+      index === targetIndex
+        ? { ...column, gates: [{ ...cloneGate(location.gate), id: nextGateId }] }
+        : column
+    )),
+  }
+}
+
+/*
+ * ゲートを丸ごと隣の列へ動かす。隣が同じ量子ビットで埋まっていても失敗させず、
+ * その隣の「向こう側」へ空列を割り込ませてすり抜けさせる。結果としてPulseの
+ * ← → と同じく、押せば必ず順番がひとつ入れ替わる。
+ */
+export function shiftGateColumnById(
+  circuit: CircuitEditorState,
+  gateId: string,
+  offset: -1 | 1,
+): CircuitEditorState {
+  const location = findGateLocationById(circuit, gateId)
+  if (!location) {
+    return circuit
+  }
+
+  const destination = location.columnIndex + offset
+  if (destination < 0) {
+    return circuit
+  }
+
+  function moveGate(
+    base: CircuitEditorState,
+    fromIndex: number,
+    toIndex: number,
+  ): CircuitEditorState {
+    if (fromIndex === toIndex) {
+      return circuit
+    }
+
+    return {
+      ...base,
+      columns: base.columns.map((column, index) => {
+        if (index === fromIndex) {
+          return { ...column, gates: column.gates.filter((gate) => gate.id !== gateId) }
+        }
+        if (index === toIndex) {
+          return { ...column, gates: sortCircuitColumnGates([...column.gates, location!.gate]) }
+        }
+        return column
+      }),
+    }
+  }
+
+  /* 右端より先へ動かすときは、行き先の列そのものを先に用意する。 */
+  const withDestination = destination < circuit.columns.length
+    ? circuit
+    : appendEmptyColumn(circuit)
+  const destinationColumn = withDestination.columns[destination]
+  const isBlocked =
+    destinationColumn !== undefined &&
+    !canPlaceGateInColumn(withDestination, destination, location.gate, gateId).valid
+
+  if (!isBlocked) {
+    return moveGate(withDestination, location.columnIndex, destination)
+  }
+
+  /*
+   * 割り込ませる位置は、ふさいでいる列の向こう側。左へなら手前、右へなら奥に
+   * 入れることで、ふさいでいるゲートとの前後関係がきちんと入れ替わる。
+   */
+  const wedgeIndex = offset < 0 ? destination : destination + 1
+  const wedged = insertEmptyColumnAt(withDestination, wedgeIndex)
+  const sourceIndex = location.columnIndex >= wedgeIndex
+    ? location.columnIndex + 1
+    : location.columnIndex
+
+  return moveGate(wedged, sourceIndex, wedgeIndex)
+}
+
 export function canRemoveLastColumn(circuit: CircuitEditorState) {
   const lastColumn = circuit.columns[circuit.columns.length - 1]
   return circuit.columns.length > 1 && lastColumn !== undefined && lastColumn.gates.length === 0
@@ -583,7 +703,7 @@ export function resolveMovedTwoQubitPlacement(
   return { grabbedQubit: nextGrabbed, otherQubit: nextOther }
 }
 
-function findGateLocationById(circuit: CircuitEditorState, gateId: string) {
+export function findGateLocationById(circuit: CircuitEditorState, gateId: string) {
   for (let columnIndex = 0; columnIndex < circuit.columns.length; columnIndex += 1) {
     const gate = circuit.columns[columnIndex].gates.find((candidate) => candidate.id === gateId)
     if (gate) {

@@ -68,9 +68,21 @@ type CircuitPreviewProps = {
   ) => void
   onDragEnd?: () => void
   onSlotDrop?: (columnIndex: number, qubitIndex: number) => void
+  /** 列と列のあいだへのドロップ。新しい列を割り込ませてそこへ置く。 */
+  onColumnInsertDrop?: (insertIndex: number, qubitIndex: number) => void
+  onDeleteGate?: (gateId: string) => void
+  onDuplicateGate?: (gateId: string) => void
+  onShiftGateColumn?: (gateId: string, offset: -1 | 1) => void
 }
 
 const SLOT_SIZE = 42
+/*
+ * 列と列のあいだの当たり判定の幅。スロット(42px)と重ならないよう、
+ * 列ピッチ136pxの隙間(片側47px)に収める。
+ */
+const COLUMN_INSERT_HIT_WIDTH = 26
+const GATE_ACTION_SIZE = 19
+const GATE_ACTION_GAP = 3
 
 function getGateLabel(gate: CircuitGate) {
   return gate.type === 'MEASURE' ? 'M' : gate.type
@@ -151,8 +163,15 @@ export function CircuitPreview({
   onCircuitGateDragStart,
   onDragEnd,
   onSlotDrop,
+  onColumnInsertDrop,
+  onDeleteGate,
+  onDuplicateGate,
+  onShiftGateColumn,
 }: CircuitPreviewProps) {
   const [dragHoverSlot, setDragHoverSlot] = useState<PendingCnotControl | null>(null)
+  const [insertHoverSlot, setInsertHoverSlot] = useState<
+    { insertIndex: number; qubitIndex: number } | null
+  >(null)
   const [hoveredQubitSlot, setHoveredQubitSlot] = useState<{ columnIndex: number; qubitIndex: number } | null>(null)
   const internalViewportRef = useRef<HTMLDivElement | null>(null)
   const activeViewportRef = viewportRef ?? internalViewportRef
@@ -172,9 +191,16 @@ export function CircuitPreview({
   const renderedHeight = height * zoom
   const yForQubit = (qubit: number) => CIRCUIT_TOP_PADDING + qubit * CIRCUIT_CELL_HEIGHT
   const isCircuitDragActive = dragPayload?.source === 'circuit'
+  /*
+   * ホバー表示はドラッグ中だけの話。パレットの外で放されたときなど、
+   * onDragLeave が来ないまま終わる経路があるので、掴んでいないあいだは
+   * 残った値を読まないようにして消し忘れを断つ。
+   */
+  const dragHover = dragPayload ? dragHoverSlot : null
+  const insertHover = dragPayload ? insertHoverSlot : null
   const addColumnCenterX = CIRCUIT_LEFT_PADDING + 20 + newColumnIndex * CIRCUIT_CELL_WIDTH
   const addColumnLeft = addColumnCenterX - CIRCUIT_CELL_WIDTH / 2
-  const isAddColumnHovered = dragHoverSlot?.columnIndex === newColumnIndex
+  const isAddColumnHovered = dragHover?.columnIndex === newColumnIndex
   const isDrawableGateType = Boolean(
     selectedGateType && (
       isControlledGateType(selectedGateType) ||
@@ -183,6 +209,96 @@ export function CircuitPreview({
     ),
   )
   const isControlMarkerTool = selectedControlValue !== null
+
+  /*
+   * 選択中のゲートに付ける操作バー。Pulseタイムラインのブロックが持つ
+   * ← → ⧉ × と同じ並びにして、両モードで同じ手つきが通るようにする。
+   * スロットとは別のレイヤーに描くので、ボタンを押してもドラッグが始まらない。
+   */
+  const selectedGateActionBar = (() => {
+    if (!selectedGateId) {
+      return null
+    }
+
+    let found: { gate: CircuitGate; columnIndex: number } | null = null
+    for (const [columnIndex, column] of circuit.columns.entries()) {
+      const gate = column.gates.find((candidate) => candidate.id === selectedGateId)
+      if (gate) {
+        found = { gate, columnIndex }
+        break
+      }
+    }
+    if (!found) {
+      return null
+    }
+
+    const { gate, columnIndex } = found
+    const actions: Array<{
+      key: string
+      label: string
+      title: string
+      disabled: boolean
+      danger?: boolean
+      run: () => void
+    }> = []
+
+    if (onShiftGateColumn) {
+      actions.push({
+        key: 'left',
+        label: '←',
+        title: `${gate.type} を左の列へ移動`,
+        disabled: columnIndex === 0,
+        run: () => onShiftGateColumn(gate.id, -1),
+      })
+      actions.push({
+        key: 'right',
+        label: '→',
+        title: `${gate.type} を右の列へ移動`,
+        disabled: false,
+        run: () => onShiftGateColumn(gate.id, 1),
+      })
+    }
+    if (onDuplicateGate) {
+      actions.push({
+        key: 'duplicate',
+        label: '⧉',
+        title: `${gate.type} を右隣の新しい列へ複製`,
+        disabled: false,
+        run: () => onDuplicateGate(gate.id),
+      })
+    }
+    if (onDeleteGate) {
+      actions.push({
+        key: 'delete',
+        label: '×',
+        title: `${gate.type} を削除（Deleteキーでも消せます）`,
+        disabled: false,
+        danger: true,
+        run: () => onDeleteGate(gate.id),
+      })
+    }
+    if (actions.length === 0) {
+      return null
+    }
+
+    const spannedQubits = [...(gate.controls ?? []), ...gate.targets]
+    const bottomY = Math.max(...spannedQubits.map(yForQubit))
+    /* 複数量子ビットゲートは真下に所要時間バッジが出るので、その分だけ下げる。 */
+    const centerY = bottomY + (isMultiQubitGateType(gate.type) ? 46 : 30)
+    const totalWidth =
+      actions.length * GATE_ACTION_SIZE + (actions.length - 1) * GATE_ACTION_GAP
+    /*
+     * 量子ビット名のレールは左端に貼り付いたまま回路の上に乗るので、
+     * 先頭列のゲートではバーがその下に潜る。レールの右端まで押し出す。
+     */
+    const startX = Math.max(
+      CIRCUIT_LEFT_PADDING + 20 + columnIndex * CIRCUIT_CELL_WIDTH - totalWidth / 2,
+      CIRCUIT_LABEL_RAIL_WIDTH + 4,
+    )
+
+    return { actions, centerY, startX }
+  })()
+
   const isHighlightedGate = (gate: CircuitGate) => {
     const qubits = [...(gate.controls ?? []), ...gate.targets].sort((left, right) => left - right)
     return highlightedGateSignatures.includes(`${gate.type}:${qubits.join(',')}`)
@@ -212,6 +328,15 @@ export function CircuitPreview({
     previousColumnCountRef.current = visibleColumnCount
   }, [activeViewportRef, scrollToEndToken, visibleColumnCount])
 
+  function handleInsertDragOver(event: DragEvent<SVGElement>) {
+    if (!dragPayload || !onColumnInsertDrop) {
+      return
+    }
+
+    event.preventDefault()
+    event.dataTransfer.dropEffect = dragPayload.source === 'circuit' ? 'move' : 'copy'
+  }
+
   function handleSlotClick(columnIndex: number, qubitIndex: number) {
     if (!selectedGateType || !onSlotClick) {
       return
@@ -231,7 +356,7 @@ export function CircuitPreview({
     }
   }
 
-  function handleSlotDragOver(event: DragEvent<SVGGElement>) {
+  function handleSlotDragOver(event: DragEvent<SVGElement>) {
     if (!dragPayload || !onSlotDrop) {
       return
     }
@@ -241,7 +366,7 @@ export function CircuitPreview({
   }
 
   function handleSlotDrop(
-    event: DragEvent<SVGGElement>,
+    event: DragEvent<SVGElement>,
     columnIndex: number,
     qubitIndex: number,
   ) {
@@ -327,6 +452,8 @@ export function CircuitPreview({
               const x = CIRCUIT_LEFT_PADDING + 20 + columnIndex * CIRCUIT_CELL_WIDTH
               const columnLeft = x - CIRCUIT_CELL_WIDTH / 2
               const isHighlightedColumn = highlightedColumnIndex === columnIndex
+              /* Pulseのレーンと同じで、ドラッグ中は落ちる先の列そのものを光らせる。 */
+              const isDropColumn = dragHover?.columnIndex === columnIndex
 
               return (
                 <g key={`column-header-${column.step}-${columnIndex}`}>
@@ -339,7 +466,7 @@ export function CircuitPreview({
                       columnIndex % 2 === 1 ? ' circuit-preview__column-band--alternate' : ''
                     }${column.gates.length === 0 ? ' circuit-preview__column-band--empty' : ''}${
                       isHighlightedColumn ? ' circuit-preview__column-band--highlighted' : ''
-                    }`}
+                    }${isDropColumn ? ' circuit-preview__column-band--drop' : ''}`}
                   />
                   <line
                     x1={columnLeft + CIRCUIT_CELL_WIDTH}
@@ -757,18 +884,18 @@ export function CircuitPreview({
                   const isControlLineInsertionTarget =
                     isControlMarkerDrop && !gate && isInsideCnotControlLine(cnotGates, qubitIndex)
                   const isDropHovered =
-                    dragHoverSlot?.columnIndex === columnIndex &&
-                    dragHoverSlot.qubitIndex === qubitIndex
+                    dragHover?.columnIndex === columnIndex &&
+                    dragHover.qubitIndex === qubitIndex
                   const isSameDraggedGate =
                     dragPayload?.source === 'circuit' && dragPayload.gateId === gateIdAtSlot
                   const isInvalidDropTarget =
                     isDropTarget && Boolean(gate || hasCnotOccupancy) &&
                     !isSameDraggedGate && !isControlLineInsertionTarget
-                  // Only CNOT/CZ/CP/SWAP place gates by clicking the grid (the
-                  // two-click "stretch" flow); every other gate type is
-                  // drag-only, so clicking their empty slots does nothing.
+                  // パレットで何か選んでいれば、どのゲートでもクリックで置ける。
+                  // CNOT/CZ/CP/SWAP/QFT/ORACLE は2回クリックの「引き伸ばし」、
+                  // それ以外は1回のクリックでそのスロットに確定する。
                   const interactive = Boolean(
-                    onSlotClick && (isControlMarkerTool || (selectedGateType && isDrawableGateType)),
+                    onSlotClick && (isControlMarkerTool || selectedGateType),
                   )
                   const isStretchEligible =
                     !gate &&
@@ -1107,7 +1234,7 @@ export function CircuitPreview({
             ? Array.from({ length: circuit.logical_qubits }).map((_, qubitIndex) => {
                 const y = yForQubit(qubitIndex)
                 const isHovered =
-                  dragHoverSlot?.columnIndex === newColumnIndex && dragHoverSlot.qubitIndex === qubitIndex
+                  dragHover?.columnIndex === newColumnIndex && dragHover.qubitIndex === qubitIndex
 
                 return (
                   <g
@@ -1141,6 +1268,158 @@ export function CircuitPreview({
                 )
               })
             : null}
+
+          {selectedGateActionBar && !dragPayload ? (
+            <g className="circuit-preview__gate-actions" aria-label="選択中のゲートの操作">
+              {selectedGateActionBar.actions.map((action, actionIndex) => {
+                const left =
+                  selectedGateActionBar.startX +
+                  actionIndex * (GATE_ACTION_SIZE + GATE_ACTION_GAP)
+                const top = selectedGateActionBar.centerY - GATE_ACTION_SIZE / 2
+
+                return (
+                  <g
+                    key={action.key}
+                    className={`circuit-preview__gate-action${
+                      action.danger ? ' circuit-preview__gate-action--danger' : ''
+                    }${action.disabled ? ' circuit-preview__gate-action--disabled' : ''}`}
+                    role="button"
+                    tabIndex={action.disabled ? undefined : 0}
+                    aria-label={action.title}
+                    aria-disabled={action.disabled}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      if (!action.disabled) {
+                        action.run()
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') {
+                        return
+                      }
+                      event.preventDefault()
+                      event.stopPropagation()
+                      if (!action.disabled) {
+                        action.run()
+                      }
+                    }}
+                  >
+                    <title>{action.title}</title>
+                    <rect
+                      x={left}
+                      y={top}
+                      width={GATE_ACTION_SIZE}
+                      height={GATE_ACTION_SIZE}
+                      rx="5"
+                      className="circuit-preview__gate-action-bg"
+                    />
+                    <text
+                      x={left + GATE_ACTION_SIZE / 2}
+                      y={selectedGateActionBar.centerY + 4}
+                      textAnchor="middle"
+                      className="circuit-preview__gate-action-label"
+                    >
+                      {action.label}
+                    </text>
+                  </g>
+                )
+              })}
+            </g>
+          ) : null}
+
+          {/*
+            Pulseタイムラインのドロップマーカーと同じ役割。列と列のあいだへ落とすと
+            そこに新しい列が割り込む。既存のスロット(42px)とは重ならない幅なので、
+            列の中央に落とす従来の操作はそのまま使える。
+          */}
+          {dragPayload && onColumnInsertDrop ? (
+            <g className="circuit-preview__insert-layer">
+              {Array.from({ length: Math.max(0, visibleColumnCount - 1) }).map((_, gapIndex) => {
+                /*
+                 * 先頭列の左端は量子ビット名のレールの下に隠れて掴めないので、
+                 * 割り込み位置は列と列のあいだ（1〜最終列）だけにする。
+                 * 末尾への追加は右端の「+ 列を追加」が受け持つ。
+                 */
+                const insertIndex = gapIndex + 1
+                const boundaryX =
+                  CIRCUIT_LEFT_PADDING + 20 + insertIndex * CIRCUIT_CELL_WIDTH - CIRCUIT_CELL_WIDTH / 2
+                const activeInsert =
+                  insertHover?.insertIndex === insertIndex ? insertHover : null
+
+                return (
+                  <g
+                    key={`column-insert-${insertIndex}`}
+                    className={`circuit-preview__insert-marker${
+                      activeInsert ? ' circuit-preview__insert-marker--active' : ''
+                    }`}
+                  >
+                    <rect
+                      x={boundaryX - COLUMN_INSERT_HIT_WIDTH / 2}
+                      y="8"
+                      width={COLUMN_INSERT_HIT_WIDTH}
+                      height={height - 20}
+                      rx="7"
+                      className="circuit-preview__insert-band"
+                    />
+                    <line
+                      x1={boundaryX}
+                      y1={14}
+                      x2={boundaryX}
+                      y2={height - 18}
+                      className="circuit-preview__insert-line"
+                    />
+                    {activeInsert ? (
+                      <>
+                        <circle
+                          cx={boundaryX}
+                          cy={yForQubit(activeInsert.qubitIndex)}
+                          r="6"
+                          className="circuit-preview__insert-dot"
+                        />
+                        <text
+                          x={boundaryX}
+                          y={height - 4}
+                          textAnchor="middle"
+                          className="circuit-preview__insert-label"
+                        >
+                          ＋列 {insertIndex + 1}
+                        </text>
+                      </>
+                    ) : null}
+                    {Array.from({ length: circuit.logical_qubits }).map((_, qubitIndex) => (
+                      <rect
+                        key={`column-insert-${insertIndex}-${qubitIndex}`}
+                        x={boundaryX - COLUMN_INSERT_HIT_WIDTH / 2}
+                        y={yForQubit(qubitIndex) - CIRCUIT_CELL_HEIGHT / 2}
+                        width={COLUMN_INSERT_HIT_WIDTH}
+                        height={CIRCUIT_CELL_HEIGHT}
+                        className="circuit-preview__insert-hit"
+                        aria-label={`列 ${insertIndex + 1} の手前に新しい列を作って q${qubitIndex} に置く`}
+                        onDragOver={handleInsertDragOver}
+                        onDragEnter={() => {
+                          setDragHoverSlot(null)
+                          setInsertHoverSlot({ insertIndex, qubitIndex })
+                        }}
+                        onDragLeave={() =>
+                          setInsertHoverSlot((current) =>
+                            current?.insertIndex === insertIndex && current.qubitIndex === qubitIndex
+                              ? null
+                              : current,
+                          )
+                        }
+                        onDrop={(event) => {
+                          event.preventDefault()
+                          setInsertHoverSlot(null)
+                          setDragHoverSlot(null)
+                          onColumnInsertDrop(insertIndex, qubitIndex)
+                        }}
+                      />
+                    ))}
+                  </g>
+                )
+              })}
+            </g>
+          ) : null}
           </svg>
         </div>
       </div>

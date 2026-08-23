@@ -457,6 +457,113 @@
   fill: rgb(var(--tt-ink-mid-rgb) / 0.1);
 }
 
+/*
+ * 列と列のあいだのドロップマーカー。Pulseタイムラインの
+ * .pulse-circuit-studio__drop-marker と同じ読み方（普段は細い線、
+ * 狙っているあいだだけ太く光る）になるよう合わせている。
+ */
+.circuit-preview__insert-band {
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.05);
+  pointer-events: none;
+  transition: fill 90ms linear;
+}
+
+.circuit-preview__insert-line {
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.34);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  pointer-events: none;
+  transition: stroke 90ms linear, stroke-width 90ms linear;
+}
+
+.circuit-preview__insert-marker--active .circuit-preview__insert-band {
+  fill: rgb(var(--tt-accent-rgb) / 0.14);
+}
+
+.circuit-preview__insert-marker--active .circuit-preview__insert-line {
+  stroke: var(--tt-accent);
+  stroke-width: 3.4;
+  stroke-dasharray: none;
+}
+
+.circuit-preview__insert-dot {
+  fill: var(--tt-accent);
+  pointer-events: none;
+}
+
+.circuit-preview__insert-label {
+  fill: var(--tt-accent);
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.circuit-preview__insert-hit {
+  fill: transparent;
+  cursor: copy;
+}
+
+/* 選択中のゲートに付く ← → ⧉ × 。Pulseのブロック操作と同じ並び。 */
+.circuit-preview__gate-action {
+  cursor: pointer;
+}
+
+.circuit-preview__gate-action-bg {
+  fill: var(--tt-panel);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.42);
+  stroke-width: 1;
+}
+
+.circuit-preview__gate-action-label {
+  fill: var(--tt-ink);
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.circuit-preview__gate-action:hover .circuit-preview__gate-action-bg,
+.circuit-preview__gate-action:focus-visible .circuit-preview__gate-action-bg {
+  outline: none;
+  fill: rgb(var(--tt-ink-mid-rgb) / 0.16);
+  stroke: var(--tt-ink-mid);
+}
+
+.circuit-preview__gate-action--danger .circuit-preview__gate-action-label {
+  fill: var(--tt-accent);
+}
+
+.circuit-preview__gate-action--danger:hover .circuit-preview__gate-action-bg,
+.circuit-preview__gate-action--danger:focus-visible .circuit-preview__gate-action-bg {
+  fill: rgb(var(--tt-accent-rgb) / 0.16);
+  stroke: var(--tt-accent);
+}
+
+.circuit-preview__gate-action--disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.circuit-preview__gate-action--disabled:hover .circuit-preview__gate-action-bg {
+  fill: var(--tt-panel);
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.42);
+}
+
+/* ドラッグ中は、落ちる先の列そのものを光らせる（Pulseのレーン強調と同じ）。 */
+.circuit-preview__column-band--drop {
+  fill: rgb(var(--tt-accent-rgb) / 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .circuit-preview__insert-band,
+  .circuit-preview__insert-line {
+    transition: none;
+  }
+}
+
 @media (max-width: 640px) {
   .circuit-preview {
     padding: 8px;

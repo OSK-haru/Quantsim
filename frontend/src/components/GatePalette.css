@@ -48,6 +48,22 @@
   line-height: 1.45;
 }
 
+/* Pulseパレットの操作ヒントと同じ位置づけ。置きかたを最初に一度だけ伝える。 */
+.gate-palette__placement-hint {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid rgb(var(--tt-ink-mid-rgb) / 0.42);
+  background: rgb(var(--tt-ink-mid-rgb) / 0.07);
+  color: var(--tt-ink-mid);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.gate-palette__placement-hint strong {
+  color: var(--tt-ink);
+}
+
 .gate-palette__qubit-button,
 .gate-palette__button {
   min-width: 38px;

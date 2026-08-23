@@ -45,7 +45,7 @@ export function CircuitStudioPage({ gateDurationDefaults }: CircuitStudioPagePro
     circuit.pendingCnotControl !== null && circuit.selectedGateType !== null
       ? gatePlacementProgressGuide(circuit.selectedGateType)
       : circuit.selectedGateId !== null
-        ? '選択中のゲートは、Delete か Backspace で消せるよ。回路の外へドラッグして放してもいいよ。'
+        ? '選択中のゲートは、Delete か Backspace か、ゲートの下に出る × で消せるよ。← → で列を移動、⧉ で複製もできる。'
         : circuit.selectedGateType !== null
           ? gatePlacementGuide(circuit.selectedGateType)
           : null
@@ -106,6 +106,10 @@ export function CircuitStudioPage({ gateDurationDefaults }: CircuitStudioPagePro
           onCircuitGateDragStart={circuit.handleCircuitGateDragStart}
           onDragEnd={circuit.handleGateDragEnd}
           onSlotDrop={circuit.handleCircuitSlotDrop}
+          onColumnInsertDrop={circuit.handleCircuitColumnInsertDrop}
+          onDeleteGate={circuit.handleDeleteGate}
+          onDuplicateGate={circuit.handleDuplicateGate}
+          onShiftGateColumn={circuit.handleShiftGateColumn}
           onImportCircuitConfig={circuit.handleImportCircuitConfig}
         />
       </div>
