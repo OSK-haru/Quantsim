@@ -154,6 +154,18 @@ export function gatePlacementGuide(gateType: GateType): string {
 }
 
 /*
+ * パレットの制御点（● / ○）ツールを選んでいる間の案内。
+ * こちらは selectedGateType を経由しないので、gatePlacementGuide とは別に扱う。
+ */
+export function controlMarkerPlacementGuide(controlValue: 0 | 1, hasPending: boolean): string {
+  const symbol = controlValue === 1 ? '制御 ●' : '反制御 ○'
+  if (hasPending) {
+    return `${symbol}を仮置き中：続けて制御点を置くか、同じ列へ X をドロップして接続してね。`
+  }
+  return `${symbol}を配置中：X、または既存CNOTの縦線内へドロップすると自動接続、単独ならクリックで置けるよ。`
+}
+
+/*
  * クリック配置の途中（1つ目を選んだ状態）で、次の操作を伝える。
  */
 export function gatePlacementProgressGuide(gateType: GateType): string {

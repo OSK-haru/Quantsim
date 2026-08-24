@@ -333,11 +333,14 @@
 
 .circuit-preview__control-dot {
   fill: var(--tt-ink-max);
+  stroke: var(--tt-ink-max);
+  stroke-width: 1.5;
 }
 
 .circuit-preview__control-dot--open {
   fill: var(--tt-panel);
-  stroke-width: 3;
+  stroke: var(--tt-ink-max);
+  stroke-width: 2;
 }
 
 .circuit-preview__slot--control-line-drop {

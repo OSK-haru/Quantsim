@@ -7,6 +7,7 @@ import { useCircuitContext } from '../context/useCircuitContext'
 import { isMultiQubitGateType } from '../utils/circuitEditing'
 import {
   circuitStudioTips,
+  controlMarkerPlacementGuide,
   gatePlacementGuide,
   gatePlacementProgressGuide,
 } from '../utils/quantumPetTips'
@@ -48,7 +49,12 @@ export function CircuitStudioPage({ gateDurationDefaults }: CircuitStudioPagePro
         ? '選択中のゲートは、Delete か Backspace か、ゲートの下に出る × で消せるよ。← → で列を移動、⧉ で複製もできる。'
         : circuit.selectedGateType !== null
           ? gatePlacementGuide(circuit.selectedGateType)
-          : null
+          : circuit.selectedControlValue !== null
+            ? controlMarkerPlacementGuide(
+                circuit.selectedControlValue,
+                circuit.pendingCnotControl !== null,
+              )
+            : null
 
   return (
     <main className="circuit-studio-page">
