@@ -28,13 +28,20 @@ The application uses a small History API based screen switcher without a
 routing dependency:
 
 ```text
-/                 Home
-/simulate         Gate-aware simulation
-/circuit-studio   Circuit editor
-/state-explorer   Density-matrix and Bloch-state inspection
-/pulse-lab        Experimental two-level and qutrit pulse simulation
-/help             Help / Q&A
+/                      Home
+/simulate              Gate-aware simulation
+/circuit-studio        Circuit editor
+/state-explorer        Gate-aware density-matrix and Bloch-state inspection
+/algorithm-library     Algorithm presets
+/pulse-lab             Experimental two-level, qutrit, and coupled-transmon
+                       pulse simulation
+/pulse-circuit-studio  Pulse sequence and waveform editor
+/pulse-state-explorer  Pulse trajectory inspection (no Bloch sphere)
+/help                  Help / Q&A
 ```
+
+Gate-aware and Pulse-level are separate workspaces: the navigation menu only
+lists the screens of the workspace you are in, and the two never share state.
 
 ## Current Features
 
@@ -58,6 +65,12 @@ routing dependency:
   physical or direct-rate environments.
 - Qutrit leakage timelines and summaries, DRAG control, and a 3x3 final
   density-matrix heatmap.
+- Pulse State Explorer: a Pulse-level trajectory viewer that mirrors the
+  gate-aware State Explorer panels (physical time playback, metric timeline,
+  probability comparison, population distribution, density matrix) behind one
+  shared time cursor. It has no Bloch sphere, because reducing a qutrit or a
+  coupled-transmon state onto a sphere hides the leakage the panel exists to
+  show.
 - Client-side validation and bounded-work checks before pulse requests.
 
 The responsibility boundary is explicit:

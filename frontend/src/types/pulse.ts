@@ -291,6 +291,17 @@ export type PulseResponse =
   | CoupledTransmonPairResponse
   | CoupledTransmonNetworkResponse
 
+/*
+ * 実行済みPulseの記録。Pulseラボと状態エクスプローラーが同じ結果を見るため、
+ * 応答だけでなく、そのとき使われた設定と実行条件の指紋も一緒に持ち歩く。
+ */
+export type PulseRunRecord = {
+  response: PulseResponse
+  formAtRun: PulseLabForm
+  completedAt: string
+  signature: string
+}
+
 export type PulseWaveformPoint = {
   timeUs: number
   omegaX: number

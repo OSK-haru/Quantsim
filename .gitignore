@@ -9,6 +9,7 @@ __pycache__/
 *.key
 secrets/
 .DS_Store
+videomaking/
 # Build outputs
 build/
 validation_hardware/processed/

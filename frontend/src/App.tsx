@@ -16,6 +16,7 @@ import { SimulatePage } from './pages/SimulatePage'
 import { StateExplorerPage } from './pages/StateExplorerPage'
 import { PulseLabPage } from './pages/PulseLabPage'
 import { PulseCircuitStudioPage } from './pages/PulseCircuitStudioPage'
+import { PulseStateExplorerPage } from './pages/PulseStateExplorerPage'
 import {
   AppNavigation,
   type NavigationRoute,
@@ -28,6 +29,8 @@ import {
   createDefaultPulseCircuit,
 } from './utils/pulseCircuit'
 import type { PulseCircuitState, PulseStepParameters } from './types/pulseCircuit'
+import type { PulseRunRecord } from './types/pulse'
+import { pulseSetupSignature } from './utils/pulseStateExplorer'
 import { modeAtTurn, type ModeId } from './utils/homeModes'
 
 const mockDiagnostics: SimulationDiagnostics = {
@@ -84,7 +87,9 @@ function navigationDomainForRoute(route: NavigationRoute): 'home' | 'gate-aware'
   if (route === 'home') {
     return 'home'
   }
-  return route === 'pulse-lab' || route === 'pulse-circuit-studio'
+  return route === 'pulse-lab'
+    || route === 'pulse-circuit-studio'
+    || route === 'pulse-state-explorer'
     ? 'pulse'
     : 'gate-aware'
 }
@@ -123,6 +128,9 @@ function screenFromPath(pathname: string): Screen {
   if (pathname === '/pulse-circuit-studio') {
     return 'pulse-circuit-studio'
   }
+  if (pathname === '/pulse-state-explorer') {
+    return 'pulse-state-explorer'
+  }
   if (pathname === '/help') {
     return 'help'
   }
@@ -148,6 +156,9 @@ function pathFromScreen(screen: Screen) {
   if (screen === 'pulse-circuit-studio') {
     return '/pulse-circuit-studio'
   }
+  if (screen === 'pulse-state-explorer') {
+    return '/pulse-state-explorer'
+  }
   if (screen === 'help') {
     return '/help'
   }
@@ -167,6 +178,11 @@ function App() {
     createDefaultPulseCircuit(initialPulseLabForm),
   )
   const [activePulseTransmonIndex, setActivePulseTransmonIndex] = useState(0)
+  /*
+   * Pulseの直近の実行結果。Pulseラボと状態エクスプローラーが同じ1件を見るので、
+   * ページを移っても消えないここで保持する。
+   */
+  const [latestPulseRun, setLatestPulseRun] = useState<PulseRunRecord | null>(null)
   /*
    * ホームのドラムの回転数。ここで持っているのは、背景のゆらぎが
    * 全画面で1枚きりだから。ホームを離れても値が残るので、戻ってきたときに
@@ -220,7 +236,12 @@ function App() {
       )
     }
 
-    if (screen === 'pulse-lab' || screen === 'pulse-circuit-studio') {
+    if (
+      screen === 'pulse-lab'
+      || screen === 'pulse-circuit-studio'
+      || screen === 'pulse-state-explorer'
+    ) {
+      const pulseSignature = pulseSetupSignature(pulseLabForm, pulseCircuit)
       return (
         <>
           <AppNavigation currentRoute={screen} onNavigate={navigate} />
@@ -236,13 +257,23 @@ function App() {
                 ...current,
                 executionConstraints,
               }))}
+              latestRun={latestPulseRun}
+              runSignature={pulseSignature}
+              onRunCommitted={setLatestPulseRun}
+              onOpenPulseStateExplorer={() => navigate('pulse-state-explorer')}
             />
-          ) : (
+          ) : screen === 'pulse-circuit-studio' ? (
             <PulseCircuitStudioPage
               circuit={pulseCircuit}
               currentForm={pulseLabForm}
               onCircuitChange={setPulseCircuit}
               onSelectPulseForRun={selectPulseForRun}
+            />
+          ) : (
+            <PulseStateExplorerPage
+              run={latestPulseRun}
+              currentSignature={pulseSignature}
+              onOpenPulseLab={() => navigate('pulse-lab')}
             />
           )}
         </>

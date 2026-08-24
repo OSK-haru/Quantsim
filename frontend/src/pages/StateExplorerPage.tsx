@@ -235,8 +235,8 @@ export function StateExplorerPage({
           <span className="state-explorer-page__eyebrow">Yuragi-Strider / Gate-aware results</span>
           <h1>Gate-aware 状態エクスプローラー</h1>
           <p className="state-explorer-page__scope">
-            Gate-awareシミュレーションの回路スナップショット専用です。Pulse Labの結果は
-            Pulse Lab内で表示され、ここには読み込まれません。
+            Gate-awareシミュレーションの回路スナップショット専用です。Pulseラボの結果は
+            ここには読み込まれません。Pulseの軌跡には専用のPulse 状態エクスプローラーがあります。
           </p>
         </div>
       </header>

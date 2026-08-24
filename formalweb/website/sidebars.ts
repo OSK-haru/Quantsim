@@ -36,6 +36,7 @@ const sidebars: SidebarsConfig = {
             'tutorials/pulse-level/index',
             'tutorials/pulse-level/pulse-lab',
             'tutorials/pulse-level/pulse-circuit-studio',
+            'tutorials/pulse-level/pulse-state-explorer',
           ],
         },
       ],

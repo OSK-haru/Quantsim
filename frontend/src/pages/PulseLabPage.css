@@ -382,3 +382,58 @@
   color: var(--tt-ink-max);
   font-weight: 700;
 }
+
+/* 結果からPulse状態エクスプローラーへの導線。 */
+.pulse-lab__explorer-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.3);
+  background: rgb(var(--tt-accent-deep-rgb) / 0.12);
+}
+
+.pulse-lab__explorer-link > div {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.pulse-lab__explorer-link span {
+  display: block;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.pulse-lab__explorer-link strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--tt-ink-max);
+  font-size: 1.05rem;
+}
+
+.pulse-lab__explorer-link p {
+  margin: 6px 0 0;
+  color: var(--tt-ink-mid);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.pulse-lab__explorer-link button {
+  padding: 10px 16px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.42);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.pulse-lab__explorer-link button:hover {
+  border-color: var(--tt-accent);
+}

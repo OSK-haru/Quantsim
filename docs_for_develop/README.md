@@ -59,8 +59,12 @@ gate_aware_hamiltonian_lindblad_v1
 - `physical` and `direct_rates` environment modes.
 - Dissipation during the pulse and optional post-pulse idle period.
 - Pulse Lab frontend available at `/pulse-lab` for two-level and qutrit runs.
-- Pulse Lab is a single-pulse flow and does not consume Circuit Studio state;
-  Circuit Studio and State Explorer remain gate-aware tools.
+- Pulse Lab does not consume Circuit Studio state; the gate-aware Circuit
+  Studio and State Explorer remain gate-aware tools. Pulse trajectories are
+  read in the separate Pulse State Explorer at `/pulse-state-explorer`, which
+  mirrors the gate-aware explorer panels behind one shared time cursor and
+  deliberately omits the Bloch sphere (reducing a qutrit or coupled-transmon
+  state onto a sphere hides leakage).
 
 ### Pulse Extension B
 

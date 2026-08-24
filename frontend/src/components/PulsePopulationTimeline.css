@@ -16,3 +16,13 @@
     flex-direction: column;
   }
 }
+
+/* 状態エクスプローラーで共有する時刻カーソル。 */
+.pulse-population__cursor line {
+  stroke: var(--tt-accent);
+  stroke-width: 2;
+}
+
+.pulse-population__cursor circle {
+  fill: var(--tt-accent);
+}

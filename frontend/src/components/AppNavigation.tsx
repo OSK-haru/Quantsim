@@ -11,6 +11,7 @@ export type NavigationRoute =
   | 'state-explorer'
   | 'pulse-lab'
   | 'pulse-circuit-studio'
+  | 'pulse-state-explorer'
   | 'help'
 
 type AppNavigationProps = {
@@ -33,6 +34,7 @@ const gateAwareItems: NavigationItem[] = [
 const pulseItems: NavigationItem[] = [
   { route: 'pulse-lab', label: 'Pulseラボ', detail: 'Pulseワークスペース' },
   { route: 'pulse-circuit-studio', label: 'Pulse 回路スタジオ', detail: 'Pulseシーケンスエディター' },
+  { route: 'pulse-state-explorer', label: 'Pulse 状態エクスプローラー', detail: 'Pulse State Explorer' },
 ]
 
 /* レール左側に出す、現在地の機械的な呼称。 */
@@ -44,6 +46,7 @@ const routeDesignations: Record<NavigationRoute, string> = {
   'state-explorer': 'OBS / STATE VECTOR',
   'pulse-lab': 'PLS / WAVEFORM LAB',
   'pulse-circuit-studio': 'PLS / SEQUENCE EDITOR',
+  'pulse-state-explorer': 'OBS / PULSE TRAJECTORY',
   help: 'DOC / GUIDE',
 }
 
@@ -53,7 +56,9 @@ function navigationDomainForRoute(route: NavigationRoute): NavigationDomain {
   if (route === 'home') {
     return 'home'
   }
-  return route === 'pulse-lab' || route === 'pulse-circuit-studio'
+  return route === 'pulse-lab'
+    || route === 'pulse-circuit-studio'
+    || route === 'pulse-state-explorer'
     ? 'pulse'
     : 'gate-aware'
 }

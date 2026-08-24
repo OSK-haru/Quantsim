@@ -10,6 +10,8 @@ import './PulsePopulationTimeline.css'
 type PulsePopulationTimelineProps = {
   response: PulseResponse
   formAtRun: PulseLabForm
+  /* 状態エクスプローラーで他のパネルと共有する物理時刻。単体表示では出さない。 */
+  cursorTimeUs?: number | null
 }
 
 const WIDTH = 760
@@ -20,6 +22,7 @@ const PAD_Y = 28
 export function PulsePopulationTimeline({
   response,
   formAtRun,
+  cursorTimeUs = null,
 }: PulsePopulationTimelineProps) {
   const points = response.trajectory
   const maximumTime = Math.max(response.sample_times_us.at(-1) ?? 1, 1e-12)
@@ -35,6 +38,9 @@ export function PulsePopulationTimeline({
       : twoLevelSeries(response)
   const timeValues = points.map((point) => point.time_us)
   const availableSeries = series.filter((item) => item.values.some((value) => value !== null))
+  const cursorX = cursorTimeUs === null
+    ? null
+    : x(Math.min(maximumTime, Math.max(0, cursorTimeUs)))
 
   return (
     <section className="pulse-population" aria-labelledby="pulse-population-title">
@@ -68,6 +74,12 @@ export function PulsePopulationTimeline({
             d={linePath(timeValues, item.values, x, y)}
           />
         ))}
+        {cursorX === null ? null : (
+          <g className="pulse-population__cursor" aria-label={`現在 ${cursorTimeUs?.toFixed(4)} マイクロ秒`}>
+            <line x1={cursorX} x2={cursorX} y1={PAD_Y} y2={HEIGHT - PAD_Y} />
+            <circle cx={cursorX} cy={PAD_Y} r="4" />
+          </g>
+        )}
         <text x={PAD_X} y={HEIGHT - 6}>0</text>
         <text x={WIDTH - PAD_X} y={HEIGHT - 6} textAnchor="end">{maximumTime.toPrecision(3)} us</text>
       </svg>

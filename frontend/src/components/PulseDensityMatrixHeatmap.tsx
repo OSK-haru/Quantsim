@@ -5,6 +5,9 @@ import './PulseDensityMatrixHeatmap.css'
 type PulseDensityMatrixHeatmapProps = {
   matrix: PulseComplexValue[][]
   basisLabels?: string[]
+  /* 状態エクスプローラーはカーソル時刻の行列も出すので、見出しを差し替えられる。 */
+  title?: string
+  eyebrow?: string
 }
 
 /*
@@ -18,7 +21,12 @@ const DEFAULT_FULL_MATRIX_DIMENSION = 27
 /* 各セルに数値を書ける限界。これを超えたら色だけのヒートマップに切り替える。 */
 const MAX_LABELLED_CELL_COUNT = 9
 
-export function PulseDensityMatrixHeatmap({ matrix, basisLabels }: PulseDensityMatrixHeatmapProps) {
+export function PulseDensityMatrixHeatmap({
+  matrix,
+  basisLabels,
+  title = '最終密度行列',
+  eyebrow = 'FULL DENSITY OPERATOR',
+}: PulseDensityMatrixHeatmapProps) {
   const labels = basisLabels ?? matrix.map((_, index) => String(index))
   const [selectedRowState, setSelectedRow] = useState(0)
   const [selectedColumnState, setSelectedColumn] = useState(0)
@@ -95,8 +103,8 @@ export function PulseDensityMatrixHeatmap({ matrix, basisLabels }: PulseDensityM
     <section className="pulse-density" aria-labelledby="pulse-density-title">
       <div className="pulse-density__heading">
         <div>
-          <span>FULL DENSITY OPERATOR</span>
-          <h2 id="pulse-density-title">最終密度行列</h2>
+          <span>{eyebrow}</span>
+          <h2 id="pulse-density-title">{title}</h2>
         </div>
         <p>{matrix.length} × {matrix.length}、基底数 {labels.length}</p>
       </div>
@@ -148,7 +156,7 @@ export function PulseDensityMatrixHeatmap({ matrix, basisLabels }: PulseDensityM
       <div
         className="pulse-density__matrix"
         data-compact={compact}
-        aria-label="最終密度行列"
+        aria-label={title}
         style={{ '--matrix-dimension': columnIndices.length } as React.CSSProperties}
       >
         {compact ? (

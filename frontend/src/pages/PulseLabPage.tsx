@@ -22,6 +22,7 @@ import {
   type QutritPulsePoint,
   type QutritPulseResponse,
   type PulseResponse,
+  type PulseRunRecord,
 } from '../types/pulse'
 import type {
   PulseCircuitState,
@@ -65,6 +66,14 @@ type PulseLabPageProps = {
   activeTransmonIndex: number
   executionConstraints: PulseExecutionConstraints
   onExecutionConstraintsChange: (next: PulseExecutionConstraints) => void
+  /*
+   * 直近の実行結果はアプリ側が持つ。Pulse状態エクスプローラーが同じ結果を読むので、
+   * このページを離れても消えない場所へ置く必要がある。
+   */
+  latestRun: PulseRunRecord | null
+  runSignature: string
+  onRunCommitted: (run: PulseRunRecord) => void
+  onOpenPulseStateExplorer: () => void
 }
 
 export function PulseLabPage({
@@ -75,15 +84,19 @@ export function PulseLabPage({
   activeTransmonIndex,
   executionConstraints,
   onExecutionConstraintsChange,
+  latestRun,
+  runSignature,
+  onRunCommitted,
+  onOpenPulseStateExplorer,
 }: PulseLabPageProps) {
   const internalInfoVisible = useInternalInfoVisible()
-  const [result, setResult] = useState<PulseResponse | null>(null)
-  const [resultForm, setResultForm] = useState<PulseLabForm | null>(null)
+  const result = latestRun?.response ?? null
+  const resultForm = latestRun?.formAtRun ?? null
+  const lastResponseAt = latestRun?.completedAt ?? null
   const [status, setStatus] = useState<RequestStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [errorDetail, setErrorDetail] = useState<string | null>(null)
   const [lastRequestPayload, setLastRequestPayload] = useState<Record<string, unknown> | null>(null)
-  const [lastResponseAt, setLastResponseAt] = useState<string | null>(null)
   const [showCompletionPopup, setShowCompletionPopup] = useState(false)
   const [petCelebrating, setPetCelebrating] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
@@ -316,12 +329,15 @@ export function PulseLabPage({
             }
           : payloads[0],
       )
-      setResult(nextResult)
-      setResultForm({ ...form })
+      onRunCommitted({
+        response: nextResult,
+        formAtRun: { ...form },
+        completedAt: new Date().toISOString(),
+        signature: runSignature,
+      })
       setStatus('success')
       setErrorMessage(null)
       setErrorDetail(null)
-      setLastResponseAt(new Date().toISOString())
       setShowCompletionPopup(true)
       setPetCelebrating(true)
     } catch (error) {
@@ -547,6 +563,19 @@ export function PulseLabPage({
               </div>
             </section>
             ) : null}
+
+            <section className="pulse-lab__explorer-link">
+              <div>
+                <span>結果を読み解く</span>
+                <strong>Pulse 状態エクスプローラー</strong>
+                <p>
+                  時刻カーソルを1本共有して、指標・占有確率・密度行列を同じ瞬間で並べて読めます。
+                </p>
+              </div>
+              <button type="button" onClick={onOpenPulseStateExplorer}>
+                Pulse 状態エクスプローラーで開く
+              </button>
+            </section>
 
             <PulseSummary response={result} formAtRun={activeResultForm} />
             <PulsePopulationTimeline response={result} formAtRun={activeResultForm} />

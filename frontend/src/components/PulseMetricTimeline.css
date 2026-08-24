@@ -1,0 +1,224 @@
+.pulse-metric-timeline {
+  --pulse-metric-purity: #e0bc70;
+  --pulse-metric-reference: #e7a9ee;
+  --pulse-metric-leakage: #ef8b66;
+  --pulse-metric-state-change: #ad86bd;
+
+  padding: 24px;
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.2);
+  background: var(--tt-void);
+  color: var(--tt-ink);
+}
+
+.pulse-metric-timeline__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.pulse-metric-timeline__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  color: var(--tt-ink);
+  font-size: 0.88rem;
+}
+
+.pulse-metric-timeline__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse-metric-timeline__swatch {
+  width: 22px;
+  height: 3px;
+}
+
+.pulse-metric-timeline__swatch--purity {
+  background: var(--pulse-metric-purity);
+}
+
+.pulse-metric-timeline__swatch--reference {
+  background: var(--pulse-metric-reference);
+}
+
+.pulse-metric-timeline__swatch--leakage {
+  background: var(--pulse-metric-leakage);
+}
+
+.pulse-metric-timeline__swatch--state-change {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--pulse-metric-state-change) 0 3px,
+    transparent 3px 7px
+  );
+}
+
+.pulse-metric-timeline__chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.pulse-metric-timeline__axis {
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.3);
+  stroke-width: 1.2;
+}
+
+.pulse-metric-timeline__grid {
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.14);
+  stroke-width: 1;
+}
+
+.pulse-metric-timeline__tick {
+  fill: var(--tt-ink-mid);
+  font-family: var(--tt-mono);
+  font-size: 11px;
+}
+
+.pulse-metric-timeline__line {
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pulse-metric-timeline__line--purity {
+  stroke: var(--pulse-metric-purity);
+}
+
+.pulse-metric-timeline__line--reference {
+  stroke: var(--pulse-metric-reference);
+  stroke-width: 2.2;
+}
+
+.pulse-metric-timeline__line--leakage {
+  stroke: var(--pulse-metric-leakage);
+  stroke-width: 2.2;
+}
+
+.pulse-metric-timeline__line--state-change {
+  stroke: var(--pulse-metric-state-change);
+  stroke-width: 2;
+  stroke-dasharray: 2 4;
+}
+
+.pulse-metric-timeline__dot {
+  stroke: var(--tt-void);
+  stroke-width: 2;
+}
+
+.pulse-metric-timeline__dot--purity {
+  fill: var(--pulse-metric-purity);
+}
+
+.pulse-metric-timeline__pulse-end line {
+  stroke: rgb(var(--tt-ink-mid-rgb) / 0.5);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.pulse-metric-timeline__pulse-end text {
+  fill: var(--tt-ink-mid);
+  stroke: var(--tt-void);
+  stroke-width: 4px;
+  paint-order: stroke fill;
+  font-family: var(--tt-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+.pulse-metric-timeline__cursor line {
+  stroke: var(--tt-accent);
+  stroke-width: 2;
+}
+
+.pulse-metric-timeline__cursor circle {
+  fill: var(--tt-accent);
+}
+
+.pulse-metric-timeline__interpretation {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.2);
+  background: rgb(var(--tt-accent-deep-rgb) / 0.14);
+  color: var(--tt-ink);
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
+.pulse-metric-timeline__summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pulse-metric-timeline__value-card {
+  padding: 14px 15px;
+  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.16);
+  background: rgb(var(--tt-void-rgb) / 0.56);
+}
+
+.pulse-metric-timeline__value-card--leakage {
+  border-color: rgb(var(--tt-accent-rgb) / 0.28);
+}
+
+.pulse-metric-timeline__value-card--cursor {
+  border-color: rgb(var(--tt-accent-rgb) / 0.42);
+}
+
+.pulse-metric-timeline__label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--tt-ink-mid);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pulse-metric-timeline__value {
+  display: block;
+  color: var(--tt-ink);
+  font-family: var(--tt-mono);
+  font-size: 1rem;
+}
+
+.pulse-metric-timeline__value-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--tt-ink-dim);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.pulse-metric-timeline__empty {
+  margin: 0;
+  padding: 18px 16px;
+  border: 1px dashed rgb(var(--tt-ink-mid-rgb) / 0.22);
+  background: rgb(var(--tt-void-rgb) / 0.44);
+  color: var(--tt-ink-mid);
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .pulse-metric-timeline {
+    padding: 18px 16px 16px;
+  }
+
+  .pulse-metric-timeline__header {
+    flex-direction: column;
+  }
+}
+
+html[data-theme='light'] .pulse-metric-timeline {
+  --pulse-metric-purity: #83591f;
+  --pulse-metric-reference: #8c3f97;
+  --pulse-metric-leakage: #b4491d;
+  --pulse-metric-state-change: #775982;
+}

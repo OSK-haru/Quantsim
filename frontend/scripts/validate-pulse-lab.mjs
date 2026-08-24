@@ -19,9 +19,36 @@ assert(
   'Pulse Lab must not link to the gate-aware State Explorer',
 )
 assert(
+  pulseLabPageSource.includes('onOpenPulseStateExplorer'),
+  'Pulse Lab must link to the Pulse-level State Explorer',
+)
+assert(
   pulseLabPageSource.includes('複数レーン同時実行。'),
   'Pulse Lab scope boundary is not visible',
 )
+
+const pulseStateExplorerSource = readFileSync(
+  path.join(root, 'src/pages/PulseStateExplorerPage.tsx'),
+  'utf8',
+)
+assert(
+  !pulseStateExplorerSource.includes('BlochSphere'),
+  'Pulse State Explorer must not render a reduced Bloch sphere',
+)
+for (const gateAwareModule of [
+  'components/BlochSphereExplorer',
+  'components/DensityMatrixViewer',
+  'components/MetricTimeline',
+  'components/PhysicalTimelinePlayback',
+  'components/StateProbabilityComparison',
+  'context/useCircuitContext',
+  'types/simulation',
+]) {
+  assert(
+    !pulseStateExplorerSource.includes(gateAwareModule),
+    `Pulse State Explorer must not depend on the gate-aware module ${gateAwareModule}`,
+  )
+}
 
 const temporaryRoot = mkdtempSync(path.join(tmpdir(), 'yuragi-strider-pulse-lab-'))
 const temporarySource = path.join(temporaryRoot, 'src')
@@ -35,6 +62,7 @@ for (const relativePath of [
   'src/utils/pulseDeviceProfiles.ts',
   'src/utils/pulseCircuit.ts',
   'src/utils/pulseLab.ts',
+  'src/utils/pulseStateExplorer.ts',
 ]) {
   const sourcePath = path.join(root, relativePath)
   const outputPath = path.join(
@@ -129,11 +157,123 @@ assert(
   'zero-phase, zero-DRAG waveform unexpectedly contains Y quadrature',
 )
 
+const {
+  buildPulseExplorerView,
+  nearestPulsePointIndex,
+  pulseSetupSignature,
+} = require(path.join(temporarySource, 'utils', 'pulseStateExplorer.js'))
+
+const twoLevelView = buildPulseExplorerView(
+  twoLevelExplorerResponse(),
+  twoLevelForm,
+)
+assert(twoLevelView.dimension === 2, 'two-level explorer dimension is wrong')
+assert(
+  twoLevelView.points[1].idealPopulations['1'] === 1,
+  'two-level explorer lost the closed-system reference series',
+)
+assert(
+  twoLevelView.hasPerPointDensityMatrix === false,
+  'two-level trajectory does not carry per-sample density matrices',
+)
+assert(twoLevelView.leakageLabel === null, 'two-level model cannot leak out of the qubit space')
+
+const qutritView = buildPulseExplorerView(qutritExplorerResponse(), initialPulseLabForm)
+assert(qutritView.dimension === 3, 'qutrit explorer dimension is wrong')
+assert(
+  qutritView.computationalLabels.join(',') === '0,1',
+  'qutrit computational subspace must exclude the leakage level',
+)
+assert(
+  qutritView.points[1].leakage === 0.25,
+  'qutrit explorer lost the leakage series',
+)
+assert(qutritView.hasPerPointDensityMatrix, 'qutrit trajectory carries density matrices')
+assert(
+  nearestPulsePointIndex(qutritView.points, 0.019) === 1,
+  'cursor did not snap to the nearest trajectory sample',
+)
+
+const baseSignature = pulseSetupSignature(initialPulseLabForm, networkCircuit)
+assert(
+  baseSignature === pulseSetupSignature(initialPulseLabForm, networkCircuit),
+  'run signature must be stable for an unchanged setup',
+)
+assert(
+  baseSignature !== pulseSetupSignature(
+    { ...initialPulseLabForm, temperatureMk: initialPulseLabForm.temperatureMk + 1 },
+    networkCircuit,
+  ),
+  'run signature must change when the environment changes',
+)
+
 console.log('Pulse Lab payload and waveform contract: PASS')
+console.log('Pulse State Explorer trajectory normalisation: PASS')
 rmSync(temporaryRoot, { recursive: true, force: true })
 
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message)
+  }
+}
+
+/* 状態エクスプローラーの正規化だけを見たいので、軌跡は最小限の2点で作る。 */
+function twoLevelExplorerResponse() {
+  const point = (timeUs, open1) => ({
+    time_us: timeUs,
+    segment: timeUs === 0 ? 'pulse' : 'idle',
+    open_population_0: 1 - open1,
+    open_population_1: open1,
+    closed_population_0: 1 - Math.round(open1),
+    closed_population_1: Math.round(open1),
+    fidelity_to_closed: 0.99,
+    purity: 0.98,
+  })
+  const state = { ...point(0.02, 0.9), open_density_matrix: [[{ real: 0.1, imag: 0 }, { real: 0, imag: 0 }], [{ real: 0, imag: 0 }, { real: 0.9, imag: 0 }]] }
+  return {
+    contract_version: 'pulse-baseline-a-v1',
+    model: { model_id: 'driven_two_level_rwa_experimental_v1' },
+    sample_times_us: [0, 0.02],
+    trajectory: [point(0, 0), point(0.02, 0.9)],
+    pulse_end: state,
+    final: state,
+    warnings: [],
+    limitations: [],
+  }
+}
+
+function qutritExplorerResponse() {
+  const matrix = [
+    [{ real: 0.5, imag: 0 }, { real: 0, imag: 0 }, { real: 0, imag: 0 }],
+    [{ real: 0, imag: 0 }, { real: 0.25, imag: 0 }, { real: 0, imag: 0 }],
+    [{ real: 0, imag: 0 }, { real: 0, imag: 0 }, { real: 0.25, imag: 0 }],
+  ]
+  const point = (timeUs, leakage) => ({
+    time_us: timeUs,
+    segment: 'pulse',
+    population_0: 0.5,
+    population_1: 0.5 - leakage,
+    population_2: leakage,
+    computational_population: 1 - leakage,
+    leakage_probability: leakage,
+    population_sum_error: 0,
+    purity: 0.9,
+    density_matrix: matrix,
+  })
+  return {
+    contract_version: 'pulse-extension-b-v1',
+    model: { model_id: 'driven_transmon_qutrit_rwa_experimental_v1', basis_order: ['0', '1', '2'] },
+    input: {},
+    sample_times_us: [0, 0.02],
+    trajectory: [point(0, 0), point(0.02, 0.25)],
+    leakage: {
+      maximum_recorded_leakage_probability: 0.25,
+      leakage_at_pulse_end: 0.25,
+      leakage_at_final_time: 0.25,
+    },
+    pulse_end: point(0.02, 0.25),
+    final: point(0.02, 0.25),
+    warnings: [],
+    limitations: [],
   }
 }
