@@ -69,7 +69,7 @@ export function StateProbabilityComparison({
         </label>
       </header>
       <p className="state-probability-comparison__description">
-        選択した計算基底状態の確率を比較します。黄色のカーソルは回路、指標、Bloch球、密度行列と同じ物理時刻です。
+        選択した計算基底状態の確率を比較します。緑色のカーソルは回路、指標、Bloch球、密度行列と同じ物理時刻です。
       </p>
       <div className="state-probability-comparison__legend">
         <span><i className="state-probability-comparison__swatch state-probability-comparison__swatch--ideal" />理想</span>

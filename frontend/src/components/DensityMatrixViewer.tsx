@@ -191,20 +191,14 @@ export function DensityMatrixViewer({
 
       <div className="density-matrix-viewer__metadata" aria-label="スナップショットのメタデータ">
         <span>{snapshotKindLabel(activeSnapshot)}</span>
-        <span>{formatSnapshotTimeUs(activeSnapshot.time_us)}</span>
-        <span>{formatSnapshotProgress(activeSnapshot.progress)}</span>
+        <span>経過時間 {formatSnapshotTimeUs(activeSnapshot.time_us)}</span>
+        <span>回路全体の進捗 {formatSnapshotProgress(activeSnapshot.progress)}</span>
         {activeSnapshot?.column_index == null ? null : (
           <span>列 {activeSnapshot.column_index + 1}</span>
         )}
         {activeSnapshot?.requested_time_us == null ? null : (
           <span>指定時刻 {formatSnapshotTimeUs(activeSnapshot.requested_time_us)}</span>
         )}
-        {activeSnapshot?.capture_method ? (
-          <span>取得方法 {activeSnapshot.capture_method}</span>
-        ) : null}
-        {activeSnapshot?.event_kind ? (
-          <span>イベント {activeSnapshot.event_kind}</span>
-        ) : null}
       </div>
 
       {!validation.valid ? (

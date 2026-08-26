@@ -59,13 +59,13 @@
 .state-probability-comparison__grid { stroke: rgb(var(--tt-ink-mid-rgb) / 0.12); stroke-width: 1; }
 .state-probability-comparison__axis { stroke: rgb(var(--tt-ink-mid-rgb) / 0.34); stroke-width: 1; }
 .state-probability-comparison__line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.state-probability-comparison__line--ideal { stroke: var(--tt-ink-dim); }
+.state-probability-comparison__line--ideal { stroke: var(--tt-accent); stroke-width: 2; stroke-dasharray: 6 5; }
 .state-probability-comparison__line--noisy { stroke: var(--tt-ink-mid); }
 .state-probability-comparison__axis-label { fill: var(--tt-ink-dim); font-size: 11px; }
-.state-probability-comparison__cursor line { stroke: var(--tt-accent); stroke-width: 2; }
+.state-probability-comparison__cursor line { stroke: var(--tt-signal); stroke-width: 2; }
 .state-probability-comparison__cursor circle { stroke: var(--tt-void); stroke-width: 2; }
 .state-probability-comparison__cursor circle[data-series='noisy'] { fill: var(--tt-ink-mid); }
-.state-probability-comparison__cursor circle[data-series='ideal'] { fill: var(--tt-ink-dim); }
+.state-probability-comparison__cursor circle[data-series='ideal'] { fill: var(--tt-accent); }
 .state-probability-comparison__footer { display: flex; flex-wrap: wrap; gap: 18px; color: var(--tt-ink); font-size: 0.8rem; }
 .state-probability-comparison__empty { color: var(--tt-ink-mid); }
 
