@@ -8,9 +8,14 @@ import type {
 import { circuitEditorStateToConfig } from './circuitConfig'
 import {
   findColumnCollision,
+  MAX_SUPPORTED_CIRCUIT_COLUMNS,
   MAX_SUPPORTED_LOGICAL_QUBITS,
   MIN_SUPPORTED_LOGICAL_QUBITS,
 } from './circuitEditing'
+
+export const MAX_CIRCUIT_IMPORT_BYTES = 64 * 1024
+const MAX_CIRCUIT_GATES_PER_COLUMN = 16
+const MAX_CIRCUIT_GATES = 800
 
 export type CircuitConfigGate = {
   type: GateType
@@ -270,6 +275,13 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
   if (columns.length < 1) {
     throw new Error('Import failed: columns must include at least one column.')
   }
+  if (columns.length > MAX_SUPPORTED_CIRCUIT_COLUMNS) {
+    throw new Error(
+      `Import failed: circuits may contain at most ${MAX_SUPPORTED_CIRCUIT_COLUMNS} columns.`,
+    )
+  }
+
+  let gateCount = 0
 
   const normalizedColumns: CircuitConfigColumn[] = columns.map((column, columnIndex) => {
     if (!isRecord(column)) {
@@ -280,6 +292,15 @@ function normalizeCircuitConfigShape(value: unknown): CircuitConfig {
     }
     if (!Array.isArray(column.gates)) {
       throw new Error(`Import failed: column ${columnIndex} gates must be an array.`)
+    }
+    if (column.gates.length > MAX_CIRCUIT_GATES_PER_COLUMN) {
+      throw new Error(
+        `Import failed: column ${columnIndex} contains too many gates.`,
+      )
+    }
+    gateCount += column.gates.length
+    if (gateCount > MAX_CIRCUIT_GATES) {
+      throw new Error(`Import failed: circuits may contain at most ${MAX_CIRCUIT_GATES} gates.`)
     }
 
     const step = column.step as number

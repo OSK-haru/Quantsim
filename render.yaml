@@ -20,5 +20,5 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://yuragi-strider-app.23sam55781.workers.dev
       - key: PUBLIC_MAX_LOGICAL_QUBITS
-        value: "10"
+        value: "8"
     healthCheckPath: /api/health

@@ -25,8 +25,8 @@ URL を指定し、API 側は `ALLOWED_ORIGINS` でフロントのオリジン�
    （`Dockerfile` からビルド、無料プラン、`/api/health` をヘルスチェックに使用）。
 4. デプロイが終わったら、割り当てられた URL を控える。
    （このプロジェクトでは `https://quantsim-vjul.onrender.com` で公開済み）
-5. `PUBLIC_MAX_LOGICAL_QUBITS`（デフォルト10）は密行列計算のメモリ消費を
-   抑えるための公開デモ専用の上限。必要ならRenderの環境変数から調整できる
+5. `PUBLIC_MAX_LOGICAL_QUBITS`（公開 Web アプリでは最大8）は密行列計算のメモリ消費を
+   抑えるための公開デモ専用の上限。必要ならRenderの環境変数からさらに下げられる
    （ローカル/デスクトップ版の18qubit上限には影響しない）。
 
 補足: 無料プランは一定時間アクセスがないとスリープし、次のリクエストで
@@ -56,7 +56,7 @@ Blueprintではなく **New Web Service** から手動作成されたため、`r
 | Key | Value |
 | --- | --- |
 | `ALLOWED_ORIGINS` | `https://yuragi-strider-app.23sam55781.workers.dev` |
-| `PUBLIC_MAX_LOGICAL_QUBITS` | `10` |
+| `PUBLIC_MAX_LOGICAL_QUBITS` | `8` |
 
 保存すると自動的に再デプロイされる。`docusaurus.config.ts` と `render.yaml` は
 既にこのURLで更新済み。

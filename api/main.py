@@ -13,8 +13,9 @@ from threading import BoundedSemaphore
 from typing import Literal
 from time import perf_counter
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from api.pulse_models import (
@@ -37,6 +38,73 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Yuragi-Strider API", version="0.1.0")
 
+# The API only accepts compact circuit descriptions.  This limit is enforced
+# while the ASGI body is being received, including chunked requests, so a
+# client cannot exhaust memory before Pydantic validates the JSON structure.
+MAX_API_REQUEST_BODY_BYTES = 64 * 1024
+
+
+class _RequestBodyTooLarge(Exception):
+    """Raised internally when an HTTP request body exceeds the API budget."""
+
+
+class RequestBodyLimitMiddleware:
+    """Reject oversized HTTP bodies before they reach JSON parsing."""
+
+    def __init__(self, app: object, max_body_bytes: int) -> None:
+        self.app = app
+        self.max_body_bytes = max_body_bytes
+
+    async def __call__(self, scope: object, receive: object, send: object) -> None:
+        if not isinstance(scope, dict) or scope.get("type") != "http":
+            await self.app(scope, receive, send)  # type: ignore[misc]
+            return
+
+        headers = dict(scope.get("headers", []))
+        raw_content_length = headers.get(b"content-length")
+        if raw_content_length is not None:
+            try:
+                if int(raw_content_length) > self.max_body_bytes:
+                    await self._send_too_large(send)
+                    return
+            except ValueError:
+                await self._send_too_large(send)
+                return
+
+        received_bytes = 0
+
+        async def limited_receive() -> object:
+            nonlocal received_bytes
+            message = await receive()  # type: ignore[misc]
+            if isinstance(message, dict) and message.get("type") == "http.request":
+                received_bytes += len(message.get("body", b""))
+                if received_bytes > self.max_body_bytes:
+                    raise _RequestBodyTooLarge
+            return message
+
+        try:
+            await self.app(scope, limited_receive, send)  # type: ignore[misc]
+        except _RequestBodyTooLarge:
+            await self._send_too_large(send)
+
+    async def _send_too_large(self, send: object) -> None:
+        response = JSONResponse(
+            status_code=413,
+            content={
+                "detail": {
+                    "message": "Request body exceeds the API size limit.",
+                    "maximum_bytes": self.max_body_bytes,
+                }
+            },
+        )
+        await response({}, None, send)  # type: ignore[arg-type]
+
+
+app.add_middleware(
+    RequestBodyLimitMiddleware,
+    max_body_bytes=MAX_API_REQUEST_BODY_BYTES,
+)
+
 # Local dev (Vite) and the desktop-app launcher serve the frontend from the
 # same origin as this API, so they never need CORS. The hosted web demo
 # serves the frontend from a separate origin (Cloudflare Pages) and this API
@@ -54,6 +122,21 @@ if _ALLOWED_ORIGINS:
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )
+
+
+@app.middleware("http")
+async def add_api_security_headers(request: Request, call_next: object):
+    """Apply browser-hardening headers to every API response."""
+
+    response = await call_next(request)  # type: ignore[misc]
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "camera=(), geolocation=(), microphone=()",
+    )
+    return response
 
 def _optional_int_env(name: str) -> int | None:
     """Read an optional integer env var without crashing the app at import.
@@ -76,18 +159,32 @@ def _optional_int_env(name: str) -> int | None:
 # full le=18 validation range, but a publicly reachable server shares memory
 # across every visitor, so it gets its own, stricter cap via env var. Unset
 # by default so existing (non-public) deployments are unaffected.
-PUBLIC_MAX_LOGICAL_QUBITS = _optional_int_env("PUBLIC_MAX_LOGICAL_QUBITS")
+# A cross-origin deployment is the public web demo.  It is intentionally
+# restricted to the Circuit Studio's documented 2-8 qubit range.  Operators
+# may lower the cap, but cannot accidentally raise the public limit above 8.
+PUBLIC_WEB_MAX_LOGICAL_QUBITS = 8
+_configured_public_qubit_cap = _optional_int_env("PUBLIC_MAX_LOGICAL_QUBITS")
+if _ALLOWED_ORIGINS:
+    PUBLIC_MAX_LOGICAL_QUBITS = min(
+        PUBLIC_WEB_MAX_LOGICAL_QUBITS,
+        _configured_public_qubit_cap or PUBLIC_WEB_MAX_LOGICAL_QUBITS,
+    )
+else:
+    # Keep the desktop launcher and local development capable of exercising
+    # their broader supported range unless an operator explicitly constrains it.
+    PUBLIC_MAX_LOGICAL_QUBITS = _configured_public_qubit_cap
 
 # str(exc) can carry file paths and internal state. The hosted web demo is the
 # deployment that sets ALLOWED_ORIGINS (frontend and API on separate origins),
 # so the same signal defaults public deploys to type-only errors, while local
 # dev and the desktop launcher keep the full message their admin-mode
-# diagnostics panel displays. EXPOSE_INTERNAL_ERRORS overrides either way.
+# diagnostics panel displays.  Error details are opt-in only; a missing or
+# misconfigured CORS variable must never make a public deployment leak them.
 _EXPOSE_INTERNAL_ERRORS_ENV = os.environ.get("EXPOSE_INTERNAL_ERRORS", "").strip()
 EXPOSE_INTERNAL_ERRORS = (
     _EXPOSE_INTERNAL_ERRORS_ENV.lower() in {"1", "true", "yes", "on"}
     if _EXPOSE_INTERNAL_ERRORS_ENV
-    else not _ALLOWED_ORIGINS
+    else False
 )
 
 
@@ -130,6 +227,11 @@ _SIMULATE_EXECUTION_SLOTS = BoundedSemaphore(
 # 200 us) but finite, so an absurd request is rejected before any compute.
 MAX_API_TIME_STEPS = 2001
 MAX_API_DURATION_US = 10_000.0
+MAX_API_CIRCUIT_COLUMNS = 200
+MAX_API_GATES_PER_COLUMN = 16
+MAX_API_CIRCUIT_GATES = 800
+MAX_API_CIRCUIT_ANNOTATIONS = 200
+MAX_API_GATE_QUBIT_REFERENCES = 18
 
 
 class GateDurationDefaultsRequest(BaseModel):
@@ -248,12 +350,18 @@ class ClassicalConditionRequest(BaseModel):
 
 class CircuitGateRequest(BaseModel):
     type: Literal["H", "X", "Y", "Z", "S", "T", "RX", "RY", "RZ", "CNOT", "CZ", "CP", "CCX", "SWAP", "QFT", "ORACLE", "MEASURE", "MESSAGE", "RECEIVED"]
-    targets: list[int]
-    controls: list[int] = Field(default_factory=list)
+    targets: list[int] = Field(max_length=MAX_API_GATE_QUBIT_REFERENCES)
+    controls: list[int] = Field(
+        default_factory=list,
+        max_length=MAX_API_GATE_QUBIT_REFERENCES,
+    )
     params: CircuitGateParamsRequest = Field(default_factory=CircuitGateParamsRequest)
-    classical_targets: list[int] = Field(default_factory=list)
+    classical_targets: list[int] = Field(default_factory=list, max_length=32)
     condition: ClassicalConditionRequest | None = None
-    conditions: list[ClassicalConditionRequest] = Field(default_factory=list)
+    conditions: list[ClassicalConditionRequest] = Field(
+        default_factory=list,
+        max_length=32,
+    )
 
     @model_validator(mode="after")
     def validate_gate_shape(self) -> CircuitGateRequest:
@@ -319,15 +427,21 @@ class CircuitGateRequest(BaseModel):
 
 class CircuitColumnRequest(BaseModel):
     step: int = Field(default=0, ge=0)
-    gates: list[CircuitGateRequest] = Field(default_factory=list)
+    gates: list[CircuitGateRequest] = Field(
+        default_factory=list,
+        max_length=MAX_API_GATES_PER_COLUMN,
+    )
 
 
 class CircuitAnnotationRequest(BaseModel):
     kind: Literal["MESSAGE", "RECEIVED"]
-    id: str | None = None
-    source_id: str | None = None
+    id: str | None = Field(default=None, max_length=128)
+    source_id: str | None = Field(default=None, max_length=128)
     column_index: int = Field(ge=0)
-    qubits: list[int] = Field(default_factory=list)
+    qubits: list[int] = Field(
+        default_factory=list,
+        max_length=MAX_API_GATE_QUBIT_REFERENCES,
+    )
 
 
 class AnimationParameterRequest(BaseModel):
@@ -349,9 +463,15 @@ class AnimationParameterRequest(BaseModel):
 class CircuitConfigRequest(BaseModel):
     logical_qubits: int = Field(ge=1, le=18)
     classical_bits: int = Field(default=0, ge=0, le=32)
-    initial_states: list[int | str]
-    columns: list[CircuitColumnRequest] = Field(default_factory=list)
-    annotations: list[CircuitAnnotationRequest] = Field(default_factory=list)
+    initial_states: list[int | str] = Field(max_length=18)
+    columns: list[CircuitColumnRequest] = Field(
+        default_factory=list,
+        max_length=MAX_API_CIRCUIT_COLUMNS,
+    )
+    annotations: list[CircuitAnnotationRequest] = Field(
+        default_factory=list,
+        max_length=MAX_API_CIRCUIT_ANNOTATIONS,
+    )
 
     @model_validator(mode="after")
     def validate_circuit_config(self) -> CircuitConfigRequest:
@@ -362,6 +482,11 @@ class CircuitConfigRequest(BaseModel):
 
         if len(initial_states) != logical_qubits:
             raise ValueError("initial_states must match logical_qubits.")
+
+        if sum(len(column.gates) for column in columns) > MAX_API_CIRCUIT_GATES:
+            raise ValueError(
+                "circuit exceeds the maximum number of API gate operations."
+            )
 
         for index, initial_state in enumerate(initial_states):
             if str(initial_state) not in {"0", "1", "+", "-"}:

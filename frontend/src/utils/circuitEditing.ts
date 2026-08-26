@@ -92,6 +92,9 @@ export const MIN_SUPPORTED_LOGICAL_QUBITS = 2
 // runner can execute. The API selects statevector execution above 5 qubits
 // for measurement-free ideal circuits; noisy simulation remains capped at 5.
 export const MAX_SUPPORTED_LOGICAL_QUBITS = 8
+// Mirrors the public API budget so locally-created circuits cannot grow into
+// a request the web service must reject or spend excessive time parsing.
+export const MAX_SUPPORTED_CIRCUIT_COLUMNS = 200
 
 export function createEmptyCircuitColumn(step: number): CircuitColumn {
   return {
@@ -115,6 +118,9 @@ export function ensureCircuitColumnCount(
 }
 
 export function appendEmptyColumn(circuit: CircuitEditorState): CircuitEditorState {
+  if (circuit.columns.length >= MAX_SUPPORTED_CIRCUIT_COLUMNS) {
+    return circuit
+  }
   return {
     ...circuit,
     columns: [

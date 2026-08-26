@@ -2,7 +2,12 @@ import unittest
 
 from pydantic import ValidationError
 
-from api.main import SimulateRequest, build_config_from_simulate_request, simulate
+from api.main import (
+    MAX_API_CIRCUIT_COLUMNS,
+    SimulateRequest,
+    build_config_from_simulate_request,
+    simulate,
+)
 
 
 class ApiSimulateCircuitConfigTest(unittest.TestCase):
@@ -254,6 +259,20 @@ class ApiSimulateCircuitConfigTest(unittest.TestCase):
                         }
                     ],
                 }
+            ],
+        }
+
+        with self.assertRaises(ValidationError):
+            SimulateRequest(**payload)
+
+    def test_circuit_exceeding_column_budget_is_rejected(self) -> None:
+        payload = self._base_request()
+        payload["circuit_config"] = {
+            "logical_qubits": 1,
+            "initial_states": [0],
+            "columns": [
+                {"step": index, "gates": []}
+                for index in range(MAX_API_CIRCUIT_COLUMNS + 1)
             ],
         }
 

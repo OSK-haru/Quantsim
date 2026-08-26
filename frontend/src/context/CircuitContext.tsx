@@ -13,7 +13,10 @@ import type {
 } from '../types/circuit'
 import type { GateDurationDefaults } from '../types/simulation'
 import { createDefaultCircuit } from '../utils/circuitDefaults'
-import { parseCircuitConfigJson } from '../utils/circuitConfigTransfer'
+import {
+  MAX_CIRCUIT_IMPORT_BYTES,
+  parseCircuitConfigJson,
+} from '../utils/circuitConfigTransfer'
 import {
   appendEmptyColumn,
   appendControlToCnotInCircuit,
@@ -61,6 +64,7 @@ import {
   isThetaGateType,
   maxMarkedIndex,
   MIN_REGISTER_GATE_QUBITS,
+  MAX_SUPPORTED_CIRCUIT_COLUMNS,
 } from '../utils/circuitEditing'
 import {
   canRedo,
@@ -667,7 +671,12 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
   }
 
   function handleAddCircuitColumn() {
-    finalizeCircuitEdit(appendEmptyColumn(circuitState))
+    const nextCircuit = appendEmptyColumn(circuitState)
+    if (nextCircuit === circuitState) {
+      setEditorHint(`Circuit limit reached (${MAX_SUPPORTED_CIRCUIT_COLUMNS} columns).`)
+      return
+    }
+    finalizeCircuitEdit(nextCircuit)
     setSelectedGateId(null)
     setPendingCnotControl(null)
     setEditorHint(`Added column ${circuitState.columns.length + 1}.`)
@@ -794,6 +803,11 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     qubitIndex: number,
     insertColumn = false,
   ) {
+    if (insertColumn && circuitState.columns.length >= MAX_SUPPORTED_CIRCUIT_COLUMNS) {
+      setEditorHint(`Circuit limit reached (${MAX_SUPPORTED_CIRCUIT_COLUMNS} columns).`)
+      setDragPayload(null)
+      return
+    }
     const baseCircuit = insertColumn
       ? insertEmptyColumnAt(circuitState, columnIndex)
       : circuitState
@@ -1065,6 +1079,11 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
   }
 
   async function handleImportCircuitConfig(file: File) {
+    if (file.size > MAX_CIRCUIT_IMPORT_BYTES) {
+      throw new Error(
+        `Import failed: circuit files must be ${Math.floor(MAX_CIRCUIT_IMPORT_BYTES / 1024)} KiB or smaller.`,
+      )
+    }
     const text = await file.text()
     const importedCircuit = parseCircuitConfigJson(text)
 
