@@ -110,7 +110,7 @@ export function PulseLabPage({
   const executionForms = executionPlan
     .filter((operation): operation is SequenceDriveOperation => operation.kind === 'drive')
     .map((operation) => operation.form)
-  const sequenceMode = form.modelId === QUTRIT_PULSE_MODEL && sequence.length > 0
+  const sequenceMode = form.modelId === QUTRIT_PULSE_MODEL
   const sequenceDurationUs = networkMode
     ? transmonNetworkDurationUs(circuit)
     : sequenceMode
@@ -152,10 +152,11 @@ export function PulseLabPage({
       ? validateTransmonNetworkScope(circuit, sequenceDurationUs, form.totalSimulationTimeUs)
       : []),
   ]
+  const hasNoDriveInSequence = sequenceMode && executionForms.length === 0
   const isValid = Object.keys(errors).length === 0
     && executionErrors.length === 0
     && constraintIssues.length === 0
-    && (!sequenceMode || executionForms.length > 0)
+    && !hasNoDriveInSequence
     && (!networkMode || (
       circuit.transmons.length >= 2
       && circuit.transmons.length <= 4
@@ -522,7 +523,11 @@ export function PulseLabPage({
                   ? `q${activeTransmonIndex} シーケンスのみ実行`
                   : 'Pulseシミュレーションを実行'}
           </button>
-          {!isValid ? (
+          {hasNoDriveInSequence ? (
+            <p className="pulse-lab__run-error" role="alert">
+              回路に駆動 Pulse がありません。波形はゼロのままです。Circuit Studio で Pulse ブロックを追加してください。
+            </p>
+          ) : !isValid ? (
             <p className="pulse-lab__run-error" role="alert">
               実行前に、強調表示されている項目を修正してください。
             </p>
@@ -759,8 +764,11 @@ function sequenceExecutionPlan(
   sequence: PulseCircuitStep[],
   constraints: PulseExecutionConstraints,
 ): SequenceExecutionOperation[] {
-  if (globalForm.modelId !== QUTRIT_PULSE_MODEL || sequence.length === 0) {
+  if (globalForm.modelId !== QUTRIT_PULSE_MODEL) {
     return [{ kind: 'drive', stepIndex: 0, label: '単一Pulse', form: { ...globalForm } }]
+  }
+  if (sequence.length === 0) {
+    return []
   }
 
   const driveSteps = sequence.filter(isDrivePulseStep)

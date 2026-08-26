@@ -26,6 +26,14 @@ assert(
   pulseLabPageSource.includes('複数レーン同時実行。'),
   'Pulse Lab scope boundary is not visible',
 )
+assert(
+  !pulseLabPageSource.includes('globalForm.modelId !== QUTRIT_PULSE_MODEL || sequence.length === 0'),
+  'an empty qutrit circuit must not fall back to a single pulse',
+)
+assert(
+  pulseLabPageSource.includes('if (sequence.length === 0) {\n    return []'),
+  'an empty qutrit circuit must have an empty execution plan',
+)
 
 const pulseStateExplorerSource = readFileSync(
   path.join(root, 'src/pages/PulseStateExplorerPage.tsx'),
@@ -170,6 +178,11 @@ assert(
 assert(
   sequentialWaveform.some((point) => point.timeUs === 0.015 && Math.abs(point.omegaY) > 1e-9),
   'second sequence pulse is missing from the scheduled waveform',
+)
+const emptyCircuitWaveform = sequentialPulseWaveform([], 0.005, 5)
+assert(
+  emptyCircuitWaveform.every((point) => point.omegaX === 0 && point.omegaY === 0),
+  'an empty circuit must render a flat zero waveform',
 )
 
 const circuitWaveform = circuitLaneWaveform(networkForm, networkCircuit, 0, 5)
