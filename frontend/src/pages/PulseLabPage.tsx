@@ -32,11 +32,13 @@ import type {
 import {
   buildPulsePayload,
   buildTransmonNetworkPayload,
+  circuitLaneWaveform,
   estimatePulseCost,
   estimateTransmonNetworkCost,
   hasPulseResponseShape,
   pulseDurationUs,
   pulseWaveform,
+  sequentialPulseWaveform,
   qutritTargetOverlap,
   validatePulseLabForm,
 } from '../utils/pulseLab'
@@ -130,7 +132,19 @@ export function PulseLabPage({
   const cost = networkMode
     ? estimateTransmonNetworkCost(form, circuit)
     : combinedPulseCost(executionForms)
-  const waveform = pulseWaveform(form)
+  const waveform = networkMode
+    ? circuitLaneWaveform(form, circuit, activeTransmonIndex)
+    : sequenceMode
+      ? sequentialPulseWaveform(executionForms, executionConstraints.interPulseGapUs)
+      : pulseWaveform(form)
+  const waveformPulseEndTimeUs = networkMode || sequenceMode
+    ? sequenceDurationUs
+    : pulseDurationUs(form)
+  const waveformScopeLabel = networkMode
+    ? `q${activeTransmonIndex} レーンの回路波形`
+    : sequenceMode
+      ? `q${activeTransmonIndex} シーケンスの回路波形`
+      : '単一 Pulse の波形'
   const constraintIssues = [
     ...validateExecutionConstraints(executionPlan, executionConstraints),
     ...validatePairSecondaryConstraints(form, executionConstraints),
@@ -532,8 +546,9 @@ export function PulseLabPage({
 
         <PulseWaveform
           points={waveform}
-          pulseDurationUs={pulseDurationUs(form)}
+          pulseDurationUs={waveformPulseEndTimeUs}
           totalSimulationTimeUs={form.totalSimulationTimeUs}
+          scopeLabel={waveformScopeLabel}
         />
 
         {result ? (

@@ -5,6 +5,7 @@ type PulseWaveformProps = {
   points: PulseWaveformPoint[]
   pulseDurationUs: number
   totalSimulationTimeUs: number
+  scopeLabel?: string
 }
 
 const WIDTH = 760
@@ -16,6 +17,7 @@ export function PulseWaveform({
   points,
   pulseDurationUs,
   totalSimulationTimeUs,
+  scopeLabel = '単一 Pulse の波形',
 }: PulseWaveformProps) {
   const chartDurationUs = Math.max(
     totalSimulationTimeUs,
@@ -40,7 +42,7 @@ export function PulseWaveform({
     <section className="pulse-waveform" aria-labelledby="pulse-waveform-title">
       <div className="pulse-waveform__heading">
         <div>
-          <span>制御エンベロープ</span>
+          <span>{scopeLabel}</span>
           <h2 id="pulse-waveform-title">駆動波形</h2>
         </div>
         <div className="pulse-waveform__legend">

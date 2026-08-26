@@ -683,6 +683,98 @@ export function pulseWaveform(form: PulseLabForm, count = 121): PulseWaveformPoi
   })
 }
 
+/**
+ * Builds one physical control-channel trace from pulses placed on a common
+ * timeline.  Zero-valued boundary points make inter-pulse idle periods (and
+ * the end of the last pulse) visible in the SVG rather than joining two
+ * unrelated pulse envelopes with a diagonal line.
+ */
+export function scheduledPulseWaveform(
+  blocks: ReadonlyArray<{ startTimeUs: number; form: PulseLabForm }>,
+  countPerPulse = 121,
+): PulseWaveformPoint[] {
+  const points: PulseWaveformPoint[] = []
+  let previousEndUs = 0
+
+  for (const block of [...blocks].sort((left, right) => left.startTimeUs - right.startTimeUs)) {
+    const startTimeUs = Math.max(0, block.startTimeUs)
+    const localPoints = pulseWaveform(block.form, countPerPulse)
+    const durationUs = pulseDurationUs(block.form)
+    const endTimeUs = startTimeUs + durationUs
+
+    if (points.length === 0 || startTimeUs > previousEndUs + 1e-12) {
+      points.push({ timeUs: previousEndUs, omegaX: 0, omegaY: 0 })
+      points.push({ timeUs: startTimeUs, omegaX: 0, omegaY: 0 })
+    }
+    points.push(...localPoints.map((point) => ({
+      ...point,
+      timeUs: startTimeUs + point.timeUs,
+    })))
+    previousEndUs = Math.max(previousEndUs, endTimeUs)
+  }
+
+  if (points.length === 0) {
+    return [{ timeUs: 0, omegaX: 0, omegaY: 0 }]
+  }
+
+  points.push({ timeUs: previousEndUs, omegaX: 0, omegaY: 0 })
+  return points
+}
+
+export function sequentialPulseWaveform(
+  forms: ReadonlyArray<PulseLabForm>,
+  interPulseGapUs: number,
+  countPerPulse = 121,
+): PulseWaveformPoint[] {
+  let startTimeUs = 0
+  return scheduledPulseWaveform(forms.map((form, index) => {
+    const block = { startTimeUs, form }
+    startTimeUs += pulseDurationUs(form)
+      + (index < forms.length - 1 ? Math.max(0, interPulseGapUs) : 0)
+    return block
+  }), countPerPulse)
+}
+
+/**
+ * The network backend has one independent control channel per transmon.  The
+ * waveform panel therefore renders the selected lane, with virtual-Z frame
+ * updates applied exactly as they are when the network request is built.
+ */
+export function circuitLaneWaveform(
+  globalForm: PulseLabForm,
+  circuit: PulseCircuitState,
+  transmonIndex: number,
+  countPerPulse = 121,
+): PulseWaveformPoint[] {
+  const lane = circuit.lanes.find((candidate) => candidate.transmonIndex === transmonIndex)
+  if (!lane) {
+    return [{ timeUs: 0, omegaX: 0, omegaY: 0 }]
+  }
+
+  let startTimeUs = 0
+  let framePhaseRad = 0
+  const blocks: Array<{ startTimeUs: number; form: PulseLabForm }> = []
+  lane.steps.forEach((step, stepIndex) => {
+    if (!isDrivePulseStep(step)) {
+      framePhaseRad = normalizeFramePhase(framePhaseRad + step.angleRad)
+      return
+    }
+
+    const form = applyPulseStepToForm(globalForm, step.pulse)
+    blocks.push({
+      startTimeUs,
+      form: {
+        ...form,
+        phaseRad: normalizeFramePhase(form.phaseRad + framePhaseRad),
+      },
+    })
+    const hasLaterDrive = lane.steps.slice(stepIndex + 1).some(isDrivePulseStep)
+    startTimeUs += pulseStepDurationUs(step.pulse)
+      + (hasLaterDrive ? circuit.executionConstraints.interPulseGapUs : 0)
+  })
+  return scheduledPulseWaveform(blocks, countPerPulse)
+}
+
 export function estimatePulseCost(form: PulseLabForm): PulseCostEstimate {
   if (form.modelId === TWO_LEVEL_PULSE_MODEL) {
     const estimated = Math.max(form.snapshotCount, Math.ceil(form.totalSimulationTimeUs / 0.001))

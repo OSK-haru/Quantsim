@@ -86,6 +86,8 @@ const {
   estimatePulseCost,
   initialPulseLabForm,
   pulseWaveform,
+  sequentialPulseWaveform,
+  circuitLaneWaveform,
 } = require(path.join(temporarySource, 'utils', 'pulseLab.js'))
 const {
   createDefaultPulseCircuit,
@@ -155,6 +157,25 @@ const zeroDragWaveform = pulseWaveform({ ...initialPulseLabForm, dragBetaUs: 0 }
 assert(
   zeroDragWaveform.every((point) => Math.abs(point.omegaY) < 1e-9),
   'zero-phase, zero-DRAG waveform unexpectedly contains Y quadrature',
+)
+
+const sequentialWaveform = sequentialPulseWaveform([
+  { ...twoLevelForm, pulseDurationUs: 0.01, phaseRad: 0 },
+  { ...twoLevelForm, pulseDurationUs: 0.01, phaseRad: Math.PI / 2 },
+], 0.005, 5)
+assert(
+  sequentialWaveform.some((point) => point.timeUs === 0.01 && point.omegaX === 0 && point.omegaY === 0),
+  'sequence waveform must return to zero at the start of the idle gap',
+)
+assert(
+  sequentialWaveform.some((point) => point.timeUs === 0.015 && Math.abs(point.omegaY) > 1e-9),
+  'second sequence pulse is missing from the scheduled waveform',
+)
+
+const circuitWaveform = circuitLaneWaveform(networkForm, networkCircuit, 0, 5)
+assert(
+  circuitWaveform.some((point) => point.timeUs > 0.02),
+  'circuit waveform must include every drive on the selected lane',
 )
 
 const {
