@@ -8,6 +8,7 @@ import { TutorialProvider } from './context/TutorialContext'
 import { TutorialOverlay } from './components/TutorialOverlay'
 import { TutorialCircuitWatcher } from './components/TutorialCircuitWatcher'
 import { QuantumFluctuationField } from './components/QuantumFluctuationField'
+import type { FieldPresence } from './components/QuantumFluctuationField'
 import { AlgorithmLibraryPage } from './pages/AlgorithmLibraryPage'
 import { CircuitStudioPage } from './pages/CircuitStudioPage'
 import { HomePage } from './pages/HomePage'
@@ -107,6 +108,21 @@ function fieldRegimeForScreen(screen: Screen, homeModeTurn: number): ModeId {
     return 'docs'
   }
   return navigationDomainForRoute(screen) === 'pulse' ? 'pulse' : 'gate-aware'
+}
+
+/*
+ * 背景の出し具合。ホームは主役なので素の濃さ、Gate-aware / Pulse の
+ * 作業画面はタイトルより薄いが同じ場が在ると分かる濃さ、それ以外（ヘルプ）は
+ * いちばん控えめに引く。
+ */
+function fieldPresenceForScreen(screen: Screen): FieldPresence {
+  if (screen === 'home') {
+    return 'feature'
+  }
+  if (screen === 'help') {
+    return 'ambient'
+  }
+  return 'workspace'
 }
 
 function screenFromPath(pathname: string): Screen {
@@ -340,7 +356,7 @@ function App() {
       */}
       <QuantumFluctuationField
         regime={fieldRegimeForScreen(screen, homeModeTurn)}
-        presence={screen === 'home' ? 'feature' : 'ambient'}
+        presence={fieldPresenceForScreen(screen)}
       />
       {renderScreen()}
       <TutorialOverlay />

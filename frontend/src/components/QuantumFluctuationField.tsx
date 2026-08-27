@@ -63,11 +63,14 @@ const AMBIENT_FRAME_INTERVAL_MS = 1000 / 20
 
 /*
  * 下地としての出しゃばり具合。
- *   feature … ホーム。ここでは主役なので素の濃さで出す。
- *   ambient … 作業画面。データを読む邪魔にならないところまで引く。
+ *   feature   … ホーム。ここでは主役なので素の濃さで出す。
+ *   workspace … Gate-aware / Pulse の作業画面。タイトルほどではないが、
+ *               同じ場がそこに在ると分かる濃さで残す。
+ *   ambient   … それ以外。データを読む邪魔にならないところまで引く。
  */
 const PRESENCE_LEVELS = {
   feature: 1,
+  workspace: 0.62,
   ambient: 0.38,
 } as const
 

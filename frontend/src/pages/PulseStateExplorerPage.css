@@ -5,9 +5,10 @@
   display: grid;
   align-content: start;
   gap: 20px;
+  /* 地は半透明にして、App 直下の真空ゆらぎ場（z-index:-1）を透かす。 */
   background:
     repeating-linear-gradient(90deg, var(--tt-blueprint) 0 1px, transparent 1px 80px),
-    var(--tt-void);
+    rgb(var(--tt-void-rgb) / 0.82);
   color: var(--tt-ink);
 }
 
