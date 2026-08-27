@@ -96,9 +96,11 @@ function navigationDomainForRoute(route: NavigationRoute): 'home' | 'gate-aware'
 }
 
 /*
- * 背景のゆらぎの相。画面の役割をそのまま場の性格に写す。
+ * 背景のゆらぎの相。
  * ホームだけはドラムが正面に出している面で決まる。
  * ヘルプは中身が説明文なので、ドキュメントと同じ凪いだ相に置く。
+ * Gate-aware / Pulse の作業画面は、ホームと同じ背景アニメーションが
+ * 見えるよう、面ごとに切り替えず基準の 'gate-aware' 相へ統一する。
  */
 function fieldRegimeForScreen(screen: Screen, homeModeTurn: number): ModeId {
   if (screen === 'home') {
@@ -107,7 +109,7 @@ function fieldRegimeForScreen(screen: Screen, homeModeTurn: number): ModeId {
   if (screen === 'help') {
     return 'docs'
   }
-  return navigationDomainForRoute(screen) === 'pulse' ? 'pulse' : 'gate-aware'
+  return 'gate-aware'
 }
 
 /*
