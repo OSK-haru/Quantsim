@@ -63,14 +63,12 @@ const AMBIENT_FRAME_INTERVAL_MS = 1000 / 20
 
 /*
  * 下地としての出しゃばり具合。
- *   feature   … ホーム。ここでは主役なので素の濃さで出す。
- *   workspace … Gate-aware / Pulse の作業画面。タイトルほどではないが、
- *               同じ場がそこに在ると分かる濃さで残す。
- *   ambient   … それ以外。データを読む邪魔にならないところまで引く。
+ *   feature … ホームと、Gate-aware / Pulse の作業画面。作業画面では中央の
+ *             データパネルが場を覆うので、余白で見える分はホームと同じ濃さで出す。
+ *   ambient … それ以外（ヘルプ）。データを読む邪魔にならないところまで引く。
  */
 const PRESENCE_LEVELS = {
   feature: 1,
-  workspace: 0.85,
   ambient: 0.38,
 } as const
 
@@ -240,11 +238,18 @@ type QuantumFluctuationFieldProps = {
   regime: ModeId
   /* 下地としてどれだけ前に出るか。既定は控えめな ambient。 */
   presence?: FieldPresence
+  /*
+   * 描画に割く予算。'full' は 30fps、'reduced' は 20fps。濃さ（presence）とは
+   * 別に持つ。作業画面は場を素の濃さで出しつつ、重いキャンバスと同居するので
+   * フレームだけ落としたい。
+   */
+  motionBudget?: 'full' | 'reduced'
 }
 
 export function QuantumFluctuationField({
   regime,
   presence = 'ambient',
+  motionBudget = 'reduced',
 }: QuantumFluctuationFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const { animationsEnabled } = useAnimationSettings()
@@ -258,14 +263,16 @@ export function QuantumFluctuationField({
    */
   const regimeRef = useRef(regime)
   const presenceRef = useRef(presence)
+  const motionBudgetRef = useRef(motionBudget)
   /* アニメーションを切っている環境で、変更を1枚だけ焼き直すための口。 */
   const redrawRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     regimeRef.current = regime
     presenceRef.current = presence
+    motionBudgetRef.current = motionBudget
     redrawRef.current?.()
-  }, [regime, presence])
+  }, [regime, presence, motionBudget])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -485,7 +492,7 @@ export function QuantumFluctuationField({
     const render = (timestamp: number) => {
       frame = window.requestAnimationFrame(render)
 
-      const interval = presenceRef.current === 'feature'
+      const interval = motionBudgetRef.current === 'full'
         ? FEATURE_FRAME_INTERVAL_MS
         : AMBIENT_FRAME_INTERVAL_MS
       if (timestamp - lastFrameAt < interval) {

@@ -113,18 +113,12 @@ function fieldRegimeForScreen(screen: Screen, homeModeTurn: number): ModeId {
 }
 
 /*
- * 背景の出し具合。ホームは主役なので素の濃さ、Gate-aware / Pulse の
- * 作業画面はタイトルより薄いが同じ場が在ると分かる濃さ、それ以外（ヘルプ）は
- * いちばん控えめに引く。
+ * 背景の出し具合。ホームと Gate-aware / Pulse の作業画面は素の濃さ。
+ * 作業画面では中央のデータパネルが場を覆うので、余白に出る分は
+ * ホームと同じ見え方にそろえる。ヘルプだけは控えめに引く。
  */
 function fieldPresenceForScreen(screen: Screen): FieldPresence {
-  if (screen === 'home') {
-    return 'feature'
-  }
-  if (screen === 'help') {
-    return 'ambient'
-  }
-  return 'workspace'
+  return screen === 'help' ? 'ambient' : 'feature'
 }
 
 function screenFromPath(pathname: string): Screen {
@@ -359,6 +353,7 @@ function App() {
       <QuantumFluctuationField
         regime={fieldRegimeForScreen(screen, homeModeTurn)}
         presence={fieldPresenceForScreen(screen)}
+        motionBudget={screen === 'home' ? 'full' : 'reduced'}
       />
       {renderScreen()}
       <TutorialOverlay />
