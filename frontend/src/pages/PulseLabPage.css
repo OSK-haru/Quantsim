@@ -5,7 +5,8 @@
   --pulse-orange: var(--tt-accent);
   min-height: 100vh;
   padding: 34px clamp(18px, 4vw, 58px) 70px;
-  background: repeating-linear-gradient(90deg, transparent 0 79px, rgb(var(--tt-ink-mid-rgb) / 0.025) 79px 80px), rgb(var(--tt-panel-3-rgb) / 0.18);
+  /* 地は透明のまま。App 直下の真空ゆらぎ場（z-index:-1）をホームと同じ濃さで見せる。 */
+  background: repeating-linear-gradient(90deg, transparent 0 79px, rgb(var(--tt-ink-mid-rgb) / 0.025) 79px 80px);
   color: var(--pulse-ink);
 }
 
