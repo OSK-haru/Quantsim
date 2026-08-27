@@ -28,9 +28,7 @@ function HomepageHeader(): ReactNode {
     <header className={styles.hero}>
       <Heading as="h1" className={styles.wordmark}>
         <span>YURAGI</span>
-        <span>
-          STRIDER<sup className="tt-reg">&reg;</sup>
-        </span>
+        <span>STRIDER</span>
       </Heading>
 
       <div className={styles.heroBody}>
@@ -76,12 +74,34 @@ function DocumentMark(): ReactNode {
   );
 }
 
+/** 起動中のアプリ本体を新しいタブで開く矢羽根。 */
+function AppMark(): ReactNode {
+  return (
+    <svg
+      className={styles.entryMark}
+      viewBox="0 0 48 48"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true">
+      <path d="M8 40L24 8L40 40Z" />
+      <path d="M24 8V40" />
+    </svg>
+  );
+}
+
 function HomepageEntries(): ReactNode {
   return (
     <nav className={styles.entries} aria-label="主な入口">
       <Link className={styles.entry} to="/docs/overview/introduction">
         <DocumentMark />
         <span className={styles.entryTitle}>ドキュメントを見る</span>
+      </Link>
+      <Link
+        className={styles.entryAlt}
+        href="https://yuragi-strider-app.23sam55781.workers.dev">
+        <AppMark />
+        <span className={styles.entryTitle}>アプリを試してみる</span>
       </Link>
     </nav>
   );

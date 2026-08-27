@@ -302,12 +302,6 @@ body::after {
    TELEMETRY PRIMITIVES
    ========================================================================= */
 
-/* Registration mark used as a structural glyph, not legal text. */
-.tt-reg {
-  color: var(--tt-accent);
-  font-family: var(--tt-mono);
-}
-
 /* Hazard stripe: thick diagonal warning band. */
 .tt-hazard {
   height: 6px;

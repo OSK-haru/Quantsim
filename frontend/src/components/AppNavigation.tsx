@@ -108,7 +108,7 @@ export function AppNavigation({ currentRoute, onNavigate }: AppNavigationProps) 
       {/* 全ページ共通の計器レール。現在地と機体情報をここに集約する。 */}
       <div className="app-navigation__rail">
         <span className="app-navigation__mark">
-          YURAGI&ndash;STRIDER<sup className="tt-reg">&reg;</sup>
+          YURAGI&ndash;STRIDER
         </span>
         <span className="app-navigation__route">{routeDesignations[currentRoute]}</span>
         <span className="app-navigation__rev">REV 2.6</span>

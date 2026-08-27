@@ -436,11 +436,6 @@ body::after {
   color: var(--tt-accent);
 }
 
-.tt-reg {
-  color: var(--tt-accent);
-  font-family: var(--tt-mono);
-}
-
 .tt-meta {
   font-family: var(--tt-mono);
   font-size: 0.7rem;

@@ -102,27 +102,46 @@
 
 .entries {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: var(--tt-hair);
   padding: 32px 24px 0;
 }
 
-.entry {
+.entry,
+.entryAlt {
   display: inline-flex;
   align-items: center;
   gap: 14px;
   padding: 18px 32px;
   border: var(--tt-hair) solid var(--tt-accent);
-  background: var(--tt-accent);
-  color: var(--tt-on-accent);
   cursor: pointer;
   transition: background 120ms linear, border-color 120ms linear,
     color 120ms linear;
+}
+
+.entry {
+  background: var(--tt-accent);
+  color: var(--tt-on-accent);
 }
 
 .entry:hover {
   border-color: var(--tt-accent-hot);
   background: var(--tt-accent-hot);
   color: var(--tt-on-accent);
+  text-decoration: none;
+}
+
+/* 副入口: 面は塗らず輪郭だけ。主入口(ドキュメント)との格を分ける。 */
+.entryAlt {
+  background: transparent;
+  color: var(--tt-ink);
+}
+
+.entryAlt:hover {
+  border-color: var(--tt-accent-hot);
+  background: var(--tt-panel-3);
+  color: var(--tt-ink-max);
   text-decoration: none;
 }
 

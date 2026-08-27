@@ -125,19 +125,31 @@
 /* --- Guided tour ---------------------------------------------------------- */
 
 /*
- * モード選択の直下に敷く案内バー。左端の帯だけをハザードレッドにして、
- * 主動線（モード選択）より一段弱く、でも見落とさない強さにする。
+ * モード選択の直下に敷く案内ブロック。「はじめて来た人はまずここ」と
+ * 分かるよう、macro 見出しと太い左帯で主動線に次ぐ強さまで持ち上げる。
  */
 .home-page__tutorial {
   display: grid;
-  gap: 16px;
+  gap: 20px;
 
-  margin: 24px 24px 0;
-  padding: 16px 20px 20px;
+  margin: 32px 24px 0;
+  padding: 24px 24px 28px;
 
   border: var(--tt-hair) solid var(--tt-rule-strong);
-  border-left: 3px solid var(--tt-accent);
-  background: rgb(var(--tt-panel-rgb) / 0.55);
+  border-left: 6px solid var(--tt-accent);
+  background: rgb(var(--tt-panel-rgb) / 0.68);
+}
+
+/* セクション見出し。ワードマークに次ぐ macro スケールで前面に出す。 */
+.home-page__tutorial-heading {
+  margin: 0;
+
+  color: var(--tt-ink-max);
+  font-family: var(--tt-macro);
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
 }
 
 @supports (backdrop-filter: blur(2px)) {

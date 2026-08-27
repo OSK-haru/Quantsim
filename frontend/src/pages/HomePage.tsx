@@ -33,9 +33,7 @@ export function HomePage({
       <section className="home-page__hero" data-tutorial-anchor="home-hero">
         <h1 className="home-page__wordmark">
           <span>YURAGI</span>
-          <span>
-            STRIDER<sup className="tt-reg">&reg;</sup>
-          </span>
+          <span>STRIDER</span>
         </h1>
 
         <div className="home-page__hero-body">
@@ -89,12 +87,21 @@ export function HomePage({
         「まず何をすればいいか分からない」で止まらないようにする。
         1本目で使い方、2本目で物理の実験、と役割を分けている。
       */}
-      <section className="home-page__tutorial" aria-label="チュートリアル">
+      <section
+        className="home-page__tutorial"
+        aria-labelledby="home-page-tutorial-heading"
+      >
         <div className="home-page__tutorial-intro">
           <span className="home-page__tutorial-unit">Guided tour / ナビペットが案内します</span>
+          <h2
+            id="home-page-tutorial-heading"
+            className="home-page__tutorial-heading"
+          >
+            チュートリアル
+          </h2>
           <p className="home-page__tutorial-lede">
             量子回路を知らなくても大丈夫。画面の見るべき場所を光らせながら、
-            手を動かして進みます。
+            手を動かして進みます。まずはここから。
           </p>
         </div>
 
@@ -107,7 +114,7 @@ export function HomePage({
                   <data className="home-page__tutorial-index" value={index + 1}>
                     {String(index + 1).padStart(2, '0')}
                   </data>
-                  <h2 className="home-page__tutorial-name">{course.title}</h2>
+                  <h3 className="home-page__tutorial-name">{course.title}</h3>
                   <span className="home-page__tutorial-meta">
                     {isCompleted ? `修了済み / ${course.duration}` : course.duration}
                   </span>
