@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { PulseDensityMatrixHeatmap } from '../components/PulseDensityMatrixHeatmap'
 import { PulseEnvironmentPanel } from '../components/PulseEnvironmentPanel'
-import { PulsePopulationTimeline } from '../components/PulsePopulationTimeline'
 import { PulseWaveform } from '../components/PulseWaveform'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
-import { ResultDrawer } from '../components/ResultDrawer'
 import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
 import { apiUrl } from '../utils/apiBase'
 import { pulseLabTips, pulseRunningStages } from '../utils/quantumPetTips'
@@ -12,7 +9,6 @@ import { useInternalInfoVisible } from '../context/useAdminMode'
 import {
   isQutritPulseResponse,
   isCoupledTransmonNetworkResponse,
-  isCoupledTransmonPairResponse,
   COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
   COUPLED_TRANSMON_PAIR_PULSE_MODEL,
   QUTRIT_PULSE_MODEL,
@@ -39,7 +35,6 @@ import {
   pulseDurationUs,
   pulseWaveform,
   sequentialPulseWaveform,
-  qutritTargetOverlap,
   validatePulseLabForm,
 } from '../utils/pulseLab'
 import {
@@ -93,12 +88,10 @@ export function PulseLabPage({
 }: PulseLabPageProps) {
   const internalInfoVisible = useInternalInfoVisible()
   const result = latestRun?.response ?? null
-  const resultForm = latestRun?.formAtRun ?? null
   const lastResponseAt = latestRun?.completedAt ?? null
   const [status, setStatus] = useState<RequestStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [errorDetail, setErrorDetail] = useState<string | null>(null)
-  const [lastRequestPayload, setLastRequestPayload] = useState<Record<string, unknown> | null>(null)
   const [showCompletionPopup, setShowCompletionPopup] = useState(false)
   const [petCelebrating, setPetCelebrating] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
@@ -184,11 +177,6 @@ export function PulseLabPage({
       totalSimulationTimeUs: Math.max(form.totalSimulationTimeUs, requiredDurationUs),
     })
   }
-  const qutritResult = result && isQutritPulseResponse(result) ? result : null
-  const pairResult = result && isCoupledTransmonPairResponse(result) ? result : null
-  const networkResult = result && isCoupledTransmonNetworkResponse(result) ? result : null
-  const activeResultForm = resultForm ?? form
-
   useEffect(() => {
     mountedRef.current = true
     return () => {
@@ -227,7 +215,6 @@ export function PulseLabPage({
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
-    const payloads: Record<string, unknown>[] = []
     const timeoutId = window.setTimeout(
       () => controller.abort(),
       form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL || networkMode
@@ -241,7 +228,6 @@ export function PulseLabPage({
     setStatus('loading')
     setErrorMessage(null)
     setErrorDetail(null)
-    setLastRequestPayload(null)
 
     try {
       let initialDensityMatrix: PulseComplexValue[][] | undefined
@@ -253,7 +239,6 @@ export function PulseLabPage({
       let framePhaseRad = 0
       if (networkMode) {
         const payload = buildTransmonNetworkPayload(form, circuit)
-        payloads.push(payload)
         const response = await fetch(apiUrl('/api/pulse/simulate'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -292,7 +277,6 @@ export function PulseLabPage({
         }
 
         const payload = buildPulsePayload(operation.form, initialDensityMatrix)
-        payloads.push(payload)
         const response = await fetch(apiUrl('/api/pulse/simulate'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -331,19 +315,6 @@ export function PulseLabPage({
             activeTransmonIndex,
           )
         : responses[0]
-      setLastRequestPayload(
-        sequenceMode
-          ? {
-              transmon_index: activeTransmonIndex,
-              operations: executionPlan.map((operation) => (
-                operation.kind === 'drive'
-                  ? { kind: 'drive', label: operation.label }
-                  : { kind: 'virtual_z', label: operation.label, angle_rad: operation.angleRad }
-              )),
-              api_requests: payloads,
-            }
-          : payloads[0],
-      )
       onRunCommitted({
         response: nextResult,
         formAtRun: { ...form },
@@ -556,127 +527,37 @@ export function PulseLabPage({
           scopeLabel={waveformScopeLabel}
         />
 
+        {/*
+          Pulseラボは「設計して実行する」場所に徹する。時間発展の状態
+          （占有数・密度行列・指標）はここには一切描かず、Pulse状態
+          エクスプローラー1か所だけで読む。結果の置き場所が二重になると
+          カーソルや古さ判定の基準がずれるため。
+        */}
         {result ? (
-          <>
-            {/* 実行系の内訳バナーも内部情報。 */}
-            {internalInfoVisible ? (
-            <section className="pulse-lab__result-banner">
-              <div>
-                <span>直近の有効な結果</span>
-                <strong>{result.model.description}</strong>
-              </div>
-              <div>
-                <span>契約バージョン</span>
-                <strong>{result.contract_version}</strong>
-              </div>
-              <div>
-                <span>完了時刻</span>
-                <strong>{lastResponseAt ? new Date(lastResponseAt).toLocaleTimeString() : 'たった今'}</strong>
-              </div>
-              <div>
-                <span>発展方式</span>
-                <strong>
-                  {result.diagnostics.evolution.resolved === 'explicit_cptp'
-                    ? '明示的 CPTP 写像'
-                    : '固定ステップ RK4'}
-                </strong>
-              </div>
-            </section>
-            ) : null}
-
-            <section className="pulse-lab__explorer-link">
-              <div>
-                <span>結果を読み解く</span>
-                <strong>Pulse 状態エクスプローラー</strong>
-                <p>
-                  時刻カーソルを1本共有して、指標・占有確率・密度行列を同じ瞬間で並べて読めます。
-                </p>
-              </div>
-              <button type="button" onClick={onOpenPulseStateExplorer}>
-                Pulse 状態エクスプローラーで開く
-              </button>
-            </section>
-
-            <PulseSummary response={result} formAtRun={activeResultForm} />
-            <PulsePopulationTimeline response={result} formAtRun={activeResultForm} />
-            {qutritResult ? (
-              <PulseDensityMatrixHeatmap matrix={qutritResult.final.density_matrix} />
-            ) : null}
-            {pairResult ? (
-              <PulseDensityMatrixHeatmap
-                matrix={pairResult.final.density_matrix}
-                basisLabels={pairResult.model.basis_order}
-              />
-            ) : null}
-            {networkResult ? (
-              <PulseDensityMatrixHeatmap
-                key={`network-density-${networkResult.model.hilbert_dimension}`}
-                matrix={networkResult.final.density_matrix}
-                basisLabels={networkResult.model.basis_order}
-              />
-            ) : null}
-
-            <div className="pulse-lab__drawers">
-              {/*
-                以下は API の応答をそのまま流した生データで、内部フィールド名が
-                そのまま並ぶ。管理者モードのときだけ開けるようにしている。
-              */}
-              {internalInfoVisible ? (
-                <>
-                  <ResultDrawer
-                    eyebrow="モデル"
-                    title="モデルと近似の詳細"
-                    description="APIが返すモデル識別情報と前提条件。"
-                  >
-                    <JsonBlock value={result.model} />
-                  </ResultDrawer>
-                  <ResultDrawer
-                    eyebrow="環境"
-                    title="レートと熱占有数"
-                    description="ソルバーが実際に使用した正規化レート。"
-                  >
-                    <JsonBlock value={result.rates} />
-                  </ResultDrawer>
-                  <ResultDrawer
-                    eyebrow="数値計算"
-                    title="ステップ方針と物理的整合性"
-                    description="計算量の上限、生の物理的整合性、クリーンアップ診断。"
-                  >
-                    <JsonBlock value={{ step_policy: result.step_policy, diagnostics: result.diagnostics }} />
-                  </ResultDrawer>
-                </>
-              ) : null}
-              {(result.warnings.length > 0 || result.limitations.length > 0) ? (
-                <ResultDrawer
-                  eyebrow="適用範囲"
-                  title="警告と制限事項"
-                  icon="warning"
-                  defaultOpen={result.warnings.length > 1}
-                >
-                  <div className="pulse-lab__scope">
-                    {result.warnings.map((warning) => <p key={warning}>{warning}</p>)}
-                    <ul>
-                      {result.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}
-                    </ul>
-                  </div>
-                </ResultDrawer>
-              ) : null}
-              {internalInfoVisible ? (
-                <ResultDrawer
-                  eyebrow="API"
-                  title="リクエストのデバッグ情報"
-                  description="このページが最後に送信したペイロード。未使用のフィールドは含まれません。"
-                >
-                  <JsonBlock value={lastRequestPayload} />
-                </ResultDrawer>
-              ) : null}
+          <section className="pulse-lab__explorer-link">
+            <div>
+              <span>実行完了</span>
+              <strong>Pulse 状態エクスプローラーで結果を読む</strong>
+              <p>
+                時間発展した状態（占有数・密度行列・指標）はこのページには表示しません。
+                時刻カーソルを1本共有して同じ瞬間で並べて読める Pulse 状態エクスプローラーへ移動してください。
+                {internalInfoVisible && lastResponseAt ? (
+                  <> 最終実行 {new Date(lastResponseAt).toLocaleTimeString()}。</>
+                ) : null}
+              </p>
             </div>
-          </>
+            <button type="button" onClick={onOpenPulseStateExplorer}>
+              Pulse 状態エクスプローラーで開く
+            </button>
+          </section>
         ) : (
           <section className="pulse-lab__empty">
             <span>実行準備完了</span>
             <h2>まだPulseの結果がありません</h2>
-            <p>波形と計算量見積りを確認してから、選択したモデルを実行してください。</p>
+            <p>
+              波形と計算量見積りを確認してから、選択したモデルを実行してください。
+              実行した状態は Pulse 状態エクスプローラーで確認します。
+            </p>
           </section>
         )}
       </div>
@@ -1111,61 +992,6 @@ function virtualZTrajectoryPoint(
     sequence_step_index: stepIndex,
     sequence_step_label: label,
   }
-}
-
-function PulseSummary({
-  response,
-  formAtRun,
-}: {
-  response: PulseResponse
-  formAtRun: PulseLabForm
-}) {
-  const qutrit = isQutritPulseResponse(response)
-  const pair = isCoupledTransmonPairResponse(response)
-  const network = isCoupledTransmonNetworkResponse(response)
-  const coupled = pair || network
-  const pulseEnd = response.pulse_end
-  const final = response.final
-  const fidelity = coupled
-    ? null
-    : isQutritPulseResponse(response)
-    ? Number(response.input.sequence_length ?? 1) > 1
-      ? null
-      : qutritTargetOverlap(response.final, formAtRun)
-    : response.final.fidelity_to_closed
-  return (
-    <section className="pulse-lab__summary" aria-label="Pulse結果サマリー">
-      <article>
-        <span>Pulse終了時の純度</span>
-        <strong>{pulseEnd.purity.toFixed(6)}</strong>
-      </article>
-      <article>
-        <span>最終純度</span>
-        <strong>{final.purity.toFixed(6)}</strong>
-      </article>
-      <article>
-        <span>{qutrit ? '目標状態との重なり' : coupled ? '結合モデル' : '最終忠実度'}</span>
-        <strong>{fidelity === null ? 'N/A' : fidelity.toFixed(6)}</strong>
-        {qutrit ? <small>リーケージ非正規化</small> : null}
-      </article>
-      {qutrit || coupled ? (
-        <>
-          <article className="pulse-lab__summary--leakage">
-            <span>{coupled ? '計算空間外の最大値' : '最大リーケージ P2'}</span>
-            <strong>{response.leakage.maximum_recorded_leakage_probability.toFixed(6)}</strong>
-          </article>
-          <article className="pulse-lab__summary--leakage">
-            <span>{coupled ? '計算空間外の最終値' : '最終リーケージ P2'}</span>
-            <strong>{response.leakage.leakage_at_final_time.toFixed(6)}</strong>
-          </article>
-        </>
-      ) : null}
-    </section>
-  )
-}
-
-function JsonBlock({ value }: { value: unknown }) {
-  return <pre className="pulse-lab__json">{JSON.stringify(value, null, 2)}</pre>
 }
 
 async function pulseApiError(response: Response) {

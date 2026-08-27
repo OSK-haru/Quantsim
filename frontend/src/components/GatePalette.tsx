@@ -1,4 +1,5 @@
 import './GatePalette.css'
+import { useEffect, useState } from 'react'
 import type { GateType } from '../types/circuit'
 import { setCircuitDragPreview } from '../utils/dragPreview'
 import {
@@ -31,10 +32,15 @@ const draggableGateTypes = new Set<GateType>([
   'H', 'X', 'Y', 'Z', 'S', 'T', 'RX', 'RY', 'RZ', 'MEASURE',
   'CNOT', 'CZ', 'CP', 'CCX', 'SWAP', 'QFT', 'ORACLE', 'MESSAGE', 'RECEIVED',
 ])
-const logicalQubitOptions = Array.from(
-  { length: MAX_SUPPORTED_LOGICAL_QUBITS - MIN_SUPPORTED_LOGICAL_QUBITS + 1 },
-  (_, index) => MIN_SUPPORTED_LOGICAL_QUBITS + index,
-)
+function clampLogicalQubits(value: number) {
+  if (!Number.isFinite(value)) {
+    return MIN_SUPPORTED_LOGICAL_QUBITS
+  }
+  return Math.min(
+    MAX_SUPPORTED_LOGICAL_QUBITS,
+    Math.max(MIN_SUPPORTED_LOGICAL_QUBITS, Math.round(value)),
+  )
+}
 
 export function GatePalette({
   selectedGateType,
@@ -47,6 +53,26 @@ export function GatePalette({
   onGateDragStart,
   onGateDragEnd,
 }: GatePaletteProps) {
+  // 入力途中の空欄や範囲外の値を一時的に持てるよう、表示用の文字列は別で管理する。
+  const [qubitDraft, setQubitDraft] = useState(String(logicalQubits))
+
+  useEffect(() => {
+    setQubitDraft(String(logicalQubits))
+  }, [logicalQubits])
+
+  function commitQubitDraft(rawValue: string) {
+    const parsed = Number.parseInt(rawValue, 10)
+    if (Number.isNaN(parsed)) {
+      setQubitDraft(String(logicalQubits))
+      return
+    }
+    const next = clampLogicalQubits(parsed)
+    setQubitDraft(String(next))
+    if (next !== logicalQubits) {
+      onSelectLogicalQubits(next)
+    }
+  }
+
   function renderGateButton(gateType: GateType) {
     const isSelected = selectedGateType === gateType
     const isRegisterType = isRegisterGateType(gateType)
@@ -109,25 +135,31 @@ export function GatePalette({
 
   return (
     <section className="gate-palette" aria-label="ゲートパレット" data-tutorial-anchor="gate-palette">
-      <div className="gate-palette__group" role="radiogroup" aria-label="論理量子ビット">
-        <span className="gate-palette__label">量子ビット</span>
-        <div className="gate-palette__qubit-selector-buttons">
-          {logicalQubitOptions.map((count) => {
-            const isSelected = logicalQubits === count
-            return (
-              <button
-                key={count}
-                type="button"
-                className={`gate-palette__qubit-button${
-                  isSelected ? ' gate-palette__qubit-button--selected' : ''
-                }`}
-                aria-pressed={isSelected}
-                onClick={() => onSelectLogicalQubits(count)}
-              >
-                量子ビット {count}
-              </button>
-            )
-          })}
+      <div className="gate-palette__group" aria-label="論理量子ビット">
+        <label className="gate-palette__label" htmlFor="gate-palette-qubit-input">
+          量子ビット
+        </label>
+        <div className="gate-palette__qubit-input-row">
+          <input
+            id="gate-palette-qubit-input"
+            className="gate-palette__qubit-input"
+            type="number"
+            inputMode="numeric"
+            min={MIN_SUPPORTED_LOGICAL_QUBITS}
+            max={MAX_SUPPORTED_LOGICAL_QUBITS}
+            step={1}
+            value={qubitDraft}
+            onChange={(event) => setQubitDraft(event.target.value)}
+            onBlur={(event) => commitQubitDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                commitQubitDraft(event.currentTarget.value)
+              }
+            }}
+          />
+          <span className="gate-palette__qubit-input-range">
+            {MIN_SUPPORTED_LOGICAL_QUBITS}〜{MAX_SUPPORTED_LOGICAL_QUBITS}
+          </span>
         </div>
         {logicalQubits > 5 ? (
           <p className="gate-palette__qubit-limit-note" role="status">

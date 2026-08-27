@@ -34,10 +34,35 @@
   white-space: nowrap;
 }
 
-.gate-palette__qubit-selector-buttons {
+.gate-palette__qubit-input-row {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+}
+
+.gate-palette__qubit-input {
+  width: 72px;
+  padding: 8px 10px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
+  background: rgb(var(--tt-void-rgb) / 0.3);
+  color: var(--tt-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.gate-palette__qubit-input:hover {
+  border-color: rgb(var(--tt-ink-mid-rgb) / 0.48);
+}
+
+.gate-palette__qubit-input:focus-visible {
+  outline: 2px solid var(--tt-ink-mid);
+  outline-offset: 2px;
+}
+
+.gate-palette__qubit-input-range {
+  color: var(--tt-ink-mid);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
 }
 
 .gate-palette__qubit-limit-note {
@@ -64,7 +89,6 @@
   color: var(--tt-ink);
 }
 
-.gate-palette__qubit-button,
 .gate-palette__button {
   min-width: 38px;
   padding: 8px 11px;
@@ -94,19 +118,16 @@
   cursor: grabbing;
 }
 
-.gate-palette__qubit-button--selected,
 .gate-palette__button--selected {
   border-color: var(--tt-ink-mid);
   background: var(--tt-panel-2);
   color: var(--tt-ink-max);
 }
 
-.gate-palette__qubit-button:hover,
 .gate-palette__button:hover {
   border-color: rgb(var(--tt-ink-mid-rgb) / 0.48);
 }
 
-.gate-palette__qubit-button:focus-visible,
 .gate-palette__button:focus-visible {
   outline: 2px solid var(--tt-ink-mid);
   outline-offset: 2px;
