@@ -70,7 +70,7 @@ const AMBIENT_FRAME_INTERVAL_MS = 1000 / 20
  */
 const PRESENCE_LEVELS = {
   feature: 1,
-  workspace: 0.62,
+  workspace: 0.85,
   ambient: 0.38,
 } as const
 
