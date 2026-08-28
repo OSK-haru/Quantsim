@@ -1,0 +1,88 @@
+/*
+ * ゲート／Pulse配置時のカーソル位置エフェクト。
+ * 要素は utils/gatePlacementEffect.ts が body 直下へ生成する。
+ */
+
+.gate-placement-effect-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.gate-placement-effect {
+  position: absolute;
+  width: 0;
+  height: 0;
+  /* left / top はカーソルのビューポート座標。要素の中心をその点に合わせる。 */
+  transform: translate(-50%, -50%);
+  --effect-rgb: var(--tt-accent-rgb);
+}
+
+.gate-placement-effect[data-tone='pulse'] {
+  --effect-rgb: var(--gate-rotation-rgb);
+}
+
+.gate-placement-effect__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  /* 角丸は使わない（設計上の統一。四角い照準が弾けるイメージ）。 */
+  border: var(--tt-bar, 2px) solid rgb(var(--effect-rgb) / 0.9);
+  animation: gate-placement-ring 420ms cubic-bezier(0.16, 0.84, 0.36, 1) forwards;
+}
+
+.gate-placement-effect__spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 8px;
+  margin: -4px 0 0 -1px;
+  background: rgb(var(--effect-rgb) / 0.85);
+  /*
+   * 回転してから外へ押し出す。角度ごとに translate を書き分けずに、
+   * --spark-angle だけで放射状に散らすための順序。
+   */
+  transform: rotate(var(--spark-angle, 0deg)) translateY(-6px);
+  animation: gate-placement-spark 380ms ease-out var(--spark-delay, 0ms) forwards;
+}
+
+@keyframes gate-placement-ring {
+  from {
+    opacity: 0.95;
+    transform: scale(0.35);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@keyframes gate-placement-spark {
+  from {
+    opacity: 0.9;
+    transform: rotate(var(--spark-angle, 0deg)) translateY(-6px) scaleY(1);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(var(--spark-angle, 0deg)) translateY(-22px) scaleY(0.4);
+  }
+}
+
+/*
+ * JS 側でも同じ条件で生成を止めているが、生成後に設定が変わった場合の保険。
+ */
+@media (prefers-reduced-motion: reduce) {
+  .gate-placement-effect {
+    display: none;
+  }
+}
+
+:root[data-animations='off'] .gate-placement-effect {
+  display: none;
+}

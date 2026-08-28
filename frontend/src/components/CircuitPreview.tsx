@@ -8,6 +8,7 @@ import {
   type RefObject,
 } from 'react'
 import './CircuitPreview.css'
+import { spawnGatePlacementEffect } from '../utils/gatePlacementEffect'
 import type {
   CircuitEditorState,
   CircuitGate,
@@ -322,6 +323,35 @@ export function CircuitPreview({
     return highlightedGateSignatures.includes(`${gate.type}:${qubits.join(',')}`)
   }
 
+  /*
+   * 配置エフェクトは「置こうとした瞬間」ではなく「実際に置けたとき」だけ出す。
+   *
+   * クリック配置はCNOTのように1回目では何も置かない操作があり、ドロップも
+   * 埋まっているスロットなら弾かれる。押した時点で光らせると、置けていない
+   * のに置けたように見えてしまう。そこでカーソル位置だけ控えておき、
+   * 回路が実際に書き換わったのを見てから焚く。
+   *
+   * 編集が通った場合だけ新しい state が作られるので、参照が変わったかどうかが
+   * そのまま成否になる。置き直し（移動）も手応えとしては配置なので、ここに含める。
+   */
+  const pendingPlacementEffectRef = useRef<{ x: number; y: number } | null>(null)
+  const lastCircuitRef = useRef(circuit)
+
+  function armPlacementEffect(clientX: number, clientY: number) {
+    pendingPlacementEffectRef.current = { x: clientX, y: clientY }
+  }
+
+  useEffect(() => {
+    const circuitChanged = lastCircuitRef.current !== circuit
+    lastCircuitRef.current = circuit
+
+    const pending = pendingPlacementEffectRef.current
+    pendingPlacementEffectRef.current = null
+    if (pending && circuitChanged) {
+      spawnGatePlacementEffect(pending.x, pending.y)
+    }
+  }, [circuit])
+
   useEffect(() => {
     dropHandlersRef.current = { onSlotDrop, onColumnInsertDrop, onDragEnd }
   })
@@ -361,11 +391,18 @@ export function CircuitPreview({
     event.dataTransfer.dropEffect = dragPayload.source === 'circuit' ? 'move' : 'copy'
   }
 
-  function handleSlotClick(columnIndex: number, qubitIndex: number) {
+  function handleSlotClick(
+    columnIndex: number,
+    qubitIndex: number,
+    effectOrigin?: { clientX: number; clientY: number },
+  ) {
     if (!selectedGateType || !onSlotClick) {
       return
     }
 
+    if (effectOrigin) {
+      armPlacementEffect(effectOrigin.clientX, effectOrigin.clientY)
+    }
     onSlotClick(columnIndex, qubitIndex)
   }
 
@@ -376,7 +413,12 @@ export function CircuitPreview({
   ) {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      handleSlotClick(columnIndex, qubitIndex)
+      /* キーボード操作にはカーソルが無いので、対象スロットの中心から出す。 */
+      const bounds = event.currentTarget.getBoundingClientRect()
+      handleSlotClick(columnIndex, qubitIndex, {
+        clientX: bounds.left + bounds.width / 2,
+        clientY: bounds.top + bounds.height / 2,
+      })
     }
   }
 
@@ -400,6 +442,7 @@ export function CircuitPreview({
 
     event.preventDefault()
     setDragHoverSlot(null)
+    armPlacementEffect(event.clientX, event.clientY)
     onSlotDrop(columnIndex, qubitIndex)
   }
 
@@ -557,8 +600,10 @@ export function CircuitPreview({
 
       const handlers = dropHandlersRef.current
       if (dropTarget?.kind === 'insert') {
+        armPlacementEffect(upEvent.clientX, upEvent.clientY)
         handlers.onColumnInsertDrop?.(dropTarget.insertIndex, dropTarget.qubitIndex)
       } else if (dropTarget?.kind === 'slot') {
+        armPlacementEffect(upEvent.clientX, upEvent.clientY)
         handlers.onSlotDrop?.(dropTarget.columnIndex, dropTarget.qubitIndex)
       }
       handlers.onDragEnd?.()
@@ -1188,13 +1233,14 @@ export function CircuitPreview({
                       }
                       onClick={
                         isClickable
-                          ? () => {
+                          ? (event) => {
                               /* 直前がドラッグだったときは、選択し直さない。 */
                               if (consumeClickSuppression()) {
                                 return
                               }
+                              const origin = { clientX: event.clientX, clientY: event.clientY }
                               if (isControlMarkerTool && interactive) {
-                                handleSlotClick(columnIndex, qubitIndex)
+                                handleSlotClick(columnIndex, qubitIndex, origin)
                                 return
                               }
                               if (selectable && gateIdAtSlot && onGateSelect) {
@@ -1202,7 +1248,7 @@ export function CircuitPreview({
                                 return
                               }
                               if (interactive) {
-                                handleSlotClick(columnIndex, qubitIndex)
+                                handleSlotClick(columnIndex, qubitIndex, origin)
                               }
                             }
                           : undefined
@@ -1575,6 +1621,7 @@ export function CircuitPreview({
                           event.preventDefault()
                           setInsertHoverSlot(null)
                           setDragHoverSlot(null)
+                          armPlacementEffect(event.clientX, event.clientY)
                           onColumnInsertDrop(insertIndex, qubitIndex)
                         }}
                       />
