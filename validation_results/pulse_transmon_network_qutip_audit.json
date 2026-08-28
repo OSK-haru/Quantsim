@@ -1,11 +1,12 @@
 {
-  "audit_id": "coupled_transmon_network_qutip_audit_v1",
-  "case_count": 6,
+  "audit_id": "coupled_transmon_network_qutip_audit_v2",
+  "case_count": 15,
   "cases": [
     {
       "category": "coupling_sweep",
       "checkpoint_count": 9,
       "hilbert_dimension": 9,
+      "local_levels": 3,
       "maximum_density_matrix_element_error": 7.771712695172448e-10,
       "maximum_leakage_difference": 1.2733514243024047e-10,
       "maximum_recorded_production_leakage": 0.16306639554585567,
@@ -36,7 +37,7 @@
       },
       "pass": true,
       "production_internal_steps": 864,
-      "production_runtime_ms": 98.80579999298789,
+      "production_runtime_ms": 107.22370000439696,
       "tolerance": 1e-07,
       "transmon_count": 2
     },
@@ -44,6 +45,7 @@
       "category": "multi_edge_coupling",
       "checkpoint_count": 9,
       "hilbert_dimension": 27,
+      "local_levels": 3,
       "maximum_density_matrix_element_error": 2.59509009452215e-10,
       "maximum_leakage_difference": 2.5164315076153798e-11,
       "maximum_recorded_production_leakage": 0.12395785017264938,
@@ -87,7 +89,7 @@
       },
       "pass": true,
       "production_internal_steps": 952,
-      "production_runtime_ms": 209.61009999155067,
+      "production_runtime_ms": 220.4280000005383,
       "tolerance": 1e-07,
       "transmon_count": 3
     },
@@ -95,6 +97,7 @@
       "category": "drive_schedule",
       "checkpoint_count": 15,
       "hilbert_dimension": 27,
+      "local_levels": 3,
       "maximum_density_matrix_element_error": 2.282466075074282e-09,
       "maximum_leakage_difference": 1.3244549901259006e-10,
       "maximum_recorded_production_leakage": 0.5300742340230609,
@@ -142,7 +145,7 @@
       },
       "pass": true,
       "production_internal_steps": 1605,
-      "production_runtime_ms": 632.4342000007164,
+      "production_runtime_ms": 660.3459999896586,
       "tolerance": 5e-07,
       "transmon_count": 3
     },
@@ -150,6 +153,7 @@
       "category": "four_transmon_register",
       "checkpoint_count": 9,
       "hilbert_dimension": 81,
+      "local_levels": 3,
       "maximum_density_matrix_element_error": 6.149242729997033e-10,
       "maximum_leakage_difference": 1.2276835104074735e-10,
       "maximum_recorded_production_leakage": 0.11633146093326474,
@@ -204,7 +208,7 @@
       },
       "pass": true,
       "production_internal_steps": 560,
-      "production_runtime_ms": 2178.9825999876484,
+      "production_runtime_ms": 1315.05350000225,
       "tolerance": 1e-07,
       "transmon_count": 4
     },
@@ -212,6 +216,7 @@
       "category": "dissipation_leakage",
       "checkpoint_count": 12,
       "hilbert_dimension": 81,
+      "local_levels": 3,
       "maximum_density_matrix_element_error": 2.222500294912777e-09,
       "maximum_leakage_difference": 1.457702292206875e-09,
       "maximum_recorded_production_leakage": 0.9162170358458759,
@@ -262,7 +267,7 @@
       },
       "pass": true,
       "production_internal_steps": 1760,
-      "production_runtime_ms": 10595.12199999881,
+      "production_runtime_ms": 7527.4481999949785,
       "tolerance": 5e-07,
       "transmon_count": 4
     },
@@ -270,6 +275,7 @@
       "category": "per_transmon_rates",
       "checkpoint_count": 10,
       "hilbert_dimension": 27,
+      "local_levels": 3,
       "maximum_density_matrix_element_error": 1.2219265923505039e-10,
       "maximum_leakage_difference": 1.3393730569077889e-11,
       "maximum_recorded_production_leakage": 0.04806367489561614,
@@ -311,20 +317,445 @@
       },
       "pass": true,
       "production_internal_steps": 1233,
-      "production_runtime_ms": 1465.583000011975,
+      "production_runtime_ms": 572.7312999952119,
       "tolerance": 1e-07,
+      "transmon_count": 3
+    },
+    {
+      "category": "two_level_truncation",
+      "checkpoint_count": 10,
+      "hilbert_dimension": 2,
+      "local_levels": 2,
+      "maximum_density_matrix_element_error": 5.806624159098313e-11,
+      "maximum_leakage_difference": 4.440892098500626e-16,
+      "maximum_recorded_production_leakage": 1.1102230246251565e-16,
+      "maximum_trace_distance": 5.80672236869049e-11,
+      "name": "single_transmon_two_level_dissipative",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0
+        ],
+        "couplings": [],
+        "detunings_rad_per_us": [
+          3.0
+        ],
+        "drive_count": 1,
+        "drive_start_times_us": [
+          0.0
+        ],
+        "drive_targets": [
+          0
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "0",
+        "total_simulation_time_us": 0.02
+      },
+      "pass": true,
+      "production_internal_steps": 1312,
+      "production_runtime_ms": 194.74919998901896,
+      "tolerance": 1e-07,
+      "transmon_count": 1
+    },
+    {
+      "category": "two_level_truncation",
+      "checkpoint_count": 9,
+      "hilbert_dimension": 4,
+      "local_levels": 2,
+      "maximum_density_matrix_element_error": 8.512775360987916e-11,
+      "maximum_leakage_difference": 6.661338147750939e-16,
+      "maximum_recorded_production_leakage": 0.0,
+      "maximum_trace_distance": 1.6712640236368663e-10,
+      "name": "two_transmon_two_level_exchange",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0,
+          -106.0
+        ],
+        "couplings": [
+          {
+            "exchange_coupling_rad_per_us": 18.0,
+            "left": 0,
+            "right": 1
+          }
+        ],
+        "detunings_rad_per_us": [
+          0.0,
+          4.0
+        ],
+        "drive_count": 2,
+        "drive_start_times_us": [
+          0.0,
+          0.004
+        ],
+        "drive_targets": [
+          0,
+          1
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "10",
+        "total_simulation_time_us": 0.016
+      },
+      "pass": true,
+      "production_internal_steps": 824,
+      "production_runtime_ms": 169.63340000074822,
+      "tolerance": 1e-07,
+      "transmon_count": 2
+    },
+    {
+      "category": "two_level_truncation",
+      "checkpoint_count": 12,
+      "hilbert_dimension": 16,
+      "local_levels": 2,
+      "maximum_density_matrix_element_error": 2.3538957079924315e-10,
+      "maximum_leakage_difference": 1.5543122344752192e-15,
+      "maximum_recorded_production_leakage": 1.1102230246251565e-16,
+      "maximum_trace_distance": 3.565663668414694e-10,
+      "name": "four_transmon_two_level_register",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0,
+          -106.0,
+          -112.0,
+          -118.0
+        ],
+        "couplings": [
+          {
+            "exchange_coupling_rad_per_us": 12.0,
+            "left": 0,
+            "right": 1
+          },
+          {
+            "exchange_coupling_rad_per_us": 12.0,
+            "left": 1,
+            "right": 2
+          },
+          {
+            "exchange_coupling_rad_per_us": 12.0,
+            "left": 2,
+            "right": 3
+          }
+        ],
+        "detunings_rad_per_us": [
+          0.0,
+          5.0,
+          -4.0,
+          7.0
+        ],
+        "drive_count": 2,
+        "drive_start_times_us": [
+          0.0,
+          0.0015
+        ],
+        "drive_targets": [
+          0,
+          3
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "1010",
+        "total_simulation_time_us": 0.008
+      },
+      "pass": true,
+      "production_internal_steps": 1249,
+      "production_runtime_ms": 503.3045000018319,
+      "tolerance": 5e-07,
+      "transmon_count": 4
+    },
+    {
+      "category": "quasi_static_ensemble",
+      "checkpoint_count": 9,
+      "hilbert_dimension": 9,
+      "local_levels": 3,
+      "maximum_density_matrix_element_error": 4.050827621434324e-10,
+      "maximum_leakage_difference": 1.5813250708873738e-10,
+      "maximum_recorded_production_leakage": 0.20979057334569584,
+      "maximum_trace_distance": 4.68218389594592e-10,
+      "name": "two_transmon_correlated_quasi_static",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0,
+          -106.0
+        ],
+        "couplings": [
+          {
+            "exchange_coupling_rad_per_us": 10.0,
+            "left": 0,
+            "right": 1
+          }
+        ],
+        "detunings_rad_per_us": [
+          0.0,
+          6.0
+        ],
+        "drive_count": 1,
+        "drive_start_times_us": [
+          0.0
+        ],
+        "drive_targets": [
+          0
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "00",
+        "total_simulation_time_us": 0.016
+      },
+      "pass": true,
+      "production_internal_steps": 8400,
+      "production_runtime_ms": 1037.494300006074,
+      "tolerance": 5e-07,
+      "transmon_count": 2
+    },
+    {
+      "category": "quasi_static_ensemble",
+      "checkpoint_count": 9,
+      "hilbert_dimension": 27,
+      "local_levels": 3,
+      "maximum_density_matrix_element_error": 2.830831589246341e-10,
+      "maximum_leakage_difference": 1.5120260599132962e-10,
+      "maximum_recorded_production_leakage": 0.20294232296432202,
+      "maximum_trace_distance": 3.954940900633443e-10,
+      "name": "three_transmon_correlated_quasi_static_chain",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0,
+          -106.0,
+          -112.0
+        ],
+        "couplings": [
+          {
+            "exchange_coupling_rad_per_us": 9.0,
+            "left": 0,
+            "right": 1
+          },
+          {
+            "exchange_coupling_rad_per_us": 9.0,
+            "left": 1,
+            "right": 2
+          }
+        ],
+        "detunings_rad_per_us": [
+          0.0,
+          5.0,
+          -3.0
+        ],
+        "drive_count": 1,
+        "drive_start_times_us": [
+          0.0
+        ],
+        "drive_targets": [
+          1
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "000",
+        "total_simulation_time_us": 0.012
+      },
+      "pass": true,
+      "production_internal_steps": 21168,
+      "production_runtime_ms": 5168.313500005752,
+      "tolerance": 5e-07,
+      "transmon_count": 3
+    },
+    {
+      "category": "quasi_static_ensemble",
+      "checkpoint_count": 9,
+      "hilbert_dimension": 8,
+      "local_levels": 2,
+      "maximum_density_matrix_element_error": 4.611369619881778e-11,
+      "maximum_leakage_difference": 9.992007221626409e-16,
+      "maximum_recorded_production_leakage": 0.0,
+      "maximum_trace_distance": 4.891434750726244e-11,
+      "name": "three_transmon_two_level_broken_noise_chain",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0,
+          -106.0,
+          -112.0
+        ],
+        "couplings": [
+          {
+            "exchange_coupling_rad_per_us": 11.0,
+            "left": 0,
+            "right": 1
+          },
+          {
+            "exchange_coupling_rad_per_us": 11.0,
+            "left": 1,
+            "right": 2
+          }
+        ],
+        "detunings_rad_per_us": [
+          0.0,
+          4.0,
+          -2.0
+        ],
+        "drive_count": 1,
+        "drive_start_times_us": [
+          0.0
+        ],
+        "drive_targets": [
+          0
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "000",
+        "total_simulation_time_us": 0.012
+      },
+      "pass": true,
+      "production_internal_steps": 8352,
+      "production_runtime_ms": 1000.2845999988494,
+      "tolerance": 5e-07,
+      "transmon_count": 3
+    },
+    {
+      "category": "explicit_cptp",
+      "checkpoint_count": 10,
+      "hilbert_dimension": 3,
+      "local_levels": 3,
+      "maximum_density_matrix_element_error": 1.7390807336092884e-05,
+      "maximum_leakage_difference": 1.3857330152133862e-05,
+      "maximum_recorded_production_leakage": 0.20757220528196352,
+      "maximum_trace_distance": 2.2485836184061675e-05,
+      "name": "single_qutrit_explicit_cptp",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0
+        ],
+        "couplings": [],
+        "detunings_rad_per_us": [
+          4.0
+        ],
+        "drive_count": 1,
+        "drive_start_times_us": [
+          0.0
+        ],
+        "drive_targets": [
+          0
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "0",
+        "total_simulation_time_us": 0.02
+      },
+      "pass": true,
+      "production_internal_steps": 384,
+      "production_runtime_ms": 378.3104000031017,
+      "tolerance": 5e-05,
+      "transmon_count": 1
+    },
+    {
+      "category": "explicit_cptp",
+      "checkpoint_count": 9,
+      "hilbert_dimension": 9,
+      "local_levels": 3,
+      "maximum_density_matrix_element_error": 2.0662650956429856e-05,
+      "maximum_leakage_difference": 2.0350171515914894e-05,
+      "maximum_recorded_production_leakage": 0.25040147490962017,
+      "maximum_trace_distance": 2.633660503719568e-05,
+      "name": "two_qutrit_explicit_cptp_exchange",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0,
+          -106.0
+        ],
+        "couplings": [
+          {
+            "exchange_coupling_rad_per_us": 9.0,
+            "left": 0,
+            "right": 1
+          }
+        ],
+        "detunings_rad_per_us": [
+          0.0,
+          5.0
+        ],
+        "drive_count": 1,
+        "drive_start_times_us": [
+          0.0
+        ],
+        "drive_targets": [
+          0
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "10",
+        "total_simulation_time_us": 0.016
+      },
+      "pass": true,
+      "production_internal_steps": 288,
+      "production_runtime_ms": 14339.922800005297,
+      "tolerance": 5e-05,
+      "transmon_count": 2
+    },
+    {
+      "category": "explicit_cptp",
+      "checkpoint_count": 9,
+      "hilbert_dimension": 8,
+      "local_levels": 2,
+      "maximum_density_matrix_element_error": 1.053536665679422e-05,
+      "maximum_leakage_difference": 1.9984014443252818e-15,
+      "maximum_recorded_production_leakage": 1.7763568394002505e-15,
+      "maximum_trace_distance": 1.0675307691283866e-05,
+      "name": "three_transmon_two_level_explicit_cptp",
+      "parameters": {
+        "anharmonicities_mhz": [
+          -100.0,
+          -106.0,
+          -112.0
+        ],
+        "couplings": [
+          {
+            "exchange_coupling_rad_per_us": 10.0,
+            "left": 0,
+            "right": 1
+          },
+          {
+            "exchange_coupling_rad_per_us": 10.0,
+            "left": 1,
+            "right": 2
+          }
+        ],
+        "detunings_rad_per_us": [
+          0.0,
+          4.0,
+          -3.0
+        ],
+        "drive_count": 1,
+        "drive_start_times_us": [
+          0.0
+        ],
+        "drive_targets": [
+          1
+        ],
+        "environment_input_mode": "direct_rates",
+        "initial_state": "101",
+        "total_simulation_time_us": 0.012
+      },
+      "pass": true,
+      "production_internal_steps": 240,
+      "production_runtime_ms": 9550.135899989982,
+      "tolerance": 5e-05,
       "transmon_count": 3
     }
   ],
-  "checkpoint_count": 64,
+  "categories_covered": [
+    "coupling_sweep",
+    "dissipation_leakage",
+    "drive_schedule",
+    "explicit_cptp",
+    "four_transmon_register",
+    "multi_edge_coupling",
+    "per_transmon_rates",
+    "quasi_static_ensemble",
+    "two_level_truncation"
+  ],
+  "checkpoint_count": 150,
   "independence_boundary": "QuTiP reconstructs H(t), the scheduled envelopes, DRAG quadratures, the pulse-detuning phase ramp, the tensor basis and every collapse operator from the public contract, and applies them as plain dense Lindblad terms. The production site-local jump kernel and effective Hamiltonian are never reused. For the physical-environment case the per-transmon rate values are read from the production response, because the thermal rate model is validated separately; the operator construction stays independent.",
+  "local_levels_covered": [
+    2,
+    3
+  ],
   "maximum_errors": {
-    "frobenius_difference": 8.620310230254738e-09,
-    "leakage_difference": 1.457702292206875e-09,
-    "max_element_difference": 2.282466075074282e-09,
-    "population_difference": 2.222500294912777e-09,
-    "purity_difference": 7.188172279626315e-11,
-    "trace_distance": 6.875587772673181e-09
+    "frobenius_difference": 3.7208205742568144e-05,
+    "leakage_difference": 2.0350171515914894e-05,
+    "max_element_difference": 2.0662650956429856e-05,
+    "population_difference": 2.0325691259232004e-05,
+    "purity_difference": 2.1736234145919298e-07,
+    "trace_distance": 2.633660503719568e-05
   },
   "model_id": "driven_coupled_transmon_network_rwa_experimental_v1",
   "pass": true,
@@ -341,8 +772,9 @@
   "reference_solver": "QuTiP mesolve / DOP853",
   "scope_limitations": [
     "This is a numerical implementation audit, not hardware calibration.",
-    "The model remains a three-level local truncation under the RWA.",
-    "Registers above four transmons are outside the contract."
+    "The model remains a two- or three-level local truncation under the RWA.",
+    "Registers above four transmons are outside the contract.",
+    "The explicit CPTP cases carry a looser tolerance than the RK4 cases because the midpoint-frozen exponential runs on far coarser intervals by design; its error falls second order in the interval width."
   ],
   "software_versions": {
     "numpy": "2.4.4",
@@ -412,6 +844,7 @@
     }
   ],
   "transmon_counts_covered": [
+    1,
     2,
     3,
     4

@@ -51,6 +51,13 @@ NETWORK_DENSE_KERNEL_ID = "numpy_dense"
 # Explicit CPTP composes an audited GKSL exponential per output interval, which
 # is far heavier than one RK4 step, so it runs on a tighter interval budget.
 NETWORK_CPTP_MAX_INTERVALS = 500
+# How much coarser than the RK4 accuracy cap one CPTP interval may be.  The
+# midpoint-frozen exponential converges second order in the interval, so this
+# trades a factor of NETWORK_CPTP_STEP_RELAXATION^2 in accuracy for the same
+# factor fewer matrix exponentials.  Three keeps the QuTiP comparison near
+# 2e-5 with room to spare against the 5e-5 audit tolerance, and leaves the
+# busiest audited case at roughly 380 of the 500 permitted intervals.
+NETWORK_CPTP_STEP_RELAXATION = 3.0
 # Conservative ceiling on the quasi-static ensemble: order**count single
 # trajectories weight-averaged.  order 5 with four transmons would be 625
 # evolutions, so the ensemble work is checked against this before running.
@@ -214,11 +221,14 @@ def _run_single_network_request(
     )
     total_time = request.total_simulation_time_us
     latest_drive_end = max(drive.end_time_us for drive in scheduled_drives)
-    # The GKSL exponential is unconditionally stable, so CPTP does not need the
-    # RK4 accuracy cap; it only has to resolve the drive envelope and exchange
-    # rotation.  Cap the interval at an eighth of the driven span and, when a
-    # coupling is present, at the exchange-accuracy limit.
+    # The GKSL exponential is unconditionally stable, so CPTP survives steps
+    # that would break RK4.  Stability is not accuracy though: each interval
+    # freezes the Hamiltonian at its midpoint, so a step that does not resolve
+    # the drive envelope still integrates the wrong pulse.  The error falls
+    # second order in the interval, so the cap stays tied to the RK4 accuracy
+    # limit and only relaxes it by a small constant factor.
     cptp_step = min(
+        rk4_step * NETWORK_CPTP_STEP_RELAXATION,
         max(latest_drive_end, total_time) / 8.0,
         coupling_step_limit or math.inf,
     )
@@ -234,8 +244,12 @@ def _run_single_network_request(
             raise PulseExecutionLimitError(
                 "Transmon network explicit-CPTP request exceeds the interval "
                 f"limit: estimated {estimated_steps}, maximum "
-                f"{NETWORK_CPTP_MAX_INTERVALS}. Reduce the simulation time or "
-                "snapshot count."
+                f"{NETWORK_CPTP_MAX_INTERVALS}. Each interval composes an "
+                "audited channel, and the interval width is set by the drive "
+                "and anharmonicity scales, so a large |anharmonicity| or a "
+                "long observation window needs many of them. Shorten the "
+                "simulation time, widen the pulse, or switch to "
+                "fixed_step_rk4."
             )
     elif work_units > NETWORK_MAX_DENSE_WORK_UNITS:
         raise PulseExecutionLimitError(

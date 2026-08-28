@@ -31,6 +31,8 @@ const MHZ_TO_RAD_PER_US = 2 * Math.PI
 const NETWORK_STEP_OVERHEAD_UNITS = 12000
 const NETWORK_MAX_DENSE_WORK_UNITS = 1200000000
 const NETWORK_MAX_RESPONSE_MATRIX_ELEMENTS = 250000
+const NETWORK_CPTP_MAX_INTERVALS = 500
+const NETWORK_CPTP_STEP_RELAXATION = 3
 
 export const initialPulseLabForm: PulseLabForm = {
   modelId: QUTRIT_PULSE_MODEL,
@@ -354,7 +356,7 @@ export function buildTransmonNetworkPayload(
     })
   })
 
-  const dimension = 3 ** transmonCount
+  const dimension = form.localLevels ** transmonCount
   const boundaryReserve = Math.max(0, boundaryTimes.size - 2)
   const snapshotLimit = Math.max(
     2,
@@ -439,7 +441,7 @@ export function estimateTransmonNetworkCost(
       transmonIndex: lane.transmonIndex,
       form: applyPulseStepToForm(form, step.pulse),
     })))
-  const dimension = 3 ** circuit.transmons.length
+  const dimension = form.localLevels ** circuit.transmons.length
   const effectiveSnapshotCount = Math.min(
     form.snapshotCount,
     Math.max(
@@ -468,13 +470,38 @@ export function estimateTransmonNetworkCost(
         + Math.abs(driveForm.detuningRadPerUs),
     )),
   )
-  const estimatedInternalSteps = driveForms.length === 0 || !(stepCapUs > 0)
+  /*
+   * CPTP は各区間で中点凍結した指数写像を合成するため、RK4 の刻みを
+   * NETWORK_CPTP_STEP_RELAXATION 倍まで緩められる。ただし区間数そのものが
+   * NETWORK_CPTP_MAX_INTERVALS で頭打ちになるので、予算はステップ数ではなく
+   * 区間数で評価する。ここを見ないと UI が「実行可能」と表示したまま
+   * API が 422 を返す。
+   */
+  const isCptp = form.evolutionMethod === 'explicit_cptp'
+  const integrationStepUs = isCptp
+    ? Math.min(
+        stepCapUs * NETWORK_CPTP_STEP_RELAXATION,
+        /*
+         * サーバは max(最終ドライブ終了時刻, 総時間)/8 を使うが、ドライブは
+         * 総時間内に収まる制約があるので総時間が支配項になる。
+         */
+        form.totalSimulationTimeUs / 8,
+        couplingStepLimitUs,
+      )
+    : stepCapUs
+  const estimatedInternalSteps = driveForms.length === 0 || !(integrationStepUs > 0)
     ? effectiveSnapshotCount
-    : Math.ceil(form.totalSimulationTimeUs / stepCapUs) + effectiveSnapshotCount
-  const maximumInternalSteps = Math.floor(
-    NETWORK_MAX_DENSE_WORK_UNITS / (dimension ** 3 + NETWORK_STEP_OVERHEAD_UNITS),
+    : Math.ceil(form.totalSimulationTimeUs / integrationStepUs) + effectiveSnapshotCount
+  const maximumInternalSteps = isCptp
+    ? NETWORK_CPTP_MAX_INTERVALS
+    : Math.floor(
+        NETWORK_MAX_DENSE_WORK_UNITS / (dimension ** 3 + NETWORK_STEP_OVERHEAD_UNITS),
+      )
+  return costResult(
+    estimatedInternalSteps,
+    maximumInternalSteps,
+    isCptp ? 'cptp_intervals' : 'steps',
   )
-  return costResult(estimatedInternalSteps, maximumInternalSteps)
 }
 
 export function networkBaseDetuningRadPerUs(
@@ -793,16 +820,30 @@ function peakAmplitude(form: PulseLabForm): number {
     : 0
 }
 
-function costResult(estimated: number, maximum: number): PulseCostEstimate {
+function costResult(
+  estimated: number,
+  maximum: number,
+  /*
+   * CPTP は「区間数」で頭打ちになる。単位名と対処法が RK4 と違うため、
+   * 超過メッセージだけ切り替える。
+   */
+  budgetKind: 'steps' | 'cptp_intervals' = 'steps',
+): PulseCostEstimate {
   const ratio = estimated / maximum
   const overBudget = estimated > maximum
+  const overBudgetMessage = budgetKind === 'cptp_intervals'
+    ? `明示的 CPTP 写像の区間数が上限 ${maximum.toLocaleString()} を超えています`
+      + `（推定 ${estimated.toLocaleString()} 区間）。`
+      + 'シミュレーション時間を短くするか、パルス幅を広げるか、'
+      + '固定ステップ RK4 に切り替えてください。'
+    : `推定計算量が ${maximum.toLocaleString()} ステップのAPI上限を超えています。`
   return {
     estimatedInternalSteps: estimated,
     maximumInternalSteps: maximum,
     overBudget,
     level: overBudget ? 'blocked' : ratio >= 0.7 ? 'elevated' : 'normal',
     message: overBudget
-      ? `推定計算量が ${maximum.toLocaleString()} ステップのAPI上限を超えています。`
+      ? overBudgetMessage
       : ratio >= 0.7
         ? 'このリクエストはAPIの計算量上限に近く、数秒かかる場合があります。'
         : '推定計算量はAPIの実行上限内です。',

@@ -27,8 +27,11 @@ from api.pulse_transmon_network_service import (
 from validation_pulse.qutip_adapter import DEFAULT_OPTIONS, QUTIP_AVAILABLE, qutip
 
 
+# The default local truncation.  Cases carry their own ``local_levels`` in the
+# payload, so every operator below is rebuilt at the dimension the request asks
+# for; this constant only names the three-level default.
 NETWORK_QUTIP_LOCAL_DIMENSION = 3
-NETWORK_QUTIP_AUDIT_ID = "coupled_transmon_network_qutip_audit_v1"
+NETWORK_QUTIP_AUDIT_ID = "coupled_transmon_network_qutip_audit_v2"
 NETWORK_QUTIP_MODEL_ID = "driven_coupled_transmon_network_rwa_experimental_v1"
 
 
@@ -40,15 +43,15 @@ class NetworkQutipCase:
     tolerance: float
 
 
-def network_basis_labels(transmon_count: int) -> tuple[str, ...]:
+def network_basis_labels(
+    transmon_count: int,
+    local_levels: int = NETWORK_QUTIP_LOCAL_DIMENSION,
+) -> tuple[str, ...]:
     """Return q0-most-significant labels, rebuilt from the documented order."""
 
     return tuple(
         "".join(str(level) for level in levels)
-        for levels in product(
-            range(NETWORK_QUTIP_LOCAL_DIMENSION),
-            repeat=transmon_count,
-        )
+        for levels in product(range(local_levels), repeat=transmon_count)
     )
 
 
@@ -198,7 +201,238 @@ def network_qutip_cases() -> tuple[NetworkQutipCase, ...]:
         physical,
         1e-7,
     ))
+
+    cases.extend(_two_level_cases())
+    cases.extend(_quasi_static_cases())
+    cases.extend(_explicit_cptp_cases())
     return tuple(cases)
+
+
+def _explicit_cptp_cases() -> list[NetworkQutipCase]:
+    """Cases that pin the explicit-CPTP path against QuTiP.
+
+    The CPTP path composes an audited GKSL exponential per output interval
+    instead of stepping RK4, so it is a genuinely different integrator with a
+    different step budget.  Comparing it against the same QuTiP reference
+    shows both production paths solve the same Lindblad equation.  Only
+    Hilbert dimensions up to nine accept this method, so the register stays
+    small here.
+
+    The tolerances are looser than the RK4 cases because the piecewise
+    exponential is built on far coarser intervals: it is unconditionally
+    stable, so production deliberately does not spend RK4-sized steps on it.
+    """
+
+    cases: list[NetworkQutipCase] = []
+
+    single = _base_payload(1)
+    single.update({
+        "evolution_method": "explicit_cptp",
+        "detunings_rad_per_us": [4.0],
+        "drives": [_drive(0, 0.0, _gaussian_pulse(0.8 * math.pi, 0.002))],
+        "environment": _rates(0.5, 0.08, 0.9, 0.12, 0.25),
+        "total_simulation_time_us": 0.02,
+    })
+    cases.append(NetworkQutipCase(
+        "single_qutrit_explicit_cptp",
+        "explicit_cptp",
+        single,
+        5e-5,
+    ))
+
+    pair = _base_payload(2)
+    pair.update({
+        "evolution_method": "explicit_cptp",
+        "initial_state": "10",
+        "detunings_rad_per_us": [0.0, 5.0],
+        "couplings": [
+            {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 9.0}
+        ],
+        "drives": [_drive(0, 0.0, _gaussian_pulse(0.7 * math.pi, 0.002))],
+        "environment": _rates(0.4, 0.06, 0.7, 0.1, 0.2),
+        "total_simulation_time_us": 0.016,
+    })
+    cases.append(NetworkQutipCase(
+        "two_qutrit_explicit_cptp_exchange",
+        "explicit_cptp",
+        pair,
+        5e-5,
+    ))
+
+    triple = _base_payload(3)
+    triple.update({
+        "local_levels": 2,
+        "evolution_method": "explicit_cptp",
+        "initial_state": "101",
+        "detunings_rad_per_us": [0.0, 4.0, -3.0],
+        "couplings": [
+            {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 10.0},
+            {"left": 1, "right": 2, "exchange_coupling_rad_per_us": 10.0},
+        ],
+        "drives": [_drive(1, 0.0, _gaussian_pulse(0.6 * math.pi, 0.0015))],
+        "environment": _rates(0.45, 0.07, 0.0, 0.0, 0.22),
+        "total_simulation_time_us": 0.012,
+    })
+    cases.append(NetworkQutipCase(
+        "three_transmon_two_level_explicit_cptp",
+        "explicit_cptp",
+        triple,
+        5e-5,
+    ))
+
+    return cases
+
+
+def _two_level_cases() -> list[NetworkQutipCase]:
+    """Cases that pin the two-level truncation against QuTiP.
+
+    Production reaches two levels by slicing the qutrit operators down to the
+    qubit subspace.  QuTiP instead builds genuine two-dimensional operators
+    from ``destroy(2)``, so a wrong slice cannot hide: the Duffing term must
+    vanish on its own (``n(n-1) = 0`` on {|0>,|1>}), the 1<->2 channels must be
+    absent, and the number operator must reduce to diag(0, 1).
+    """
+
+    cases: list[NetworkQutipCase] = []
+
+    single = _base_payload(1)
+    single.update({
+        "local_levels": 2,
+        "detunings_rad_per_us": [3.0],
+        "drives": [_drive(0, 0.0, _gaussian_pulse(math.pi, 0.002, phase=0.4))],
+        "environment": _rates(0.5, 0.08, 0.0, 0.0, 0.25),
+        "total_simulation_time_us": 0.02,
+    })
+    cases.append(NetworkQutipCase(
+        "single_transmon_two_level_dissipative",
+        "two_level_truncation",
+        single,
+        1e-7,
+    ))
+
+    pair = _base_payload(2)
+    pair.update({
+        "local_levels": 2,
+        "initial_state": "10",
+        "detunings_rad_per_us": [0.0, 4.0],
+        "couplings": [
+            {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 18.0}
+        ],
+        "drives": [
+            _drive(0, 0.0, _gaussian_pulse(0.6 * math.pi, 0.002)),
+            _drive(1, 0.004, _square_pulse(0.5 * math.pi, 0.004, phase=1.1)),
+        ],
+        "environment": _rates(0.4, 0.06, 0.0, 0.0, 0.2),
+        "total_simulation_time_us": 0.016,
+    })
+    cases.append(NetworkQutipCase(
+        "two_transmon_two_level_exchange",
+        "two_level_truncation",
+        pair,
+        1e-7,
+    ))
+
+    quad = _base_payload(4)
+    quad.update({
+        "local_levels": 2,
+        "initial_state": "1010",
+        "detunings_rad_per_us": [0.0, 5.0, -4.0, 7.0],
+        "couplings": [
+            {"left": left, "right": left + 1, "exchange_coupling_rad_per_us": 12.0}
+            for left in range(3)
+        ],
+        "drives": [
+            _drive(0, 0.0, _gaussian_pulse(1.1 * math.pi, 0.0008)),
+            _drive(3, 0.0015, _gaussian_pulse(0.9 * math.pi, 0.0008, phase=0.7)),
+        ],
+        "environment": _rates(0.5, 0.07, 0.0, 0.0, 0.22),
+        "total_simulation_time_us": 0.008,
+    })
+    cases.append(NetworkQutipCase(
+        "four_transmon_two_level_register",
+        "two_level_truncation",
+        quad,
+        5e-7,
+    ))
+
+    return cases
+
+
+def _quasi_static_cases() -> list[NetworkQutipCase]:
+    """Cases that pin the correlated quasi-static detuning ensemble.
+
+    Production draws a tensor-product Gauss-Hermite grid, maps it through the
+    Cholesky factor of a tridiagonal correlation matrix and weight-averages
+    whole trajectories.  The QuTiP side reproduces that ensemble from the
+    public contract, so an error in the sampler, the covariance or the
+    averaging shows up as a density-matrix mismatch.
+    """
+
+    cases: list[NetworkQutipCase] = []
+
+    pair = _base_payload(2)
+    pair.update({
+        "detunings_rad_per_us": [0.0, 6.0],
+        "couplings": [
+            {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 10.0}
+        ],
+        "drives": [_drive(0, 0.0, _gaussian_pulse(0.8 * math.pi, 0.002))],
+        "quasi_static_detuning_sigmas_rad_per_us": [4.0, 4.0],
+        "quasi_static_detuning_adjacent_correlation": 0.5,
+        "quasi_static_quadrature_order": 3,
+        "total_simulation_time_us": 0.016,
+    })
+    cases.append(NetworkQutipCase(
+        "two_transmon_correlated_quasi_static",
+        "quasi_static_ensemble",
+        pair,
+        5e-7,
+    ))
+
+    chain = _base_payload(3)
+    chain.update({
+        "detunings_rad_per_us": [0.0, 5.0, -3.0],
+        "couplings": [
+            {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 9.0},
+            {"left": 1, "right": 2, "exchange_coupling_rad_per_us": 9.0},
+        ],
+        "drives": [_drive(1, 0.0, _gaussian_pulse(0.7 * math.pi, 0.0015))],
+        "quasi_static_detuning_sigmas_rad_per_us": [3.0, 3.0, 3.0],
+        "quasi_static_detuning_adjacent_correlation": -0.4,
+        "quasi_static_quadrature_order": 3,
+        "total_simulation_time_us": 0.012,
+    })
+    cases.append(NetworkQutipCase(
+        "three_transmon_correlated_quasi_static_chain",
+        "quasi_static_ensemble",
+        chain,
+        5e-7,
+    ))
+
+    broken = _base_payload(3)
+    broken.update({
+        "local_levels": 2,
+        "detunings_rad_per_us": [0.0, 4.0, -2.0],
+        "couplings": [
+            {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 11.0},
+            {"left": 1, "right": 2, "exchange_coupling_rad_per_us": 11.0},
+        ],
+        "drives": [_drive(0, 0.0, _gaussian_pulse(0.9 * math.pi, 0.0015))],
+        # A zero-width middle transmon must break the correlation chain, so q0
+        # and q2 stay independent even though both neighbour q1.
+        "quasi_static_detuning_sigmas_rad_per_us": [3.5, 0.0, 3.5],
+        "quasi_static_detuning_adjacent_correlation": 0.8,
+        "quasi_static_quadrature_order": 3,
+        "total_simulation_time_us": 0.012,
+    })
+    cases.append(NetworkQutipCase(
+        "three_transmon_two_level_broken_noise_chain",
+        "quasi_static_ensemble",
+        broken,
+        5e-7,
+    ))
+
+    return cases
 
 
 def run_network_qutip_audit() -> tuple[dict[str, Any], list[dict[str, Any]]]:
@@ -232,6 +466,12 @@ def run_network_qutip_audit() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         "transmon_counts_covered": sorted({
             report["transmon_count"] for report in reports
         }),
+        "local_levels_covered": sorted({
+            report["local_levels"] for report in reports
+        }),
+        "categories_covered": sorted({
+            report["category"] for report in reports
+        }),
         "case_count": len(reports),
         "checkpoint_count": len(rows),
         "cases": reports,
@@ -255,8 +495,12 @@ def run_network_qutip_audit() -> tuple[dict[str, Any], list[dict[str, Any]]]:
         ),
         "scope_limitations": [
             "This is a numerical implementation audit, not hardware calibration.",
-            "The model remains a three-level local truncation under the RWA.",
+            "The model remains a two- or three-level local truncation under the RWA.",
             "Registers above four transmons are outside the contract.",
+            "The explicit CPTP cases carry a looser tolerance than the RK4 "
+            "cases because the midpoint-frozen exponential runs on far coarser "
+            "intervals by design; its error falls second order in the interval "
+            "width.",
         ],
     }, rows
 
@@ -332,11 +576,12 @@ def _run_case(case: NetworkQutipCase) -> tuple[dict[str, Any], list[dict[str, An
     )
     production = run_coupled_transmon_network_request(request)
     count = request.transmon_count
-    dimension = NETWORK_QUTIP_LOCAL_DIMENSION ** count
+    local_levels = request.local_levels
+    dimension = local_levels ** count
     times = [float(value) for value in production["sample_times_us"]]
     rates = _case_rates(request, production)
     reference_states = _qutip_reference(request, times, rates)
-    labels = network_basis_labels(count)
+    labels = network_basis_labels(count, local_levels)
     computational = tuple(
         labels.index(label)
         for label in ("".join(bits) for bits in product("01", repeat=count))
@@ -353,6 +598,7 @@ def _run_case(case: NetworkQutipCase) -> tuple[dict[str, Any], list[dict[str, An
             "case": case.name,
             "category": case.category,
             "transmon_count": count,
+            "local_levels": local_levels,
             "hilbert_dimension": dimension,
             "time_us": float(point["time_us"]),
             "segment": point["segment"],
@@ -365,6 +611,7 @@ def _run_case(case: NetworkQutipCase) -> tuple[dict[str, Any], list[dict[str, An
         "name": case.name,
         "category": case.category,
         "transmon_count": count,
+        "local_levels": local_levels,
         "hilbert_dimension": dimension,
         "tolerance": case.tolerance,
         "pass": maximum <= case.tolerance,
@@ -433,10 +680,84 @@ def _case_rates(request, production) -> tuple[dict[str, float], ...]:
 
 
 def _qutip_reference(request, times, rates) -> list[np.ndarray]:
+    """Return the QuTiP reference states, averaging the ensemble when asked."""
+
+    sigmas = tuple(request.quasi_static_detuning_sigmas_rad_per_us)
+    if not sigmas or all(value == 0.0 for value in sigmas):
+        return _qutip_single_reference(
+            request, times, rates, request.detunings_rad_per_us
+        )
+
+    samples = _independent_quasi_static_samples(
+        sigmas,
+        request.quasi_static_detuning_adjacent_correlation,
+        request.quasi_static_quadrature_order,
+    )
+    averaged: list[np.ndarray] | None = None
+    for offsets, weight in samples:
+        shifted = [
+            request.detunings_rad_per_us[index] + offsets[index]
+            for index in range(request.transmon_count)
+        ]
+        states = _qutip_single_reference(request, times, rates, shifted)
+        if averaged is None:
+            averaged = [weight * state for state in states]
+        else:
+            for index, state in enumerate(states):
+                averaged[index] = averaged[index] + weight * state
+    assert averaged is not None
+    return averaged
+
+
+def _independent_quasi_static_samples(sigmas, correlation, order):
+    """Rebuild the correlated Gauss-Hermite grid from the documented model.
+
+    This deliberately does not import the production sampler.  The covariance
+    is the tridiagonal matrix the contract documents, and the standard normals
+    come straight from NumPy's Hermite rule, so a wrong Cholesky factor or a
+    wrong chain-breaking rule in production is detectable here.
+    """
+
+    active = [index for index, sigma in enumerate(sigmas) if sigma > 0.0]
+    if not active:
+        return (((0.0,) * len(sigmas), 1.0),)
+
+    unit = np.eye(len(active))
+    for position in range(len(active) - 1):
+        if active[position + 1] - active[position] == 1:
+            unit[position, position + 1] = correlation
+            unit[position + 1, position] = correlation
+    cholesky = np.linalg.cholesky(unit)
+
+    nodes, weights = np.polynomial.hermite.hermgauss(order)
+    normalized = weights / math.sqrt(math.pi)
+    standard = [
+        (float(math.sqrt(2.0) * node), float(weight))
+        for node, weight in zip(nodes, normalized, strict=True)
+    ]
+
+    samples = []
+    for grid in product(standard, repeat=len(active)):
+        vector = np.asarray([node for node, _ in grid])
+        weight = 1.0
+        for _, item in grid:
+            weight *= item
+        correlated = cholesky @ vector
+        offsets = [0.0] * len(sigmas)
+        for position, register_index in enumerate(active):
+            offsets[register_index] = sigmas[register_index] * float(
+                correlated[position]
+            )
+        samples.append((tuple(offsets), weight))
+    return tuple(samples)
+
+
+def _qutip_single_reference(request, times, rates, detunings) -> list[np.ndarray]:
     count = request.transmon_count
-    local_dimensions = [NETWORK_QUTIP_LOCAL_DIMENSION] * count
-    annihilation = qutip.destroy(NETWORK_QUTIP_LOCAL_DIMENSION)
-    identity = qutip.qeye(NETWORK_QUTIP_LOCAL_DIMENSION)
+    levels = request.local_levels
+    local_dimensions = [levels] * count
+    annihilation = qutip.destroy(levels)
+    identity = qutip.qeye(levels)
     number = annihilation.dag() * annihilation
 
     def embed(operator, subsystem):
@@ -451,7 +772,9 @@ def _qutip_reference(request, times, rates) -> list[np.ndarray]:
     static = 0.0 * total_identity
     for index in range(count):
         alpha = 2.0 * math.pi * request.anharmonicities_mhz[index]
-        static += -request.detunings_rad_per_us[index] * embedded_n[index]
+        static += -detunings[index] * embedded_n[index]
+        # At two levels n(n-1) vanishes on {|0>,|1>}, so the Duffing term drops
+        # out here on its own.  Production reaches the same place by slicing.
         static += 0.5 * alpha * embedded_n[index] * (
             embedded_n[index] - total_identity
         )
@@ -483,31 +806,48 @@ def _qutip_reference(request, times, rates) -> list[np.ndarray]:
         local_dimensions,
         [int(level) for level in request.initial_state],
     ).proj()
-    c_ops = _independent_collapse_operators(rates, embed, annihilation, number)
+    c_ops = _independent_collapse_operators(rates, embed, number, levels)
     options = {**DEFAULT_OPTIONS, "max_step": _reference_max_step(request)}
     result = qutip.mesolve(hamiltonian, rho0, times, c_ops=c_ops, options=options)
     return [np.asarray(state.full(), dtype=complex) for state in result.states]
 
 
-def _independent_collapse_operators(rates, embed, annihilation, number):
-    del annihilation
-    ground = qutip.basis(NETWORK_QUTIP_LOCAL_DIMENSION, 0)
-    first = qutip.basis(NETWORK_QUTIP_LOCAL_DIMENSION, 1)
-    second = qutip.basis(NETWORK_QUTIP_LOCAL_DIMENSION, 2)
+def _independent_collapse_operators(rates, embed, number, levels):
+    """Rebuild the jump operators at the requested local truncation.
+
+    At two levels the |1>-|2> transition does not exist, so those two channels
+    are dropped instead of being embedded as zero operators.  The number
+    operator truncates to diag(0, 1) on its own, which is the standard
+    two-level dephasing operator.
+    """
+
+    ground = qutip.basis(levels, 0)
+    first = qutip.basis(levels, 1)
     transition_10 = ground * first.dag()
-    transition_21 = first * second.dag()
+    channels = [
+        (rates_key, operator)
+        for rates_key, operator in (
+            ("gamma_10_down_per_us", transition_10),
+            ("gamma_01_up_per_us", transition_10.dag()),
+        )
+    ]
+    if levels >= 3:
+        second = qutip.basis(levels, 2)
+        transition_21 = first * second.dag()
+        channels.extend((
+            ("gamma_21_down_per_us", transition_21),
+            ("gamma_12_up_per_us", transition_21.dag()),
+        ))
+
     operators = []
     for subsystem, local_rates in enumerate(rates):
-        for rate, operator in (
-            (local_rates["gamma_10_down_per_us"], transition_10),
-            (local_rates["gamma_01_up_per_us"], transition_10.dag()),
-            (local_rates["gamma_21_down_per_us"], transition_21),
-            (local_rates["gamma_12_up_per_us"], transition_21.dag()),
-            (2.0 * local_rates["gamma_phi_adjacent_per_us"], number),
-        ):
-            if rate <= 0.0:
-                continue
-            operators.append(math.sqrt(rate) * embed(operator, subsystem))
+        for rates_key, operator in channels:
+            rate = local_rates[rates_key]
+            if rate > 0.0:
+                operators.append(math.sqrt(rate) * embed(operator, subsystem))
+        dephasing = 2.0 * local_rates["gamma_phi_adjacent_per_us"]
+        if dephasing > 0.0:
+            operators.append(math.sqrt(dephasing) * embed(number, subsystem))
     return operators
 
 

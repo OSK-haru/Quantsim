@@ -22,12 +22,12 @@ ARTIFACT_PATH = (
 
 
 class CoupledTransmonNetworkQutipArtifactTests(unittest.TestCase):
-    def test_committed_audit_passes_and_covers_two_to_four_transmons(self) -> None:
+    def test_committed_audit_passes_and_covers_one_to_four_transmons(self) -> None:
         report = json.loads(ARTIFACT_PATH.read_text(encoding="utf-8"))
 
         self.assertEqual(report["audit_id"], NETWORK_QUTIP_AUDIT_ID)
         self.assertTrue(report["pass"])
-        self.assertEqual(report["transmon_counts_covered"], [2, 3, 4])
+        self.assertEqual(report["transmon_counts_covered"], [1, 2, 3, 4])
         self.assertEqual(report["production_kernel"], "numpy_dense")
         for case in report["cases"]:
             self.assertTrue(case["pass"], case["name"])
@@ -40,12 +40,60 @@ class CoupledTransmonNetworkQutipArtifactTests(unittest.TestCase):
         self.assertIn("four_transmon_register", categories)
         self.assertIn("dissipation_leakage", categories)
 
+    def test_committed_audit_covers_both_local_truncations(self) -> None:
+        report = json.loads(ARTIFACT_PATH.read_text(encoding="utf-8"))
+
+        self.assertEqual(report["local_levels_covered"], [2, 3])
+        two_level = [
+            case for case in report["cases"] if case["local_levels"] == 2
+        ]
+        self.assertGreaterEqual(len(two_level), 3)
+        # The two-level truncation must reach the full register range, since
+        # production builds it by slicing the qutrit operators.
+        self.assertEqual(
+            sorted({case["transmon_count"] for case in two_level}),
+            [1, 2, 3, 4],
+        )
+        for case in two_level:
+            self.assertEqual(
+                case["hilbert_dimension"], 2 ** case["transmon_count"]
+            )
+
+    def test_committed_audit_covers_the_correlated_noise_ensemble(self) -> None:
+        report = json.loads(ARTIFACT_PATH.read_text(encoding="utf-8"))
+
+        ensemble = [
+            case for case in report["cases"]
+            if case["category"] == "quasi_static_ensemble"
+        ]
+        self.assertGreaterEqual(len(ensemble), 3)
+        # A chain of three is what distinguishes the tridiagonal covariance
+        # from the two-transmon special case.
+        self.assertIn(3, {case["transmon_count"] for case in ensemble})
+
+    def test_committed_audit_covers_the_explicit_cptp_path(self) -> None:
+        report = json.loads(ARTIFACT_PATH.read_text(encoding="utf-8"))
+
+        cptp = [
+            case for case in report["cases"]
+            if case["category"] == "explicit_cptp"
+        ]
+        self.assertGreaterEqual(len(cptp), 3)
+        # The method is only offered up to Hilbert dimension nine.
+        for case in cptp:
+            self.assertLessEqual(case["hilbert_dimension"], 9)
+        self.assertEqual(
+            sorted({case["local_levels"] for case in cptp}), [2, 3]
+        )
+
     def test_audit_contract_declares_tensor_basis_and_alignment(self) -> None:
         self.assertEqual(
             network_basis_labels(2),
             ("00", "01", "02", "10", "11", "12", "20", "21", "22"),
         )
         self.assertEqual(len(network_basis_labels(4)), 81)
+        self.assertEqual(network_basis_labels(2, 2), ("00", "01", "10", "11"))
+        self.assertEqual(len(network_basis_labels(4, 2)), 16)
         items = {item["item"] for item in specification_alignment()}
         self.assertIn("drive schedule", items)
         self.assertIn("collapse operators", items)

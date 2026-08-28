@@ -216,7 +216,7 @@ class CoupledTransmonNetworkApiTests(unittest.TestCase):
             "transmon_count": 2,
             "initial_state": "00",
             "frequencies_ghz": [5.0, 5.1],
-            "anharmonicities_mhz": [-320.0, -320.0],
+            "anharmonicities_mhz": [-100.0, -100.0],
             "detunings_rad_per_us": [0.0, 0.0],
             "couplings": [
                 {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 5.0}
@@ -225,16 +225,17 @@ class CoupledTransmonNetworkApiTests(unittest.TestCase):
                 "target": 0,
                 "start_time_us": 0.0,
                 "pulse": {
-                    "shape": "square",
+                    "shape": "gaussian",
                     "amplitude_mode": "target_rotation_angle",
-                    "target_rotation_angle_rad": math.pi,
-                    "pulse_duration_us": 0.02,
+                    "target_rotation_angle_rad": 0.7 * math.pi,
+                    "sigma_us": 0.002,
+                    "truncation_sigma": 4.0,
                     "phase_rad": 0.0,
                     "detuning_rad_per_us": 0.0,
                     "drag_beta_us": 0.0,
                 },
             }],
-            "total_simulation_time_us": 0.05,
+            "total_simulation_time_us": 0.02,
             "environment": {
                 "input_mode": "direct_rates",
                 "gamma_10_down_per_us": 0.05,
