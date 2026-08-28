@@ -1,14 +1,7 @@
 import type {
   PulseLabErrors,
   PulseLabForm,
-  PulseModelId,
   QuasiStaticQuadratureOrder,
-} from '../types/pulse'
-import {
-  COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
-  COUPLED_TRANSMON_PAIR_PULSE_MODEL,
-  QUTRIT_PULSE_MODEL,
-  TWO_LEVEL_PULSE_MODEL,
 } from '../types/pulse'
 import type { PulseExecutionConstraints } from '../types/pulseCircuit'
 import {
@@ -19,10 +12,14 @@ import {
 import { useInternalInfoVisible } from '../context/useAdminMode'
 import './PulseEnvironmentPanel.css'
 
+const PULSE_LAB_RUNNABLE_TRANSMON_MAX = 4
+
 type PulseEnvironmentPanelProps = {
   form: PulseLabForm
   errors: PulseLabErrors
   disabled: boolean
+  transmonCount: number
+  onTransmonCountChange: (count: number) => void
   onChange: (next: PulseLabForm) => void
   executionConstraints: PulseExecutionConstraints
   onExecutionConstraintsChange: (next: PulseExecutionConstraints) => void
@@ -32,15 +29,18 @@ export function PulseEnvironmentPanel({
   form,
   errors,
   disabled,
+  transmonCount,
+  onTransmonCountChange,
   onChange,
   executionConstraints,
   onExecutionConstraintsChange,
 }: PulseEnvironmentPanelProps) {
   const internalInfoVisible = useInternalInfoVisible()
-  const isQutrit = form.modelId === QUTRIT_PULSE_MODEL
-  const isTransmon = form.modelId !== TWO_LEVEL_PULSE_MODEL
-  const isPair = form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
-  const isNetwork = form.modelId === COUPLED_TRANSMON_NETWORK_PULSE_MODEL
+  const isQutrit = form.localLevels === 3
+  // すべてのモデルがトランズモン。非調和性は2準位でも（ステップ方針決定用に）必須。
+  const isTransmon = true
+  const isNetwork = transmonCount >= 2
+  const cptpAvailable = form.localLevels ** transmonCount <= 9
   const activeDeviceProfile = matchingPulseDeviceProfile(executionConstraints)
   const setNumber = (field: keyof PulseLabForm, value: number) => {
     onChange({ ...form, [field]: value })
@@ -61,25 +61,47 @@ export function PulseEnvironmentPanel({
 
       <div className="pulse-parameters__selectors">
         <label>
-          量子系モデル
+          準位数
           <select
-            value={form.modelId}
+            value={form.localLevels}
             disabled={disabled}
-            onChange={(event) => onChange({
-              ...form,
-              modelId: event.target.value as PulseModelId,
-              evolutionMethod: event.target.value === COUPLED_TRANSMON_NETWORK_PULSE_MODEL
-                ? 'fixed_step_rk4'
-                : form.evolutionMethod,
-              dragBetaUs: event.target.value === TWO_LEVEL_PULSE_MODEL ? 0 : form.dragBetaUs,
-            })}
+            onChange={(event) => {
+              const localLevels = Number(event.target.value) as PulseLabForm['localLevels']
+              onChange({
+                ...form,
+                localLevels,
+                /* 2準位には漏れ準位がないので DRAG は無効。 */
+                dragBetaUs: localLevels === 2 ? 0 : form.dragBetaUs,
+                /* CPTP が使えない次元へ移ったら RK4 に戻す。 */
+                evolutionMethod: localLevels ** transmonCount <= 9
+                  ? form.evolutionMethod
+                  : 'fixed_step_rk4',
+              })
+            }}
           >
-            <option value={TWO_LEVEL_PULSE_MODEL}>2準位モデル</option>
-            <option value={QUTRIT_PULSE_MODEL}>Qutrit（漏れ準位あり）</option>
-            <option value={COUPLED_TRANSMON_PAIR_PULSE_MODEL}>2トランズモン結合（9次元）</option>
-            <option value={COUPLED_TRANSMON_NETWORK_PULSE_MODEL}>複数トランズモン・ネットワーク（2〜4台）</option>
+            <option value={2}>2準位（軽量・漏れなし）</option>
+            <option value={3}>3準位 qutrit（漏れ準位あり）</option>
           </select>
         </label>
+        <label>
+          トランズモン数
+          <select
+            value={Math.min(transmonCount, PULSE_LAB_RUNNABLE_TRANSMON_MAX)}
+            disabled={disabled}
+            onChange={(event) => onTransmonCountChange(Number(event.target.value))}
+          >
+            {[1, 2, 3, 4].map((count) => (
+              <option value={count} key={count}>{count}</option>
+            ))}
+          </select>
+        </label>
+        <p className="pulse-parameters__model-note">
+          {transmonCount > PULSE_LAB_RUNNABLE_TRANSMON_MAX
+            ? `回路スタジオで ${transmonCount} 台に設定されています。Pulse ラボで実行できるのは 4 台までです。`
+            : transmonCount >= 2
+            ? `${transmonCount} トランズモン・ネットワーク / ${form.localLevels}^${transmonCount} = ${form.localLevels ** transmonCount} 次元。`
+            : `1 トランズモン / ${form.localLevels} 次元。2 台以上でネットワーク（交換結合あり）に切り替わります。`}
+        </p>
         <label>
           環境入力
           <select
@@ -105,7 +127,9 @@ export function PulseEnvironmentPanel({
             })}
           >
             <option value="fixed_step_rk4">固定ステップ RK4</option>
-            <option value="explicit_cptp" disabled={isNetwork}>明示的 CPTP 写像</option>
+            <option value="explicit_cptp" disabled={!cptpAvailable}>
+              明示的 CPTP 写像{cptpAvailable ? '' : '（9次元以下のみ）'}
+            </option>
           </select>
         </label>
         {/*
@@ -139,118 +163,50 @@ export function PulseEnvironmentPanel({
         ) : null}
       </div>
 
-      {isPair ? (
+      {isNetwork ? (
         <div className="pulse-parameters__environment">
-          <h3>2トランズモン結合モデル</h3>
+          <h3>トランズモン・ネットワーク（{transmonCount} 台）</h3>
           <p className="pulse-parameters__model-note">
-            各トランズモンを3準位で打ち切り、交換結合 J(a0†a1 + a0a1†) を含む9次元モデルです。
+            回路スタジオの {transmonCount} レーンを同時に実行します。各トランズモンは
+            {form.localLevels} 準位で、隣接レーン間に同じ交換結合 J を適用します。
           </p>
           <div className="pulse-parameters__grid">
-            <NumberField field="pairSecondAnharmonicityMhz" label="q1 非調和性 [MHz]" value={form.pairSecondAnharmonicityMhz} error={errors.pairSecondAnharmonicityMhz} step={10} max={0} disabled={disabled} onChange={setNumber} />
-            <NumberField field="pairDetuningQ0RadPerUs" label="q0 基準離調 [rad/us]" value={form.pairDetuningQ0RadPerUs} error={errors.pairDetuningQ0RadPerUs} step={1} disabled={disabled} onChange={setNumber} />
-            <NumberField field="pairDetuningQ1RadPerUs" label="q1 基準離調 [rad/us]" value={form.pairDetuningQ1RadPerUs} error={errors.pairDetuningQ1RadPerUs} step={1} disabled={disabled} onChange={setNumber} />
-            <NumberField field="pairExchangeCouplingRadPerUs" label="交換結合 J [rad/us]" value={form.pairExchangeCouplingRadPerUs} error={errors.pairExchangeCouplingRadPerUs} step={0.5} min={0} disabled={disabled} onChange={setNumber} />
-            <label>
-              <span>駆動対象</span>
-              <select
-                value={form.pairDriveTarget}
-                disabled={disabled}
-                onChange={(event) => onChange({
-                  ...form,
-                  pairDriveTarget: Number(event.target.value) as 0 | 1,
-                })}
-              >
-                <option value={0}>q0</option>
-                <option value={1}>q1</option>
-              </select>
-            </label>
+            <NumberField field="networkDetuningQ0RadPerUs" label="q0 基準離調 [rad/us]" value={form.networkDetuningQ0RadPerUs} error={errors.networkDetuningQ0RadPerUs} step={1} disabled={disabled} onChange={setNumber} />
+            <NumberField field="networkDetuningQ1RadPerUs" label="q1 基準離調 [rad/us]" value={form.networkDetuningQ1RadPerUs} error={errors.networkDetuningQ1RadPerUs} step={1} disabled={disabled} onChange={setNumber} />
+            <NumberField field="networkExchangeCouplingRadPerUs" label="隣接交換結合 J [rad/us]" value={form.networkExchangeCouplingRadPerUs} error={errors.networkExchangeCouplingRadPerUs} step={0.5} min={0} disabled={disabled} onChange={setNumber} />
           </div>
+          <p className="pulse-parameters__model-note">
+            q2 以降の基準離調は現在 0 です。密度行列は {form.localLevels}<sup>N</sup> 次元になるため、
+            台数に応じて計算量とスナップショット数を自動制限します。
+            {cptpAvailable
+              ? ' この次元では明示的 CPTP 写像も選べます。'
+              : ' 明示的 CPTP 写像は 9 次元以下のときのみ選べます。'}
+          </p>
+
           <h3>相関準静的離調ノイズ</h3>
+          <p className="pulse-parameters__model-note">
+            全トランズモンに共通の σ を与え、隣接ペアに共通の相関係数 r を掛けます。
+            σ = 0 のときはアンサンブル平均を行いません（{form.networkQuasiStaticQuadratureOrder}
+            <sup>{transmonCount}</sup> 個の軌道を重み付き平均）。
+          </p>
           <div className="pulse-parameters__grid">
-            <NumberField field="pairQuasiStaticSigmaQ0RadPerUs" label="q0 σ [rad/us]" value={form.pairQuasiStaticSigmaQ0RadPerUs} error={errors.pairQuasiStaticSigmaQ0RadPerUs} step={0.1} min={0} disabled={disabled} onChange={setNumber} />
-            <NumberField field="pairQuasiStaticSigmaQ1RadPerUs" label="q1 σ [rad/us]" value={form.pairQuasiStaticSigmaQ1RadPerUs} error={errors.pairQuasiStaticSigmaQ1RadPerUs} step={0.1} min={0} disabled={disabled} onChange={setNumber} />
-            <NumberField field="pairQuasiStaticCorrelation" label="相関係数 r" value={form.pairQuasiStaticCorrelation} error={errors.pairQuasiStaticCorrelation} step={0.1} min={-1} max={1} disabled={disabled} onChange={setNumber} />
+            <NumberField field="networkQuasiStaticSigmaRadPerUs" label="共通 σ [rad/us]" value={form.networkQuasiStaticSigmaRadPerUs} error={errors.networkQuasiStaticSigmaRadPerUs} step={0.5} min={0} disabled={disabled} onChange={setNumber} />
+            <NumberField field="networkQuasiStaticAdjacentCorrelation" label="隣接相関係数 r" value={form.networkQuasiStaticAdjacentCorrelation} error={errors.networkQuasiStaticAdjacentCorrelation} step={0.1} min={-1} max={1} disabled={disabled || form.networkQuasiStaticSigmaRadPerUs <= 0} onChange={setNumber} />
             <label>
               <span>求積次数 / 軸</span>
               <select
-                value={form.pairQuasiStaticQuadratureOrder}
-                disabled={disabled}
+                value={form.networkQuasiStaticQuadratureOrder}
+                disabled={disabled || form.networkQuasiStaticSigmaRadPerUs <= 0}
                 onChange={(event) => onChange({
                   ...form,
-                  pairQuasiStaticQuadratureOrder: Number(event.target.value) as 3 | 5,
+                  networkQuasiStaticQuadratureOrder: Number(event.target.value) as 3 | 5,
                 })}
               >
-                <option value={3}>3（9軌道）</option>
-                <option value={5}>5（25軌道）</option>
+                <option value={3}>3</option>
+                <option value={5}>5</option>
               </select>
             </label>
           </div>
-          <h3>同時セカンダリdrive</h3>
-          <div className="pulse-parameters__grid">
-            <label>
-              <span>反対側のdrive</span>
-              <select
-                value={form.pairSecondaryDriveEnabled ? 'enabled' : 'disabled'}
-                disabled={disabled}
-                onChange={(event) => onChange({
-                  ...form,
-                  pairSecondaryDriveEnabled: event.target.value === 'enabled',
-                })}
-              >
-                <option value="disabled">無効</option>
-                <option value="enabled">有効</option>
-              </select>
-            </label>
-            <label>
-              <span>波形</span>
-              <select value={form.pairSecondaryShape} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={(event) => onChange({ ...form, pairSecondaryShape: event.target.value as PulseLabForm['pairSecondaryShape'] })}>
-                <option value="gaussian">Gaussian</option>
-                <option value="square">Square</option>
-              </select>
-            </label>
-            <label>
-              <span>振幅指定</span>
-              <select value={form.pairSecondaryAmplitudeMode} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={(event) => onChange({ ...form, pairSecondaryAmplitudeMode: event.target.value as PulseLabForm['pairSecondaryAmplitudeMode'] })}>
-                <option value="target_rotation_angle">回転角</option>
-                <option value="peak_amplitude">ピーク振幅</option>
-              </select>
-            </label>
-            {form.pairSecondaryAmplitudeMode === 'target_rotation_angle' ? (
-              <NumberField field="pairSecondaryTargetRotationAngleRad" label="副回転角 [rad]" value={form.pairSecondaryTargetRotationAngleRad} error={errors.pairSecondaryTargetRotationAngleRad} step={0.01} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
-            ) : (
-              <NumberField field="pairSecondaryPeakAmplitudeRadPerUs" label="副ピーク [rad/us]" value={form.pairSecondaryPeakAmplitudeRadPerUs} error={errors.pairSecondaryPeakAmplitudeRadPerUs} step={0.1} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
-            )}
-            {form.pairSecondaryShape === 'square' ? (
-              <NumberField field="pairSecondaryPulseDurationUs" label="副Pulse幅 [us]" value={form.pairSecondaryPulseDurationUs} error={errors.pairSecondaryPulseDurationUs} step={0.001} min={0} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
-            ) : (
-              <>
-                <NumberField field="pairSecondarySigmaUs" label="副Gaussian σ [us]" value={form.pairSecondarySigmaUs} error={errors.pairSecondarySigmaUs} step={0.001} min={0} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
-                <NumberField field="pairSecondaryTruncationSigma" label="副打ち切り [σ]" value={form.pairSecondaryTruncationSigma} error={errors.pairSecondaryTruncationSigma} step={0.5} min={0} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
-              </>
-            )}
-            <NumberField field="pairSecondaryPhaseRad" label="副位相 [rad]" value={form.pairSecondaryPhaseRad} error={errors.pairSecondaryPhaseRad} step={0.05} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
-            <NumberField field="pairSecondaryDetuningRadPerUs" label="副離調 [rad/us]" value={form.pairSecondaryDetuningRadPerUs} error={errors.pairSecondaryDetuningRadPerUs} step={0.1} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
-            {form.pairSecondaryShape === 'gaussian' ? (
-              <NumberField field="pairSecondaryDragBetaUs" label="副DRAG β [us]" value={form.pairSecondaryDragBetaUs} error={errors.pairSecondaryDragBetaUs} step={0.0001} disabled={disabled || !form.pairSecondaryDriveEnabled} onChange={setNumber} />
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      {isNetwork ? (
-        <div className="pulse-parameters__environment">
-          <h3>複数トランズモン・ネットワーク</h3>
-          <p className="pulse-parameters__model-note">
-            Pulse Circuit Studio の2〜4レーンを同時に実行します。各トランズモンは3準位で、隣接レーン間に同じ交換結合 J を適用します。
-          </p>
-          <div className="pulse-parameters__grid">
-            <NumberField field="pairDetuningQ0RadPerUs" label="q0 基準離調 [rad/us]" value={form.pairDetuningQ0RadPerUs} error={errors.pairDetuningQ0RadPerUs} step={1} disabled={disabled} onChange={setNumber} />
-            <NumberField field="pairDetuningQ1RadPerUs" label="q1 基準離調 [rad/us]" value={form.pairDetuningQ1RadPerUs} error={errors.pairDetuningQ1RadPerUs} step={1} disabled={disabled} onChange={setNumber} />
-            <NumberField field="pairExchangeCouplingRadPerUs" label="隣接交換結合 J [rad/us]" value={form.pairExchangeCouplingRadPerUs} error={errors.pairExchangeCouplingRadPerUs} step={0.5} min={0} disabled={disabled} onChange={setNumber} />
-          </div>
-          <p className="pulse-parameters__model-note">
-            q2以降の基準離調は現在0です。密度行列は 3<sup>N</sup> 次元になるため、台数に応じて計算量とスナップショット数を自動制限します。
-          </p>
         </div>
       ) : null}
 

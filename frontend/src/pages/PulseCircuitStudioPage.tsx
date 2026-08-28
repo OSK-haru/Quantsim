@@ -438,7 +438,7 @@ export function PulseCircuitStudioPage({
       <aside className="pulse-circuit-studio__notice" data-tone={exceedsRunnableScope ? 'alert' : 'info'}>
         {exceedsRunnableScope
           ? `現在 ${transmonCount} トランズモン。密度行列の計算量上限により、5台以上は回路編集のみで実行できません。実行するには4台以下にしてください。`
-          : '2〜4台では、Pulse Lab の「複数トランズモン・ネットワーク」から全レーンを同時実行できます。5〜8台は回路編集のみ対応です。'}
+          : '2〜4台では Pulse Lab から全レーンを同時実行できます（交換結合ありのネットワーク）。5〜8台は回路編集のみ対応です。'}
       </aside>
 
       <section className="pulse-circuit-studio__environment" aria-label="Pulse回路の環境設定">

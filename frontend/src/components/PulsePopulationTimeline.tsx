@@ -1,7 +1,6 @@
 import type { PulseLabForm, PulseResponse } from '../types/pulse'
 import {
   isCoupledTransmonNetworkResponse,
-  isCoupledTransmonPairResponse,
   isQutritPulseResponse,
 } from '../types/pulse'
 import { qutritTargetOverlap } from '../utils/pulseLab'
@@ -29,10 +28,8 @@ export function PulsePopulationTimeline({
   const x = (time: number) => PAD_X + (time / maximumTime) * (WIDTH - 2 * PAD_X)
   const y = (value: number) => HEIGHT - PAD_Y - value * (HEIGHT - 2 * PAD_Y)
   const qutrit = isQutritPulseResponse(response)
-  const series = isCoupledTransmonPairResponse(response)
-    ? pairSeries(response)
-    : isCoupledTransmonNetworkResponse(response)
-      ? networkSeries(response)
+  const series = isCoupledTransmonNetworkResponse(response)
+    ? networkSeries(response)
     : isQutritPulseResponse(response)
       ? qutritSeries(response, formAtRun)
       : twoLevelSeries(response)
@@ -109,28 +106,6 @@ function networkSeries(
     ...selectedLabels.map((label, index) => ({
       label: `P${label}`,
       color: colors[index % colors.length],
-      values: response.trajectory.map((point) => point.joint_populations[label] ?? 0),
-    })),
-    {
-      label: 'リーケージ',
-      color: '#ef8b66',
-      values: response.trajectory.map((point) => point.leakage_probability),
-    },
-    {
-      label: '純度',
-      color: '#f0d878',
-      values: response.trajectory.map((point) => point.purity),
-    },
-  ]
-}
-
-function pairSeries(
-  response: Extract<PulseResponse, { contract_version: 'pulse-coupled-pair-v1' }>,
-) {
-  return [
-    ...['00', '01', '10', '11'].map((label, index) => ({
-      label: `P${label}`,
-      color: ['#61d7c2', '#6da7ff', '#e7a9ee', '#d9c66c'][index],
       values: response.trajectory.map((point) => point.joint_populations[label] ?? 0),
     })),
     {

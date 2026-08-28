@@ -6,10 +6,17 @@ import path from 'node:path'
 import ts from 'typescript'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const pulseLabPageSource = readFileSync(
-  path.join(root, 'src/pages/PulseLabPage.tsx'),
-  'utf8',
-)
+
+/*
+ * ソース断片の一致を見るアサーションが並ぶので、改行コードをLFに正規化して
+ * から比較する。Windowsのチェックアウトや git の autocrlf でCRLFになると、
+ * コードが正しくてもリテラル一致が外れて偽陽性で落ちるため。
+ */
+function readSource(relativePath) {
+  return readFileSync(path.join(root, relativePath), 'utf8').replace(/\r\n/g, '\n')
+}
+
+const pulseLabPageSource = readSource('src/pages/PulseLabPage.tsx')
 assert(
   !pulseLabPageSource.includes('onOpenCircuitStudio'),
   'Pulse Lab must not link to the gate-aware Circuit Studio',
@@ -35,10 +42,7 @@ assert(
   'an empty qutrit circuit must have an empty execution plan',
 )
 
-const pulseStateExplorerSource = readFileSync(
-  path.join(root, 'src/pages/PulseStateExplorerPage.tsx'),
-  'utf8',
-)
+const pulseStateExplorerSource = readSource('src/pages/PulseStateExplorerPage.tsx')
 assert(
   !pulseStateExplorerSource.includes('BlochSphere'),
   'Pulse State Explorer must not render a reduced Bloch sphere',

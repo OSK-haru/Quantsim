@@ -28,6 +28,7 @@ import { initialPulseLabForm } from './utils/pulseLab'
 import {
   applyPulseStepToForm,
   createDefaultPulseCircuit,
+  resizePulseCircuit,
 } from './utils/pulseCircuit'
 import type { PulseCircuitState, PulseStepParameters } from './types/pulseCircuit'
 import type { PulseRunRecord } from './types/pulse'
@@ -269,6 +270,7 @@ function App() {
                 ...current,
                 executionConstraints,
               }))}
+              onTransmonCountChange={(count) => setPulseCircuit((current) => resizePulseCircuit(current, count))}
               latestRun={latestPulseRun}
               runSignature={pulseSignature}
               onRunCommitted={setLatestPulseRun}

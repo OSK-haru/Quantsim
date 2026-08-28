@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Annotated, Literal
+from typing import Annotated, ClassVar, Literal
 
 from pydantic import (
     BaseModel,
@@ -15,7 +15,6 @@ from pydantic import (
 
 from core.capabilities import (
     DRIVEN_COUPLED_TRANSMON_NETWORK_RWA_EXPERIMENTAL_MODEL,
-    DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_TRANSMON_QUTRIT_RWA_EXPERIMENTAL_MODEL,
     DRIVEN_TWO_LEVEL_RWA_EXPERIMENTAL_MODEL,
 )
@@ -472,104 +471,6 @@ class QutritPulseSimulateRequest(StrictPulseModel):
         return self
 
 
-class CoupledTransmonPairPulseSimulateRequest(StrictPulseModel):
-    """Bounded two-transmon request using a 3x3 local truncation."""
-
-    model_id: Literal[
-        "driven_coupled_transmon_pair_rwa_experimental_v1"
-    ] = DRIVEN_COUPLED_TRANSMON_PAIR_RWA_EXPERIMENTAL_MODEL
-    initial_state: Literal["00", "01", "10", "11"] = "00"
-    anharmonicities_mhz: list[float] = Field(min_length=2, max_length=2)
-    detunings_rad_per_us: list[float] = Field(min_length=2, max_length=2)
-    exchange_coupling_rad_per_us: float = Field(ge=0.0)
-    drive_target: Literal[0, 1] = 0
-    pulse: QutritPulseEnvelopeRequest
-    secondary_pulse: QutritPulseEnvelopeRequest | None = None
-    quasi_static_detuning_sigmas_rad_per_us: list[float] = Field(
-        default_factory=lambda: [0.0, 0.0],
-        min_length=2,
-        max_length=2,
-    )
-    quasi_static_detuning_correlation: float = Field(
-        default=0.0,
-        ge=-1.0,
-        le=1.0,
-    )
-    quasi_static_quadrature_order: Literal[3, 5] = 3
-    total_simulation_time_us: float = Field(gt=0.0)
-    backend: Literal["python", "rust", "auto"] = "auto"
-    evolution_method: Literal["fixed_step_rk4", "explicit_cptp"] = (
-        "fixed_step_rk4"
-    )
-    environment: QutritPulseEnvironmentRequest
-    snapshot_options: PulseSnapshotOptionsRequest = Field(
-        default_factory=PulseSnapshotOptionsRequest
-    )
-
-    @field_validator(
-        "anharmonicities_mhz",
-        "detunings_rad_per_us",
-        "quasi_static_detuning_sigmas_rad_per_us",
-    )
-    @classmethod
-    def validate_pair_values(cls, values: list[float]) -> list[float]:
-        if any(not math.isfinite(value) for value in values):
-            raise ValueError("pair transmon values must be finite")
-        return values
-
-    @field_validator("quasi_static_detuning_sigmas_rad_per_us")
-    @classmethod
-    def validate_pair_noise_sigmas(cls, values: list[float]) -> list[float]:
-        if any(value < 0.0 for value in values):
-            raise ValueError("pair quasi-static sigmas must be non-negative")
-        return values
-
-    @field_validator("anharmonicities_mhz")
-    @classmethod
-    def validate_pair_anharmonicities(cls, values: list[float]) -> list[float]:
-        if any(value >= 0.0 for value in values):
-            raise ValueError("pair anharmonicities must be negative")
-        return values
-
-    @field_validator("exchange_coupling_rad_per_us")
-    @classmethod
-    def validate_pair_coupling(cls, value: float) -> float:
-        if not math.isfinite(value):
-            raise ValueError("exchange coupling must be finite")
-        return value
-
-    @field_validator("quasi_static_detuning_correlation")
-    @classmethod
-    def validate_pair_noise_correlation(cls, value: float) -> float:
-        if not math.isfinite(value):
-            raise ValueError("pair quasi-static correlation must be finite")
-        return value
-
-    @model_validator(mode="after")
-    def validate_pair_timing(self) -> "CoupledTransmonPairPulseSimulateRequest":
-        if not math.isfinite(self.total_simulation_time_us):
-            raise ValueError("total_simulation_time_us must be finite")
-        pulse_duration = max(
-            self.pulse.derived_pulse_duration_us,
-            self.secondary_pulse.derived_pulse_duration_us
-            if self.secondary_pulse is not None else 0.0,
-        )
-        if pulse_duration > self.total_simulation_time_us:
-            raise ValueError("pulse duration must not exceed total time")
-        if any(
-            time_us > self.total_simulation_time_us
-            for time_us in self.snapshot_options.custom_times_us
-        ):
-            raise ValueError("snapshot times must not exceed total time")
-        if isinstance(self.environment, QutritPulsePhysicalEnvironmentRequest):
-            for anharmonicity in self.anharmonicities_mhz:
-                transition_12_frequency_ghz(
-                    self.environment.qubit_frequency_ghz,
-                    anharmonicity,
-                )
-        return self
-
-
 class TransmonNetworkCouplingRequest(StrictPulseModel):
     left: int = Field(ge=0, le=3)
     right: int = Field(ge=0, le=3)
@@ -602,16 +503,22 @@ class ScheduledTransmonPulseRequest(StrictPulseModel):
 
 
 class CoupledTransmonNetworkPulseSimulateRequest(StrictPulseModel):
-    """Bounded 2-4 transmon request with scheduled local drives."""
+    """Bounded 1-4 transmon request with scheduled local drives.
+
+    A single transmon is the degenerate network with no exchange edges; it
+    shares this contract so the pulse lab can offer one "transmon x count"
+    model instead of separate single- and multi-transmon paths.
+    """
 
     model_id: Literal[
         "driven_coupled_transmon_network_rwa_experimental_v1"
     ] = DRIVEN_COUPLED_TRANSMON_NETWORK_RWA_EXPERIMENTAL_MODEL
-    transmon_count: int = Field(ge=2, le=4)
-    initial_state: str = Field(pattern=r"^[01]{2,4}$")
-    frequencies_ghz: list[float] = Field(min_length=2, max_length=4)
-    anharmonicities_mhz: list[float] = Field(min_length=2, max_length=4)
-    detunings_rad_per_us: list[float] = Field(min_length=2, max_length=4)
+    transmon_count: int = Field(ge=1, le=4)
+    local_levels: Literal[2, 3] = 3
+    initial_state: str = Field(pattern=r"^[01]{1,4}$")
+    frequencies_ghz: list[float] = Field(min_length=1, max_length=4)
+    anharmonicities_mhz: list[float] = Field(min_length=1, max_length=4)
+    detunings_rad_per_us: list[float] = Field(min_length=1, max_length=4)
     couplings: list[TransmonNetworkCouplingRequest] = Field(
         default_factory=list,
         max_length=6,
@@ -620,9 +527,21 @@ class CoupledTransmonNetworkPulseSimulateRequest(StrictPulseModel):
         min_length=1,
         max_length=32,
     )
+    quasi_static_detuning_sigmas_rad_per_us: list[float] = Field(
+        default_factory=list,
+        max_length=4,
+    )
+    quasi_static_detuning_adjacent_correlation: float = Field(
+        default=0.0,
+        ge=-1.0,
+        le=1.0,
+    )
+    quasi_static_quadrature_order: Literal[3, 5] = 3
     total_simulation_time_us: float = Field(gt=0.0)
     backend: Literal["python", "rust", "auto"] = "auto"
-    evolution_method: Literal["fixed_step_rk4"] = "fixed_step_rk4"
+    evolution_method: Literal["fixed_step_rk4", "explicit_cptp"] = (
+        "fixed_step_rk4"
+    )
     environment: QutritPulseEnvironmentRequest
     snapshot_options: PulseSnapshotOptionsRequest = Field(
         default_factory=PulseSnapshotOptionsRequest
@@ -649,9 +568,25 @@ class CoupledTransmonNetworkPulseSimulateRequest(StrictPulseModel):
     @field_validator("anharmonicities_mhz")
     @classmethod
     def validate_network_anharmonicities(cls, values: list[float]) -> list[float]:
+        # A transmon always has a negative anharmonicity; the step policy uses
+        # it to bound the integration step even for a two-level network, where
+        # it otherwise never enters the qubit-subspace dynamics.
         if any(value >= 0.0 for value in values):
             raise ValueError("network anharmonicities must be negative")
         return values
+
+    @field_validator("quasi_static_detuning_sigmas_rad_per_us")
+    @classmethod
+    def validate_network_noise_sigmas(cls, values: list[float]) -> list[float]:
+        if any(not math.isfinite(value) or value < 0.0 for value in values):
+            raise ValueError(
+                "network quasi-static sigmas must be finite and non-negative"
+            )
+        return values
+
+    # Explicit CPTP builds a dim**2 x dim**2 Choi matrix per interval, so it is
+    # only offered where that stays small; three levels caps at two transmons.
+    _CPTP_MAX_HILBERT_DIMENSION: ClassVar[int] = 9
 
     @model_validator(mode="after")
     def validate_network(self) -> "CoupledTransmonNetworkPulseSimulateRequest":
@@ -668,6 +603,8 @@ class CoupledTransmonNetworkPulseSimulateRequest(StrictPulseModel):
         if not math.isfinite(self.total_simulation_time_us):
             raise ValueError("total_simulation_time_us must be finite")
 
+        if count == 1 and self.couplings:
+            raise ValueError("a single-transmon network cannot have exchange couplings")
         coupling_edges: set[tuple[int, int]] = set()
         for coupling in self.couplings:
             if coupling.left >= count or coupling.right >= count:
@@ -686,19 +623,39 @@ class CoupledTransmonNetworkPulseSimulateRequest(StrictPulseModel):
             for time_us in self.snapshot_options.custom_times_us
         ):
             raise ValueError("snapshot times must not exceed total time")
-        for frequency, anharmonicity in zip(
-            self.frequencies_ghz,
-            self.anharmonicities_mhz,
-            strict=True,
-        ):
-            transition_12_frequency_ghz(frequency, anharmonicity)
+
+        sigmas = self.quasi_static_detuning_sigmas_rad_per_us
+        if sigmas and len(sigmas) != count:
+            raise ValueError(
+                "quasi_static_detuning_sigmas_rad_per_us must be empty or "
+                "match transmon_count"
+            )
+
+        if self.evolution_method == "explicit_cptp":
+            dimension = self.local_levels ** count
+            if dimension > self._CPTP_MAX_HILBERT_DIMENSION:
+                raise ValueError(
+                    "explicit CPTP is limited to Hilbert dimension "
+                    f"{self._CPTP_MAX_HILBERT_DIMENSION}; this register is "
+                    f"{dimension}-dimensional. Use fixed_step_rk4."
+                )
+
+        if self.local_levels == 3:
+            # The |1>-|2> transition only exists at three levels; validate its
+            # frequency there.  Two-level networks still carry a negative
+            # anharmonicity (checked above) but never populate |2>.
+            for frequency, anharmonicity in zip(
+                self.frequencies_ghz,
+                self.anharmonicities_mhz,
+                strict=True,
+            ):
+                transition_12_frequency_ghz(frequency, anharmonicity)
         return self
 
 
 PulseApiRequest = Annotated[
     PulseSimulateRequest
     | QutritPulseSimulateRequest
-    | CoupledTransmonPairPulseSimulateRequest
     | CoupledTransmonNetworkPulseSimulateRequest,
     Field(discriminator="model_id"),
 ]
@@ -989,7 +946,7 @@ class QutritPulseSimulateResponse(StrictPulseModel):
     limitations: list[str]
 
 
-class CoupledTransmonPairTrajectoryPointResponse(StrictPulseModel):
+class TransmonNetworkTrajectoryPointResponse(StrictPulseModel):
     time_us: float
     segment: Literal["pulse", "idle"]
     joint_populations: dict[str, float]
@@ -1003,22 +960,6 @@ class CoupledTransmonPairTrajectoryPointResponse(StrictPulseModel):
     cleanup_correction_norm: float
 
 
-class CoupledTransmonPairPulseSimulateResponse(StrictPulseModel):
-    contract_version: Literal["pulse-coupled-pair-v1"]
-    model: dict[str, object]
-    input: dict[str, object]
-    rates: list[QutritPulseRatesResponse]
-    step_policy: dict[str, object]
-    sample_times_us: list[float]
-    trajectory: list[CoupledTransmonPairTrajectoryPointResponse]
-    leakage: QutritLeakageResponse
-    pulse_end: CoupledTransmonPairTrajectoryPointResponse
-    final: CoupledTransmonPairTrajectoryPointResponse
-    diagnostics: dict[str, object]
-    warnings: list[str]
-    limitations: list[str]
-
-
 class CoupledTransmonNetworkPulseSimulateResponse(StrictPulseModel):
     contract_version: Literal["pulse-transmon-network-v1"]
     model: dict[str, object]
@@ -1026,10 +967,10 @@ class CoupledTransmonNetworkPulseSimulateResponse(StrictPulseModel):
     rates: list[QutritPulseRatesResponse]
     step_policy: dict[str, object]
     sample_times_us: list[float]
-    trajectory: list[CoupledTransmonPairTrajectoryPointResponse]
+    trajectory: list[TransmonNetworkTrajectoryPointResponse]
     leakage: QutritLeakageResponse
-    pulse_end: CoupledTransmonPairTrajectoryPointResponse
-    final: CoupledTransmonPairTrajectoryPointResponse
+    pulse_end: TransmonNetworkTrajectoryPointResponse
+    final: TransmonNetworkTrajectoryPointResponse
     diagnostics: dict[str, object]
     warnings: list[str]
     limitations: list[str]
@@ -1038,6 +979,5 @@ class CoupledTransmonNetworkPulseSimulateResponse(StrictPulseModel):
 PulseApiResponse = (
     PulseSimulateResponse
     | QutritPulseSimulateResponse
-    | CoupledTransmonPairPulseSimulateResponse
     | CoupledTransmonNetworkPulseSimulateResponse
 )

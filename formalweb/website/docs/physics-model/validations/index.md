@@ -65,7 +65,7 @@ $$
 |---|---|---|
 | 入力モデル | 環境パラメータからレートへの写像、熱平衡 | [入力モデルの検証](./input.md) |
 | 時間発展 | RK4・明示的CPTP・状態ベクトルの各ソルバー | [時間発展の検証](./propagation.md) |
-| 制御モデル | Gate-aware、Pulse 2準位 / qutrit / 結合ペア / 結合ネットワーク | [制御モデルの検証](./control-models.md) |
+| 制御モデル | Gate-aware、Pulse 2準位 / qutrit / 結合ネットワーク | [制御モデルの検証](./control-models.md) |
 | 実機比較 | 実際の量子プロセッサとの観測量比較 | [実機比較](./hardware-comparison.md) |
 
 ## 独立ソルバー

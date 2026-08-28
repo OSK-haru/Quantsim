@@ -243,7 +243,6 @@ class PulseRequestContractTests(unittest.TestCase):
             {
                 "#/components/schemas/PulseSimulateResponse",
                 "#/components/schemas/QutritPulseSimulateResponse",
-                "#/components/schemas/CoupledTransmonPairPulseSimulateResponse",
                 "#/components/schemas/CoupledTransmonNetworkPulseSimulateResponse",
             },
         )

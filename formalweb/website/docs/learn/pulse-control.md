@@ -366,7 +366,7 @@ $J$ は結合強度です。$a_0^\dagger a_1$ は「量子ビット1から励起
 | DRAGの式と検証B-4の数値 | [P3. 漏れとDRAG](./pulse/leakage-drag.md) — 漏れの見積もりと $\beta\approx1/\lvert\alpha\rvert$ の由来 |
 | 数演算子形式と $1:1:4$ | [P4. 多準位系の散逸](./pulse/qutrit-dissipation.md) — 比の導出と $\gamma_{21}=2\gamma_{10}$ |
 | 準静的ノイズとGauss–Hermite | [P5. 準静的ノイズ](./pulse/quasi-static-noise.md) — ガウス型減衰と求積の理論 |
-| 結合ペアのハミルトニアン | [P6. 結合トランズモン対](./pulse/two-transmon.md) — iSWAP、$ZZ$、$h\le0.02/(4J)$ の由来 |
+| 結合トランズモンのハミルトニアン | [P6. 結合トランズモン対](./pulse/two-transmon.md) — iSWAP、$ZZ$、$h\le0.02/(4J)$ の由来 |
 | ステップ方針と作業量上限 | [P7. パルス計算の数値的作法](./pulse/numerics.md) — 3条件と物理性診断の読み方 |
 
 パルスに深入りせず本編を先に通したい場合は、次章へ進んでかまいません。パルス編は本編の第7〜9章を読んだあとでも問題なく履修できます。

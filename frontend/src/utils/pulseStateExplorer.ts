@@ -8,7 +8,6 @@
 
 import {
   isCoupledTransmonNetworkResponse,
-  isCoupledTransmonPairResponse,
   isQutritPulseResponse,
   type PulseComplexValue,
   type PulseLabForm,
@@ -93,12 +92,9 @@ export function buildPulseExplorerView(
     }
   }
 
-  if (isCoupledTransmonPairResponse(response) || isCoupledTransmonNetworkResponse(response)) {
-    const network = isCoupledTransmonNetworkResponse(response)
+  if (isCoupledTransmonNetworkResponse(response)) {
     const basisLabels = response.model.basis_order
-    const transmonCount = network
-      ? response.model.logical_qubits
-      : 2
+    const transmonCount = response.model.logical_qubits
     const points: PulseExplorerPoint[] = response.trajectory.map((point) => ({
       timeUs: point.time_us,
       segment: point.segment,
@@ -110,15 +106,15 @@ export function buildPulseExplorerView(
       reference: null,
       densityMatrix: point.density_matrix,
     }))
+    /* 局所準位数は 次元 = levels^台数 から戻す（2準位ネットワークにも対応）。 */
+    const levelCount = Math.round(basisLabels.length ** (1 / Math.max(1, transmonCount)))
     return {
-      modelLabel: network
-        ? `${transmonCount}トランズモン・ネットワーク / 3^${transmonCount}準位`
-        : '結合トランズモンペア / 3 x 3準位',
+      modelLabel: `${transmonCount}トランズモン・ネットワーク / ${levelCount}^${transmonCount}準位`,
       basisLabels,
       computationalLabels: basisLabels.filter((label) => /^[01]+$/.test(label)),
       dimension: basisLabels.length,
       transmonCount,
-      levelCount: 3,
+      levelCount,
       points,
       finalDensityMatrix: response.final.density_matrix,
       referenceLabel: null,

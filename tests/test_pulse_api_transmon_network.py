@@ -112,6 +112,226 @@ class CoupledTransmonNetworkApiTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
 
+    def test_single_transmon_network_drives_the_computational_transition(self) -> None:
+        request = CoupledTransmonNetworkPulseSimulateRequest.model_validate(
+            _single_transmon_payload()
+        )
+        response = pulse_simulate(request)
+        validated = CoupledTransmonNetworkPulseSimulateResponse.model_validate(response)
+
+        self.assertEqual(validated.model["logical_qubits"], 1)
+        self.assertEqual(validated.model["hilbert_dimension"], 3)
+        self.assertEqual(len(validated.final.density_matrix), 3)
+        self.assertEqual(validated.model["basis_order"], ["0", "1", "2"])
+        self.assertAlmostEqual(
+            sum(validated.final.joint_populations.values()),
+            1.0,
+            places=10,
+        )
+        # A pi pulse on the degenerate single-transmon network moves almost all
+        # population into |1>, with only a little leakage into |2>.
+        self.assertGreater(validated.final.joint_populations["1"], 0.9)
+        self.assertLess(validated.final.joint_populations["2"], 0.05)
+
+    def test_single_transmon_network_rejects_exchange_couplings(self) -> None:
+        payload = _single_transmon_payload()
+        payload["couplings"] = [
+            {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 1.0}
+        ]
+        with self.assertRaises(ValidationError):
+            CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
+
+    def test_two_level_network_has_no_leakage_state(self) -> None:
+        payload = _single_transmon_payload()
+        payload["local_levels"] = 2
+        request = CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
+        response = pulse_simulate(request)
+        validated = CoupledTransmonNetworkPulseSimulateResponse.model_validate(response)
+
+        self.assertEqual(validated.model["local_levels"], 2)
+        self.assertEqual(validated.model["hilbert_dimension"], 2)
+        self.assertEqual(validated.model["basis_order"], ["0", "1"])
+        self.assertEqual(validated.model["subsystem_dimensions"], [2])
+        self.assertEqual(len(validated.final.density_matrix), 2)
+        # No |2> state exists, so a pi pulse is an exact inversion and the
+        # leakage channel is identically zero.
+        self.assertAlmostEqual(validated.final.joint_populations["1"], 1.0, places=3)
+        self.assertAlmostEqual(validated.final.leakage_probability, 0.0, places=12)
+
+    def test_two_level_pair_transfers_population_through_exchange(self) -> None:
+        payload = _network_payload()
+        payload.update({
+            "local_levels": 2,
+            "transmon_count": 2,
+            "initial_state": "00",
+            "frequencies_ghz": [5.0, 5.1],
+            "anharmonicities_mhz": [-320.0, -320.0],
+            "detunings_rad_per_us": [0.0, 0.0],
+            "couplings": [
+                {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 5.0}
+            ],
+            "drives": [
+                {
+                    "target": 0,
+                    "start_time_us": 0.0,
+                    "pulse": {
+                        "shape": "square",
+                        "amplitude_mode": "target_rotation_angle",
+                        "target_rotation_angle_rad": math.pi,
+                        "pulse_duration_us": 0.02,
+                        "phase_rad": 0.0,
+                        "detuning_rad_per_us": 0.0,
+                        "drag_beta_us": 0.0,
+                    },
+                }
+            ],
+            "total_simulation_time_us": 0.05,
+            "snapshot_options": {"uniform_count": 6, "custom_times_us": []},
+        })
+        request = CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
+        response = pulse_simulate(request)
+        validated = CoupledTransmonNetworkPulseSimulateResponse.model_validate(response)
+
+        self.assertEqual(validated.model["hilbert_dimension"], 4)
+        self.assertEqual(
+            sorted(validated.final.joint_populations),
+            ["00", "01", "10", "11"],
+        )
+        self.assertAlmostEqual(
+            sum(validated.final.joint_populations.values()), 1.0, places=10
+        )
+        # The drive inverts q0 and the exchange edge leaks some of that into q1.
+        self.assertGreater(validated.final.joint_populations["01"], 1e-3)
+
+    def test_two_level_network_still_requires_negative_anharmonicity(self) -> None:
+        payload = _single_transmon_payload()
+        payload["local_levels"] = 2
+        payload["anharmonicities_mhz"] = [0.0]
+        with self.assertRaises(ValidationError):
+            CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
+
+    def test_explicit_cptp_matches_rk4_and_reports_an_audit(self) -> None:
+        rk4_payload = _network_payload()
+        rk4_payload.update({
+            "transmon_count": 2,
+            "initial_state": "00",
+            "frequencies_ghz": [5.0, 5.1],
+            "anharmonicities_mhz": [-320.0, -320.0],
+            "detunings_rad_per_us": [0.0, 0.0],
+            "couplings": [
+                {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 5.0}
+            ],
+            "drives": [{
+                "target": 0,
+                "start_time_us": 0.0,
+                "pulse": {
+                    "shape": "square",
+                    "amplitude_mode": "target_rotation_angle",
+                    "target_rotation_angle_rad": math.pi,
+                    "pulse_duration_us": 0.02,
+                    "phase_rad": 0.0,
+                    "detuning_rad_per_us": 0.0,
+                    "drag_beta_us": 0.0,
+                },
+            }],
+            "total_simulation_time_us": 0.05,
+            "environment": {
+                "input_mode": "direct_rates",
+                "gamma_10_down_per_us": 0.05,
+                "gamma_01_up_per_us": 0.0,
+                "gamma_21_down_per_us": 0.0,
+                "gamma_12_up_per_us": 0.0,
+                "gamma_phi_adjacent_per_us": 0.0,
+            },
+            "snapshot_options": {"uniform_count": 4, "custom_times_us": []},
+        })
+        cptp_payload = dict(rk4_payload, evolution_method="explicit_cptp")
+
+        rk4 = CoupledTransmonNetworkPulseSimulateResponse.model_validate(
+            pulse_simulate(
+                CoupledTransmonNetworkPulseSimulateRequest.model_validate(rk4_payload)
+            )
+        )
+        cptp = CoupledTransmonNetworkPulseSimulateResponse.model_validate(
+            pulse_simulate(
+                CoupledTransmonNetworkPulseSimulateRequest.model_validate(cptp_payload)
+            )
+        )
+
+        audit = cptp.diagnostics["evolution"]["open_pulse_audit"]
+        self.assertIsNotNone(audit)
+        self.assertTrue(audit["all_maps_cptp"])
+        self.assertTrue(
+            cptp.diagnostics["evolution"]["cptp_guaranteed_by_construction"]
+        )
+        self.assertFalse(cptp.diagnostics["evolution"]["cleanup_applied"])
+        for label, rk4_value in rk4.final.joint_populations.items():
+            self.assertAlmostEqual(
+                cptp.final.joint_populations[label], rk4_value, places=4
+            )
+
+    def test_explicit_cptp_is_rejected_above_hilbert_dimension_nine(self) -> None:
+        payload = _network_payload()
+        payload.update({
+            "evolution_method": "explicit_cptp",
+            "transmon_count": 3,
+            "initial_state": "000",
+            "frequencies_ghz": [5.0, 5.1, 4.9],
+            "anharmonicities_mhz": [-320.0, -320.0, -320.0],
+            "detunings_rad_per_us": [0.0, 0.0, 0.0],
+        })
+        with self.assertRaises(ValidationError):
+            CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
+
+    def test_correlated_quasi_static_ensemble_preserves_trace(self) -> None:
+        payload = _network_payload()
+        payload.update({
+            "transmon_count": 2,
+            "initial_state": "00",
+            "frequencies_ghz": [5.0, 5.1],
+            "anharmonicities_mhz": [-320.0, -320.0],
+            "detunings_rad_per_us": [0.0, 0.0],
+            "couplings": [
+                {"left": 0, "right": 1, "exchange_coupling_rad_per_us": 5.0}
+            ],
+            "drives": [{
+                "target": 0,
+                "start_time_us": 0.0,
+                "pulse": {
+                    "shape": "square",
+                    "amplitude_mode": "target_rotation_angle",
+                    "target_rotation_angle_rad": math.pi,
+                    "pulse_duration_us": 0.02,
+                    "phase_rad": 0.0,
+                    "detuning_rad_per_us": 0.0,
+                    "drag_beta_us": 0.0,
+                },
+            }],
+            "quasi_static_detuning_sigmas_rad_per_us": [3.0, 3.0],
+            "quasi_static_detuning_adjacent_correlation": 0.5,
+            "quasi_static_quadrature_order": 3,
+            "total_simulation_time_us": 0.05,
+            "snapshot_options": {"uniform_count": 4, "custom_times_us": []},
+        })
+        request = CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
+        response = pulse_simulate(request)
+        validated = CoupledTransmonNetworkPulseSimulateResponse.model_validate(response)
+
+        noise = validated.diagnostics["quasi_static_noise"]
+        self.assertTrue(noise["enabled"])
+        self.assertEqual(noise["sample_count"], 9)
+        self.assertEqual(noise["adjacent_correlation"], 0.5)
+        self.assertAlmostEqual(
+            sum(validated.final.joint_populations.values()), 1.0, places=10
+        )
+        self.assertAlmostEqual(validated.final.population_sum_error, 0.0, places=9)
+
+    def test_quasi_static_sigma_length_must_match_register(self) -> None:
+        payload = _network_payload()
+        payload["quasi_static_detuning_sigmas_rad_per_us"] = [1.0]
+        with self.assertRaises(ValidationError):
+            CoupledTransmonNetworkPulseSimulateRequest.model_validate(payload)
+
     def test_four_transmon_response_budget_is_checked_before_evolution(self) -> None:
         payload = _network_payload()
         payload.update({
@@ -366,6 +586,44 @@ def _network_payload() -> dict[str, object]:
             "gamma_phi_adjacent_per_us": 0.0,
         },
         "snapshot_options": {"uniform_count": 3, "custom_times_us": []},
+    }
+
+
+def _single_transmon_payload() -> dict[str, object]:
+    """Return a pi pulse on the degenerate one-transmon network."""
+
+    pulse = {
+        "shape": "square",
+        "amplitude_mode": "target_rotation_angle",
+        "target_rotation_angle_rad": math.pi,
+        "pulse_duration_us": 0.02,
+        "phase_rad": 0.0,
+        "detuning_rad_per_us": 0.0,
+        "drag_beta_us": 0.0,
+    }
+    return {
+        "model_id": DRIVEN_COUPLED_TRANSMON_NETWORK_RWA_EXPERIMENTAL_MODEL,
+        "transmon_count": 1,
+        "initial_state": "0",
+        "frequencies_ghz": [5.0],
+        "anharmonicities_mhz": [-320.0],
+        "detunings_rad_per_us": [0.0],
+        "couplings": [],
+        "drives": [
+            {"target": 0, "start_time_us": 0.0, "pulse": pulse},
+        ],
+        "total_simulation_time_us": 0.05,
+        "backend": "python",
+        "evolution_method": "fixed_step_rk4",
+        "environment": {
+            "input_mode": "direct_rates",
+            "gamma_10_down_per_us": 0.0,
+            "gamma_01_up_per_us": 0.0,
+            "gamma_21_down_per_us": 0.0,
+            "gamma_12_up_per_us": 0.0,
+            "gamma_phi_adjacent_per_us": 0.0,
+        },
+        "snapshot_options": {"uniform_count": 6, "custom_times_us": []},
     }
 
 

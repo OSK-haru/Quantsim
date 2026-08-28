@@ -88,3 +88,69 @@ def correlated_gaussian_detuning_pair_samples(
         for z0, weight0 in standard
         for z1, weight1 in standard
     )
+
+
+def correlated_gaussian_detuning_chain_samples(
+    sigmas_rad_per_us: tuple[float, ...],
+    adjacent_correlation: float,
+    order: int,
+) -> tuple[tuple[tuple[float, ...], float], ...]:
+    """Return deterministic samples for a chain of quasi-static detunings.
+
+    Each transmon ``i`` carries an independent width ``sigma_i``; neighbouring
+    transmons share the correlation coefficient ``adjacent_correlation`` and
+    non-neighbours are independent, i.e. the covariance is the tridiagonal
+    matrix ``Sigma_ij = sigma_i sigma_j * (1 if i == j else r if |i-j| == 1
+    else 0)``.  The offsets are drawn from a tensor-product Gauss-Hermite grid
+    over the standard normals and mapped through the Cholesky factor of the
+    normalised (unit-diagonal) covariance, so the sample count is
+    ``order ** count`` before the zero-width transmons collapse their axes.
+
+    For ``count == 2`` this reproduces
+    :func:`correlated_gaussian_detuning_pair_samples`.
+    """
+
+    sigmas = tuple(float(value) for value in sigmas_rad_per_us)
+    if not sigmas:
+        raise ValueError("chain sigmas must not be empty")
+    if any(not math.isfinite(value) or value < 0.0 for value in sigmas):
+        raise ValueError("chain sigmas must be finite and non-negative")
+    r = float(adjacent_correlation)
+    if not math.isfinite(r) or not -1.0 <= r <= 1.0:
+        raise ValueError("adjacent_correlation must be finite and between -1 and 1")
+
+    count = len(sigmas)
+    active = [index for index, sigma in enumerate(sigmas) if sigma > 0.0]
+    if not active:
+        return (((0.0,) * count, 1.0),)
+
+    # Correlation only couples active neighbours that are adjacent in the full
+    # register; a zero-width transmon between two others breaks the chain.
+    unit_correlation = np.eye(len(active))
+    for position in range(len(active) - 1):
+        if active[position + 1] - active[position] == 1:
+            unit_correlation[position, position + 1] = r
+            unit_correlation[position + 1, position] = r
+    cholesky = np.linalg.cholesky(unit_correlation)
+
+    standard = gaussian_quasi_static_detuning_samples(1.0, order)
+
+    def grid(depth: int) -> tuple[tuple[tuple[float, ...], float], ...]:
+        if depth == 0:
+            return (((), 1.0),)
+        return tuple(
+            ((*rest, node), rest_weight * weight)
+            for rest, rest_weight in grid(depth - 1)
+            for node, weight in standard
+        )
+
+    samples: list[tuple[tuple[float, ...], float]] = []
+    for standard_vector, weight in grid(len(active)):
+        correlated = cholesky @ np.asarray(standard_vector)
+        offsets = [0.0] * count
+        for position, register_index in enumerate(active):
+            offsets[register_index] = sigmas[register_index] * float(
+                correlated[position]
+            )
+        samples.append((tuple(offsets), weight))
+    return tuple(samples)

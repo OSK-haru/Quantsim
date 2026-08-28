@@ -1,8 +1,9 @@
-"""Bounded API service for scheduled 2-4 transmon pulse networks."""
+"""Bounded API service for scheduled 1-4 transmon pulse networks."""
 
 from __future__ import annotations
 
 import math
+from copy import deepcopy
 from time import perf_counter
 
 from api.pulse_models import (
@@ -10,6 +11,7 @@ from api.pulse_models import (
     CoupledTransmonNetworkPulseSimulateResponse,
     QutritPulseEnvelopeRequest,
 )
+from core.cptp_evolution import evolve_cptp_segment
 from core.gates import Matrix
 from core.pulse_envelopes import (
     GaussianPulseEnvelope,
@@ -20,6 +22,7 @@ from core.pulse_evolution import (
     TimeDependentCheckpoint,
     evolve_dense_time_dependent_segment,
     physicality_metrics,
+    resolve_time_dependent_backend,
 )
 from core.pulse_qutrit_contract import transmon_anharmonicity_rad_per_us
 from core.pulse_qutrit_open_system import (
@@ -33,16 +36,25 @@ from core.pulse_transmon_network import (
     TransmonExchangeCoupling,
     computational_basis_labels,
     network_basis_labels,
+    network_collapse_operators,
     network_initial_density_matrix,
     network_joint_populations,
     network_leakage_probability,
     network_site_local_dissipator,
 )
+from core.quasi_static_noise import correlated_gaussian_detuning_chain_samples
 from core.results import EnvironmentConfig
 
 
 NETWORK_CONTRACT_VERSION = "pulse-transmon-network-v1"
 NETWORK_DENSE_KERNEL_ID = "numpy_dense"
+# Explicit CPTP composes an audited GKSL exponential per output interval, which
+# is far heavier than one RK4 step, so it runs on a tighter interval budget.
+NETWORK_CPTP_MAX_INTERVALS = 500
+# Conservative ceiling on the quasi-static ensemble: order**count single
+# trajectories weight-averaged.  order 5 with four transmons would be 625
+# evolutions, so the ensemble work is checked against this before running.
+NETWORK_ENSEMBLE_MAX_INTERNAL_STEPS = 400_000
 # One internal step costs a fixed per-step setup plus dense work that grows
 # with hilbert_dimension^3, so the budget charges both.  The overhead term is
 # expressed in the same units as the dense term: on the reference machine a
@@ -64,13 +76,75 @@ def network_step_work_units(dimension: int) -> int:
 def run_coupled_transmon_network_request(
     request: CoupledTransmonNetworkPulseSimulateRequest,
 ) -> dict[str, object]:
+    """Dispatch a network request, averaging over quasi-static noise if asked."""
+
+    sigmas = tuple(request.quasi_static_detuning_sigmas_rad_per_us)
+    if not sigmas or all(value == 0.0 for value in sigmas):
+        return _run_single_network_request(request)
+
     from api.pulse_service import PulseExecutionLimitError
 
     started = perf_counter()
     count = request.transmon_count
-    dimension = 3 ** count
+    samples = correlated_gaussian_detuning_chain_samples(
+        sigmas,
+        request.quasi_static_detuning_adjacent_correlation,
+        request.quasi_static_quadrature_order,
+    )
+    samples = tuple(sorted(
+        samples,
+        key=lambda item: max(
+            abs(request.detunings_rad_per_us[index] + item[0][index])
+            for index in range(count)
+        ),
+        reverse=True,
+    ))
+    responses: list[dict[str, object]] = []
+    for index, (offsets, _) in enumerate(samples):
+        sample_request = request.model_copy(update={
+            "detunings_rad_per_us": [
+                request.detunings_rad_per_us[subsystem] + offsets[subsystem]
+                for subsystem in range(count)
+            ],
+            "quasi_static_detuning_sigmas_rad_per_us": [],
+        })
+        response = _run_single_network_request(sample_request)
+        responses.append(response)
+        if index == 0:
+            worst_steps = int(
+                response["step_policy"]["estimated_internal_step_count"]
+            )
+            if worst_steps * len(samples) > NETWORK_ENSEMBLE_MAX_INTERNAL_STEPS:
+                raise PulseExecutionLimitError(
+                    "Network quasi-static ensemble exceeds the work limit: "
+                    f"conservative estimate {worst_steps * len(samples)}, "
+                    f"maximum {NETWORK_ENSEMBLE_MAX_INTERNAL_STEPS}."
+                )
+    return _average_network_ensemble_response(
+        request,
+        responses,
+        samples,
+        (perf_counter() - started) * 1000.0,
+    )
+
+
+def _run_single_network_request(
+    request: CoupledTransmonNetworkPulseSimulateRequest,
+) -> dict[str, object]:
+    from api.pulse_service import PulseExecutionLimitError
+
+    started = perf_counter()
+    count = request.transmon_count
+    local_dimension = request.local_levels
+    dimension = local_dimension ** count
+    is_cptp = request.evolution_method == "explicit_cptp"
+    resolved_backend = resolve_time_dependent_backend(request.backend)
     envelopes = tuple(_build_envelope(item.pulse) for item in request.drives)
     rates = _build_rates(request)
+    # A transmon always has a physical negative anharmonicity.  At two local
+    # levels the network Hamiltonian slices off the |2> row the term lives in,
+    # so it only shapes the integration-step policy there; at three levels it
+    # is the leakage detuning.
     alphas = tuple(
         transmon_anharmonicity_rad_per_us(value)
         for value in request.anharmonicities_mhz
@@ -134,17 +208,36 @@ def run_coupled_transmon_network_request(
     coupling_step_limit = (
         None if maximum_coupling == 0.0 else 0.02 / (4.0 * maximum_coupling)
     )
-    integration_step = min(
+    rk4_step = min(
         min(policy.selected_internal_step_cap_us for policy in reference_policies),
         coupling_step_limit or math.inf,
     )
+    total_time = request.total_simulation_time_us
+    latest_drive_end = max(drive.end_time_us for drive in scheduled_drives)
+    # The GKSL exponential is unconditionally stable, so CPTP does not need the
+    # RK4 accuracy cap; it only has to resolve the drive envelope and exchange
+    # rotation.  Cap the interval at an eighth of the driven span and, when a
+    # coupling is present, at the exchange-accuracy limit.
+    cptp_step = min(
+        max(latest_drive_end, total_time) / 8.0,
+        coupling_step_limit or math.inf,
+    )
+    integration_step = cptp_step if is_cptp else rk4_step
     estimated_steps = _estimated_steps(sample_times, integration_step)
     step_work_units = network_step_work_units(dimension)
     work_units = estimated_steps * step_work_units
     maximum_steps_for_dimension = (
         NETWORK_MAX_DENSE_WORK_UNITS // step_work_units
     )
-    if work_units > NETWORK_MAX_DENSE_WORK_UNITS:
+    if is_cptp:
+        if estimated_steps > NETWORK_CPTP_MAX_INTERVALS:
+            raise PulseExecutionLimitError(
+                "Transmon network explicit-CPTP request exceeds the interval "
+                f"limit: estimated {estimated_steps}, maximum "
+                f"{NETWORK_CPTP_MAX_INTERVALS}. Reduce the simulation time or "
+                "snapshot count."
+            )
+    elif work_units > NETWORK_MAX_DENSE_WORK_UNITS:
         raise PulseExecutionLimitError(
             "Transmon network request exceeds the dimension-aware dense-work "
             f"limit: {estimated_steps} steps at Hilbert dimension {dimension} "
@@ -158,22 +251,38 @@ def run_coupled_transmon_network_request(
         detunings_rad_per_us=detunings,
         couplings=couplings,
         drives=scheduled_drives,
+        local_dimension=local_dimension,
     )
-    initial = network_initial_density_matrix(request.initial_state, count)
-    evolution = evolve_dense_time_dependent_segment(
-        initial,
-        hamiltonian,
-        network_site_local_dissipator(rates),
-        request.total_simulation_time_us,
-        integration_step,
-        checkpoint_times_us=sample_times,
+    initial = network_initial_density_matrix(
+        request.initial_state, count, local_dimension
     )
+    if is_cptp:
+        cptp = evolve_cptp_segment(
+            initial,
+            hamiltonian,
+            network_collapse_operators(rates, local_dimension),
+            total_time,
+            integration_step,
+            checkpoint_times_us=sample_times,
+            backend=resolved_backend,
+        )
+        evolution = cptp.evolution
+        cptp_audit = cptp.audit
+    else:
+        evolution = evolve_dense_time_dependent_segment(
+            initial,
+            hamiltonian,
+            network_site_local_dissipator(rates, local_dimension),
+            total_time,
+            integration_step,
+            checkpoint_times_us=sample_times,
+        )
+        cptp_audit = None
 
     trajectory = [
         _trajectory_point(point.time_us, point, request, scheduled_drives)
         for point in evolution.checkpoints
     ]
-    latest_drive_end = max(drive.end_time_us for drive in scheduled_drives)
     pulse_end = min(
         trajectory,
         key=lambda point: abs(float(point["time_us"]) - latest_drive_end),
@@ -184,14 +293,16 @@ def run_coupled_transmon_network_request(
         "model": {
             "model_id": request.model_id,
             "description": (
-                f"scheduled coupled {count}-transmon rotating-frame RWA network"
+                f"scheduled {count}-transmon rotating-frame RWA network"
+                if count == 1
+                else f"scheduled coupled {count}-transmon rotating-frame RWA network"
             ),
             "logical_qubits": count,
-            "local_levels": 3,
+            "local_levels": local_dimension,
             "hilbert_dimension": dimension,
             "density_matrix_dimension": dimension,
-            "basis_order": list(network_basis_labels(count)),
-            "subsystem_dimensions": [3] * count,
+            "basis_order": list(network_basis_labels(count, local_dimension)),
+            "subsystem_dimensions": [local_dimension] * count,
             "frame": "local rotating frames",
             "approximation": "RWA",
             "hardware_calibrated": False,
@@ -200,18 +311,25 @@ def run_coupled_transmon_network_request(
         "input": {
             "initial_state": request.initial_state,
             "transmon_count": count,
+            "local_levels": local_dimension,
             "frequencies_ghz": request.frequencies_ghz,
             "anharmonicities_mhz": request.anharmonicities_mhz,
             "detunings_rad_per_us": request.detunings_rad_per_us,
+            "effective_detunings_rad_per_us": list(detunings),
             "couplings": [item.model_dump() for item in request.couplings],
             "drives": [item.model_dump() for item in request.drives],
             "drive_count": len(request.drives),
+            "quasi_static_detuning_sigmas_rad_per_us": [0.0] * count,
             "total_simulation_time_us": request.total_simulation_time_us,
             "sample_count": len(trajectory),
         },
         "rates": [rate.to_dict() for rate in rates],
         "step_policy": {
-            "policy_id": "coupled_transmon_network_dense_work_v2",
+            "policy_id": (
+                "coupled_transmon_network_explicit_cptp_v1"
+                if is_cptp
+                else "coupled_transmon_network_dense_work_v2"
+            ),
             "selected_internal_step_cap_us": integration_step,
             "single_qutrit_step_cap_us": min(
                 policy.selected_internal_step_cap_us
@@ -220,6 +338,9 @@ def run_coupled_transmon_network_request(
             "coupling_step_limit_us": coupling_step_limit,
             "estimated_internal_step_count": estimated_steps,
             "maximum_internal_step_count_for_dimension": maximum_steps_for_dimension,
+            "maximum_cptp_interval_count": (
+                NETWORK_CPTP_MAX_INTERVALS if is_cptp else None
+            ),
             "dense_work_units_per_step": step_work_units,
             "step_overhead_work_units": NETWORK_STEP_OVERHEAD_UNITS,
             "estimated_dense_work_units": work_units,
@@ -253,10 +374,16 @@ def run_coupled_transmon_network_request(
             "evolution": {
                 "requested": request.evolution_method,
                 "resolved": request.evolution_method,
-                "method_id": "coupled_transmon_network_fixed_step_rk4_v2",
-                "cptp_guaranteed_by_construction": False,
-                "cleanup_applied": True,
-                "open_pulse_audit": None,
+                "method_id": (
+                    "coupled_transmon_network_explicit_cptp_midpoint_v1"
+                    if is_cptp
+                    else "coupled_transmon_network_fixed_step_rk4_v2"
+                ),
+                "cptp_guaranteed_by_construction": is_cptp,
+                "cleanup_applied": not is_cptp,
+                "open_pulse_audit": (
+                    None if cptp_audit is None else cptp_audit.to_dict()
+                ),
                 "open_idle_audit": None,
             },
             "open_pulse": evolution.diagnostics.to_dict(),
@@ -284,15 +411,177 @@ def run_coupled_transmon_network_request(
             "Coherent RK4 cost grows as 3^(3N) per matrix multiplication proxy.",
         ],
         "limitations": [
-            "Two to four transmons with three local levels each.",
+            "One to four transmons with two or three local levels each.",
             "Exchange coupling and local rotating-wave approximation only.",
-            "Fixed-step RK4 with density-matrix cleanup; explicit CPTP is unavailable for networks.",
+            "Fixed-step RK4 with cleanup, or audited explicit CPTP up to Hilbert "
+            "dimension 9.",
             "No crosstalk, transfer function, tunable-coupler dynamics, or calibration model.",
         ],
     }
     return CoupledTransmonNetworkPulseSimulateResponse.model_validate(
         response
     ).model_dump()
+
+
+def _average_network_ensemble_response(
+    request: CoupledTransmonNetworkPulseSimulateRequest,
+    responses: list[dict[str, object]],
+    samples: tuple[tuple[tuple[float, ...], float], ...],
+    runtime_ms: float,
+) -> dict[str, object]:
+    """Weight-average complete trajectories over the quasi-static ensemble."""
+
+    count = request.transmon_count
+    local_dimension = request.local_levels
+    weights = [weight for _, weight in samples]
+    averaged = deepcopy(responses[0])
+    trajectories = [response["trajectory"] for response in responses]
+    averaged["trajectory"] = [
+        _average_network_point(
+            [trajectory[index] for trajectory in trajectories],
+            weights,
+            count,
+            local_dimension,
+        )
+        for index in range(len(trajectories[0]))
+    ]
+    averaged["pulse_end"] = _average_network_point(
+        [response["pulse_end"] for response in responses],
+        weights,
+        count,
+        local_dimension,
+    )
+    averaged["final"] = _average_network_point(
+        [response["final"] for response in responses],
+        weights,
+        count,
+        local_dimension,
+    )
+    trajectory = averaged["trajectory"]
+    averaged["leakage"] = {
+        "maximum_recorded_leakage_probability": max(
+            float(point["leakage_probability"]) for point in trajectory
+        ),
+        "leakage_at_pulse_end": averaged["pulse_end"]["leakage_probability"],
+        "leakage_at_final_time": averaged["final"]["leakage_probability"],
+    }
+    averaged["input"].update({
+        "detunings_rad_per_us": request.detunings_rad_per_us,
+        "quasi_static_detuning_sigmas_rad_per_us": (
+            request.quasi_static_detuning_sigmas_rad_per_us
+        ),
+        "quasi_static_detuning_adjacent_correlation": (
+            request.quasi_static_detuning_adjacent_correlation
+        ),
+        "quasi_static_quadrature_order": request.quasi_static_quadrature_order,
+    })
+    averaged["step_policy"]["estimated_internal_step_count"] = sum(
+        int(response["step_policy"]["estimated_internal_step_count"])
+        for response in responses
+    )
+    diagnostics = averaged["diagnostics"]
+    diagnostics["api_runtime_ms"] = runtime_ms
+    diagnostics["quasi_static_noise"] = {
+        "enabled": True,
+        "model_id": "correlated_gaussian_chain_detuning_v1",
+        "distribution": "delta ~ Normal(0, tridiagonal covariance)",
+        "sigmas_rad_per_us": list(
+            request.quasi_static_detuning_sigmas_rad_per_us
+        ),
+        "adjacent_correlation": (
+            request.quasi_static_detuning_adjacent_correlation
+        ),
+        "quadrature_method": "tensor-product Gauss-Hermite",
+        "quadrature_order_per_axis": request.quasi_static_quadrature_order,
+        "sample_count": len(samples),
+        "samples": [
+            {"offsets_rad_per_us": list(offsets), "weight": weight}
+            for offsets, weight in samples
+        ],
+        "covariance_model": (
+            "Sigma_ij = sigma_i sigma_j * (1 if i==j else r if |i-j|==1 "
+            "else 0)"
+        ),
+    }
+    averaged["warnings"] = [
+        *averaged["warnings"],
+        "Correlated Gaussian quasi-static detuning is averaged over complete "
+        f"{count}-transmon trajectories.",
+    ]
+    return CoupledTransmonNetworkPulseSimulateResponse.model_validate(
+        averaged
+    ).model_dump()
+
+
+def _average_network_point(
+    points: list[dict[str, object]],
+    weights: list[float],
+    count: int,
+    local_dimension: int,
+) -> dict[str, object]:
+    averaged = deepcopy(points[0])
+    dimension = local_dimension ** count
+    state = _weighted_network_density_matrix(
+        [point["density_matrix"] for point in points],
+        weights,
+        dimension,
+    )
+    populations = network_joint_populations(state, count, local_dimension)
+    metrics = physicality_metrics(state)
+    averaged.update({
+        "joint_populations": populations,
+        "computational_population": sum(
+            populations[label]
+            for label in computational_basis_labels(count)
+        ),
+        "leakage_probability": network_leakage_probability(
+            state, count, local_dimension
+        ),
+        "population_sum_error": abs(sum(populations.values()) - 1.0),
+        "purity": float(sum(
+            abs(value) ** 2 for row in state for value in row
+        )),
+        "density_matrix": _matrix_response(state),
+        "raw_physicality": {
+            "trace_error": max(
+                point["raw_physicality"]["trace_error"] for point in points
+            ),
+            "hermiticity_error": max(
+                point["raw_physicality"]["hermiticity_error"]
+                for point in points
+            ),
+            "minimum_eigenvalue": min(
+                point["raw_physicality"]["minimum_eigenvalue"]
+                for point in points
+            ),
+        },
+        "cleaned_physicality": _physicality_response(metrics),
+        "cleanup_correction_norm": sum(
+            weight * point["cleanup_correction_norm"]
+            for point, weight in zip(points, weights, strict=True)
+        ),
+    })
+    return averaged
+
+
+def _weighted_network_density_matrix(
+    matrices: list[list[list[dict[str, float]]]],
+    weights: list[float],
+    dimension: int,
+) -> Matrix:
+    return tuple(
+        tuple(
+            sum(
+                weight * complex(
+                    matrix[row][column]["real"],
+                    matrix[row][column]["imag"],
+                )
+                for matrix, weight in zip(matrices, weights, strict=True)
+            )
+            for column in range(dimension)
+        )
+        for row in range(dimension)
+    )
 
 
 def _trajectory_point(
@@ -303,7 +592,8 @@ def _trajectory_point(
 ) -> dict[str, object]:
     state = point.cleaned_state
     count = request.transmon_count
-    populations = network_joint_populations(state, count)
+    local_dimension = request.local_levels
+    populations = network_joint_populations(state, count, local_dimension)
     metrics = physicality_metrics(state)
     segment = "pulse" if any(
         drive.start_time_us - 1e-14 <= time_us <= drive.end_time_us + 1e-14
@@ -316,7 +606,9 @@ def _trajectory_point(
         "computational_population": sum(
             populations[label] for label in computational_basis_labels(count)
         ),
-        "leakage_probability": network_leakage_probability(state, count),
+        "leakage_probability": network_leakage_probability(
+            state, count, local_dimension
+        ),
         "population_sum_error": abs(sum(populations.values()) - 1.0),
         "purity": float(sum(
             abs(value) ** 2 for row in state for value in row

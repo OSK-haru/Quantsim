@@ -30,15 +30,15 @@ Gate-awareモデルが「ゲートは所要時間を持つ行列」という抽�
 |---|---|---|
 | [P1. トランズモンの物理](./transmon.md) | Josephson接合から $\alpha$ が出るまで | 全モデルの前提 |
 | [P2. パルス整形と周波数領域](./envelopes.md) | 包絡線・帯域・打ち切り・正規化 | 全モデル |
-| [P3. 漏れとDRAG](./leakage-drag.md) | 漏れの見積もりと抑制の原理 | Extension B / Coupled pair / Network |
-| [P4. 多準位系の散逸](./qutrit-dissipation.md) | 遷移別レートと数演算子形式 | Extension B / Coupled pair / Network |
-| [P5. 準静的ノイズ](./quasi-static-noise.md) | 非マルコフノイズと決定論的求積 | Extension B / Coupled pair |
-| [P6. 結合トランズモン対](./two-transmon.md) | 交換結合と2量子ビットゲート | Coupled pair / Networkの各辺 |
+| [P3. 漏れとDRAG](./leakage-drag.md) | 漏れの見積もりと抑制の原理 | Extension B / Network |
+| [P4. 多準位系の散逸](./qutrit-dissipation.md) | 遷移別レートと数演算子形式 | Extension B / Network |
+| [P5. 準静的ノイズ](./quasi-static-noise.md) | 非マルコフノイズと決定論的求積 | Extension B / Network |
+| [P6. 結合トランズモン対](./two-transmon.md) | 交換結合と2量子ビットゲート | Networkの各辺 |
 | [P7. パルス計算の数値的作法](./numerics.md) | ステップ方針・作業量・物理性診断 | 全モデル |
 
-## 4つのモデルとの対応
+## 3つのモデルとの対応
 
-Yuragi-Striderのパルスモデルは4段階に積み上がっています。パルス編もこの順に難しくなります。
+Yuragi-Striderのパルスモデルは段階的に積み上がっています。パルス編もこの順に難しくなります。
 
 ```text
 Baseline A (2準位)
@@ -51,18 +51,18 @@ Extension B (qutrit)
   └─ 準静的ノイズ                  ← P5
        │
        ▼ 2つ繋ぐ
-Coupled transmon pair (3⊗3)
+Coupled transmon network (N=2)
   └─ 交換結合・2量子ビットゲート    ← P6
        │
        ▼ 交換結合グラフと時間スケジュールへ一般化
-Coupled transmon network (3^N, 2≤N≤4)
+Coupled transmon network (L^N, L∈{2,3}, N≤4)
   └─ 複数レーンの同時局所drive       ← P2, P3, P6, P7
 ```
 
 P7だけは全モデルに横断的にかかります。
 
 :::info[実験扱いのモデルがあります]
-Coupled transmon pair と Coupled transmon network は状態 **experimental** です。Networkは2〜4台に限定され、固定ステップRK4のみです。独立ソルバー比較はPairとNetworkの両方にあり、Networkは2〜4台の6ケース(最大要素誤差 2.28e-9)で突き合わせています。P6で交換結合、P7で次元増大と作業量を扱います。
+Coupled transmon network は状態 **experimental** です。準位数2または3、台数1〜4に限定されます。発展方式は固定ステップRK4が既定で、Hilbert次元が9以下なら明示的CPTP写像も選べます。独立ソルバー比較は3準位2〜4台の6ケース(最大要素誤差 2.28e-9)で突き合わせており、2準位構成は回帰試験のみです。P6で交換結合、P7で次元増大と作業量を扱います。
 :::
 
 ## 読みかたの2コース

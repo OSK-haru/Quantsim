@@ -1,7 +1,7 @@
 {
   "validation": "CPTP-MODEL-FREEZE-C10",
   "freeze_schema_version": 1,
-  "generated_at_utc": "2026-08-17T11:52:54.832053+00:00",
+  "generated_at_utc": "2026-08-28T10:15:17.790048+00:00",
   "decision": "PASS WITH RESTRICTIONS",
   "overall_pass": true,
   "frozen_contract": {
@@ -143,8 +143,8 @@
     }
   },
   "source_revision": {
-    "git_commit": "71e38bc8d5a5dc19db450801da4cf90ee4ccc2e8",
-    "critical_source_tree_sha256": "897b6bf1417ef7c78faa7df38ea5a451a0ad3d2e935528a2bfa303591df9ed13",
+    "git_commit": "f39475b0c55540be59bbb9c62bcc983c4d3b4397",
+    "critical_source_tree_sha256": "0062263dc5d7a296827426fde84d3058409d0d0b83d1decef55d93799b8e0e3c",
     "files": [
       {
         "file": "core/cptp.py",
@@ -199,12 +199,12 @@
       {
         "file": "api/pulse_models.py",
         "exists": true,
-        "sha256": "4cc36c6c263c9f1d92a7cb2510bf964b359e4c99905c836c37fcba01638bb3cd"
+        "sha256": "2878778cfc5b216d1238608f2edd70249fb4d056cd79afb899199f75d6be51bd"
       },
       {
         "file": "api/pulse_service.py",
         "exists": true,
-        "sha256": "455fd37014a2df1d76eb2039248435c805e849c5be5578631e40a795a376a029"
+        "sha256": "4ce439294186b74f4f3c1c362b934bf8b4e32fc1eafa4ad591e78caf436d036c"
       },
       {
         "file": "api/pulse_qutrit_service.py",
@@ -214,22 +214,22 @@
       {
         "file": "frontend/src/types/pulse.ts",
         "exists": true,
-        "sha256": "660bbc0f0e01272571b70ddf81aaa99527815a7401a0e710bc2e72a67a0ca5ac"
+        "sha256": "e3b0fa306bbba769c3370dd40a809bbe318f2bb5dc47ed5d53c6cde952530122"
       },
       {
         "file": "frontend/src/utils/pulseLab.ts",
         "exists": true,
-        "sha256": "ec0e4282094f1157ef0e5ad7c44720a32f18c2b1efcf5a6c9c31594994b683d7"
+        "sha256": "78ec3eddb37cc6342bd25bd515a66b9c5f0bd442825502ba873e19568aa4b509"
       },
       {
         "file": "frontend/src/components/PulseEnvironmentPanel.tsx",
         "exists": true,
-        "sha256": "7fc8f3dbdfacc8056e5a86a9a089a2087fddfcf4c9884f63b56d36dc6756d84f"
+        "sha256": "303f35c1e7e8115d7466ad688b83b96851da2a49675a468019c797285479991b"
       },
       {
         "file": "frontend/src/pages/PulseLabPage.tsx",
         "exists": true,
-        "sha256": "659903f7ac4754cf9b598a36d134e0bf6bd3afccf178ab82760f3856a978a31e"
+        "sha256": "aa7e5c32c90bf3fa264b6e70c5de5af2ed0aa08c9f1b5ce097c7700bb549fb7c"
       },
       {
         "file": "tests/test_cptp_qubit_channels.py",

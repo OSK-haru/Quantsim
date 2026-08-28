@@ -1,7 +1,6 @@
 import {
   COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
   QUTRIT_PULSE_MODEL,
-  COUPLED_TRANSMON_PAIR_PULSE_MODEL,
   TWO_LEVEL_PULSE_MODEL,
   type PulseCostEstimate,
   type PulseLabErrors,
@@ -20,7 +19,6 @@ import {
 } from './pulseCircuit'
 
 const QUTRIT_API_MAX_STEPS = 25000
-const PAIR_API_MAX_STEPS = 15000
 const TWO_LEVEL_API_MAX_STEPS = 200000
 const EPSILON_H = 0.02
 const EPSILON_D = 0.02
@@ -36,6 +34,7 @@ const NETWORK_MAX_RESPONSE_MATRIX_ELEMENTS = 250000
 
 export const initialPulseLabForm: PulseLabForm = {
   modelId: QUTRIT_PULSE_MODEL,
+  localLevels: 3,
   evolutionMethod: 'fixed_step_rk4',
   backend: 'auto',
   shape: 'gaussian',
@@ -49,26 +48,9 @@ export const initialPulseLabForm: PulseLabForm = {
   phaseRad: 0,
   detuningRadPerUs: 0,
   anharmonicityMhz: -100,
-  pairSecondAnharmonicityMhz: -110,
-  pairDetuningQ0RadPerUs: 0,
-  pairDetuningQ1RadPerUs: 30,
-  pairExchangeCouplingRadPerUs: 5,
-  pairDriveTarget: 0,
-  pairQuasiStaticSigmaQ0RadPerUs: 0,
-  pairQuasiStaticSigmaQ1RadPerUs: 0,
-  pairQuasiStaticCorrelation: 0,
-  pairQuasiStaticQuadratureOrder: 3,
-  pairSecondaryDriveEnabled: false,
-  pairSecondaryShape: 'gaussian',
-  pairSecondaryAmplitudeMode: 'target_rotation_angle',
-  pairSecondaryTargetRotationAngleRad: Math.PI / 2,
-  pairSecondaryPeakAmplitudeRadPerUs: 20,
-  pairSecondaryPulseDurationUs: 0.02,
-  pairSecondarySigmaUs: 0.002,
-  pairSecondaryTruncationSigma: 4,
-  pairSecondaryPhaseRad: 0,
-  pairSecondaryDetuningRadPerUs: 0,
-  pairSecondaryDragBetaUs: 0,
+  networkDetuningQ0RadPerUs: 0,
+  networkDetuningQ1RadPerUs: 30,
+  networkExchangeCouplingRadPerUs: 5,
   dragBetaUs: 0.001,
   environmentMode: 'physical',
   deviceQuality: 0.8,
@@ -88,6 +70,9 @@ export const initialPulseLabForm: PulseLabForm = {
   quasiStaticNoiseEnabled: false,
   quasiStaticDetuningSigmaRadPerUs: 0.5,
   quasiStaticQuadratureOrder: 5,
+  networkQuasiStaticSigmaRadPerUs: 0,
+  networkQuasiStaticAdjacentCorrelation: 0,
+  networkQuasiStaticQuadratureOrder: 3,
   snapshotCount: 101,
 }
 
@@ -95,6 +80,20 @@ export function pulseDurationUs(form: PulseLabForm): number {
   return form.shape === 'square'
     ? form.pulseDurationUs
     : 2 * form.sigmaUs * form.truncationSigma
+}
+
+/*
+ * 「準位数 × 台数」を旧 modelId に写す。1台は単一Pulseの専用モデル、
+ * 2台以上は準位数を local_levels として渡すネットワークモデル。
+ */
+export function deriveModelId(
+  localLevels: 2 | 3,
+  transmonCount: number,
+): PulseLabForm['modelId'] {
+  if (transmonCount >= 2) {
+    return COUPLED_TRANSMON_NETWORK_PULSE_MODEL
+  }
+  return localLevels === 2 ? TWO_LEVEL_PULSE_MODEL : QUTRIT_PULSE_MODEL
 }
 
 export function validatePulseLabForm(form: PulseLabForm): PulseLabErrors {
@@ -173,74 +172,33 @@ export function validatePulseLabForm(form: PulseLabForm): PulseLabErrors {
         '結果として得られる|1>-|2>遷移周波数は正の値を保つ必要があります。'
     }
   }
-  if (form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL) {
-    if (!Number.isFinite(form.pairSecondAnharmonicityMhz) || form.pairSecondAnharmonicityMhz >= 0) {
-      errors.pairSecondAnharmonicityMhz = '2つ目の非調和性は有限かつ負の値である必要があります。'
-    }
-    if (!Number.isFinite(form.pairDetuningQ0RadPerUs)) {
-      errors.pairDetuningQ0RadPerUs = 'q0のデチューニングは有限の値である必要があります。'
-    }
-    if (!Number.isFinite(form.pairDetuningQ1RadPerUs)) {
-      errors.pairDetuningQ1RadPerUs = 'q1のデチューニングは有限の値である必要があります。'
-    }
-    nonnegative(
-      'pairExchangeCouplingRadPerUs',
-      form.pairExchangeCouplingRadPerUs,
-      '交換結合',
-    )
-    nonnegative('pairQuasiStaticSigmaQ0RadPerUs', form.pairQuasiStaticSigmaQ0RadPerUs, 'q0 準静的σ')
-    nonnegative('pairQuasiStaticSigmaQ1RadPerUs', form.pairQuasiStaticSigmaQ1RadPerUs, 'q1 準静的σ')
-    if (!Number.isFinite(form.pairQuasiStaticCorrelation) || Math.abs(form.pairQuasiStaticCorrelation) > 1) {
-      errors.pairQuasiStaticCorrelation = 'ノイズ相関は-1から1の間である必要があります。'
-    }
-    if (form.pairSecondaryDriveEnabled) {
-      if (
-        form.pairSecondaryAmplitudeMode === 'target_rotation_angle'
-        && !Number.isFinite(form.pairSecondaryTargetRotationAngleRad)
-      ) {
-        errors.pairSecondaryTargetRotationAngleRad = '副目標角度は有限の値である必要があります。'
-      }
-      if (
-        form.pairSecondaryAmplitudeMode === 'peak_amplitude'
-        && !Number.isFinite(form.pairSecondaryPeakAmplitudeRadPerUs)
-      ) {
-        errors.pairSecondaryPeakAmplitudeRadPerUs = '副ピーク振幅は有限の値である必要があります。'
-      }
-      if (form.pairSecondaryShape === 'square') {
-        positive('pairSecondaryPulseDurationUs', form.pairSecondaryPulseDurationUs, '副Pulse幅')
-      } else {
-        positive('pairSecondarySigmaUs', form.pairSecondarySigmaUs, '副Gaussian σ')
-        positive('pairSecondaryTruncationSigma', form.pairSecondaryTruncationSigma, '副打ち切りσ')
-      }
-      if (!Number.isFinite(form.pairSecondaryPhaseRad)) {
-        errors.pairSecondaryPhaseRad = '副位相は有限の値である必要があります。'
-      }
-      if (!Number.isFinite(form.pairSecondaryDetuningRadPerUs)) {
-        errors.pairSecondaryDetuningRadPerUs = '副デチューニングは有限の値である必要があります。'
-      }
-      if (!Number.isFinite(form.pairSecondaryDragBetaUs)) {
-        errors.pairSecondaryDragBetaUs = '副DRAG βは有限の値である必要があります。'
-      }
-      const secondaryDuration = form.pairSecondaryShape === 'square'
-        ? form.pairSecondaryPulseDurationUs
-        : 2 * form.pairSecondarySigmaUs * form.pairSecondaryTruncationSigma
-      if (secondaryDuration > form.totalSimulationTimeUs) {
-        errors.totalSimulationTimeUs = '総時間は同時発生する両方のPulseを含む必要があります。'
-      }
-    }
-  }
   if (form.modelId === COUPLED_TRANSMON_NETWORK_PULSE_MODEL) {
-    if (!Number.isFinite(form.pairDetuningQ0RadPerUs)) {
-      errors.pairDetuningQ0RadPerUs = 'q0の基準離調は有限値にしてください。'
+    if (!Number.isFinite(form.networkDetuningQ0RadPerUs)) {
+      errors.networkDetuningQ0RadPerUs = 'q0の基準離調は有限値にしてください。'
     }
-    if (!Number.isFinite(form.pairDetuningQ1RadPerUs)) {
-      errors.pairDetuningQ1RadPerUs = 'q1の基準離調は有限値にしてください。'
+    if (!Number.isFinite(form.networkDetuningQ1RadPerUs)) {
+      errors.networkDetuningQ1RadPerUs = 'q1の基準離調は有限値にしてください。'
     }
     nonnegative(
-      'pairExchangeCouplingRadPerUs',
-      form.pairExchangeCouplingRadPerUs,
+      'networkExchangeCouplingRadPerUs',
+      form.networkExchangeCouplingRadPerUs,
       '隣接交換結合',
     )
+    nonnegative(
+      'networkQuasiStaticSigmaRadPerUs',
+      form.networkQuasiStaticSigmaRadPerUs,
+      '共通準静的σ',
+    )
+    if (
+      !Number.isFinite(form.networkQuasiStaticAdjacentCorrelation) ||
+      Math.abs(form.networkQuasiStaticAdjacentCorrelation) > 1
+    ) {
+      errors.networkQuasiStaticAdjacentCorrelation =
+        '隣接相関係数は-1から1の間である必要があります。'
+    }
+    if (![3, 5].includes(form.networkQuasiStaticQuadratureOrder)) {
+      errors.networkQuasiStaticQuadratureOrder = '求積次数は3または5です。'
+    }
   }
 
   if (form.environmentMode === 'physical') {
@@ -335,31 +293,7 @@ export function buildPulsePayload(
     model_id: form.modelId,
     initial_state: '0',
     ...(initialDensityMatrix ? { initial_density_matrix: initialDensityMatrix } : {}),
-    ...(form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
-      ? {
-          initial_state: '00',
-          anharmonicities_mhz: [
-            form.anharmonicityMhz,
-            form.pairSecondAnharmonicityMhz,
-          ],
-          detunings_rad_per_us: [
-            form.pairDetuningQ0RadPerUs,
-            form.pairDetuningQ1RadPerUs,
-          ],
-          exchange_coupling_rad_per_us: form.pairExchangeCouplingRadPerUs,
-          drive_target: form.pairDriveTarget,
-          backend: form.backend,
-          quasi_static_detuning_sigmas_rad_per_us: [
-            form.pairQuasiStaticSigmaQ0RadPerUs,
-            form.pairQuasiStaticSigmaQ1RadPerUs,
-          ],
-          quasi_static_detuning_correlation: form.pairQuasiStaticCorrelation,
-          quasi_static_quadrature_order: form.pairQuasiStaticQuadratureOrder,
-          ...(form.pairSecondaryDriveEnabled
-            ? { secondary_pulse: buildSecondaryPairPulse(form) }
-            : {}),
-        }
-      : form.modelId === QUTRIT_PULSE_MODEL
+    ...(form.modelId === QUTRIT_PULSE_MODEL
       ? {
           anharmonicity_mhz: form.anharmonicityMhz,
           quasi_static_noise: {
@@ -374,9 +308,7 @@ export function buildPulsePayload(
     pulse,
     total_simulation_time_us: form.totalSimulationTimeUs,
     evolution_method: form.evolutionMethod,
-    ...(form.modelId !== COUPLED_TRANSMON_PAIR_PULSE_MODEL
-      ? { backend: form.backend }
-      : {}),
+    backend: form.backend,
     environment,
     snapshot_options: {
       uniform_count: form.snapshotCount,
@@ -448,28 +380,44 @@ export function buildTransmonNetworkPayload(
         gamma_phi_adjacent_per_us: form.gammaPhiAdjacentPerUs,
       }
 
+  const networkSigma = Math.max(0, form.networkQuasiStaticSigmaRadPerUs)
+
   return {
     model_id: COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
     transmon_count: transmonCount,
+    local_levels: form.localLevels,
     initial_state: '0'.repeat(transmonCount),
     frequencies_ghz: circuit.transmons.map((transmon) => transmon.frequencyGhz),
     anharmonicities_mhz: circuit.transmons.map((transmon) => transmon.anharmonicityMhz),
     detunings_rad_per_us: Array.from(
       { length: transmonCount },
       (_, index) => index === 0
-        ? form.pairDetuningQ0RadPerUs
+        ? form.networkDetuningQ0RadPerUs
         : index === 1
-          ? form.pairDetuningQ1RadPerUs
+          ? form.networkDetuningQ1RadPerUs
           : 0,
     ),
     couplings: Array.from({ length: Math.max(0, transmonCount - 1) }, (_, left) => ({
       left,
       right: left + 1,
-      exchange_coupling_rad_per_us: form.pairExchangeCouplingRadPerUs,
+      exchange_coupling_rad_per_us: form.networkExchangeCouplingRadPerUs,
     })),
     drives,
+    ...(networkSigma > 0
+      ? {
+          quasi_static_detuning_sigmas_rad_per_us: Array.from(
+            { length: transmonCount },
+            () => networkSigma,
+          ),
+          quasi_static_detuning_adjacent_correlation:
+            form.networkQuasiStaticAdjacentCorrelation,
+          quasi_static_quadrature_order: form.networkQuasiStaticQuadratureOrder,
+        }
+      : {}),
     total_simulation_time_us: form.totalSimulationTimeUs,
-    evolution_method: 'fixed_step_rk4',
+    evolution_method: form.localLevels ** transmonCount <= 9
+      ? form.evolutionMethod
+      : 'fixed_step_rk4',
     backend: form.backend,
     environment,
     snapshot_options: {
@@ -508,8 +456,8 @@ export function estimateTransmonNetworkCost(
   const anharmonicityRadPerUs = MHZ_TO_RAD_PER_US * Math.min(
     ...circuit.transmons.map((transmon) => transmon.anharmonicityMhz),
   )
-  const couplingStepLimitUs = form.pairExchangeCouplingRadPerUs > 0
-    ? EPSILON_H / (4 * Math.abs(form.pairExchangeCouplingRadPerUs))
+  const couplingStepLimitUs = form.networkExchangeCouplingRadPerUs > 0
+    ? EPSILON_H / (4 * Math.abs(form.networkExchangeCouplingRadPerUs))
     : Number.POSITIVE_INFINITY
   const stepCapUs = Math.min(
     couplingStepLimitUs,
@@ -534,9 +482,9 @@ export function networkBaseDetuningRadPerUs(
   transmonIndex: number,
 ): number {
   if (transmonIndex === 0) {
-    return form.pairDetuningQ0RadPerUs
+    return form.networkDetuningQ0RadPerUs
   }
-  return transmonIndex === 1 ? form.pairDetuningQ1RadPerUs : 0
+  return transmonIndex === 1 ? form.networkDetuningQ1RadPerUs : 0
 }
 
 /*
@@ -781,39 +729,16 @@ export function estimatePulseCost(form: PulseLabForm): PulseCostEstimate {
     return costResult(estimated, TWO_LEVEL_API_MAX_STEPS)
   }
 
-  const pair = form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
-  const secondaryDuration = form.pairSecondaryShape === 'square'
-    ? form.pairSecondaryPulseDurationUs
-    : 2 * form.pairSecondarySigmaUs * form.pairSecondaryTruncationSigma
-  const duration = pair && form.pairSecondaryDriveEnabled
-    ? Math.max(pulseDurationUs(form), secondaryDuration)
-    : pulseDurationUs(form)
+  const duration = pulseDurationUs(form)
   const peak = Math.abs(peakAmplitude(form))
   const dragMagnitude =
     form.shape === 'gaussian'
       ? Math.abs(form.dragBetaUs) * peak / Math.max(form.sigmaUs, 1e-12)
       : 0
-  const primaryDrive = Math.hypot(peak, dragMagnitude)
-  const secondaryPeak = form.pairSecondaryAmplitudeMode === 'peak_amplitude'
-    ? Math.abs(form.pairSecondaryPeakAmplitudeRadPerUs)
-    : form.pairSecondaryShape === 'square'
-      ? Math.abs(form.pairSecondaryTargetRotationAngleRad / Math.max(form.pairSecondaryPulseDurationUs, 1e-12))
-      : Math.abs(form.pairSecondaryTargetRotationAngleRad / Math.max(
-          form.pairSecondarySigmaUs * Math.sqrt(2 * Math.PI),
-          1e-12,
-        ))
-  const drive = pair && form.pairSecondaryDriveEnabled
-    ? Math.max(primaryDrive, secondaryPeak)
-    : primaryDrive
-  const detuningForCost = form.quasiStaticNoiseEnabled
+  const drive = Math.hypot(peak, dragMagnitude)
+  const detuning = form.quasiStaticNoiseEnabled
     ? Math.abs(form.detuningRadPerUs) + 5 * form.quasiStaticDetuningSigmaRadPerUs
     : form.detuningRadPerUs
-  const detuning = pair
-    ? Math.max(
-        Math.abs(form.pairDetuningQ0RadPerUs),
-        Math.abs(form.pairDetuningQ1RadPerUs),
-      )
-    : detuningForCost
   const diagonal = [
     0,
     -detuning,
@@ -821,7 +746,6 @@ export function estimatePulseCost(form: PulseLabForm): PulseCostEstimate {
   ]
   const diagonalSpan = Math.max(...diagonal) - Math.min(...diagonal)
   const hamiltonianScale = diagonalSpan + 2 * Math.SQRT2 * drive
-    + (pair ? 4 * form.pairExchangeCouplingRadPerUs : 0)
   const dissipationScale =
     form.environmentMode === 'direct_rates'
       ? form.gamma10DownPerUs +
@@ -836,90 +760,16 @@ export function estimatePulseCost(form: PulseLabForm): PulseCostEstimate {
     ...(dissipationScale > 0 ? [EPSILON_D / dissipationScale] : []),
     ...(form.shape === 'gaussian' ? [form.sigmaUs / QUTRIT_SAMPLES_PER_SIGMA] : []),
   ]
-  const baseStep = Math.min(...limits.filter((value) => Number.isFinite(value) && value > 0))
-  const step = pair && form.evolutionMethod === 'explicit_cptp'
-    ? Math.min(baseStep * 5, duration / 8)
-    : baseStep
+  const step = Math.min(...limits.filter((value) => Number.isFinite(value) && value > 0))
   const singleEvolutionEstimate =
     Math.ceil(duration / step) +
     Math.ceil(Math.max(0, form.totalSimulationTimeUs - duration) / step) +
     form.snapshotCount
-  const activePairNoiseAxes = Number(form.pairQuasiStaticSigmaQ0RadPerUs > 0)
-    + Number(form.pairQuasiStaticSigmaQ1RadPerUs > 0)
-  const ensembleMultiplier = pair && activePairNoiseAxes > 0
-    ? form.pairQuasiStaticQuadratureOrder ** activePairNoiseAxes
-    : form.quasiStaticNoiseEnabled ? form.quasiStaticQuadratureOrder : 1
+  const ensembleMultiplier = form.quasiStaticNoiseEnabled
+    ? form.quasiStaticQuadratureOrder
+    : 1
   const estimated = singleEvolutionEstimate * ensembleMultiplier
-  const pairMaximum = form.evolutionMethod === 'explicit_cptp'
-    && ensembleMultiplier === 1 ? 500 : PAIR_API_MAX_STEPS
-  return costResult(estimated, pair ? pairMaximum : QUTRIT_API_MAX_STEPS)
-}
-
-function buildSecondaryPairPulse(form: PulseLabForm): Record<string, unknown> {
-  return {
-    shape: form.pairSecondaryShape,
-    amplitude_mode: form.pairSecondaryAmplitudeMode,
-    ...(form.pairSecondaryAmplitudeMode === 'target_rotation_angle'
-      ? { target_rotation_angle_rad: form.pairSecondaryTargetRotationAngleRad }
-      : { peak_amplitude_rad_per_us: form.pairSecondaryPeakAmplitudeRadPerUs }),
-    ...(form.pairSecondaryShape === 'square'
-      ? { pulse_duration_us: form.pairSecondaryPulseDurationUs }
-      : {
-          sigma_us: form.pairSecondarySigmaUs,
-          truncation_sigma: form.pairSecondaryTruncationSigma,
-        }),
-    phase_rad: form.pairSecondaryPhaseRad,
-    detuning_rad_per_us: form.pairSecondaryDetuningRadPerUs,
-    drag_beta_us: form.pairSecondaryShape === 'gaussian'
-      ? form.pairSecondaryDragBetaUs
-      : 0,
-  }
-}
-
-export function qutritTargetOverlap(
-  point: QutritPulsePoint,
-  form: PulseLabForm,
-): number | null {
-  if (
-    form.amplitudeMode !== 'target_rotation_angle' ||
-    form.detuningRadPerUs !== 0
-  ) {
-    return null
-  }
-  const duration = pulseDurationUs(form)
-  const fraction = Math.min(1, point.time_us / duration)
-  const angle = form.targetRotationAngleRad * fraction
-  const target = [
-    { real: Math.cos(angle / 2), imag: 0 },
-    {
-      real: Math.sin(angle / 2) * Math.sin(form.phaseRad),
-      imag: -Math.sin(angle / 2) * Math.cos(form.phaseRad),
-    },
-    { real: 0, imag: 0 },
-  ]
-  let overlap = 0
-  for (let row = 0; row < 3; row += 1) {
-    for (let column = 0; column < 3; column += 1) {
-      const left = complexConjugate(target[row])
-      const matrix = point.density_matrix[row][column]
-      const right = target[column]
-      overlap += complexMultiply(complexMultiply(left, matrix), right).real
-    }
-  }
-  return Math.min(1, Math.max(0, overlap))
-}
-
-export function hasPulseResponseShape(value: unknown): value is PulseResponse {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-  const candidate = value as Record<string, unknown>
-  return (
-    typeof candidate.contract_version === 'string' &&
-    Array.isArray(candidate.trajectory) &&
-    typeof candidate.model === 'object' &&
-    candidate.model !== null
-  )
+  return costResult(estimated, QUTRIT_API_MAX_STEPS)
 }
 
 function peakAmplitude(form: PulseLabForm): number {
@@ -985,4 +835,50 @@ function complexMultiply(
     real: left.real * right.real - left.imag * right.imag,
     imag: left.real * right.imag + left.imag * right.real,
   }
+}
+
+export function qutritTargetOverlap(
+  point: QutritPulsePoint,
+  form: PulseLabForm,
+): number | null {
+  if (
+    form.amplitudeMode !== 'target_rotation_angle' ||
+    form.detuningRadPerUs !== 0
+  ) {
+    return null
+  }
+  const duration = pulseDurationUs(form)
+  const fraction = Math.min(1, point.time_us / duration)
+  const angle = form.targetRotationAngleRad * fraction
+  const target = [
+    { real: Math.cos(angle / 2), imag: 0 },
+    {
+      real: Math.sin(angle / 2) * Math.sin(form.phaseRad),
+      imag: -Math.sin(angle / 2) * Math.cos(form.phaseRad),
+    },
+    { real: 0, imag: 0 },
+  ]
+  let overlap = 0
+  for (let row = 0; row < 3; row += 1) {
+    for (let column = 0; column < 3; column += 1) {
+      const left = complexConjugate(target[row])
+      const matrix = point.density_matrix[row][column]
+      const right = target[column]
+      overlap += complexMultiply(complexMultiply(left, matrix), right).real
+    }
+  }
+  return Math.min(1, Math.max(0, overlap))
+}
+
+export function hasPulseResponseShape(value: unknown): value is PulseResponse {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.contract_version === 'string' &&
+    Array.isArray(candidate.trajectory) &&
+    typeof candidate.model === 'object' &&
+    candidate.model !== null
+  )
 }

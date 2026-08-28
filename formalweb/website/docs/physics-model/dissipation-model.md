@@ -89,7 +89,7 @@ $$
 
 ## qutritモデルの散逸
 
-3準位モデル(Pulse Extension B、Coupled transmon pair)では、遷移ごとに別々のレートを持ちます。
+3準位モデル(Pulse Extension B、および3準位を選んだCoupled transmon network)では、遷移ごとに別々のレートを持ちます。
 
 
 - $0\leftrightarrow1$ 遷移: $\gamma_{10}^{\downarrow}$, $\gamma_{01}^{\uparrow}$

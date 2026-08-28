@@ -10,7 +10,6 @@ import {
   isQutritPulseResponse,
   isCoupledTransmonNetworkResponse,
   COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
-  COUPLED_TRANSMON_PAIR_PULSE_MODEL,
   QUTRIT_PULSE_MODEL,
   type PulseLabForm,
   type PulseComplexValue,
@@ -29,6 +28,7 @@ import {
   buildPulsePayload,
   buildTransmonNetworkPayload,
   circuitLaneWaveform,
+  deriveModelId,
   estimatePulseCost,
   estimateTransmonNetworkCost,
   hasPulseResponseShape,
@@ -46,7 +46,6 @@ import {
 import {
   constraintsAreWellFormed,
   drivePulseConstraintIssues,
-  isAlignedToResolution,
   virtualZConstraintIssues,
 } from '../utils/pulseConstraints'
 import './PulseLabPage.css'
@@ -63,6 +62,8 @@ type PulseLabPageProps = {
   activeTransmonIndex: number
   executionConstraints: PulseExecutionConstraints
   onExecutionConstraintsChange: (next: PulseExecutionConstraints) => void
+  /* 台数はモデル選択の一軸なので、環境パネルからも直接変更できる。 */
+  onTransmonCountChange: (count: number) => void
   /*
    * 直近の実行結果はアプリ側が持つ。Pulse状態エクスプローラーが同じ結果を読むので、
    * このページを離れても消えない場所へ置く必要がある。
@@ -81,6 +82,7 @@ export function PulseLabPage({
   activeTransmonIndex,
   executionConstraints,
   onExecutionConstraintsChange,
+  onTransmonCountChange,
   latestRun,
   runSignature,
   onRunCommitted,
@@ -96,40 +98,40 @@ export function PulseLabPage({
   const [petCelebrating, setPetCelebrating] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
-  const networkMode = form.modelId === COUPLED_TRANSMON_NETWORK_PULSE_MODEL
+  /*
+   * modelId は「準位数トグル × 回路の台数」から導出する内部値。フォームに
+   * 保存された値がズレていても、このページ内では常にこの導出値で解釈する。
+   * 準位数・台数を変える操作側が form.modelId も併せて更新するので、実行時に
+   * 送るペイロードとも一致する。
+   */
+  const modelId = deriveModelId(form.localLevels, circuit.transmons.length)
+  const formForRun: PulseLabForm = { ...form, modelId }
+  const networkMode = modelId === COUPLED_TRANSMON_NETWORK_PULSE_MODEL
   const executionPlan = networkMode
-    ? transmonNetworkExecutionPlan(form, circuit)
-    : sequenceExecutionPlan(form, sequence, executionConstraints)
+    ? transmonNetworkExecutionPlan(formForRun, circuit)
+    : sequenceExecutionPlan(formForRun, sequence, executionConstraints)
   const executionForms = executionPlan
     .filter((operation): operation is SequenceDriveOperation => operation.kind === 'drive')
     .map((operation) => operation.form)
-  const sequenceMode = form.modelId === QUTRIT_PULSE_MODEL
+  const sequenceMode = modelId === QUTRIT_PULSE_MODEL
   const sequenceDurationUs = networkMode
     ? transmonNetworkDurationUs(circuit)
     : sequenceMode
     ? executionForms.reduce((total, executionForm) => total + pulseDurationUs(executionForm), 0)
       + Math.max(0, executionForms.length - 1) * executionConstraints.interPulseGapUs
-    : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
-      && form.pairSecondaryDriveEnabled
-      ? Math.max(
-          pulseDurationUs(form),
-          form.pairSecondaryShape === 'square'
-            ? form.pairSecondaryPulseDurationUs
-            : 2 * form.pairSecondarySigmaUs * form.pairSecondaryTruncationSigma,
-        )
-      : pulseDurationUs(form)
-  const errors = validatePulseLabForm(form)
+    : pulseDurationUs(form)
+  const errors = validatePulseLabForm(formForRun)
   const executionErrors = executionForms.flatMap((executionForm) =>
     Object.values(validatePulseLabForm(executionForm)),
   )
   const cost = networkMode
-    ? estimateTransmonNetworkCost(form, circuit)
+    ? estimateTransmonNetworkCost(formForRun, circuit)
     : combinedPulseCost(executionForms)
   const waveform = networkMode
-    ? circuitLaneWaveform(form, circuit, activeTransmonIndex)
+    ? circuitLaneWaveform(formForRun, circuit, activeTransmonIndex)
     : sequenceMode
       ? sequentialPulseWaveform(executionForms, executionConstraints.interPulseGapUs)
-      : pulseWaveform(form)
+      : pulseWaveform(formForRun)
   const waveformPulseEndTimeUs = networkMode || sequenceMode
     ? sequenceDurationUs
     : pulseDurationUs(form)
@@ -140,7 +142,6 @@ export function PulseLabPage({
       : '単一 Pulse の波形'
   const constraintIssues = [
     ...validateExecutionConstraints(executionPlan, executionConstraints),
-    ...validatePairSecondaryConstraints(form, executionConstraints),
     ...(networkMode
       ? validateTransmonNetworkScope(circuit, sequenceDurationUs, form.totalSimulationTimeUs)
       : []),
@@ -163,20 +164,7 @@ export function PulseLabPage({
    * 何が走るのかを実行ボタンの手前で明示し、一斉実行へ1クリックで移れるようにする。
    */
   const lanesWithDrives = circuit.lanes.filter((lane) => lane.steps.some(isDrivePulseStep))
-  const networkDimension = 3 ** circuit.transmons.length
-  const networkRunAvailable = circuit.transmons.length >= 2 && circuit.transmons.length <= 4
-  const singleLaneWhileMultiLane = !networkMode && lanesWithDrives.length >= 2
-
-  function switchToNetworkRun() {
-    /* 総観測時間が最長レーンより短いと切り替えた瞬間に実行不可になるので、同時に伸ばす。 */
-    const requiredDurationUs = transmonNetworkDurationUs(circuit)
-    onFormChange({
-      ...form,
-      modelId: COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
-      evolutionMethod: 'fixed_step_rk4',
-      totalSimulationTimeUs: Math.max(form.totalSimulationTimeUs, requiredDurationUs),
-    })
-  }
+  const networkDimension = form.localLevels ** circuit.transmons.length
   useEffect(() => {
     mountedRef.current = true
     return () => {
@@ -217,7 +205,7 @@ export function PulseLabPage({
     abortRef.current = controller
     const timeoutId = window.setTimeout(
       () => controller.abort(),
-      form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL || networkMode
+      networkMode
         ? 90000
         : Math.min(
             120000,
@@ -238,7 +226,7 @@ export function PulseLabPage({
       let latestQutritPoint: QutritPulsePoint | null = null
       let framePhaseRad = 0
       if (networkMode) {
-        const payload = buildTransmonNetworkPayload(form, circuit)
+        const payload = buildTransmonNetworkPayload(formForRun, circuit)
         const response = await fetch(apiUrl('/api/pulse/simulate'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -317,7 +305,7 @@ export function PulseLabPage({
         : responses[0]
       onRunCommitted({
         response: nextResult,
-        formAtRun: { ...form },
+        formAtRun: { ...formForRun },
         completedAt: new Date().toISOString(),
         signature: runSignature,
       })
@@ -371,9 +359,7 @@ export function PulseLabPage({
         <strong>{networkMode ? '複数レーン同時実行。' : sequenceMode ? `q${activeTransmonIndex} シーケンス実行。` : '単一Pulse実験。'}</strong>
         <span>
           {networkMode
-            ? `${circuit.transmons.length}台の3準位トランズモンと全レーンのPulseを、${3 ** circuit.transmons.length}次元の密度行列で同時に発展させます。`
-            : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
-            ? `q${form.pairDriveTarget}への現在の局所Pulseと、q0-q1交換結合を9次元密度行列で実行します。回路レーンの同時driveは未接続です。`
+            ? `${circuit.transmons.length}台の${form.localLevels}準位トランズモンと全レーンのPulseを、${form.localLevels ** circuit.transmons.length}次元の密度行列で同時に発展させます。`
             : sequenceMode
             ? `${sequence.length}個のPulseを、密度行列と共通環境を引き継いで順番に実行します。`
             : 'Pulse回路にブロックがないため、現在の単一Pulse設定を実行します。'}
@@ -386,12 +372,10 @@ export function PulseLabPage({
         <div>
           <span>モデル</span>
           <strong>
-            {form.modelId === QUTRIT_PULSE_MODEL
-              ? '3準位トランズモン qutrit'
-              : networkMode
-                ? `${circuit.transmons.length}トランズモン・ネットワーク / 3^${circuit.transmons.length}準位`
-              : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
-                ? '結合トランズモンペア / 3 x 3準位'
+            {networkMode
+              ? `${circuit.transmons.length}トランズモン・ネットワーク / ${form.localLevels}^${circuit.transmons.length}準位`
+              : form.localLevels === 3
+                ? '3準位トランズモン qutrit'
               : '2準位ベースライン'}
           </strong>
         </div>
@@ -423,6 +407,8 @@ export function PulseLabPage({
           form={form}
           errors={errors}
           disabled={status === 'loading'}
+          transmonCount={circuit.transmons.length}
+          onTransmonCountChange={onTransmonCountChange}
           onChange={onFormChange}
           executionConstraints={executionConstraints}
           onExecutionConstraintsChange={onExecutionConstraintsChange}
@@ -439,7 +425,10 @@ export function PulseLabPage({
             </p>
           </div>
 
-          <div className="pulse-lab__run-scope" data-tone={singleLaneWhileMultiLane ? 'warn' : 'info'}>
+          <div
+            className="pulse-lab__run-scope"
+            data-tone={circuit.transmons.length > 4 ? 'warn' : 'info'}
+          >
             <dl>
               <div>
                 <dt>実行対象</dt>
@@ -453,31 +442,19 @@ export function PulseLabPage({
                 <dt>密度行列</dt>
                 <dd>
                   {networkMode
-                    ? `${networkDimension} × ${networkDimension}（3^${circuit.transmons.length}）`
-                    : form.modelId === COUPLED_TRANSMON_PAIR_PULSE_MODEL
-                      ? '9 × 9（3 × 3）'
-                      : form.modelId === QUTRIT_PULSE_MODEL
-                        ? '3 × 3（1トランズモン）'
-                        : '2 × 2（1トランズモン）'}
+                    ? `${networkDimension} × ${networkDimension}（${form.localLevels}^${circuit.transmons.length}）`
+                    : form.localLevels === 3
+                      ? '3 × 3（1トランズモン）'
+                      : '2 × 2（1トランズモン）'}
                 </dd>
               </div>
             </dl>
-            {singleLaneWhileMultiLane ? (
-              <>
-                <p>
-                  回路には Pulse を持つレーンが {lanesWithDrives.length} 本ありますが、
-                  いまのモデルでは q{activeTransmonIndex} だけが実行され、残りは無視されます。
-                </p>
-                {networkRunAvailable ? (
-                  <button type="button" onClick={switchToNetworkRun} disabled={status === 'loading'}>
-                    全 {circuit.transmons.length} レーンを同時実行に切り替え（{networkDimension} 次元）
-                  </button>
-                ) : (
-                  <p>
-                    同時実行できるのは2〜4トランズモンです。回路スタジオでトランズモン数を調整してください。
-                  </p>
-                )}
-              </>
+            {lanesWithDrives.length >= 2 && circuit.transmons.length > 4 ? (
+              <p>
+                回路には Pulse を持つレーンが {lanesWithDrives.length} 本ありますが、
+                同時実行できるのは 4 トランズモンまでです。回路スタジオでトランズモン数を
+                4 台以下にしてください。
+              </p>
             ) : null}
           </div>
 
@@ -718,50 +695,6 @@ function validateExecutionConstraints(
       message,
     }))
   })
-}
-
-function validatePairSecondaryConstraints(
-  form: PulseLabForm,
-  constraints: PulseExecutionConstraints,
-): PulseConstraintIssue[] {
-  if (
-    form.modelId !== COUPLED_TRANSMON_PAIR_PULSE_MODEL
-    || !form.pairSecondaryDriveEnabled
-  ) {
-    return []
-  }
-  const secondaryForm: PulseLabForm = {
-    ...form,
-    shape: form.pairSecondaryShape,
-    amplitudeMode: form.pairSecondaryAmplitudeMode,
-    targetRotationAngleRad: form.pairSecondaryTargetRotationAngleRad,
-    peakAmplitudeRadPerUs: form.pairSecondaryPeakAmplitudeRadPerUs,
-    pulseDurationUs: form.pairSecondaryPulseDurationUs,
-    sigmaUs: form.pairSecondarySigmaUs,
-    truncationSigma: form.pairSecondaryTruncationSigma,
-    phaseRad: form.pairSecondaryPhaseRad,
-    detuningRadPerUs: form.pairSecondaryDetuningRadPerUs,
-    dragBetaUs: form.pairSecondaryDragBetaUs,
-  }
-  const duration = pulseDurationUs(secondaryForm)
-  const issues: PulseConstraintIssue[] = []
-  if (duration < constraints.minimumPulseDurationUs) {
-    issues.push({ stepIndex: -2, label: '副駆動', message: `Pulse幅は ${constraints.minimumPulseDurationUs} us 以上である必要があります。` })
-  }
-  if (!isAlignedToResolution(duration, constraints.awgSamplePeriodUs)) {
-    issues.push({ stepIndex: -2, label: '副駆動', message: `幅は ${constraints.awgSamplePeriodUs} us の倍数である必要があります。` })
-  }
-  if (!isAlignedToResolution(secondaryForm.phaseRad, constraints.phaseResolutionRad)) {
-    issues.push({ stepIndex: -2, label: '副駆動', message: `位相は ${constraints.phaseResolutionRad.toPrecision(4)} rad の倍数である必要があります。` })
-  }
-  const peak = Math.max(
-    0,
-    ...pulseWaveform(secondaryForm, 129).map((point) => Math.hypot(point.omegaX, point.omegaY)),
-  )
-  if (peak > constraints.maximumDriveAmplitudeRadPerUs * (1 + 1e-9)) {
-    issues.push({ stepIndex: -2, label: '副駆動', message: `波形のピーク ${peak.toPrecision(4)} rad/us が上限を超えています。` })
-  }
-  return issues
 }
 
 function validateTransmonNetworkScope(

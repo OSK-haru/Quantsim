@@ -26,7 +26,7 @@ Pulse-levelモデルはすべて回転系上でRWAを適用しています。搬
 | Gate-aware | 2(量子ビットあたり) | 漏れ(leakage)を表現しない |
 | Pulse Baseline A | 2 | 同上 |
 | Pulse Extension B | 3(qutrit) | 第3準位への漏れを表現できる |
-| Coupled transmon pair | 3⊗3 = 9 | 同上(2トランズモン) |
+| Coupled transmon network | $L^N$($L\in\{2,3\}$、$N\le4$) | 同上(各トランズモン) |
 
 3準位モデルであっても、漏れが大きい領域(たとえば漏れ率が数十%に達する強駆動)では切り詰め自体が妥当でなくなります。
 

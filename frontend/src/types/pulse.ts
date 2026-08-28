@@ -1,12 +1,10 @@
 export const TWO_LEVEL_PULSE_MODEL = 'driven_two_level_rwa_experimental_v1' as const
 export const QUTRIT_PULSE_MODEL = 'driven_transmon_qutrit_rwa_experimental_v1' as const
-export const COUPLED_TRANSMON_PAIR_PULSE_MODEL = 'driven_coupled_transmon_pair_rwa_experimental_v1' as const
 export const COUPLED_TRANSMON_NETWORK_PULSE_MODEL = 'driven_coupled_transmon_network_rwa_experimental_v1' as const
 
 export type PulseModelId =
   | typeof TWO_LEVEL_PULSE_MODEL
   | typeof QUTRIT_PULSE_MODEL
-  | typeof COUPLED_TRANSMON_PAIR_PULSE_MODEL
   | typeof COUPLED_TRANSMON_NETWORK_PULSE_MODEL
 export type PulseShape = 'square' | 'gaussian'
 export type PulseAmplitudeMode = 'target_rotation_angle' | 'peak_amplitude'
@@ -15,8 +13,16 @@ export type PulseEvolutionMethod = 'fixed_step_rk4' | 'explicit_cptp'
 export type QuasiStaticQuadratureOrder = 3 | 5 | 7 | 9
 export type PulseBackend = 'python' | 'rust' | 'auto'
 
+export type PulseLocalLevels = 2 | 3
+
 export type PulseLabForm = {
   modelId: PulseModelId
+  /*
+   * 準位数トグル。1台なら 2→2準位モデル / 3→qutrit、2台以上なら
+   * ネットワークモデルへ local_levels として渡る。modelId はこの値と
+   * 回路の台数から導出する。
+   */
+  localLevels: PulseLocalLevels
   evolutionMethod: PulseEvolutionMethod
   backend: PulseBackend
   shape: PulseShape
@@ -30,26 +36,13 @@ export type PulseLabForm = {
   phaseRad: number
   detuningRadPerUs: number
   anharmonicityMhz: number
-  pairSecondAnharmonicityMhz: number
-  pairDetuningQ0RadPerUs: number
-  pairDetuningQ1RadPerUs: number
-  pairExchangeCouplingRadPerUs: number
-  pairDriveTarget: 0 | 1
-  pairQuasiStaticSigmaQ0RadPerUs: number
-  pairQuasiStaticSigmaQ1RadPerUs: number
-  pairQuasiStaticCorrelation: number
-  pairQuasiStaticQuadratureOrder: 3 | 5
-  pairSecondaryDriveEnabled: boolean
-  pairSecondaryShape: PulseShape
-  pairSecondaryAmplitudeMode: PulseAmplitudeMode
-  pairSecondaryTargetRotationAngleRad: number
-  pairSecondaryPeakAmplitudeRadPerUs: number
-  pairSecondaryPulseDurationUs: number
-  pairSecondarySigmaUs: number
-  pairSecondaryTruncationSigma: number
-  pairSecondaryPhaseRad: number
-  pairSecondaryDetuningRadPerUs: number
-  pairSecondaryDragBetaUs: number
+  /*
+   * ネットワークモデル（台数2以上）の構成。q2以降の基準離調は現在0固定で、
+   * 交換結合は隣接ペアすべてに同じ値を適用する。
+   */
+  networkDetuningQ0RadPerUs: number
+  networkDetuningQ1RadPerUs: number
+  networkExchangeCouplingRadPerUs: number
   dragBetaUs: number
   environmentMode: PulseEnvironmentMode
   deviceQuality: number
@@ -69,6 +62,14 @@ export type PulseLabForm = {
   quasiStaticNoiseEnabled: boolean
   quasiStaticDetuningSigmaRadPerUs: number
   quasiStaticQuadratureOrder: QuasiStaticQuadratureOrder
+  /*
+   * ネットワークモデルの準静的離調ノイズ。全トランズモンに共通の σ を与え、
+   * 隣接ペアに共通の相関係数 r を掛ける（バックエンドの chain モデルに対応）。
+   * σ=0 のときはアンサンブル平均を行わない。
+   */
+  networkQuasiStaticSigmaRadPerUs: number
+  networkQuasiStaticAdjacentCorrelation: number
+  networkQuasiStaticQuadratureOrder: 3 | 5
   snapshotCount: number
 }
 
@@ -193,7 +194,7 @@ export type QutritPulseResponse = {
   limitations: string[]
 }
 
-export type CoupledTransmonPairPoint = {
+export type TransmonNetworkPoint = {
   time_us: number
   segment: 'pulse' | 'idle'
   joint_populations: Record<string, number>
@@ -205,30 +206,6 @@ export type CoupledTransmonPairPoint = {
   raw_physicality: PulsePhysicality
   cleaned_physicality: PulsePhysicality
   cleanup_correction_norm: number
-}
-
-export type CoupledTransmonPairResponse = {
-  contract_version: 'pulse-coupled-pair-v1'
-  model: Record<string, unknown> & {
-    model_id: typeof COUPLED_TRANSMON_PAIR_PULSE_MODEL
-    description: string
-    basis_order: string[]
-  }
-  input: Record<string, unknown>
-  rates: Array<Record<string, unknown>>
-  step_policy: Record<string, unknown>
-  sample_times_us: number[]
-  trajectory: CoupledTransmonPairPoint[]
-  leakage: {
-    maximum_recorded_leakage_probability: number
-    leakage_at_pulse_end: number
-    leakage_at_final_time: number
-  }
-  pulse_end: CoupledTransmonPairPoint
-  final: CoupledTransmonPairPoint
-  diagnostics: Record<string, unknown> & PulseDiagnostics
-  warnings: string[]
-  limitations: string[]
 }
 
 export type CoupledTransmonNetworkResponse = {
@@ -244,14 +221,14 @@ export type CoupledTransmonNetworkResponse = {
   rates: Array<Record<string, unknown>>
   step_policy: Record<string, unknown>
   sample_times_us: number[]
-  trajectory: CoupledTransmonPairPoint[]
+  trajectory: TransmonNetworkPoint[]
   leakage: {
     maximum_recorded_leakage_probability: number
     leakage_at_pulse_end: number
     leakage_at_final_time: number
   }
-  pulse_end: CoupledTransmonPairPoint
-  final: CoupledTransmonPairPoint
+  pulse_end: TransmonNetworkPoint
+  final: TransmonNetworkPoint
   diagnostics: Record<string, unknown> & PulseDiagnostics
   warnings: string[]
   limitations: string[]
@@ -288,7 +265,6 @@ type PulseDiagnostics = {
 export type PulseResponse =
   | TwoLevelPulseResponse
   | QutritPulseResponse
-  | CoupledTransmonPairResponse
   | CoupledTransmonNetworkResponse
 
 /*
@@ -320,13 +296,6 @@ export function isQutritPulseResponse(
   response: PulseResponse,
 ): response is QutritPulseResponse {
   return response.model.model_id === QUTRIT_PULSE_MODEL
-}
-
-
-export function isCoupledTransmonPairResponse(
-  response: PulseResponse,
-): response is CoupledTransmonPairResponse {
-  return response.model.model_id === COUPLED_TRANSMON_PAIR_PULSE_MODEL
 }
 
 export function isCoupledTransmonNetworkResponse(

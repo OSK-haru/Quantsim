@@ -1,7 +1,8 @@
 """Small coupled-transmon networks with a three-level local truncation.
 
-The model is deliberately bounded to two through four transmons.  It keeps
-the tensor-product basis explicit and supports independently scheduled local
+The model is deliberately bounded to one through four transmons.  A single
+transmon is the degenerate case with no exchange edges; two through four keep
+the tensor-product basis explicit and support independently scheduled local
 I/Q envelopes plus pairwise exchange couplings.
 """
 
@@ -32,21 +33,51 @@ from core.pulse_qutrit_open_system import (
 )
 
 
+# Default local truncation.  Each transmon may instead be truncated to two
+# levels (a plain driven qubit with no leakage state); the local dimension is
+# threaded through the public functions so one network path covers both.
 LOCAL_DIMENSION = 3
-MIN_TRANSMON_COUNT = 2
+MIN_LOCAL_DIMENSION = 2
+MAX_LOCAL_DIMENSION = 3
+MIN_TRANSMON_COUNT = 1
 MAX_TRANSMON_COUNT = 4
 # Drive edges reach the integrator as the same floats the schedule produced, so
 # this only absorbs the sample-time deduplication in the request service.
 SEGMENT_BOUNDARY_TOLERANCE_US = 1e-12
 
 
-def network_basis_labels(transmon_count: int) -> tuple[str, ...]:
+def _validate_local_dimension(local_dimension: int) -> int:
+    value = int(local_dimension)
+    if value < MIN_LOCAL_DIMENSION or value > MAX_LOCAL_DIMENSION:
+        raise ValueError(
+            f"local_dimension must be {MIN_LOCAL_DIMENSION} or {MAX_LOCAL_DIMENSION}"
+        )
+    return value
+
+
+def _slice_local(operator: Matrix, local_dimension: int) -> Matrix:
+    """Return the top-left ``local_dimension`` block of a 3x3 qutrit operator.
+
+    The two-level transmon is the qubit subspace of the qutrit model, so every
+    local operator is that model's operator with the leakage row and column
+    dropped.  At ``local_dimension == 3`` the operator is returned unchanged.
+    """
+
+    dim = _validate_local_dimension(local_dimension)
+    return tuple(tuple(operator[row][col] for col in range(dim)) for row in range(dim))
+
+
+def network_basis_labels(
+    transmon_count: int,
+    local_dimension: int = LOCAL_DIMENSION,
+) -> tuple[str, ...]:
     """Return q0-most-significant tensor-basis labels such as ``012``."""
 
     count = _validate_transmon_count(transmon_count)
+    dim = _validate_local_dimension(local_dimension)
     return tuple(
         "".join(str(level) for level in levels)
-        for levels in product(range(LOCAL_DIMENSION), repeat=count)
+        for levels in product(range(dim), repeat=count)
     )
 
 
@@ -62,13 +93,15 @@ def embed_network_local_operator(
     operator: Matrix,
     subsystem: int,
     transmon_count: int,
+    local_dimension: int = LOCAL_DIMENSION,
 ) -> Matrix:
-    """Embed one 3x3 operator with q0 as the most-significant subsystem."""
+    """Embed one local operator with q0 as the most-significant subsystem."""
 
     count = _validate_transmon_count(transmon_count)
+    dim = _validate_local_dimension(local_dimension)
     if subsystem < 0 or subsystem >= count:
         raise ValueError("network subsystem is outside the transmon register")
-    factors = [identity_matrix(LOCAL_DIMENSION) for _ in range(count)]
+    factors = [identity_matrix(dim) for _ in range(count)]
     factors[subsystem] = operator
     result = factors[0]
     for factor in factors[1:]:
@@ -84,10 +117,11 @@ def _embed_local_array(
     operator: np.ndarray,
     subsystem: int,
     transmon_count: int,
+    local_dimension: int = LOCAL_DIMENSION,
 ) -> np.ndarray:
     """Return the NumPy twin of :func:`embed_network_local_operator`."""
 
-    identity = np.eye(LOCAL_DIMENSION, dtype=np.complex128)
+    identity = np.eye(local_dimension, dtype=np.complex128)
     result = operator if subsystem == 0 else identity
     for position in range(1, transmon_count):
         result = np.kron(result, operator if position == subsystem else identity)
@@ -165,25 +199,38 @@ class ScheduledTransmonDrive:
 
 @dataclass(frozen=True)
 class CoupledTransmonNetworkHamiltonian:
-    """Duffing qutrit network with scheduled local drives and exchange edges."""
+    """Transmon network with scheduled local drives and exchange edges.
+
+    Each transmon is truncated to ``local_dimension`` levels: three for the
+    Duffing qutrit with a leakage state, or two for a plain driven qubit whose
+    anharmonicity term never enters the qubit subspace.
+    """
 
     anharmonicities_rad_per_us: tuple[float, ...]
     detunings_rad_per_us: tuple[float, ...]
     couplings: tuple[TransmonExchangeCoupling, ...]
     drives: tuple[ScheduledTransmonDrive, ...]
+    local_dimension: int = LOCAL_DIMENSION
     _static_array: np.ndarray = field(init=False, repr=False)
     _drive_x_arrays: tuple[np.ndarray, ...] = field(init=False, repr=False)
     _drive_y_arrays: tuple[np.ndarray, ...] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        local_dim = _validate_local_dimension(self.local_dimension)
+        object.__setattr__(self, "local_dimension", local_dim)
         count = _validate_transmon_count(len(self.anharmonicities_rad_per_us))
         if len(self.detunings_rad_per_us) != count:
             raise ValueError("network detunings must match the transmon count")
-        if any(
+        if local_dim == 3 and any(
             not math.isfinite(alpha) or alpha >= 0.0
             for alpha in self.anharmonicities_rad_per_us
         ):
             raise ValueError("network anharmonicities must be finite and negative")
+        if local_dim == 2 and any(
+            not math.isfinite(alpha)
+            for alpha in self.anharmonicities_rad_per_us
+        ):
+            raise ValueError("network anharmonicities must be finite")
         if any(not math.isfinite(value) for value in self.detunings_rad_per_us):
             raise ValueError("network detunings must be finite")
         if any(
@@ -194,7 +241,13 @@ class CoupledTransmonNetworkHamiltonian:
         if any(drive.target >= count for drive in self.drives):
             raise ValueError("drive target is outside the transmon register")
 
-        dimension = LOCAL_DIMENSION ** count
+        # A two-level transmon has no leakage state, so its anharmonicity term
+        # lives entirely in the |2> row that the slice drops.  Feed the qutrit
+        # builder a placeholder so it accepts the call; the value is sliced off.
+        def local_alpha(alpha: float) -> float:
+            return alpha if local_dim == 3 else -1.0
+
+        dimension = local_dim ** count
         static_array = np.zeros((dimension, dimension), dtype=np.complex128)
         drive_x_arrays: list[np.ndarray] = []
         drive_y_arrays: list[np.ndarray] = []
@@ -203,25 +256,40 @@ class CoupledTransmonNetworkHamiltonian:
             self.detunings_rad_per_us,
             strict=True,
         )):
-            local_static = _local_array(
-                qutrit_rotating_frame_hamiltonian(detuning, alpha, 0.0, 0.0)
+            local_static = _local_array(_slice_local(
+                qutrit_rotating_frame_hamiltonian(
+                    detuning, local_alpha(alpha), 0.0, 0.0
+                ),
+                local_dim,
+            ))
+            local_x = _local_array(_slice_local(
+                qutrit_rotating_frame_hamiltonian(
+                    detuning, local_alpha(alpha), 1.0, 0.0
+                ),
+                local_dim,
+            )) - local_static
+            local_y = _local_array(_slice_local(
+                qutrit_rotating_frame_hamiltonian(
+                    detuning, local_alpha(alpha), 0.0, 1.0
+                ),
+                local_dim,
+            )) - local_static
+            static_array += _embed_local_array(local_static, index, count, local_dim)
+            drive_x_arrays.append(
+                _embed_local_array(local_x, index, count, local_dim)
             )
-            local_x = _local_array(
-                qutrit_rotating_frame_hamiltonian(detuning, alpha, 1.0, 0.0)
-            ) - local_static
-            local_y = _local_array(
-                qutrit_rotating_frame_hamiltonian(detuning, alpha, 0.0, 1.0)
-            ) - local_static
-            static_array += _embed_local_array(local_static, index, count)
-            drive_x_arrays.append(_embed_local_array(local_x, index, count))
-            drive_y_arrays.append(_embed_local_array(local_y, index, count))
+            drive_y_arrays.append(
+                _embed_local_array(local_y, index, count, local_dim)
+            )
 
+        annihilation = _slice_local(ANNIHILATION_QUTRIT, local_dim)
+        creation = _slice_local(CREATION_QUTRIT, local_dim)
         embedded_annihilation = tuple(
-            _embed_local_array(_local_array(ANNIHILATION_QUTRIT), index, count)
+            _embed_local_array(_local_array(annihilation), index, count, local_dim)
             for index in range(count)
         )
         embedded_creation = tuple(
-            _embed_local_array(_local_array(CREATION_QUTRIT), index, count)
+            _embed_local_array(_local_array(creation), index, count, local_dim)
             for index in range(count)
         )
         for coupling in self.couplings:
@@ -337,8 +405,12 @@ class CoupledTransmonNetworkSegmentHamiltonian:
         return hamiltonian
 
 
-def network_initial_density_matrix(initial_state: str, transmon_count: int) -> Matrix:
-    labels = network_basis_labels(transmon_count)
+def network_initial_density_matrix(
+    initial_state: str,
+    transmon_count: int,
+    local_dimension: int = LOCAL_DIMENSION,
+) -> Matrix:
+    labels = network_basis_labels(transmon_count, local_dimension)
     label = str(initial_state)
     if label not in labels:
         raise ValueError("initial network state must be a register basis label")
@@ -350,23 +422,50 @@ def network_initial_density_matrix(initial_state: str, transmon_count: int) -> M
     return density_from_ket(ket)
 
 
+def _local_jump_operators(
+    local_rates: QutritDissipationRates,
+    local_dimension: int,
+) -> tuple[Matrix, ...]:
+    """Return the local jump operators truncated to ``local_dimension``.
+
+    At two levels the 1<->2 transition and number-noise operators slice down to
+    the qubit subspace: the 2<->1 jumps vanish and the number operator becomes
+    ``diag(0, 1)``, the standard two-level dephasing operator.
+    """
+
+    operators = tuple(
+        _slice_local(operator, local_dimension)
+        for operator in qutrit_collapse_operator_matrices(local_rates)
+    )
+    return tuple(
+        operator
+        for operator in operators
+        if any(abs(value) > 0.0 for row in operator for value in row)
+    )
+
+
 def network_collapse_operator_matrices(
     rates: tuple[QutritDissipationRates, ...],
+    local_dimension: int = LOCAL_DIMENSION,
 ) -> tuple[Matrix, ...]:
     count = _validate_transmon_count(len(rates))
+    local_dim = _validate_local_dimension(local_dimension)
     matrices: list[Matrix] = []
     for subsystem, local_rates in enumerate(rates):
         matrices.extend(
-            embed_network_local_operator(operator, subsystem, count)
-            for operator in qutrit_collapse_operator_matrices(local_rates)
+            embed_network_local_operator(operator, subsystem, count, local_dim)
+            for operator in _local_jump_operators(local_rates, local_dim)
         )
     return tuple(matrices)
 
 
 def network_collapse_operators(
     rates: tuple[QutritDissipationRates, ...],
+    local_dimension: int = LOCAL_DIMENSION,
 ):
-    return prepare_collapse_operators(network_collapse_operator_matrices(rates))
+    return prepare_collapse_operators(
+        network_collapse_operator_matrices(rates, local_dimension)
+    )
 
 
 @dataclass(frozen=True)
@@ -383,14 +482,19 @@ class NetworkSiteLocalDissipator:
 
     transmon_count: int
     jumps: tuple[tuple[int, np.ndarray], ...]
+    local_dimension: int = LOCAL_DIMENSION
     _kernels: tuple[tuple[int, np.ndarray], ...] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        kernel_size = LOCAL_DIMENSION ** 2
+        local_dim = _validate_local_dimension(self.local_dimension)
+        object.__setattr__(self, "local_dimension", local_dim)
+        kernel_size = local_dim ** 2
         kernels: dict[int, np.ndarray] = {}
         for subsystem, local_operator in self.jumps:
-            if local_operator.shape != (LOCAL_DIMENSION, LOCAL_DIMENSION):
-                raise ValueError("network jump operators must be local qutrit operators")
+            if local_operator.shape != (local_dim, local_dim):
+                raise ValueError(
+                    "network jump operators must match the local dimension"
+                )
             if subsystem < 0 or subsystem >= self.transmon_count:
                 raise ValueError("jump subsystem is outside the transmon register")
             kernels.setdefault(
@@ -401,7 +505,8 @@ class NetworkSiteLocalDissipator:
         object.__setattr__(self, "_kernels", tuple(sorted(kernels.items())))
 
     def relaxation_array(self, dimension: int) -> np.ndarray:
-        if dimension != LOCAL_DIMENSION ** self.transmon_count:
+        local_dim = self.local_dimension
+        if dimension != local_dim ** self.transmon_count:
             raise ValueError("state dimension does not match the transmon register")
         relaxation = np.zeros((dimension, dimension), dtype=np.complex128)
         for subsystem, local_operator in self.jumps:
@@ -409,13 +514,15 @@ class NetworkSiteLocalDissipator:
                 local_operator.conj().T @ local_operator,
                 subsystem,
                 self.transmon_count,
+                local_dim,
             )
         return relaxation
 
     def apply_jumps(self, rho: np.ndarray) -> np.ndarray:
         count = self.transmon_count
-        shape = (LOCAL_DIMENSION,) * (2 * count)
-        kernel_size = LOCAL_DIMENSION ** 2
+        local_dim = self.local_dimension
+        shape = (local_dim,) * (2 * count)
+        kernel_size = local_dim ** 2
         result = np.zeros_like(rho)
         for subsystem, kernel in self._kernels:
             paired = np.moveaxis(
@@ -425,7 +532,7 @@ class NetworkSiteLocalDissipator:
             )
             remaining_shape = paired.shape[2:]
             transformed = (kernel @ paired.reshape(kernel_size, -1)).reshape(
-                (LOCAL_DIMENSION, LOCAL_DIMENSION, *remaining_shape)
+                (local_dim, local_dim, *remaining_shape)
             )
             result += np.moveaxis(
                 transformed,
@@ -437,21 +544,28 @@ class NetworkSiteLocalDissipator:
 
 def network_site_local_dissipator(
     rates: tuple[QutritDissipationRates, ...],
+    local_dimension: int = LOCAL_DIMENSION,
 ) -> NetworkSiteLocalDissipator:
     count = _validate_transmon_count(len(rates))
+    local_dim = _validate_local_dimension(local_dimension)
     jumps = tuple(
         (subsystem, _local_array(operator))
         for subsystem, local_rates in enumerate(rates)
-        for operator in qutrit_collapse_operator_matrices(local_rates)
+        for operator in _local_jump_operators(local_rates, local_dim)
     )
-    return NetworkSiteLocalDissipator(transmon_count=count, jumps=jumps)
+    return NetworkSiteLocalDissipator(
+        transmon_count=count,
+        jumps=jumps,
+        local_dimension=local_dim,
+    )
 
 
 def network_joint_populations(
     state: Matrix,
     transmon_count: int,
+    local_dimension: int = LOCAL_DIMENSION,
 ) -> dict[str, float]:
-    labels = network_basis_labels(transmon_count)
+    labels = network_basis_labels(transmon_count, local_dimension)
     if len(state) != len(labels) or any(len(row) != len(labels) for row in state):
         raise ValueError("state dimension does not match the transmon register")
     return {
@@ -460,8 +574,12 @@ def network_joint_populations(
     }
 
 
-def network_leakage_probability(state: Matrix, transmon_count: int) -> float:
-    populations = network_joint_populations(state, transmon_count)
+def network_leakage_probability(
+    state: Matrix,
+    transmon_count: int,
+    local_dimension: int = LOCAL_DIMENSION,
+) -> float:
+    populations = network_joint_populations(state, transmon_count, local_dimension)
     computational = sum(
         populations[label]
         for label in computational_basis_labels(transmon_count)
