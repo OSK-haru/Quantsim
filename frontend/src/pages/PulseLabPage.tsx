@@ -205,12 +205,19 @@ export function PulseLabPage({
     abortRef.current = controller
     const timeoutId = window.setTimeout(
       () => controller.abort(),
+      /*
+       * 1台でも実測で数十秒かかる条件があるため、シーケンス長によらず
+       * 60秒を下限として確保する。上限120秒とネットワークの90秒は据え置き。
+       */
       networkMode
         ? 90000
         : Math.min(
             120000,
-            (form.evolutionMethod === 'explicit_cptp' ? 30000 : 16000)
-              * executionForms.length,
+            Math.max(
+              60000,
+              (form.evolutionMethod === 'explicit_cptp' ? 30000 : 16000)
+                * executionForms.length,
+            ),
           ),
     )
     setStatus('loading')
