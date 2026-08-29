@@ -14,6 +14,7 @@ import type {
 import {
   createPulseCircuitStep,
   isDrivePulseStep,
+  reconcileDrivePulseStep,
   normalizeFramePhase,
   pulseStepDurationUs,
   resizePulseCircuit,
@@ -196,7 +197,7 @@ export function PulseCircuitStudioPage({
     }
     return withLane(base, selectedStep.transmonIndex, lane.steps.map((step) => (
       step.id === selectedStep.step.id && step.operation === 'drive'
-        ? { ...step, pulse: { ...draftPulse } }
+        ? reconcileDrivePulseStep(step, { ...draftPulse })
         : step
     )))
   }

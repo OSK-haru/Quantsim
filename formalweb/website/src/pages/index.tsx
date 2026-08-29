@@ -12,8 +12,9 @@ import QuantumFluctuationField from '@site/src/components/QuantumFluctuationFiel
  * 本体ホームが「どのモードに入るか」を選ばせる操作盤なのに対し、
  * こちらは名前を初めて見た人に、何のための道具かを短く伝えるだけ。
  *
- * 数値や検証結果、機能の一覧は置かない。それはドキュメント本体の仕事で、
- * ここに並べると入口が読みものになってしまう。残すのは動機だけ。
+ * 数値も検証結果も機能一覧も置かない。それはドキュメント本体の仕事で、
+ * ここに並べると入口が読みものになってしまう。この面に置くのは、
+ * 何のための道具かを言う一文と、そこへの入口だけ。
  *
  * 下地には本体と同じ「真空のゆらぎ」を走らせて、要素はその上に浮かせる。
  */
@@ -55,54 +56,6 @@ function Masthead(): ReactNode {
   );
 }
 
-/*
- * 動機。なぜ作ったのかを一段落だけ。
- * 詳しい話はドキュメント本体にあるので、ここでは引きに徹する。
- */
-function Motivation(): ReactNode {
-  return (
-    <section className={styles.motivation}>
-      <p className={styles.motivationLead}>
-        教科書で見ていた量子回路と、実際の量子コンピュータの間には、
-        まだいくつもの層がありました。
-      </p>
-      <p className={styles.motivationBody}>
-        実機に「Xゲート」という物体があるわけではありません。超伝導量子コンピュータでは、
-        マイクロ波を短く当てることでゲートに相当する操作を実現します。
-        その間も量子ビットは環境と相互作用し、少しずつ情報を失っていきます。
-        アルゴリズムを動かすところから、環境による劣化、実機の制御に近いところまで、
-        自分で一段ずつ降りて確かめたい。それがこのシミュレーターの出発点です。
-      </p>
-    </section>
-  );
-}
-
-/* 締め。立ち位置を一文で言い切って、最後の入口を出す。 */
-function Closing(): ReactNode {
-  return (
-    <section className={styles.closing}>
-      <p className={styles.closingLine}>
-        量子コンピュータを<em>動かせる</em>だけの道具は、もうあります。
-        <br />
-        ここで作りたかったのは、<strong>動いた理由と、動かなくなる理由</strong>の
-        両方が見える道具です。
-      </p>
-
-      {/* 入口その3。 */}
-      <div className={styles.actions}>
-        <Link className={styles.ctaPrimary} to="/docs/overview/introduction">
-          ドキュメントを読む
-        </Link>
-        <Link
-          className={styles.ctaGhost}
-          href="https://yuragi-strider-app.23sam55781.workers.dev">
-          アプリを試す
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 export default function Home(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
 
@@ -117,8 +70,6 @@ export default function Home(): ReactNode {
 
         <div className={styles.content}>
           <Masthead />
-          <Motivation />
-          <Closing />
         </div>
       </main>
     </Layout>

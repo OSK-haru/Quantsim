@@ -1,6 +1,6 @@
 {
   "validation": "VALIDATION-6",
-  "base_git_commit": "7ba959a050423d64805e6b64dcbcbf805df068a1",
+  "base_git_commit": "f205bbbd2ebd09eb5e4537a68b67444d3fab781b",
   "solver_method": "fixed-step RK4 with production dense NumPy or tuple backend",
   "integration_policy_audit": {
     "substep_selection": "core.simulator._integration_substeps() calls _substep_count(dt, max_environment_rate_per_us)",
@@ -36,7 +36,7 @@
         {
           "max_internal_step_us": 1.0,
           "actual_internal_step_count": 51,
-          "runtime_ms": 3.2675999973434955,
+          "runtime_ms": 14.340099995024502,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -116,7 +116,7 @@
         {
           "max_internal_step_us": 0.5,
           "actual_internal_step_count": 100,
-          "runtime_ms": 6.405300009646453,
+          "runtime_ms": 4.688800006988458,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -196,7 +196,7 @@
         {
           "max_internal_step_us": 0.25,
           "actual_internal_step_count": 200,
-          "runtime_ms": 12.265500001376495,
+          "runtime_ms": 7.832300005247816,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -276,7 +276,7 @@
         {
           "max_internal_step_us": 0.125,
           "actual_internal_step_count": 400,
-          "runtime_ms": 22.980900001130067,
+          "runtime_ms": 15.938999989884906,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -356,7 +356,7 @@
         {
           "max_internal_step_us": 0.0625,
           "actual_internal_step_count": 800,
-          "runtime_ms": 45.72010000993032,
+          "runtime_ms": 32.33100000943523,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -436,7 +436,7 @@
         {
           "max_internal_step_us": 0.03125,
           "actual_internal_step_count": 1600,
-          "runtime_ms": 88.2189000112703,
+          "runtime_ms": 86.24499999859836,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -524,7 +524,7 @@
         {
           "max_internal_step_us": 1.0,
           "actual_internal_step_count": 51,
-          "runtime_ms": 3.3067000040318817,
+          "runtime_ms": 3.8254999963101,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -604,7 +604,7 @@
         {
           "max_internal_step_us": 0.5,
           "actual_internal_step_count": 100,
-          "runtime_ms": 5.738899999414571,
+          "runtime_ms": 4.222200004733168,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -684,7 +684,7 @@
         {
           "max_internal_step_us": 0.25,
           "actual_internal_step_count": 200,
-          "runtime_ms": 11.40619999205228,
+          "runtime_ms": 8.594399987487122,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -764,7 +764,7 @@
         {
           "max_internal_step_us": 0.125,
           "actual_internal_step_count": 400,
-          "runtime_ms": 25.337200000649318,
+          "runtime_ms": 20.21940000122413,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -844,7 +844,7 @@
         {
           "max_internal_step_us": 0.0625,
           "actual_internal_step_count": 800,
-          "runtime_ms": 46.05870001250878,
+          "runtime_ms": 35.49290000228211,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -924,7 +924,7 @@
         {
           "max_internal_step_us": 0.03125,
           "actual_internal_step_count": 1600,
-          "runtime_ms": 104.51620000822004,
+          "runtime_ms": 74.16940000257455,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -1012,7 +1012,7 @@
         {
           "max_internal_step_us": 1.0,
           "actual_internal_step_count": 51,
-          "runtime_ms": 5.118700006278232,
+          "runtime_ms": 3.776300000026822,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -1092,7 +1092,7 @@
         {
           "max_internal_step_us": 0.5,
           "actual_internal_step_count": 100,
-          "runtime_ms": 8.573600003728643,
+          "runtime_ms": 7.338499999605119,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -1172,7 +1172,7 @@
         {
           "max_internal_step_us": 0.25,
           "actual_internal_step_count": 200,
-          "runtime_ms": 20.54330000828486,
+          "runtime_ms": 13.767500000540167,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -1252,7 +1252,7 @@
         {
           "max_internal_step_us": 0.125,
           "actual_internal_step_count": 400,
-          "runtime_ms": 39.363899995805696,
+          "runtime_ms": 25.323599998955615,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -1332,7 +1332,7 @@
         {
           "max_internal_step_us": 0.0625,
           "actual_internal_step_count": 800,
-          "runtime_ms": 71.17299998935778,
+          "runtime_ms": 56.22650000441354,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -1412,7 +1412,7 @@
         {
           "max_internal_step_us": 0.03125,
           "actual_internal_step_count": 1600,
-          "runtime_ms": 136.89520000480115,
+          "runtime_ms": 112.7316000056453,
           "snapshot_metrics": [
             {
               "max_element_error": 0.0,
@@ -1503,7 +1503,7 @@
         {
           "max_internal_step_us": 1.0,
           "actual_internal_step_count": 8,
-          "runtime_ms": 1.167199996416457,
+          "runtime_ms": 0.9602000063750893,
           "snapshot_metrics": [
             {
               "max_element_error": 0.00018438707451018323,
@@ -1523,7 +1523,7 @@
         {
           "max_internal_step_us": 0.5,
           "actual_internal_step_count": 16,
-          "runtime_ms": 2.35800001246389,
+          "runtime_ms": 2.104900006088428,
           "snapshot_metrics": [
             {
               "max_element_error": 1.1386479558786667e-05,
@@ -1543,7 +1543,7 @@
         {
           "max_internal_step_us": 0.25,
           "actual_internal_step_count": 32,
-          "runtime_ms": 4.17369999922812,
+          "runtime_ms": 3.3602000039536506,
           "snapshot_metrics": [
             {
               "max_element_error": 7.035011856357613e-07,
@@ -1563,7 +1563,7 @@
         {
           "max_internal_step_us": 0.125,
           "actual_internal_step_count": 64,
-          "runtime_ms": 8.437199998297729,
+          "runtime_ms": 7.767699993564747,
           "snapshot_metrics": [
             {
               "max_element_error": 4.3505158251015285e-08,
@@ -1583,7 +1583,7 @@
         {
           "max_internal_step_us": 0.0625,
           "actual_internal_step_count": 128,
-          "runtime_ms": 17.469900005380623,
+          "runtime_ms": 12.69970000430476,
           "snapshot_metrics": [
             {
               "max_element_error": 2.5497059127421253e-09,
@@ -1615,7 +1615,7 @@
         {
           "max_internal_step_us": 1.0,
           "actual_internal_step_count": 24,
-          "runtime_ms": 5.8031000080518425,
+          "runtime_ms": 5.01530000474304,
           "snapshot_metrics": [
             {
               "max_element_error": 9.809231770083508e-05,
@@ -1635,7 +1635,7 @@
         {
           "max_internal_step_us": 0.5,
           "actual_internal_step_count": 48,
-          "runtime_ms": 12.255399997229688,
+          "runtime_ms": 9.384699995280243,
           "snapshot_metrics": [
             {
               "max_element_error": 6.044960027199809e-06,
@@ -1655,7 +1655,7 @@
         {
           "max_internal_step_us": 0.25,
           "actual_internal_step_count": 96,
-          "runtime_ms": 22.846699997899123,
+          "runtime_ms": 16.703299988876097,
           "snapshot_metrics": [
             {
               "max_element_error": 3.7318657906453867e-07,
@@ -1675,7 +1675,7 @@
         {
           "max_internal_step_us": 0.125,
           "actual_internal_step_count": 192,
-          "runtime_ms": 46.53609999513719,
+          "runtime_ms": 35.63509999366943,
           "snapshot_metrics": [
             {
               "max_element_error": 2.3070753244240917e-08,
@@ -1695,7 +1695,7 @@
         {
           "max_internal_step_us": 0.0625,
           "actual_internal_step_count": 384,
-          "runtime_ms": 94.58830000949092,
+          "runtime_ms": 74.52439999906346,
           "snapshot_metrics": [
             {
               "max_element_error": 1.3519191092359556e-09,

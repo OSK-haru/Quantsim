@@ -18,10 +18,14 @@
   position: relative;
   isolation: isolate;
 
+  /*
+   * 中身は1画面に収まる。ヘッダとフッタを除いた高さいっぱいまで伸ばして、
+   * 下地のゆらぎが余白ごと画面を占めるようにする。
+   */
   display: grid;
-  align-content: start;
-  min-height: 78vh;
-  padding: 0 0 120px;
+  align-content: center;
+  min-height: calc(100vh - var(--ifm-navbar-height));
+  padding: 0 0 72px;
 }
 
 /* 下地の上へ内容を持ち上げる。地は塗らない。 */
@@ -43,7 +47,6 @@
 .masthead {
   display: grid;
   justify-items: start;
-  padding-top: clamp(72px, 14vh, 148px);
 }
 
 .headline {
@@ -124,66 +127,6 @@
   border-color: var(--tt-accent-hot);
   color: var(--tt-ink-max);
   text-decoration: none;
-}
-
-/* --- 2. Motivation -------------------------------------------------------- */
-
-.motivation {
-  display: grid;
-  gap: 18px;
-  max-width: 62ch;
-  margin-top: clamp(88px, 13vh, 160px);
-  padding-top: 26px;
-  border-top: var(--tt-bar) solid var(--tt-accent);
-}
-
-/* 動機の一行だけ大きく。以降は本文の目方に落とす。 */
-.motivationLead {
-  margin: 0;
-  color: var(--tt-ink);
-  font-family: var(--tt-macro);
-  font-size: clamp(1.15rem, 2.4vw, 1.7rem);
-  font-weight: 900;
-  line-height: 1.45;
-  letter-spacing: -0.03em;
-}
-
-.motivationBody {
-  margin: 0;
-  color: var(--tt-ink-mid);
-  font-size: 0.88rem;
-  line-height: 2;
-}
-
-/* --- 3. Closing ----------------------------------------------------------- */
-
-.closing {
-  display: grid;
-  justify-items: start;
-  margin-top: clamp(88px, 13vh, 160px);
-  padding-top: 30px;
-  border-top: var(--tt-bar) solid var(--tt-accent);
-}
-
-.closingLine {
-  margin: 0;
-  max-width: 34ch;
-  color: var(--tt-ink);
-  font-family: var(--tt-macro);
-  font-size: clamp(1.2rem, 2.6vw, 1.85rem);
-  font-weight: 900;
-  line-height: 1.42;
-  letter-spacing: -0.03em;
-}
-
-.closingLine em {
-  color: var(--tt-ink-faint);
-  font-style: normal;
-}
-
-.closingLine strong {
-  color: var(--tt-accent);
-  font-weight: 900;
 }
 
 /* --- Narrow viewports ----------------------------------------------------- */
