@@ -195,7 +195,7 @@ export function GatePalette({
               aria-label="制御点"
               aria-pressed={selectedControlValue === 1}
               draggable
-              title="制御点 ● を置く。X、または既存CNOTの縦線内へドロップすると自動接続"
+              title="制御点 ●：単体ではゲートになりません。同じ列の X（または既存CNOTの縦線）へ繋げると制御Xになります"
               onClick={() => onSelectControlValue(selectedControlValue === 1 ? null : 1)}
               onDragStart={(event) => {
                 event.dataTransfer.effectAllowed = 'copy'
@@ -215,7 +215,7 @@ export function GatePalette({
               aria-label="反制御点"
               aria-pressed={selectedControlValue === 0}
               draggable
-              title="反制御点 ○（制御値0）を置く。X、または既存CNOTの縦線内へドロップすると自動接続"
+              title="反制御点 ○（制御値0）：単体ではゲートになりません。同じ列の X（または既存CNOTの縦線）へ繋げると制御Xになります"
               onClick={() => onSelectControlValue(selectedControlValue === 0 ? null : 0)}
               onDragStart={(event) => {
                 event.dataTransfer.effectAllowed = 'copy'

@@ -160,9 +160,15 @@ export function gatePlacementGuide(gateType: GateType): string {
 export function controlMarkerPlacementGuide(controlValue: 0 | 1, hasPending: boolean): string {
   const symbol = controlValue === 1 ? '制御 ●' : '反制御 ○'
   if (hasPending) {
-    return `${symbol}を仮置き中：続けて制御点を置くか、同じ列へ X をドロップして接続してね。`
+    return (
+      `${symbol}はまだ仮置きだよ。制御点だけでは回路のゲートにならないんだ。`
+      + '同じ列の別の量子ビットへ X を置くと、制御Xとして繋がるよ。'
+    )
   }
-  return `${symbol}を配置中：X、または既存CNOTの縦線内へドロップすると自動接続、単独ならクリックで置けるよ。`
+  return (
+    `${symbol}を配置中：制御点は単体ではゲートにならないよ。`
+    + '同じ列の X（または既存CNOTの縦線）へ落とすと自動で繋がるよ。'
+  )
 }
 
 /*

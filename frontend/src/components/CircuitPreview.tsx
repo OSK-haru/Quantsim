@@ -1104,20 +1104,43 @@ export function CircuitPreview({
                 ) : null}
 
                 {pendingCnotControl?.columnIndex === columnIndex && isControlMarkerTool ? (
+                  /*
+                   * 制御点だけでは量子ゲートにならない。仮置き中の●／○を確定した制御点と
+                   * 同じ見た目にすると「置けた」と誤解されるので、破線の輪と注記で
+                   * 「まだXが要る」ことを回路図の上に出す。
+                   */
                   <g style={{ pointerEvents: 'none' }}>
                     {[pendingCnotControl.qubitIndex, ...(pendingCnotControl.additionalQubits ?? [])]
                       .map((control, index) => (
-                        <circle
-                          key={`pending-control-${control}`}
-                          cx={x}
-                          cy={yForQubit(control)}
-                          r="8"
-                          className={`circuit-preview__control-dot${[
-                            pendingCnotControl.controlValue ?? 1,
-                            ...(pendingCnotControl.additionalControlValues ?? []),
-                          ][index] === 0 ? ' circuit-preview__control-dot--open' : ''}`}
-                        />
+                        <g key={`pending-control-${control}`}>
+                          <circle
+                            cx={x}
+                            cy={yForQubit(control)}
+                            r="12"
+                            className="circuit-preview__pending-control-halo"
+                          />
+                          <circle
+                            cx={x}
+                            cy={yForQubit(control)}
+                            r="8"
+                            className={`circuit-preview__control-dot circuit-preview__control-dot--pending${[
+                              pendingCnotControl.controlValue ?? 1,
+                              ...(pendingCnotControl.additionalControlValues ?? []),
+                            ][index] === 0 ? ' circuit-preview__control-dot--open' : ''}`}
+                          />
+                        </g>
                       ))}
+                    <text
+                      x={x}
+                      y={yForQubit(Math.max(
+                        pendingCnotControl.qubitIndex,
+                        ...(pendingCnotControl.additionalQubits ?? []),
+                      )) + 28}
+                      textAnchor="middle"
+                      className="circuit-preview__pending-control-note"
+                    >
+                      X が必要
+                    </text>
                   </g>
                 ) : null}
 

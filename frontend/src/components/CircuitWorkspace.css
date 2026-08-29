@@ -149,6 +149,12 @@
   color: var(--tt-ink);
 }
 
+/* 制御点が仮置きのまま（＝まだゲートになっていない）ことを見逃させない。 */
+.circuit-workspace__status--warning {
+  color: var(--tt-accent);
+  font-weight: 700;
+}
+
 .circuit-workspace__shortcut-hints {
   color: var(--tt-ink-dim);
   white-space: nowrap;

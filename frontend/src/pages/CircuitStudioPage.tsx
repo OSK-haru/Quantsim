@@ -54,7 +54,13 @@ export function CircuitStudioPage({ gateDurationDefaults }: CircuitStudioPagePro
                 circuit.selectedControlValue,
                 circuit.pendingCnotControl !== null,
               )
-            : null
+            : circuit.pendingCnotControl !== null
+              /* パレットの選択を外しても、仮置きの制御点が残っていることは伝え続ける。 */
+              ? controlMarkerPlacementGuide(
+                  circuit.pendingCnotControl.controlValue ?? 1,
+                  true,
+                )
+              : null
 
   return (
     <main className="circuit-studio-page">

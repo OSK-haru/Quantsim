@@ -142,6 +142,21 @@ function getWorkspaceStatus({
     }${dragPayload.gateType} をドラッグ中：スロットに落とすか、列と列のあいだに落とすと新しい列が入ります`
   }
 
+  /*
+   * 制御点（● / ○）は単体では量子ゲートにならない。仮置きのまま放置されると
+   * 「置いたのに動かない」ように見えるので、Xが要ることを最優先で出す。
+   */
+  if (!selectedGateType && pendingCnotControl) {
+    const pendingQubits = [
+      pendingCnotControl.qubitIndex,
+      ...(pendingCnotControl.additionalQubits ?? []),
+    ].map((qubit) => `q${qubit}`).join(', ')
+    return (
+      `制御点だけでは動きません：${pendingQubits}（列 ${pendingCnotControl.columnIndex + 1}）は仮置きです。`
+      + '同じ列の別の量子ビットへ X を置くと、制御Xとして接続されます。'
+    )
+  }
+
   if (selectedGateType && isMultiQubitGateType(selectedGateType) && pendingCnotControl) {
     const selectedQubits = [
       pendingCnotControl.qubitIndex,
@@ -214,6 +229,7 @@ export function CircuitWorkspace({
     selectedColumnIndex: selectedGateInfo?.columnIndex ?? null,
   })
 
+  const hasPendingControlOnly = selectedGateType === null && pendingCnotControl !== null
   const statusText = getWorkspaceStatus({
     circuit,
     gateDurationDefaults,
@@ -433,7 +449,13 @@ export function CircuitWorkspace({
 
       <div className="circuit-workspace__status-row">
         <div className="circuit-workspace__status-block" aria-live="polite">
-          <p className="circuit-workspace__status">{statusText}</p>
+          <p
+            className={`circuit-workspace__status${
+              hasPendingControlOnly ? ' circuit-workspace__status--warning' : ''
+            }`}
+          >
+            {statusText}
+          </p>
         </div>
         <p className="circuit-workspace__shortcut-hints">
           Delete/Backspace: 選択項目を削除 | Esc: 選択を解除 | F: 回路に合わせる | Home/End: 最初/最後

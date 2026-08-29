@@ -1,178 +1,172 @@
 /* ============================================================================
-   DOCS HOME // PRIMARY TERMINAL
-   本体 frontend/src/pages/HomePage.css の移植。密度の高い mono のスラグ行で、
-   ビューポート幅まで伸びる macro タイポグラフィを挟む構成をそのまま踏襲する。
+   DOCS HOME // PRODUCT SHEET
+   本体アプリのホーム (frontend/src/pages/HomePage.css) を移植するのはやめ、
+   製品紹介の面として組み直した層。トークン・書体・ヘアライン区画といった
+   意匠は本体と共有したままで、変えるのは構図だけ。
+
+   構図: 主題 → 3つの価値 → 降りていく層 → 実測 → 検証 → 入口 → 締め
    ========================================================================= */
 
 .home {
   display: grid;
   align-content: start;
-  padding: 0 0 64px;
+  padding: 0 0 96px;
   background: var(--tt-void);
   color: var(--tt-ink);
 }
 
-/* --- Macro typography ----------------------------------------------------- */
+/* --- 1. Masthead ---------------------------------------------------------
+   本体はビューポート幅いっぱいの YURAGI/STRIDER ワードマークで始まるが、
+   ここは製品紹介なので「主張の一文」を最大級で置く。同じ macro 書体・
+   同じ詰めを使いつつ、読ませる対象がロゴから文へ変わる。 */
 
-.hero {
-  padding: 40px 24px 0;
+.masthead {
+  display: grid;
+  justify-items: start;
+  gap: 0;
+  max-width: 1180px;
+  padding: 56px 24px 0;
 }
 
-.wordmark {
-  display: grid;
-  margin: 0;
-  color: var(--tt-ink);
-  font-family: var(--tt-macro);
-  font-size: clamp(3.4rem, 15vw, 13rem);
-  font-weight: 900;
-  line-height: 0.82;
-  letter-spacing: -0.05em;
+.mastheadMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 16px;
+  width: 100%;
+  padding-bottom: 14px;
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+}
+
+.mastheadRev {
+  margin-left: auto;
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.wordmark span:last-child {
-  color: var(--tt-ink-faint);
+.headline {
+  margin: 28px 0 0;
+  color: var(--tt-ink-max);
+  font-family: var(--tt-macro);
+  font-size: clamp(2.1rem, 6.4vw, 5.2rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
 }
 
-.wordmark sup {
-  font-size: 0.18em;
-  vertical-align: super;
-  letter-spacing: 0;
-}
-
-.heroBody {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 32px;
-  margin-top: 32px;
-  padding-top: 20px;
-  border-top: var(--tt-bar) solid var(--tt-accent);
-}
-
-.subtitle {
-  margin: 0;
-  max-width: 44ch;
-  color: var(--tt-ink);
-  font-size: clamp(1.05rem, 2vw, 1.3rem);
-  font-weight: 600;
-  line-height: 1.35;
+/* 主張の芯だけを accent に落とす。強調は1か所に留める。 */
+.headline em {
+  color: var(--tt-accent);
+  font-style: normal;
 }
 
 .lede {
-  margin: 16px 0 0;
-  max-width: 62ch;
+  margin: 26px 0 0;
+  max-width: 66ch;
   color: var(--tt-ink-mid);
-  font-size: 0.9rem;
-  line-height: 1.75;
+  font-size: clamp(0.9rem, 1.4vw, 1rem);
+  line-height: 1.85;
 }
 
-/* --- Spec block: definition list as instrument readout -------------------- */
-
-.spec {
-  display: grid;
-  align-content: start;
-  gap: var(--tt-hair);
-  margin: 0;
-  border: var(--tt-hair) solid var(--tt-rule);
-  background: var(--tt-rule);
-}
-
-.spec > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 8px 12px;
-  background: var(--tt-panel);
-  font-family: var(--tt-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-}
-
-.spec dt {
-  color: var(--tt-ink-dim);
-}
-
-.spec dd {
-  margin: 0;
+.lede strong {
   color: var(--tt-ink);
-  text-align: right;
+  font-weight: 700;
 }
 
-/* --- Entry selection: ドキュメント本体への入口を一手に絞ったボタン ------- */
-
-.entries {
+.mastheadActions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: var(--tt-hair);
-  padding: 32px 24px 0;
+  margin-top: 32px;
 }
 
-.entry,
-.entryAlt {
+.ctaPrimary,
+.ctaGhost {
   display: inline-flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 32px;
+  padding: 17px 34px;
   border: var(--tt-hair) solid var(--tt-accent);
-  cursor: pointer;
+  font-family: var(--tt-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   transition: background 120ms linear, border-color 120ms linear,
     color 120ms linear;
 }
 
-.entry {
+/* 主入口は本体アプリ。ドキュメントサイトだが、売っているのは製品なので
+   「試す」を面で塗り、「読む」を輪郭に落とす。本体ホームとは逆の格付け。 */
+.ctaPrimary {
   background: var(--tt-accent);
   color: var(--tt-on-accent);
 }
 
-.entry:hover {
+.ctaPrimary:hover {
   border-color: var(--tt-accent-hot);
   background: var(--tt-accent-hot);
   color: var(--tt-on-accent);
   text-decoration: none;
 }
 
-/* 副入口: 面は塗らず輪郭だけ。主入口(ドキュメント)との格を分ける。 */
-.entryAlt {
+.ctaGhost {
   background: transparent;
   color: var(--tt-ink);
 }
 
-.entryAlt:hover {
+.ctaGhost:hover {
   border-color: var(--tt-accent-hot);
   background: var(--tt-panel-3);
   color: var(--tt-ink-max);
   text-decoration: none;
 }
 
-.entryMark {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-}
-
-.entryTitle {
+.mastheadNote {
+  margin: 16px 0 0;
+  color: var(--tt-ink-dim);
   font-family: var(--tt-mono);
-  font-size: 0.88rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-/* --- Document map: 文書区画をヘアラインで区切ったコンパートメント --------- */
+/* --- Section scaffolding -------------------------------------------------- */
 
-.map {
-  padding: 56px 24px 0;
+.section {
+  max-width: 1180px;
+  padding: 72px 24px 0;
 }
 
-.mapHeading {
-  margin: 0 0 12px;
+.sectionHead {
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  margin: 0;
   font-size: 1rem;
 }
 
-.mapList {
+.sectionLede {
+  margin: 12px 0 0;
+  max-width: 64ch;
+  color: var(--tt-ink-mid);
+  font-size: 0.86rem;
+  line-height: 1.8;
+}
+
+.sectionLede strong {
+  color: var(--tt-ink);
+  font-weight: 700;
+}
+
+/* --- 2. Propositions: 3つの価値 ------------------------------------------
+   本体の capability グリッドと同じヘアライン・コンパートメント方式。
+   1px の gap を rule 色の親に重ねて境界を細線として描く。 */
+
+.propGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--tt-hair);
@@ -183,35 +177,24 @@
   list-style: none;
 }
 
-.mapItem {
+.propGrid > li {
   display: grid;
   align-content: start;
-  gap: 6px;
-  height: 100%;
-  padding: 18px 18px 22px;
-  border-left: 3px solid transparent;
+  gap: 8px;
+  padding: 22px 20px 26px;
   background: var(--tt-panel);
-  color: var(--tt-ink);
-  transition: background 120ms linear, border-color 120ms linear;
 }
 
-.mapItem:hover {
-  border-left-color: var(--tt-accent);
-  background: var(--tt-panel-3);
-  color: var(--tt-ink-max);
-  text-decoration: none;
-}
-
-.mapIndex {
+.propIndex {
   color: var(--tt-accent);
   font-family: var(--tt-macro);
-  font-size: 1.9rem;
+  font-size: 2.4rem;
   font-weight: 900;
   line-height: 0.8;
   letter-spacing: -0.04em;
 }
 
-.mapUnit {
+.propUnit {
   color: var(--tt-ink-dim);
   font-family: var(--tt-mono);
   font-size: 0.6rem;
@@ -219,33 +202,408 @@
   text-transform: uppercase;
 }
 
-.mapTitle {
-  font-size: 0.92rem;
+/* 全ページ共通の macro スケールに巻き込まれないよう、寸法はここで確定。 */
+.propTitle {
+  margin: 2px 0 0;
+  color: var(--tt-ink-max);
+  font-family: var(--tt-sans);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-transform: none;
+}
+
+.propBody {
+  margin: 0;
+  color: var(--tt-ink-mid);
+  font-size: 0.82rem;
+  line-height: 1.75;
+}
+
+/* --- 3. Descent: 抽象度の階段 --------------------------------------------
+   製品の核。層を縦1列で積み、深度ラベルを macro で立てる。
+   行そのものがドキュメントへの入口を兼ねる。 */
+
+.descent {
+  display: grid;
+  gap: var(--tt-hair);
+  margin: 0;
+  padding: 0;
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-rule);
+  list-style: none;
+  counter-reset: none;
+}
+
+.descentRow {
+  display: grid;
+  grid-template-columns: 64px 148px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 22px;
+  border-left: 3px solid transparent;
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  transition: background 120ms linear, border-color 120ms linear;
+}
+
+.descentRow:hover {
+  border-left-color: var(--tt-accent);
+  background: var(--tt-panel-3);
+  color: var(--tt-ink-max);
+  text-decoration: none;
+}
+
+.descentDepth {
+  color: var(--tt-accent);
+  font-family: var(--tt-macro);
+  font-size: 1.7rem;
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+}
+
+.descentLayer {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.descentBody {
+  display: grid;
+  gap: 5px;
+}
+
+.descentTitle {
+  font-size: 0.94rem;
   font-weight: 700;
   line-height: 1.4;
 }
 
-.mapDetail {
+.descentDetail {
   color: var(--tt-ink-mid);
-  font-size: 0.76rem;
+  font-size: 0.79rem;
+  line-height: 1.7;
+}
+
+.descentArrow {
+  color: var(--tt-ink-faint);
+  font-family: var(--tt-mono);
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.descentRow:hover .descentArrow {
+  color: var(--tt-accent);
+}
+
+/* --- 4. Showcase: 実測ひとつ ----------------------------------------------
+   ここだけ accent の地を敷いて、ページの中で一度だけ面を反転させる。 */
+
+.showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 40px;
+  max-width: 1180px;
+  margin-top: 72px;
+  padding: 40px 24px;
+  border-top: var(--tt-bar) solid var(--tt-accent);
+  border-bottom: var(--tt-bar) solid var(--tt-accent);
+  background: var(--tt-accent-wash);
+}
+
+.showcaseCopy {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.showcaseTitle {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.showcaseHeadline {
+  color: var(--tt-ink-max);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  font-weight: 900;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+
+.showcaseBody {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--tt-ink-mid);
+  font-size: 0.86rem;
+  line-height: 1.8;
+}
+
+.showcaseLink {
+  justify-self: start;
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.showcaseLink::before {
+  content: '>>> ';
+}
+
+/* 計器の読み。before/after を2枚並べ、差そのものを見せる。 */
+.showcaseReadout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--tt-hair);
+  align-content: start;
+  border: var(--tt-hair) solid var(--tt-rule-mid);
+  background: var(--tt-rule-mid);
+}
+
+.readoutCell {
+  display: grid;
+  gap: 10px;
+  padding: 20px 18px;
+  background: var(--tt-panel);
+  text-align: center;
+}
+
+.readoutLabel {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+}
+
+.readoutValue {
+  color: var(--tt-ink-faint);
+  font-family: var(--tt-macro);
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+
+.readoutValue span {
+  font-size: 0.42em;
+  letter-spacing: 0;
+}
+
+/* 改善後だけを accent に上げる。良くなった側がどれかを色で言う。 */
+.readoutCell[data-state='after'] .readoutValue {
+  color: var(--tt-accent);
+}
+
+.readoutUnit {
+  color: var(--tt-ink-dim);
+  font-family: var(--tt-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* --- 5. Evidence: 検証の数字 ----------------------------------------------
+   主張ではなく計測値なので、dl を計器の読み出しとして並べる。 */
+
+.evidence {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--tt-hair);
+  margin: 0;
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-rule);
+}
+
+.evidenceCell {
+  display: grid;
+  align-content: space-between;
+  gap: 18px;
+  min-height: 152px;
+  padding: 20px 18px;
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  transition: background 120ms linear;
+}
+
+.evidenceCell:hover {
+  background: var(--tt-panel-3);
+  text-decoration: none;
+}
+
+.evidenceLabel {
+  color: var(--tt-ink-mid);
+  font-size: 0.74rem;
   line-height: 1.65;
+}
+
+.evidenceValue {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.evidenceNumber {
+  color: var(--tt-ink-max);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.7rem, 3.6vw, 2.5rem);
+  font-weight: 900;
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.evidenceUnit {
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+/* --- 6. Onboarding: 入口 -------------------------------------------------- */
+
+.startGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--tt-hair);
+  border: var(--tt-hair) solid var(--tt-rule);
+  background: var(--tt-rule);
+}
+
+.startCard {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  height: 100%;
+  padding: 20px 18px 24px;
+  border-left: 3px solid transparent;
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  transition: background 120ms linear, border-color 120ms linear;
+}
+
+.startCard:hover {
+  border-left-color: var(--tt-accent);
+  background: var(--tt-panel-3);
+  color: var(--tt-ink-max);
+  text-decoration: none;
+}
+
+.startUnit {
+  color: var(--tt-accent);
+  font-family: var(--tt-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.startTitle {
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.startDetail {
+  color: var(--tt-ink-mid);
+  font-size: 0.77rem;
+  line-height: 1.7;
+}
+
+/* --- 7. Closing ----------------------------------------------------------- */
+
+.closing {
+  display: grid;
+  justify-items: start;
+  max-width: 1180px;
+  margin-top: 80px;
+  padding: 40px 24px 0;
+  border-top: var(--tt-bar) solid var(--tt-accent);
+}
+
+.closingLine {
+  margin: 0;
+  max-width: 40ch;
+  color: var(--tt-ink);
+  font-family: var(--tt-macro);
+  font-size: clamp(1.25rem, 2.8vw, 1.9rem);
+  font-weight: 900;
+  line-height: 1.32;
+  letter-spacing: -0.03em;
+}
+
+.closingLine em {
+  color: var(--tt-ink-faint);
+  font-style: normal;
+}
+
+.closingLine strong {
+  color: var(--tt-accent);
+  font-weight: 900;
 }
 
 /* --- Narrow viewports ----------------------------------------------------- */
 
 @media (max-width: 900px) {
-  .heroBody {
+  .showcase {
     grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .descentRow {
+    grid-template-columns: 52px minmax(0, 1fr) 20px;
+    gap: 14px;
+  }
+
+  /* 深度ラベルの隣に置いていた層名は、狭い幅では本文側の頭へ回す。 */
+  .descentLayer {
+    grid-column: 2 / 3;
+    grid-row: 1;
+    align-self: end;
+  }
+
+  .descentBody {
+    grid-column: 2 / 3;
+    grid-row: 2;
+  }
+
+  .descentDepth {
+    grid-row: 1 / 3;
+    align-self: start;
+  }
+
+  .descentArrow {
+    grid-column: 3 / 4;
+    grid-row: 1 / 3;
   }
 }
 
 @media (max-width: 640px) {
-  .hero {
-    padding: 28px 16px 0;
+  .masthead {
+    padding: 36px 16px 0;
   }
 
-  .entries,
-  .map {
+  .section {
+    padding: 52px 16px 0;
+  }
+
+  .showcase,
+  .closing {
     padding-inline: 16px;
+  }
+
+  .ctaPrimary,
+  .ctaGhost {
+    flex: 1 1 100%;
+    justify-content: center;
   }
 }

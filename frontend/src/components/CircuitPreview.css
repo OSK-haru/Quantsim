@@ -598,3 +598,26 @@
   }
 
 }
+
+/*
+ * 仮置き中の制御点。確定した制御点との差が一目で分かるように、
+ * 破線の輪と「X が必要」の注記を添える。
+ */
+.circuit-preview__control-dot--pending {
+  opacity: 0.55;
+}
+
+.circuit-preview__pending-control-halo {
+  fill: none;
+  stroke: var(--tt-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.circuit-preview__pending-control-note {
+  fill: var(--tt-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  user-select: none;
+}
