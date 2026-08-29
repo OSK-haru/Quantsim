@@ -163,6 +163,17 @@
   grid-column: 1 / -1;
 }
 
+/*
+  サーバー側の不一致。ユーザーの入力ミスと同じ見た目だと自分で直そうとして
+  しまうので、枠で囲んで「性質の違う異常」だと分かるようにする。
+*/
+.pulse-lab__run-error--server {
+  padding: 10px 12px;
+  border: 1px solid rgb(var(--tt-accent-rgb) / 0.45);
+  background: rgb(var(--tt-accent-rgb) / 0.07);
+  line-height: 1.6;
+}
+
 /* 管理者モードでのみ出る技術詳細。本文より一段落とす。 */
 .pulse-lab__run-error-detail {
   display: block;

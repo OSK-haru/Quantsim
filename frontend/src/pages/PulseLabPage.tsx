@@ -7,6 +7,10 @@ import { apiUrl } from '../utils/apiBase'
 import { pulseLabTips, pulseRunningStages } from '../utils/quantumPetTips'
 import { useInternalInfoVisible } from '../context/useAdminMode'
 import {
+  pulseModelUnavailableReason,
+  usePulseApiCompatibility,
+} from '../hooks/usePulseApiCompatibility'
+import {
   isQutritPulseResponse,
   isCoupledTransmonNetworkResponse,
   COUPLED_TRANSMON_NETWORK_PULSE_MODEL,
@@ -157,7 +161,16 @@ export function PulseLabPage({
       && executionForms.length > 0
       && sequenceDurationUs <= form.totalSimulationTimeUs
     ))
-  const canRun = isValid && !cost.overBudget && status !== 'loading'
+  /*
+   * 実行前にAPI側の対応モデルを突き合わせる。噛み合わない場合は入力をいくら
+   * 直しても通らないので、実行を止めたうえで「サーバーが古い」と明示する。
+   */
+  const apiCompatibility = usePulseApiCompatibility()
+  const apiUnavailableReason = pulseModelUnavailableReason(apiCompatibility, modelId)
+  const canRun = isValid
+    && !cost.overBudget
+    && status !== 'loading'
+    && apiUnavailableReason === null
   /*
    * スタジオで複数レーンを組んでも、モデルがネットワークでなければ実行されるのは
    * 選択中の1レーンだけ。密度行列の次元が回路と噛み合わない原因がこれなので、
@@ -478,7 +491,23 @@ export function PulseLabPage({
                   ? `q${activeTransmonIndex} シーケンスのみ実行`
                   : 'Pulseシミュレーションを実行'}
           </button>
-          {hasNoDriveInSequence ? (
+          {/*
+            サーバー側の不一致は入力では直せない。「項目を修正してください」より
+            先に出さないと、直せないものを直そうとさせてしまう。
+          */}
+          {apiUnavailableReason ? (
+            <p className="pulse-lab__run-error pulse-lab__run-error--server" role="alert">
+              {apiUnavailableReason}
+              {internalInfoVisible ? (
+                <span className="pulse-lab__run-error-detail">
+                  required model_id: {modelId}
+                  {apiCompatibility.state === 'ready'
+                    ? ` / api offers: ${[...apiCompatibility.supportedModels].join(', ')}`
+                    : ` / api state: ${apiCompatibility.state}`}
+                </span>
+              ) : null}
+            </p>
+          ) : hasNoDriveInSequence ? (
             <p className="pulse-lab__run-error" role="alert">
               回路に駆動 Pulse がありません。波形はゼロのままです。Circuit Studio で Pulse ブロックを追加してください。
             </p>

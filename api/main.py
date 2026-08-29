@@ -26,6 +26,7 @@ from api.pulse_service import (
     PulseExecutionLimitError,
     run_pulse_api_request as run_pulse_request,
 )
+from core.capabilities import DECLARED_PULSE_MODELS, PULSE_MODEL_STATUSES
 from core.circuit_model import CircuitAnnotation, CircuitConfig, GateColumn, GateOperation
 from core.physical_environment import INPUT_MODE_NORMALIZED, INPUT_MODE_PHYSICAL
 from core.results import EnvironmentConfig, SimulationConfig
@@ -962,8 +963,22 @@ def _required(value: float | int | None, field_name: str) -> float | int:
 
 
 @app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, object]:
+    """Report liveness plus the pulse contract this build actually accepts.
+
+    The frontend and API deploy separately, so a stale API can serve a UI that
+    sends model ids it has never heard of.  That surfaces only as a 422 at run
+    time, which reads to the user as "my settings are wrong" rather than "this
+    server is old".  Listing the accepted ids here lets the client detect the
+    mismatch before anyone presses run.  An older build omits `pulse_models`
+    entirely, which is itself the signal.
+    """
+
+    return {
+        "status": "ok",
+        "pulse_models": sorted(DECLARED_PULSE_MODELS),
+        "pulse_model_statuses": dict(sorted(PULSE_MODEL_STATUSES.items())),
+    }
 
 
 @app.get("/api/simulation/example")
