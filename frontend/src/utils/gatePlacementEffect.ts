@@ -1,9 +1,9 @@
 /*
- * ゲート／Pulseを回路へ置いた瞬間に、カーソル位置で小さく弾ける演出。
+ * ゲート／Pulseを回路へ置いた瞬間に、置いた場所から波紋が広がる演出。
  *
  * 置けたことは回路図の描き換えでも分かるが、掴んで落とす操作は視線が
  * カーソル側にあるので、変化が起きた場所と見ている場所がずれる。
- * 落とした点そのものを一瞬光らせて、操作と結果を結びつける。
+ * 入ったスロットそのものを一瞬響かせて、操作と結果を結びつける。
  *
  * React コンポーネントではなく DOM への直接生成にしてあるのは、
  * 呼び出し元（回路図の SVG、Pulseタイムライン、パレットのクリック）が
@@ -13,8 +13,10 @@
  */
 
 const LAYER_ID = 'gate-placement-effect-layer'
-const RING_LIFETIME_MS = 460
-const SPARK_COUNT = 6
+const RING_COUNT = 3
+const RING_STAGGER_MS = 90
+/* いちばん遅い輪が消えきるまで（アニメーション 520ms + 遅延）。 */
+const EFFECT_LIFETIME_MS = 520 + RING_STAGGER_MS * (RING_COUNT - 1)
 
 function isEnabled(): boolean {
   if (typeof document === 'undefined') {
@@ -51,9 +53,9 @@ function effectLayer(): HTMLElement {
 export type GatePlacementEffectTone = 'gate' | 'pulse'
 
 /*
- * clientX / clientY はビューポート座標（PointerEvent や DragEvent がそのまま持っている値）。
- * position: fixed のレイヤーへ置くので、回路図のスクロールや拡大とは無関係に
- * 「いま指していた場所」に出る。
+ * clientX / clientY は置いたゲートの中心のビューポート座標。
+ * position: fixed のレイヤーへ置くので、回路図のスクロール量や拡大率を
+ * ここで考え直す必要はない（呼び出し側が測った時点の画面上の位置に出る）。
  */
 export function spawnGatePlacementEffect(
   clientX: number,
@@ -70,17 +72,16 @@ export function spawnGatePlacementEffect(
   burst.style.left = `${clientX}px`
   burst.style.top = `${clientY}px`
 
-  const ring = document.createElement('span')
-  ring.className = 'gate-placement-effect__ring'
-  burst.appendChild(ring)
+  const core = document.createElement('span')
+  core.className = 'gate-placement-effect__core'
+  burst.appendChild(core)
 
-  for (let index = 0; index < SPARK_COUNT; index += 1) {
-    const spark = document.createElement('span')
-    spark.className = 'gate-placement-effect__spark'
-    /* 放射方向を等間隔に散らす。回転量だけ変えて、伸びる向きは CSS 側に任せる。 */
-    spark.style.setProperty('--spark-angle', `${(360 / SPARK_COUNT) * index}deg`)
-    spark.style.setProperty('--spark-delay', `${index * 12}ms`)
-    burst.appendChild(spark)
+  /* 少しずつ遅らせて出すことで、一枚の輪ではなく「響き」に見せる。 */
+  for (let index = 0; index < RING_COUNT; index += 1) {
+    const ring = document.createElement('span')
+    ring.className = 'gate-placement-effect__ring'
+    ring.style.setProperty('--ring-delay', `${index * RING_STAGGER_MS}ms`)
+    burst.appendChild(ring)
   }
 
   const layer = effectLayer()
@@ -90,5 +91,5 @@ export function spawnGatePlacementEffect(
    * animationend は要素ごとに複数回上がるうえ、タブが背面だと来ないことがある。
    * 取りこぼして DOM に残り続けないよう、寿命で確実に消す。
    */
-  window.setTimeout(() => burst.remove(), RING_LIFETIME_MS + 120)
+  window.setTimeout(() => burst.remove(), EFFECT_LIFETIME_MS + 120)
 }

@@ -43,7 +43,6 @@ type RunPanelProps = {
   onEvolutionMethodChange: (method: GateAwareEvolutionMethod) => void
   onCompilationModeChange: (mode: GateCompilationMode) => void
   onSimulationBackendChange: (backend: SimulationBackend) => void
-  onReloadApiExample: () => void
   onRunSimulation: () => void
 }
 
@@ -125,7 +124,6 @@ export function RunPanel({
   onEvolutionMethodChange,
   onCompilationModeChange,
   onSimulationBackendChange,
-  onReloadApiExample,
   onRunSimulation,
 }: RunPanelProps) {
   const internalInfoVisible = useInternalInfoVisible()
@@ -283,14 +281,6 @@ export function RunPanel({
       ) : null}
 
       <div className="run-panel__actions">
-        <button
-          className="run-panel__button run-panel__button--secondary"
-          type="button"
-          onClick={onReloadApiExample}
-          disabled={isRequestPending}
-        >
-          {internalInfoVisible ? 'API サンプルを再読み込み' : 'サンプルを再読み込み'}
-        </button>
         <button
           className="run-panel__button"
           type="button"

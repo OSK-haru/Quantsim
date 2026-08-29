@@ -68,7 +68,6 @@ type CompletionNotice = {
   title: string
   detail: string
 }
-const API_EXAMPLE_TIMEOUT_MS = 10000
 const PET_CELEBRATION_MS = 7000
 const RUN_REQUEST_MIN_TIMEOUT_MS = 15000
 const RUN_REQUEST_TIMEOUT_PER_STEP_MS = 25
@@ -312,7 +311,6 @@ const issueLevelLabels: Record<string, string> = {
 /* データソース表示に使う日本語の呼称。内部の実装名は出さない。 */
 const SOURCE_LABEL_FIXTURE = '内蔵サンプル'
 const SOURCE_LABEL_FIXTURE_FALLBACK = '内蔵サンプル（代替表示）'
-const SOURCE_LABEL_SERVER_EXAMPLE = 'サーバーのサンプル'
 const SOURCE_LABEL_SERVER_RUN = 'サーバーでの実行結果'
 
 /*
@@ -591,83 +589,6 @@ export function SimulatePage({
     }
   }
 
-  async function loadExampleFromApi() {
-    abortControllerRef.current?.abort()
-
-    const requestId = requestIdRef.current + 1
-    requestIdRef.current = requestId
-
-    const controller = new AbortController()
-    abortControllerRef.current = controller
-    const url = apiUrl(`/api/simulation/example?ts=${Date.now()}`)
-    const startedAt = new Date().toISOString()
-    const timeoutId = window.setTimeout(() => controller.abort(), API_EXAMPLE_TIMEOUT_MS)
-
-    setLoadStatus('loading')
-    setActiveRequestLabel(SOURCE_LABEL_SERVER_EXAMPLE)
-    setLastFetchUrl(url)
-    setLastFetchStartedAt(startedAt)
-    setLastFetchResult('pending')
-    setErrorMessage(null)
-    setErrorDetail(null)
-    setRequestErrorKind('none')
-
-    try {
-      const apiResponse = await fetch(url, {
-        cache: 'no-store',
-        signal: controller.signal,
-      })
-      if (!apiResponse.ok) {
-        throw new Error(`HTTP ${apiResponse.status}`)
-      }
-
-      const parsed = (await apiResponse.json()) as unknown
-      if (!hasRequiredResponseKeys(parsed)) {
-        throw new Error('Invalid response shape')
-      }
-
-      if (!mountedRef.current || requestId !== requestIdRef.current) {
-        return
-      }
-
-      setResponse(parsed as SimulationResponse)
-      setLoadStatus('api')
-      setLatestSourceLabel(SOURCE_LABEL_SERVER_EXAMPLE)
-      setLastFetchResult('success')
-      setErrorMessage(null)
-      setErrorDetail(null)
-      setRequestErrorKind('none')
-    } catch (error) {
-      if (!mountedRef.current || requestId !== requestIdRef.current) {
-        return
-      }
-
-      const failure: RequestFailure =
-        error instanceof Error && error.name === 'AbortError'
-          ? {
-              summary: 'サーバーの応答がありませんでした。内蔵サンプルを表示しています。',
-              detail: 'request aborted by timeout',
-            }
-          : {
-              summary: 'サーバーからサンプルを取得できませんでした。内蔵サンプルを表示しています。',
-              detail: error instanceof Error ? error.message : null,
-            }
-
-      setResponse(uiResponseExample)
-      setLoadStatus('error')
-      setLatestSourceLabel(SOURCE_LABEL_FIXTURE_FALLBACK)
-      setLastFetchResult('failed')
-      setErrorMessage(failure.summary)
-      setErrorDetail(failure.detail)
-      setRequestErrorKind('api')
-    } finally {
-      window.clearTimeout(timeoutId)
-      if (abortControllerRef.current === controller) {
-        abortControllerRef.current = null
-      }
-    }
-  }
-
   async function runSimulationFromApi() {
     const frontendStartedAtMs = performance.now()
     const frontendStartedAtIso = new Date().toISOString()
@@ -897,8 +818,7 @@ export function SimulatePage({
         : loadStatus === 'error'
           ? requestErrorKind === 'validation'
             ? `前回の結果を保持中（${latestSourceLabel}）`
-          : latestSourceLabel === SOURCE_LABEL_FIXTURE ||
-            latestSourceLabel === SOURCE_LABEL_FIXTURE_FALLBACK
+          : latestSourceLabel === SOURCE_LABEL_FIXTURE
             ? SOURCE_LABEL_FIXTURE_FALLBACK
             : `前回の結果を保持中（${latestSourceLabel}）`
           : SOURCE_LABEL_FIXTURE
@@ -1084,9 +1004,6 @@ export function SimulatePage({
           onEvolutionMethodChange={setEvolutionMethod}
           onCompilationModeChange={setCompilationMode}
           onSimulationBackendChange={setSimulationBackend}
-          onReloadApiExample={() => {
-            void loadExampleFromApi()
-          }}
           onRunSimulation={() => {
             void runSimulationFromApi()
           }}

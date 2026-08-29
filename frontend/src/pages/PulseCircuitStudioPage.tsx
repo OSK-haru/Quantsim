@@ -56,14 +56,6 @@ const palette: Array<{ primitive: PulsePrimitive; label: string; detail: string 
   { primitive: 'virtual_z', label: 'VZ', detail: 'ゼロ時間の位相フレーム更新' },
 ]
 
-type EffectOrigin = { clientX: number; clientY: number }
-
-function fireEffect(origin: EffectOrigin | undefined) {
-  if (origin) {
-    spawnGatePlacementEffect(origin.clientX, origin.clientY, 'pulse')
-  }
-}
-
 export function PulseCircuitStudioPage({
   circuit,
   currentForm,
@@ -141,6 +133,43 @@ export function PulseCircuitStudioPage({
   }, [])
 
   /*
+   * 配置エフェクトは、置いたブロックそのものの上で焚く。
+   *
+   * Pulseブロックは長さ（時間）に応じて幅が変わり、ドロップの当たり判定も
+   * ブロックの左右どちら寄りかで挿入位置が決まるため、カーソル位置と実際に
+   * 入った場所はよくずれる。置けた step.id を控えて、描画後にその要素を
+   * 探して中心から出す。パレットのクリック追加のように、そもそもカーソルが
+   * 配置先の近くにない経路もある。
+   */
+  const pendingPlacementEffectRef = useRef<string | null>(null)
+
+  function armPlacementEffect(stepId: string) {
+    pendingPlacementEffectRef.current = stepId
+  }
+
+  useEffect(() => {
+    const stepId = pendingPlacementEffectRef.current
+    pendingPlacementEffectRef.current = null
+    if (stepId === null) {
+      return
+    }
+
+    const element = document.querySelector(
+      `.pulse-circuit-studio__step[data-step-id="${CSS.escape(stepId)}"]`,
+    )
+    if (!element) {
+      return
+    }
+
+    const bounds = element.getBoundingClientRect()
+    spawnGatePlacementEffect(
+      bounds.left + bounds.width / 2,
+      bounds.top + bounds.height / 2,
+      'pulse',
+    )
+  }, [circuit])
+
+  /*
    * 未保存の下書きを持ったまま別ブロックへ移ると、編集内容が黙って消えていた。
    * 回路を書き換える操作はすべてこれを通し、直前の下書きを確定させてから進む。
    */
@@ -213,7 +242,6 @@ export function PulseCircuitStudioPage({
     primitive: PulsePrimitive,
     transmonIndex: number,
     index: number,
-    effectOrigin?: EffectOrigin,
   ) {
     const base = commitDraft(circuit)
     const lane = base.lanes[transmonIndex]
@@ -230,7 +258,7 @@ export function PulseCircuitStudioPage({
     steps.splice(clampIndex(index, steps.length), 0, step)
     onCircuitChange(withLane(base, transmonIndex, steps))
     focusStep(transmonIndex, step)
-    fireEffect(effectOrigin)
+    armPlacementEffect(step.id)
   }
 
   function duplicateStep(transmonIndex: number, index: number) {
@@ -292,7 +320,6 @@ export function PulseCircuitStudioPage({
     payload: Extract<DragPayload, { kind: 'step' }>,
     transmonIndex: number,
     index: number,
-    effectOrigin?: EffectOrigin,
   ) {
     const base = commitDraft(circuit)
     const source = base.lanes[payload.transmonIndex]
@@ -320,7 +347,7 @@ export function PulseCircuitStudioPage({
       steps.splice(sourceIndex, 1)
       steps.splice(clampIndex(destination, steps.length), 0, step)
       onCircuitChange(withLane(base, transmonIndex, steps))
-      fireEffect(effectOrigin)
+      armPlacementEffect(step.id)
       return
     }
 
@@ -332,7 +359,7 @@ export function PulseCircuitStudioPage({
       targetSteps,
     ))
     focusStep(transmonIndex, step)
-    fireEffect(effectOrigin)
+    armPlacementEffect(step.id)
   }
 
   function saveDraft() {
@@ -399,7 +426,7 @@ export function PulseCircuitStudioPage({
     ))
   }
 
-  function handleDrop(transmonIndex: number, index: number, effectOrigin?: EffectOrigin) {
+  function handleDrop(transmonIndex: number, index: number) {
     const payload = dragPayload
     setDragPayload(null)
     setDropTarget(null)
@@ -407,10 +434,10 @@ export function PulseCircuitStudioPage({
       return
     }
     if (payload.kind === 'palette') {
-      insertStep(payload.primitive, transmonIndex, index, effectOrigin)
+      insertStep(payload.primitive, transmonIndex, index)
       return
     }
-    moveStepTo(payload, transmonIndex, index, effectOrigin)
+    moveStepTo(payload, transmonIndex, index)
   }
 
   function endDrag() {
@@ -428,7 +455,7 @@ export function PulseCircuitStudioPage({
         onDragOver={(event) => acceptDrag(event, { transmonIndex, index })}
         onDrop={(event) => {
           event.preventDefault()
-          handleDrop(transmonIndex, index, { clientX: event.clientX, clientY: event.clientY })
+          handleDrop(transmonIndex, index)
         }}
       />
     )
@@ -510,11 +537,10 @@ export function PulseCircuitStudioPage({
                 setDragPayload({ kind: 'palette', primitive: item.primitive })
               }}
               onDragEnd={endDrag}
-              onClick={(event) => insertStep(
+              onClick={() => insertStep(
                 item.primitive,
                 selectedTransmonIndex,
                 circuit.lanes[selectedTransmonIndex]?.steps.length ?? 0,
-                { clientX: event.clientX, clientY: event.clientY },
               )}
             >
               <strong>{item.label}</strong>
@@ -576,10 +602,7 @@ export function PulseCircuitStudioPage({
                       onDragOver={(event) => acceptDrag(event, { transmonIndex: lane.transmonIndex, index: 0 })}
                       onDrop={(event) => {
                         event.preventDefault()
-                        handleDrop(lane.transmonIndex, 0, {
-                          clientX: event.clientX,
-                          clientY: event.clientY,
-                        })
+                        handleDrop(lane.transmonIndex, 0)
                       }}
                     >
                       <button type="button" onClick={() => setSelectedTransmonIndex(lane.transmonIndex)}>
@@ -599,6 +622,7 @@ export function PulseCircuitStudioPage({
                             {dropMarker(lane.transmonIndex, index)}
                             <article
                               className="pulse-circuit-studio__step"
+                              data-step-id={step.id}
                               style={{ ['--step-width' as string]: `${stepWidthPx(step, pxPerUs)}px` }}
                               data-operation={step.operation}
                               data-selected={isSelected}
@@ -625,10 +649,7 @@ export function PulseCircuitStudioPage({
                               }}
                               onDrop={(event) => {
                                 event.preventDefault()
-                                handleDrop(lane.transmonIndex, dropTarget?.index ?? index, {
-                                  clientX: event.clientX,
-                                  clientY: event.clientY,
-                                })
+                                handleDrop(lane.transmonIndex, dropTarget?.index ?? index)
                               }}
                             >
                               <button

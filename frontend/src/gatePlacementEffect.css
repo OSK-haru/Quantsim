@@ -1,5 +1,5 @@
 /*
- * ゲート／Pulse配置時のカーソル位置エフェクト。
+ * ゲート／Pulseを置いた瞬間に、その置き場所から広がる波紋。
  * 要素は utils/gatePlacementEffect.ts が body 直下へ生成する。
  */
 
@@ -15,7 +15,7 @@
   position: absolute;
   width: 0;
   height: 0;
-  /* left / top はカーソルのビューポート座標。要素の中心をその点に合わせる。 */
+  /* left / top は置いたゲートの中心（ビューポート座標）。要素の中心をそこへ合わせる。 */
   transform: translate(-50%, -50%);
   --effect-rgb: var(--tt-accent-rgb);
 }
@@ -24,53 +24,53 @@
   --effect-rgb: var(--gate-rotation-rgb);
 }
 
+/*
+ * 同心の輪を少しずつ遅らせて出し、外へ広がりながら消える。
+ * 角丸は使わない（設計上の統一）ので、正方形の輪が広がる形になる。
+ */
 .gate-placement-effect__ring {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  /* 角丸は使わない（設計上の統一。四角い照準が弾けるイメージ）。 */
-  border: var(--tt-bar, 2px) solid rgb(var(--effect-rgb) / 0.9);
-  animation: gate-placement-ring 420ms cubic-bezier(0.16, 0.84, 0.36, 1) forwards;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: var(--tt-hair, 1px) solid rgb(var(--effect-rgb) / 0.85);
+  animation: gate-placement-ripple 520ms cubic-bezier(0.16, 0.84, 0.36, 1)
+    var(--ring-delay, 0ms) both;
 }
 
-.gate-placement-effect__spark {
+/* 中心の芯。置かれた場所そのものを一瞬だけ強く示す。 */
+.gate-placement-effect__core {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 2px;
-  height: 8px;
-  margin: -4px 0 0 -1px;
-  background: rgb(var(--effect-rgb) / 0.85);
-  /*
-   * 回転してから外へ押し出す。角度ごとに translate を書き分けずに、
-   * --spark-angle だけで放射状に散らすための順序。
-   */
-  transform: rotate(var(--spark-angle, 0deg)) translateY(-6px);
-  animation: gate-placement-spark 380ms ease-out var(--spark-delay, 0ms) forwards;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  background: rgb(var(--effect-rgb) / 0.28);
+  animation: gate-placement-core 320ms ease-out both;
 }
 
-@keyframes gate-placement-ring {
+@keyframes gate-placement-ripple {
   from {
-    opacity: 0.95;
-    transform: scale(0.35);
+    opacity: 0.85;
+    transform: scale(0.4);
   }
   to {
     opacity: 0;
-    transform: scale(2.6);
+    transform: scale(2.2);
   }
 }
 
-@keyframes gate-placement-spark {
+@keyframes gate-placement-core {
   from {
     opacity: 0.9;
-    transform: rotate(var(--spark-angle, 0deg)) translateY(-6px) scaleY(1);
+    transform: scale(0.5);
   }
   to {
     opacity: 0;
-    transform: rotate(var(--spark-angle, 0deg)) translateY(-22px) scaleY(0.4);
+    transform: scale(1.35);
   }
 }
 

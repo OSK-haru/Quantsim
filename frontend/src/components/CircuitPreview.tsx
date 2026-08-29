@@ -328,17 +328,21 @@ export function CircuitPreview({
    *
    * クリック配置はCNOTのように1回目では何も置かない操作があり、ドロップも
    * 埋まっているスロットなら弾かれる。押した時点で光らせると、置けていない
-   * のに置けたように見えてしまう。そこでカーソル位置だけ控えておき、
+   * のに置けたように見えてしまう。そこで置き先のスロットだけ控えておき、
    * 回路が実際に書き換わったのを見てから焚く。
    *
    * 編集が通った場合だけ新しい state が作られるので、参照が変わったかどうかが
    * そのまま成否になる。置き直し（移動）も手応えとしては配置なので、ここに含める。
+   *
+   * 覚えるのはカーソル位置ではなくスロット位置。ドロップ判定はスロット単位なので、
+   * セルの端で放してもゲートはセル中央に描かれる。カーソル位置で焚くとその
+   * ずれがそのまま出るし、キーボード操作にはそもそもカーソルが無い。
    */
-  const pendingPlacementEffectRef = useRef<{ x: number; y: number } | null>(null)
+  const pendingPlacementEffectRef = useRef<{ columnIndex: number; qubitIndex: number } | null>(null)
   const lastCircuitRef = useRef(circuit)
 
-  function armPlacementEffect(clientX: number, clientY: number) {
-    pendingPlacementEffectRef.current = { x: clientX, y: clientY }
+  function armPlacementEffect(columnIndex: number, qubitIndex: number) {
+    pendingPlacementEffectRef.current = { columnIndex, qubitIndex }
   }
 
   useEffect(() => {
@@ -347,9 +351,24 @@ export function CircuitPreview({
 
     const pending = pendingPlacementEffectRef.current
     pendingPlacementEffectRef.current = null
-    if (pending && circuitChanged) {
-      spawnGatePlacementEffect(pending.x, pending.y)
+    if (!pending || !circuitChanged) {
+      return
     }
+
+    /*
+     * 回路が描き換わったあとの CTM で測るので、列が増えて位置がずれていても合う。
+     * zoom もスクロールも CTM に入っている。
+     */
+    const screenMatrix = svgRef.current?.getScreenCTM()
+    if (!screenMatrix) {
+      return
+    }
+
+    const center = new DOMPoint(
+      CIRCUIT_LEFT_PADDING + 20 + pending.columnIndex * CIRCUIT_CELL_WIDTH,
+      CIRCUIT_TOP_PADDING + pending.qubitIndex * CIRCUIT_CELL_HEIGHT,
+    ).matrixTransform(screenMatrix)
+    spawnGatePlacementEffect(center.x, center.y)
   }, [circuit])
 
   useEffect(() => {
@@ -391,18 +410,12 @@ export function CircuitPreview({
     event.dataTransfer.dropEffect = dragPayload.source === 'circuit' ? 'move' : 'copy'
   }
 
-  function handleSlotClick(
-    columnIndex: number,
-    qubitIndex: number,
-    effectOrigin?: { clientX: number; clientY: number },
-  ) {
+  function handleSlotClick(columnIndex: number, qubitIndex: number) {
     if (!selectedGateType || !onSlotClick) {
       return
     }
 
-    if (effectOrigin) {
-      armPlacementEffect(effectOrigin.clientX, effectOrigin.clientY)
-    }
+    armPlacementEffect(columnIndex, qubitIndex)
     onSlotClick(columnIndex, qubitIndex)
   }
 
@@ -413,12 +426,7 @@ export function CircuitPreview({
   ) {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      /* キーボード操作にはカーソルが無いので、対象スロットの中心から出す。 */
-      const bounds = event.currentTarget.getBoundingClientRect()
-      handleSlotClick(columnIndex, qubitIndex, {
-        clientX: bounds.left + bounds.width / 2,
-        clientY: bounds.top + bounds.height / 2,
-      })
+      handleSlotClick(columnIndex, qubitIndex)
     }
   }
 
@@ -442,7 +450,7 @@ export function CircuitPreview({
 
     event.preventDefault()
     setDragHoverSlot(null)
-    armPlacementEffect(event.clientX, event.clientY)
+    armPlacementEffect(columnIndex, qubitIndex)
     onSlotDrop(columnIndex, qubitIndex)
   }
 
@@ -600,10 +608,11 @@ export function CircuitPreview({
 
       const handlers = dropHandlersRef.current
       if (dropTarget?.kind === 'insert') {
-        armPlacementEffect(upEvent.clientX, upEvent.clientY)
+        /* 割り込みドロップでは、その位置に新しい列ができてゲートはそこへ入る。 */
+        armPlacementEffect(dropTarget.insertIndex, dropTarget.qubitIndex)
         handlers.onColumnInsertDrop?.(dropTarget.insertIndex, dropTarget.qubitIndex)
       } else if (dropTarget?.kind === 'slot') {
-        armPlacementEffect(upEvent.clientX, upEvent.clientY)
+        armPlacementEffect(dropTarget.columnIndex, dropTarget.qubitIndex)
         handlers.onSlotDrop?.(dropTarget.columnIndex, dropTarget.qubitIndex)
       }
       handlers.onDragEnd?.()
@@ -1233,14 +1242,13 @@ export function CircuitPreview({
                       }
                       onClick={
                         isClickable
-                          ? (event) => {
+                          ? () => {
                               /* 直前がドラッグだったときは、選択し直さない。 */
                               if (consumeClickSuppression()) {
                                 return
                               }
-                              const origin = { clientX: event.clientX, clientY: event.clientY }
                               if (isControlMarkerTool && interactive) {
-                                handleSlotClick(columnIndex, qubitIndex, origin)
+                                handleSlotClick(columnIndex, qubitIndex)
                                 return
                               }
                               if (selectable && gateIdAtSlot && onGateSelect) {
@@ -1248,7 +1256,7 @@ export function CircuitPreview({
                                 return
                               }
                               if (interactive) {
-                                handleSlotClick(columnIndex, qubitIndex, origin)
+                                handleSlotClick(columnIndex, qubitIndex)
                               }
                             }
                           : undefined
@@ -1621,7 +1629,7 @@ export function CircuitPreview({
                           event.preventDefault()
                           setInsertHoverSlot(null)
                           setDragHoverSlot(null)
-                          armPlacementEffect(event.clientX, event.clientY)
+                          armPlacementEffect(insertIndex, qubitIndex)
                           onColumnInsertDrop(insertIndex, qubitIndex)
                         }}
                       />
