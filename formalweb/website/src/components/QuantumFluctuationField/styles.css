@@ -1,0 +1,19 @@
+/* ============================================================================
+   QUANTUM FLUCTUATION FIELD // SUBSTRATE PLANE
+   本体アプリの同名 CSS の移植。あちらは App 直下に置いて z-index:-1 で
+   ルート背景の上に潜らせているが、Docusaurus は theme の wrapper が
+   祖先に入るため、その手は使えない。ここでは下地を敷く main 側に
+   スタッキングコンテキストを作り、その中の最下層として置く。
+   ========================================================================= */
+
+.quantum-fluctuation-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  pointer-events: none;
+}
