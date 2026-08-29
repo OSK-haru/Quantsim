@@ -155,59 +155,7 @@
   line-height: 2;
 }
 
-/* --- 3. Layers: 抽象度の階段 ----------------------------------------------
-   ヘアラインの箱で囲わず、段ごとの下線だけで積む。囲うと下地が切れる。 */
-
-.layers {
-  margin-top: clamp(88px, 13vh, 160px);
-}
-
-.layersHeading {
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
-
-.layerList {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.layer {
-  display: grid;
-  grid-template-columns: 72px 160px minmax(0, 1fr);
-  align-items: baseline;
-  gap: 24px;
-  padding: 24px 4px;
-  border-bottom: var(--tt-hair) solid var(--tt-rule);
-}
-
-.layerDepth {
-  color: var(--tt-accent);
-  font-family: var(--tt-macro);
-  font-size: 1.8rem;
-  font-weight: 900;
-  line-height: 0.8;
-  letter-spacing: -0.04em;
-}
-
-.layerLabel {
-  color: var(--tt-ink-dim);
-  font-family: var(--tt-mono);
-  font-size: 0.63rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.layerBody {
-  margin: 0;
-  color: var(--tt-ink);
-  font-size: 0.92rem;
-  line-height: 1.75;
-}
-
-/* --- 4. Closing ----------------------------------------------------------- */
+/* --- 3. Closing ----------------------------------------------------------- */
 
 .closing {
   display: grid;
@@ -239,23 +187,6 @@
 }
 
 /* --- Narrow viewports ----------------------------------------------------- */
-
-@media (max-width: 860px) {
-  .layer {
-    grid-template-columns: 56px minmax(0, 1fr);
-    gap: 8px 18px;
-  }
-
-  /* 深度ラベルは左に通したまま、層名を本文の頭へ回す。 */
-  .layerDepth {
-    grid-row: 1 / 3;
-  }
-
-  .layerLabel,
-  .layerBody {
-    grid-column: 2 / 3;
-  }
-}
 
 @media (max-width: 640px) {
   .content {

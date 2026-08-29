@@ -12,39 +12,11 @@ import QuantumFluctuationField from '@site/src/components/QuantumFluctuationFiel
  * 本体ホームが「どのモードに入るか」を選ばせる操作盤なのに対し、
  * こちらは名前を初めて見た人に、何のための道具かを短く伝えるだけ。
  *
- * 数値や検証結果は置かない。それはドキュメント本体の仕事で、
- * ここに並べると入口が読みものになってしまう。ここに残すのは
- * 動機と、降りていける層があるという事実、それだけ。
+ * 数値や検証結果、機能の一覧は置かない。それはドキュメント本体の仕事で、
+ * ここに並べると入口が読みものになってしまう。残すのは動機だけ。
  *
  * 下地には本体と同じ「真空のゆらぎ」を走らせて、要素はその上に浮かせる。
  */
-
-/*
- * 製品の核。抽象度の階段を上から下へ。
- * 文で「アルゴリズムからパルスまで降りられる」と言うより、段として並べる。
- */
-const layers: readonly {depth: string; label: string; body: string}[] = [
-  {
-    depth: 'L1',
-    label: 'ALGORITHM',
-    body: '量子アルゴリズムを組んで、動かす。',
-  },
-  {
-    depth: 'L2',
-    label: 'GATE + TIME',
-    body: 'ゲートに実行時間を与える。計算している間にも、時間は流れている。',
-  },
-  {
-    depth: 'L3',
-    label: 'OPEN SYSTEM',
-    body: '熱や磁場に揺さぶられ、量子状態が崩れていく過程を見る。',
-  },
-  {
-    depth: 'L4',
-    label: 'CONTROL PULSE',
-    body: '実機を動かす制御パルスそのものを、波形から設計する。',
-  },
-];
 
 function Masthead(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
@@ -105,28 +77,6 @@ function Motivation(): ReactNode {
   );
 }
 
-function Layers(): ReactNode {
-  return (
-    <section className={styles.layers} aria-labelledby="layers-heading">
-      <h2 id="layers-heading" className={styles.layersHeading}>
-        <span className="eyebrow">The descent</span>
-      </h2>
-
-      <ol className={styles.layerList}>
-        {layers.map(({depth, label, body}) => (
-          <li className={styles.layer} key={depth}>
-            <data className={styles.layerDepth} value={depth}>
-              {depth}
-            </data>
-            <span className={styles.layerLabel}>{label}</span>
-            <p className={styles.layerBody}>{body}</p>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 /* 締め。立ち位置を一文で言い切って、最後の入口を出す。 */
 function Closing(): ReactNode {
   return (
@@ -168,7 +118,6 @@ export default function Home(): ReactNode {
         <div className={styles.content}>
           <Masthead />
           <Motivation />
-          <Layers />
           <Closing />
         </div>
       </main>
