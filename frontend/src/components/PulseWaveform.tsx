@@ -6,6 +6,8 @@ type PulseWaveformProps = {
   pulseDurationUs: number
   totalSimulationTimeUs: number
   scopeLabel?: string
+  /** 2準位には漏れ準位がなく、DRAGの直交成分そのものが定義されない。 */
+  dragAvailable?: boolean
 }
 
 const WIDTH = 760
@@ -18,6 +20,7 @@ export function PulseWaveform({
   pulseDurationUs,
   totalSimulationTimeUs,
   scopeLabel = '単一 Pulse の波形',
+  dragAvailable = true,
 }: PulseWaveformProps) {
   const chartDurationUs = Math.max(
     totalSimulationTimeUs,
@@ -37,6 +40,12 @@ export function PulseWaveform({
       .map((point, index) => `${index === 0 ? 'M' : 'L'} ${x(point.timeUs)} ${y(point[key])}`)
       .join(' ')
   const pulseBoundary = x(pulseDurationUs)
+  /*
+    Ωy が全時刻ゼロなのは「描画が抜けている」ようにも読めてしまう。
+    2準位で DRAG が定義されない場合と、単に β=0 や位相0で今回たまたま
+    ゼロな場合を区別して、平坦な理由を凡例のすぐ横に書く。
+  */
+  const quadratureIsFlat = points.every((point) => point.omegaY === 0)
 
   return (
     <section className="pulse-waveform" aria-labelledby="pulse-waveform-title">
@@ -46,8 +55,8 @@ export function PulseWaveform({
           <h2 id="pulse-waveform-title">駆動波形</h2>
         </div>
         <div className="pulse-waveform__legend">
-          <span data-series="x">Ω x</span>
-          <span data-series="y">Ω y</span>
+          <span data-series="x">Ω x（同相 I）</span>
+          <span data-series="y">Ω y（直交 Q）</span>
         </div>
       </div>
       <svg
@@ -65,6 +74,13 @@ export function PulseWaveform({
         <text x={WIDTH - PAD_X} y={HEIGHT - 7} textAnchor="end">{chartDurationUs.toPrecision(3)} us</text>
         <text x={8} y={18}>rad/us</text>
       </svg>
+      {quadratureIsFlat ? (
+        <p className="pulse-waveform__quadrature-note">
+          {dragAvailable
+            ? 'Ω y は全時刻ゼロです。DRAG β = 0（または位相 0）のため直交成分が生じていません。βを与えるとガウシアンの微分波形が現れます。'
+            : '2準位モデルには漏れ準位 |2⟩ がないため、その漏れを打ち消すDRAG補正自体が定義されません。したがって直交成分 Ω y は常にゼロで、駆動はガウシアン1本のみです。3準位 qutrit に切り替えるとDRAGを設計できます。'}
+        </p>
+      ) : null}
       {totalSimulationTimeUs > pulseDurationUs ? (
         <p>Pulse境界以降は制御がゼロになり、状態はアイドル観測を通じて発展を続けます。</p>
       ) : null}

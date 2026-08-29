@@ -93,3 +93,10 @@
   color: var(--tt-ink-dim);
   font-size: 0.82rem;
 }
+
+/* 波形が平坦な理由の説明。読み飛ばされないよう罫線で本文と切り分ける。 */
+.pulse-waveform__quadrature-note {
+  padding-left: 10px;
+  border-left: 2px solid rgb(var(--tt-accent-rgb) / 0.45);
+  line-height: 1.6;
+}

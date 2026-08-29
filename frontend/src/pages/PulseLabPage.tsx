@@ -509,6 +509,7 @@ export function PulseLabPage({
           pulseDurationUs={waveformPulseEndTimeUs}
           totalSimulationTimeUs={form.totalSimulationTimeUs}
           scopeLabel={waveformScopeLabel}
+          dragAvailable={form.localLevels !== 2}
         />
 
         {/*

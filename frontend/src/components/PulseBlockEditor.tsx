@@ -113,9 +113,20 @@ export function PulseBlockEditor({
           )}
           <NumberField label="位相 [rad]" value={pulse.phaseRad} step={0.05} onChange={(value) => setValue('phaseRad', value)} />
           <NumberField label="離調 [rad/us]" value={pulse.detuningRadPerUs} step={0.1} onChange={(value) => setValue('detuningRadPerUs', value)} />
+          {/*
+            DRAG欄を黙って消すと「設定できるはずの項目が無い」と読まれる。
+            2準位とSquareでは β が物理的に定義されないので、その理由を残す。
+          */}
           {globalForm.modelId !== TWO_LEVEL_PULSE_MODEL && pulse.shape === 'gaussian' ? (
             <NumberField label="DRAG β [us]" value={pulse.dragBetaUs} step={0.0001} onChange={(value) => setValue('dragBetaUs', value)} />
-          ) : null}
+          ) : (
+            <p className="pulse-block-editor__unavailable">
+              <strong>DRAG β</strong>
+              {globalForm.modelId === TWO_LEVEL_PULSE_MODEL
+                ? '2準位モデルには漏れ準位 |2⟩ がないため定義されません。外界環境の準位数を3準位 qutrit にすると設計できます。'
+                : 'DRAG補正はガウシアンの微分を使うため、Square波形では定義されません。'}
+            </p>
+          )}
         </div>
 
         <section className="pulse-block-editor__preview" aria-label="Pulse波形プレビュー">
