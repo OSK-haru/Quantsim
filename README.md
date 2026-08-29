@@ -25,7 +25,7 @@ Yuragi-Strider は、温度・磁場・ノイズなどの物理環境が小規�
 
 - Git
 - Python `3.14.4`（監査済み環境。`.python-version` に記録）
-- Node.js `24.15.0` / npm `11.x`（`.nvmrc` と `package-lock.json` を使用）
+- Node.js `24.15.0` / npm `11.x`（`.nvmrc` と `frontend/package-lock.json` を使用）
 - Rust `1.96.0` は preview backend をビルドする場合のみ
 
 Windows PowerShell の例を以下に示します。macOS/Linux では仮想環境の Python を `.venv/bin/python` に読み替えてください。
@@ -120,23 +120,28 @@ Rust toolchain が利用できる環境で、Python 仮想環境へローカル�
 
 ## ディレクトリ構成
 
+- `docs/submission/`: 作品概要、システム構成図、掲載用の図版（最初に読む資料）
 - `frontend/`: React/Vite UI
 - `api/`: FastAPI endpoint
 - `core/`: UI 非依存のシミュレーション本体
 - `data/`: preset と参照データ
 - `tests/`: unittest テスト群
 - `validation_pulse/`: Pulse Baseline A の再利用可能な検証helper
+- `validation_cptp/`: 明示的 CPTP 経路の検証 script
+- `validation_hardware/`: 実機データとの比較検証
 - `validation_results/`: 機械可読な検証結果
 - `scripts/`: 独立検証、benchmark、診断 script
 - `rust_kernels/`: 任意の PyO3/maturin 拡張
+- `formalweb/website/`: Docusaurus 製の公開ドキュメントサイト
 - `packaging/`, `desktop_app.py`: 任意の Windows desktop 配布用ランチャー
+- `docs/development/`: 配布・運用手順
 - `docs_for_develop/`: 要求・設計・物理モデル・検証レポート
 - `docs_for_develop/environment.md`: 詳細な環境・依存ライブラリ台帳
 
 ## 再現性に関する注意
 
 - secret や `.env` は不要です。`.env` 系ファイルは Git 管理対象外です。
-- npm は `npm install` ではなく `npm ci` を使い、`package-lock.json` の固定版を再現してください。
+- npm は `npm install` ではなく `npm ci` を使い、`frontend/package-lock.json` の固定版を再現してください。
 - 通常導入は直接依存だけを固定した `requirements-runtime.txt`、監査済み環境の完全再現は `requirements-lock.txt` を使います。
 - 従来の `requirements.txt` は既存環境との互換用に残しています。新規構築には上記2ファイルのどちらかを使ってください。
 - 対応 OS はコード上 cross-platform ですが、この台帳は Windows で実測・検証しています。

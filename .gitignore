@@ -18,3 +18,4 @@ validation_results/*.csv
 
 # Windows desktop build output
 release/
+.pytest_cache/
