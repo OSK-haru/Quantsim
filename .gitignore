@@ -15,3 +15,6 @@ build/
 validation_hardware/processed/
 validation_results/
 validation_results/*.csv
+
+# Windows desktop build output
+release/

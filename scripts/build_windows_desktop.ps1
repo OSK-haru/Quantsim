@@ -70,6 +70,7 @@ $compilerArguments = @(
     '/target:winexe',
     "/out:$launcherOutput",
     '/r:System.Windows.Forms.dll',
+    '/r:System.Drawing.dll',
     $launcherSource
 )
 
