@@ -54,6 +54,17 @@ const algorithmPresets: AlgorithmPreset[] = [
     highlights: ['エンタングルメント', 'ベル測定', '古典条件付きゲート'],
   },
   {
+    key: 'magic_state',
+    icon: 'atom',
+    category: '量子誤り訂正',
+    title: 'マジック状態 |T> の生成と劣化',
+    qubits: 2,
+    difficulty: '入門〜中級',
+    description:
+      'q0にH・Tを適用してマジック状態 |T> = (|0> + e^{iπ/4}|1>)/√2 を作ります。この状態はCliffordゲートだけでは到達できない向き（Bloch球の八面体の外）を向いており、誤り訂正計算機ではTゲート1回ごとにこれを1個消費します。参照用のq1にはHのみを掛けて|+>（Cliffordで到達できる八面体の頂点）を置いてあります。Bloch球上で両者を見比べると、|T>だけが頂点から45°ずれた「八面体の外」を向いていることが分かります。シミュレーション時間を延ばすと、両方のBlochベクトルが環境ノイズで原点に向かって縮み、劣化したマジック状態が使えなくなる様子が見えます。',
+    highlights: ['Tゲート', 'Clifford+T', 'Bloch球', 'デコヒーレンス'],
+  },
+  {
     key: 'bit_flip_repetition',
     icon: 'circuit',
     category: '量子誤り訂正',

@@ -9,7 +9,7 @@ export type PendingCnotControl = {
   additionalControlValues?: Array<0 | 1>
 }
 
-export type CircuitPresetKey = 'teleportation' | 'bit_flip_repetition' | 'grover_2qubit' | 'grover_4qubit'
+export type CircuitPresetKey = 'teleportation' | 'bit_flip_repetition' | 'grover_2qubit' | 'grover_4qubit' | 'magic_state'
 
 export type CircuitContextValue = {
   circuitState: CircuitEditorState

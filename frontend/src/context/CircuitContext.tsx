@@ -536,6 +536,22 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
       classicalBits = 2
       initialStates = [1, 0, 0, 0, 0]
       hint = '3量子ビット反復符号を読み込みました。X故障を注入済みです。'
+    } else if (preset === 'magic_state') {
+      // Prepare the magic state |T> = (|0> + e^{i pi/4}|1>)/sqrt(2) on q0 with H
+      // then T.  Both gates carry zero declared duration, so the whole simulation
+      // window becomes the post-circuit idle segment and the Bloch vector visibly
+      // contracts under the environment.  q1 holds the Clifford state |+> (H only)
+      // as a side-by-side reference: both Bloch vectors shrink at the same rate
+      // here, so the contrast to look at is geometric -- |+> sits on an octahedron
+      // vertex while |T> points 45 degrees off it, outside the Clifford polytope.
+      columns = [
+        { step: 0, gates: [gate('magic-h-q0', 'H', [0]), gate('magic-h-q1', 'H', [1])] },
+        { step: 1, gates: [gate('magic-t-q0', 'T', [0])] },
+      ]
+      logicalQubits = 2
+      classicalBits = 0
+      initialStates = [0, 0]
+      hint = 'マジック状態 |T> を読み込みました。q0が|T>、q1が参照用の|+>です。State ExplorerのBloch球で向きの違いを確認してください。'
     } else if (preset === 'grover_4qubit') {
       // Search a 16-item register for |0100>. The optimal integer Grover
       // iteration count is three. Each diffuser is H^4 X^4 MCZ X^4 H^4,
