@@ -209,7 +209,7 @@ const firstCircuitBeats: TutorialBeat[] = [
     chapterTitle: '走らせてみる',
     route: 'simulate',
     mood: 'cheer',
-    anchors: ['completion-popup', 'run-button'],
+    anchors: ['run-button'],
     anchorLabel: '計算おわり',
     text: '終わった！ 計算そのものは一瞬。でも、この中では「ゲートをかけている間もノイズが効いている」という、けっこう真面目な物理が回っているんだ。',
   },

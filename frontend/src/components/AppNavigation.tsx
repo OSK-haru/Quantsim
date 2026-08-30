@@ -111,13 +111,6 @@ export function AppNavigation({ currentRoute, onNavigate }: AppNavigationProps) 
           YURAGI&ndash;STRIDER
         </span>
         <span className="app-navigation__route">{routeDesignations[currentRoute]}</span>
-        <span className="app-navigation__rev">REV 2.6</span>
-        <span className="app-navigation__status">
-          {/* インターフェイス唯一のターミナルグリーン。 */}
-          <i aria-hidden="true" />
-          SYS ONLINE
-        </span>
-
         <a
           className="app-navigation__docs"
           href={documentationLinks.home}

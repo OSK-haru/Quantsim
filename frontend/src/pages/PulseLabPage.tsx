@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { PulseEnvironmentPanel } from '../components/PulseEnvironmentPanel'
 import { PulseWaveform } from '../components/PulseWaveform'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
-import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
 import { apiUrl } from '../utils/apiBase'
 import { pulseLabTips, pulseRunningStages } from '../utils/quantumPetTips'
 import { useInternalInfoVisible } from '../context/useAdminMode'
@@ -98,7 +97,6 @@ export function PulseLabPage({
   const [status, setStatus] = useState<RequestStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [errorDetail, setErrorDetail] = useState<string | null>(null)
-  const [showCompletionPopup, setShowCompletionPopup] = useState(false)
   const [petCelebrating, setPetCelebrating] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
@@ -332,7 +330,6 @@ export function PulseLabPage({
       setStatus('success')
       setErrorMessage(null)
       setErrorDetail(null)
-      setShowCompletionPopup(true)
       setPetCelebrating(true)
     } catch (error) {
       if (!mountedRef.current || abortRef.current !== controller) {
@@ -575,18 +572,6 @@ export function PulseLabPage({
           </section>
         )}
       </div>
-      {showCompletionPopup ? (
-        <SimulationCompletionPopup
-          mode="pulse"
-          title="Pulse シミュレーションが完了しました"
-          detail={
-            internalInfoVisible
-              ? `発展方式: ${result?.diagnostics.evolution.resolved ?? '完了'}`
-              : '波形どおりに時間発展を計算しました'
-          }
-          onDismiss={() => setShowCompletionPopup(false)}
-        />
-      ) : null}
       <QuantumPet
         phase={petPhase}
         message={petMessage}

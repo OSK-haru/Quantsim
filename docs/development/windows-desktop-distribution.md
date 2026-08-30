@@ -40,6 +40,14 @@ The build script intentionally requires PyInstaller to be installed in the
 build environment. PyInstaller is a packaging-only dependency; it is not
 needed by users of the resulting application.
 
+Both executables embed the application icon from
+`packaging/windows/yuragi-strider.ico`, which carries every size Windows asks
+for (16-256 px). It is passed to PyInstaller via `--icon` and to the C#
+compiler via `/win32icon`, so Explorer, the taskbar, the shortcut, and the
+tray icon all resolve to the same mark. The launcher reads its tray icon back
+out of its own executable, so it needs no separate icon file at run time.
+Regenerate the `.ico` from `frontend/public/favicon.svg` if the mark changes.
+
 Expected output:
 
 ```text

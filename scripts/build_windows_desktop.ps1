@@ -35,11 +35,17 @@ $outputRoot = Join-Path $repositoryRoot 'release\windows'
 $stagingDirectory = Join-Path $outputRoot 'YuragiStriderBackend'
 $applicationDirectory = Join-Path $outputRoot 'Yuragi-Strider'
 $launcherSource = Join-Path $repositoryRoot 'packaging\windows\YuragiStriderLauncher.cs'
+$applicationIcon = Join-Path $repositoryRoot 'packaging\windows\yuragi-strider.ico'
+if (-not (Test-Path -LiteralPath $applicationIcon)) {
+    throw "The application icon is missing: $applicationIcon"
+}
+
 & $python -m PyInstaller `
     --noconfirm `
     --clean `
     --console `
     --name YuragiStriderBackend `
+    --icon $applicationIcon `
     --distpath $outputRoot `
     --workpath (Join-Path $repositoryRoot 'build\pyinstaller') `
     --specpath (Join-Path $repositoryRoot 'build\pyinstaller') `
@@ -71,6 +77,7 @@ $compilerArguments = @(
     "/out:$launcherOutput",
     '/r:System.Windows.Forms.dll',
     '/r:System.Drawing.dll',
+    "/win32icon:$applicationIcon",
     $launcherSource
 )
 

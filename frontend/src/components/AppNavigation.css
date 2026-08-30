@@ -48,30 +48,6 @@
   font-weight: 700;
 }
 
-.app-navigation__rev {
-  color: var(--tt-ink-faint);
-}
-
-.app-navigation__status {
-  gap: 8px;
-  margin-left: auto;
-  padding-right: 16px;
-  color: var(--tt-ink-dim);
-}
-
-.app-navigation__status i {
-  width: 7px;
-  height: 7px;
-  background: var(--tt-signal);
-  animation: app-navigation-beacon 1.6s steps(1, end) infinite;
-}
-
-@keyframes app-navigation-beacon {
-  50% {
-    opacity: 0.15;
-  }
-}
-
 .app-navigation__toggle {
   position: relative;
   z-index: 3;
@@ -98,6 +74,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  margin-left: auto;
   padding: 0 14px;
   border-left: var(--tt-hair) solid var(--tt-rule);
   background: var(--tt-void);
@@ -296,14 +273,7 @@
     padding-left: 12px;
   }
 
-  /* 幅が足りないときは機体情報から先に落とす。 */
-  .app-navigation__rev,
-  .app-navigation__status {
-    display: none;
-  }
-
   .app-navigation__docs {
-    margin-left: auto;
     padding-inline: 12px;
   }
 

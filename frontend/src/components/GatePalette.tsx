@@ -1,5 +1,5 @@
 import './GatePalette.css'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { GateType } from '../types/circuit'
 import { setCircuitDragPreview } from '../utils/dragPreview'
 import {
@@ -55,10 +55,17 @@ export function GatePalette({
 }: GatePaletteProps) {
   // 入力途中の空欄や範囲外の値を一時的に持てるよう、表示用の文字列は別で管理する。
   const [qubitDraft, setQubitDraft] = useState(String(logicalQubits))
-
-  useEffect(() => {
+  /*
+   * 外から量子ビット数が変わったとき（Undo・プリセット読み込みなど）は、
+   * 下書きを追従させる。effect で setState すると再レンダリングが連鎖するので、
+   * 直前の値を覚えておいてレンダリング中に判定する。
+   * https://react.dev/learn/you-might-not-need-an-effect
+   */
+  const [lastLogicalQubits, setLastLogicalQubits] = useState(logicalQubits)
+  if (lastLogicalQubits !== logicalQubits) {
+    setLastLogicalQubits(logicalQubits)
     setQubitDraft(String(logicalQubits))
-  }, [logicalQubits])
+  }
 
   function commitQubitDraft(rawValue: string) {
     const parsed = Number.parseInt(rawValue, 10)
