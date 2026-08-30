@@ -79,6 +79,8 @@ export function PulseCircuitStudioPage({
   const idCounter = useRef(circuit.lanes.reduce((count, lane) => count + lane.steps.length, 0))
   const editorRef = useRef<HTMLDivElement | null>(null)
   const clearTimer = useRef<number | null>(null)
+  /* onDrop が有効なレーンで受けたら true。onDragEnd で「枠外に放した＝削除」を判定する。 */
+  const droppedOnLaneRef = useRef(false)
 
   const selectedStep = findStep(circuit, selectedId)
   const totalPulseCount = circuit.lanes.reduce((count, lane) => count + lane.steps.length, 0)
@@ -429,6 +431,7 @@ export function PulseCircuitStudioPage({
 
   function handleDrop(transmonIndex: number, index: number) {
     const payload = dragPayload
+    droppedOnLaneRef.current = true
     setDragPayload(null)
     setDropTarget(null)
     if (!payload) {
@@ -441,9 +444,20 @@ export function PulseCircuitStudioPage({
     moveStepTo(payload, transmonIndex, index)
   }
 
+  /*
+   * onDragEnd。onDrop の後に必ず発火する。回路レーンの外で放した step ドラッグは
+   * そのPulseを削除する（Gate-aware回路の「枠外へドラッグして消す」と同じ操作感）。
+   * パレットからのドラッグ（kind === 'palette'）は枠外で放しても何もしない。
+   */
   function endDrag() {
+    const payload = dragPayload
+    const droppedOnLane = droppedOnLaneRef.current
+    droppedOnLaneRef.current = false
     setDragPayload(null)
     setDropTarget(null)
+    if (!droppedOnLane && payload?.kind === 'step') {
+      removeStep(payload.transmonIndex, payload.stepId)
+    }
   }
 
   function dropMarker(transmonIndex: number, index: number) {
