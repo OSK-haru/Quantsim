@@ -2,11 +2,13 @@ import './SettingsMenu.css'
 import { useAdminMode } from '../context/useAdminMode'
 import { useAnimationSettings } from '../context/useAnimationSettings'
 import { usePetSettings } from '../context/usePetSettings'
+import { usePetSpeechSettings } from '../context/usePetSpeechSettings'
 import { useTheme } from '../context/useTheme'
 
 export function SettingsMenu() {
   const { animationsEnabled, setAnimationsEnabled } = useAnimationSettings()
   const { petVisible, setPetVisible } = usePetSettings()
+  const { speechMode, setSpeechMode } = usePetSpeechSettings()
   const { adminModeEnabled, setAdminModeEnabled } = useAdminMode()
   const { theme, toggleTheme } = useTheme()
   const darkModeEnabled = theme === 'dark'
@@ -63,6 +65,38 @@ export function SettingsMenu() {
         >
           <span className="settings-menu__switch-knob" aria-hidden="true" />
         </button>
+      </div>
+
+      {/* 台詞の出し方はアニメーション設定とは独立して選べる。 */}
+      <div className="settings-menu__row">
+        <div className="settings-menu__row-label">
+          <span>セリフの表示</span>
+          <small>チュートリアル案内の文字の出し方</small>
+        </div>
+        <div
+          className="settings-menu__segment"
+          role="radiogroup"
+          aria-label="セリフの表示方法"
+        >
+          <button
+            type="button"
+            role="radio"
+            aria-checked={speechMode === 'typewriter'}
+            className={`settings-menu__segment-option${speechMode === 'typewriter' ? ' settings-menu__segment-option--on' : ''}`}
+            onClick={() => setSpeechMode('typewriter')}
+          >
+            だんだん
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={speechMode === 'instant'}
+            className={`settings-menu__segment-option${speechMode === 'instant' ? ' settings-menu__segment-option--on' : ''}`}
+            onClick={() => setSpeechMode('instant')}
+          >
+            即時
+          </button>
+        </div>
       </div>
 
       <div className="settings-menu__row settings-menu__row--admin">

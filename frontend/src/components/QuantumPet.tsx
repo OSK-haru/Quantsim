@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import './QuantumPet.css'
 import { useAnimationSettings } from '../context/useAnimationSettings'
 import { usePetSettings } from '../context/usePetSettings'
+import { usePetSpeechSettings } from '../context/usePetSpeechSettings'
 import { useOptionalTutorial } from '../context/useTutorial'
 import type { PetMood } from '../context/TutorialContextCore'
 import {
@@ -82,6 +83,7 @@ function QuantumPetBody({
   role = 'guide',
 }: QuantumPetProps) {
   const { animationsEnabled } = useAnimationSettings()
+  const { speechMode } = usePetSpeechSettings()
   const [reducedMotion, setReducedMotion] = useState(
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
@@ -241,8 +243,10 @@ function QuantumPetBody({
   /*
    * チュートリアルの台詞は1文字ずつ出す。会話らしく見えるだけでなく、
    * 長い説明を一度に浴びせないための間にもなる。
+   * 出し方はアニメーション設定とは切り離し、設定の「セリフの表示」で決める。
+   * 読み上げ環境の指定（prefers-reduced-motion）だけは尊重して即時表示にする。
    */
-  const typewriterEnabled = isTutorialPet && motionEnabled
+  const typewriterEnabled = isTutorialPet && speechMode === 'typewriter' && !reducedMotion
   useEffect(() => {
     if (!typewriterEnabled) {
       return

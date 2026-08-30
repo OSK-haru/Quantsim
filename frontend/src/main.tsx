@@ -6,6 +6,7 @@ import App from './App.tsx'
 import { AdminModeProvider } from './context/AdminModeContext.tsx'
 import { AnimationSettingsProvider } from './context/AnimationSettingsContext.tsx'
 import { PetSettingsProvider } from './context/PetSettingsContext.tsx'
+import { PetSpeechSettingsProvider } from './context/PetSpeechSettingsContext.tsx'
 import { ThemeProvider } from './context/ThemeContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root')!).render(
       <AdminModeProvider>
         <AnimationSettingsProvider>
           <PetSettingsProvider>
-            <App />
+            <PetSpeechSettingsProvider>
+              <App />
+            </PetSpeechSettingsProvider>
           </PetSettingsProvider>
         </AnimationSettingsProvider>
       </AdminModeProvider>

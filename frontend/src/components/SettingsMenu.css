@@ -95,3 +95,37 @@ html[data-animations='off'] .settings-menu__switch,
 html[data-animations='off'] .settings-menu__switch-knob {
   transition: none;
 }
+
+/* 2択の設定は、状態が言葉で読めるよう並べたボタンで示す。 */
+.settings-menu__segment {
+  display: flex;
+  flex-shrink: 0;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.32);
+  background: var(--tt-panel);
+}
+
+.settings-menu__segment-option {
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--tt-ink-mid);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.settings-menu__segment-option--on {
+  background: var(--tt-accent);
+  color: var(--tt-panel);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-menu__segment-option {
+    transition: none;
+  }
+}
+
+html[data-animations='off'] .settings-menu__segment-option {
+  transition: none;
+}
