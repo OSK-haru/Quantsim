@@ -1,0 +1,32 @@
+.snapshot-playback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.snapshot-playback__button {
+  padding: 8px 16px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.34);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.snapshot-playback__button:hover {
+  border-color: var(--tt-ink-mid);
+}
+
+.snapshot-playback__slider {
+  flex: 1 1 220px;
+  min-width: 160px;
+}
+
+.snapshot-playback__position {
+  color: var(--tt-ink-mid);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}

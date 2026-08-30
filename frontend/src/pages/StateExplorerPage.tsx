@@ -5,6 +5,7 @@ import { MessageReceiveStateTransferView } from '../components/MessageReceiveSta
 import { DensityMatrixViewer } from '../components/DensityMatrixViewer'
 import { MetricTimeline } from '../components/MetricTimeline'
 import { PhysicalTimelinePlayback } from '../components/PhysicalTimelinePlayback'
+import { SnapshotPlayback } from '../components/SnapshotPlayback'
 import { OutputProbabilities } from '../components/OutputProbabilities'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { StateProbabilityComparison } from '../components/StateProbabilityComparison'
@@ -157,6 +158,8 @@ export function StateExplorerPage({
   )
   const [snapshotIndex, setSnapshotIndex] = useState(() => preferredSnapshotIndex(snapshots))
   const [playbackSimulationTimeUs, setPlaybackSimulationTimeUs] = useState(0)
+  /* Bloch球・密度行列・確率比較は同じスナップショット位置を共有して動く。 */
+  const [snapshotPlaying, setSnapshotPlaying] = useState(false)
   const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
     physical: false, metrics: false, probabilities: true, output: false, bloch: true, density: false, transfer: false,
     rates: false,
@@ -222,7 +225,12 @@ export function StateExplorerPage({
     }),
     [hasTransfer, qubitCount, snapshots.length, coherenceRows.length, decayRows.length],
   )
+  /*
+   * 物理時間の再生も同じスナップショット位置を動かすので、こちらが動いている
+   * あいだはスナップショット再生を止める。両方走ると位置を取り合う。
+   */
   const handlePlaybackSimulationTimeChange = useCallback((simulationTimeUs: number) => {
+    setSnapshotPlaying(false)
     setPlaybackSimulationTimeUs(simulationTimeUs)
     const nextSnapshotIndex = nearestSnapshotIndex(snapshots, simulationTimeUs)
     if (nextSnapshotIndex >= 0) setSnapshotIndex(nextSnapshotIndex)
@@ -242,6 +250,14 @@ export function StateExplorerPage({
       setPlaybackSimulationTimeUs(snapshotTimeUs)
     }
   }, [snapshots])
+  /*
+   * 各パネルの「前へ/次へ」やスライダーからの操作。自動再生と取り合いに
+   * ならないよう、手で動かされたら再生は止める。
+   */
+  const handleManualSnapshotIndexChange = useCallback((requestedIndex: number) => {
+    setSnapshotPlaying(false)
+    handleSnapshotIndexChange(requestedIndex)
+  }, [handleSnapshotIndexChange])
 
   /*
    * ここは計算をしないページなので、黄（計算中）は出てこない。
@@ -322,6 +338,14 @@ export function StateExplorerPage({
           </CollapsiblePanel>
           {qubitCount === null ? null : (
             <CollapsiblePanel panelKey="probabilities" open={visiblePanels.probabilities} onToggle={() => togglePanel('probabilities')}>
+            <SnapshotPlayback
+              snapshotCount={snapshots.length}
+              snapshotIndex={activeSnapshotIndex}
+              onSnapshotIndexChange={handleSnapshotIndexChange}
+              playing={snapshotPlaying}
+              onPlayingChange={setSnapshotPlaying}
+              label="確率比較の再生"
+            />
             <StateProbabilityComparison
               qubitCount={qubitCount}
               idealSnapshots={idealSnapshots}
@@ -337,7 +361,7 @@ export function StateExplorerPage({
               qubitCount={qubitCount}
               snapshots={snapshots}
               snapshotIndex={activeSnapshotIndex}
-              onSnapshotIndexChange={handleSnapshotIndexChange}
+              onSnapshotIndexChange={handleManualSnapshotIndexChange}
               defaultOpen
             />
           </CollapsiblePanel>
@@ -348,13 +372,21 @@ export function StateExplorerPage({
           ) : (
             <>
               <CollapsiblePanel panelKey="bloch" open={visiblePanels.bloch} onToggle={() => togglePanel('bloch')}>
+              <SnapshotPlayback
+                snapshotCount={snapshots.length}
+                snapshotIndex={activeSnapshotIndex}
+                onSnapshotIndexChange={handleSnapshotIndexChange}
+                playing={snapshotPlaying}
+                onPlayingChange={setSnapshotPlaying}
+                label="Bloch球の再生"
+              />
               <div className="state-explorer-page__comparison-grid">
                 <section className="state-explorer-page__comparison-panel">
                   <h2>Gate-aware 状態</h2>
                   <BlochSphereExplorer
                     snapshots={snapshots}
                     snapshotIndex={activeSnapshotIndex}
-                    onSnapshotIndexChange={handleSnapshotIndexChange}
+                    onSnapshotIndexChange={handleManualSnapshotIndexChange}
                   />
                 </section>
                 {idealSnapshots.length > 0 ? (
@@ -363,7 +395,7 @@ export function StateExplorerPage({
                     <BlochSphereExplorer
                       snapshots={idealSnapshots}
                       snapshotIndex={activeSnapshotIndex}
-                      onSnapshotIndexChange={handleSnapshotIndexChange}
+                      onSnapshotIndexChange={handleManualSnapshotIndexChange}
                     />
                   </section>
                 ) : null}
@@ -380,13 +412,21 @@ export function StateExplorerPage({
                     RZによる位相変化は絶対値に出ない場合があるため、実部・虚部・位相を切り替えて確認してください。
                   </p>
                 </div>
+                <SnapshotPlayback
+                  snapshotCount={snapshots.length}
+                  snapshotIndex={activeSnapshotIndex}
+                  onSnapshotIndexChange={handleSnapshotIndexChange}
+                  playing={snapshotPlaying}
+                  onPlayingChange={setSnapshotPlaying}
+                  label="密度行列の再生"
+                />
                 <div className="state-explorer-page__comparison-grid">
                   <section className="state-explorer-page__comparison-panel">
                     <h3>Gate-aware 密度行列</h3>
                     <DensityMatrixViewer
                       snapshots={snapshots}
                       snapshotIndex={activeSnapshotIndex}
-                      onSnapshotIndexChange={handleSnapshotIndexChange}
+                      onSnapshotIndexChange={handleManualSnapshotIndexChange}
                       snapshotCount={snapshots.length}
                     />
                   </section>
@@ -396,7 +436,7 @@ export function StateExplorerPage({
                       <DensityMatrixViewer
                         snapshots={idealSnapshots}
                         snapshotIndex={activeSnapshotIndex}
-                        onSnapshotIndexChange={handleSnapshotIndexChange}
+                        onSnapshotIndexChange={handleManualSnapshotIndexChange}
                         snapshotCount={snapshots.length}
                       />
                     </section>
