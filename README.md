@@ -33,8 +33,8 @@ Windows PowerShell の例を以下に示します。macOS/Linux では仮想環�
 ## セットアップ
 
 ```powershell
-git clone <repository-url>
-cd Quantum-sim
+git clone https://github.com/OSK-haru/Yuragi-Strider.git
+cd Yuragi-Strider
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -r requirements-runtime.txt

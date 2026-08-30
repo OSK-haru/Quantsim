@@ -118,7 +118,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://github.com/OSK-haru/Quantsim',
+          href: 'https://github.com/OSK-haru/Yuragi-Strider',
           label: 'GitHub',
           position: 'right',
         },
