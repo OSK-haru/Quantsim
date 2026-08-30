@@ -90,6 +90,12 @@
   background: var(--tt-ink-dim);
 }
 
+.pulse-probability__held-note {
+  margin: 6px 0 0;
+  color: var(--tt-ink-dim);
+  font-size: 0.78rem;
+}
+
 .pulse-probability__chart-wrap {
   margin-top: 8px;
   overflow-x: auto;

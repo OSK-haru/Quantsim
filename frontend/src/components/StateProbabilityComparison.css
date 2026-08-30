@@ -71,6 +71,7 @@
 .state-probability-comparison__cursor circle[data-series='held'] { fill: var(--tt-ink-dim); }
 .state-probability-comparison__footer { display: flex; flex-wrap: wrap; gap: 18px; color: var(--tt-ink); font-size: 0.8rem; }
 .state-probability-comparison__empty { color: var(--tt-ink-mid); }
+.state-probability-comparison__held-note { margin: 6px 0 0; color: var(--tt-ink-dim); font-size: 0.78rem; }
 
 @media (max-width: 640px) {
   .state-probability-comparison__heading { flex-direction: column; }

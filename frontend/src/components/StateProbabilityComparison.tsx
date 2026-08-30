@@ -40,6 +40,20 @@ export function StateProbabilityComparison({
   const heldSeries = heldSnapshots.length > 0
     ? probabilitySeries(heldSnapshots, qubitCount, selectedState)
     : []
+  /*
+   * 2本がほぼ重なると、線が1本しか無いように見えて「比較が出ていない」と
+   * 誤解される。差が目で見える太さに届いていないことを、言葉で伝える。
+   * しきい値は線幅（2px）が縦軸で表す確率におおよそ対応する値。
+   */
+  const maximumHeldGap = heldSeries.length === 0
+    ? 0
+    : heldSeries.reduce((maximum, point, index) => {
+        const current = noisySeries[index]
+        return current === undefined
+          ? maximum
+          : Math.max(maximum, Math.abs(point.value - current.value))
+      }, 0)
+  const heldOverlaps = heldSeries.length > 0 && maximumHeldGap < 0.005
   const chartWidth = 760
   const chartHeight = 250
   const padding = 34
@@ -96,6 +110,12 @@ export function StateProbabilityComparison({
         ) : null}
         <strong>|{selectedState}⟩</strong>
       </div>
+      {heldOverlaps ? (
+        <p className="state-probability-comparison__held-note">
+          保持した実行との差は最大 {formatProbability(maximumHeldGap)} で、2本はほぼ重なっています。
+          環境パラメタを大きく変えて実行すると差が見えます。
+        </p>
+      ) : null}
       {noisySeries.length === 0 ? (
         <p className="state-probability-comparison__empty">確率遷移データがありません。</p>
       ) : (

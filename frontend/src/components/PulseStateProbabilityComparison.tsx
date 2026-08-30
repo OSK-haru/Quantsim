@@ -66,6 +66,19 @@ export function PulseStateProbabilityComparison({
         timeUs: point.timeUs,
         value: point.populations[activeLabel] ?? 0,
       }))
+  /*
+   * 2本がほぼ重なると、線が1本しか無いように見えて「比較が出ていない」と
+   * 誤解される。差が目で見える太さに届いていないことを、言葉で伝える。
+   */
+  const maximumHeldGap = heldSeries.length === 0
+    ? 0
+    : heldSeries.reduce((maximum, point, index) => {
+        const current = openSeries[index]
+        return current === undefined
+          ? maximum
+          : Math.max(maximum, Math.abs(point.value - current.value))
+      }, 0)
+  const heldOverlaps = heldSeries.length > 0 && maximumHeldGap < 0.005
   const boundedCursorTimeUs = cursorTimeUs === null
     ? null
     : Math.min(maximumTimeUs, Math.max(startTimeUs, cursorTimeUs))
@@ -138,6 +151,12 @@ export function PulseStateProbabilityComparison({
         <strong>|{activeLabel}⟩</strong>
       </div>
 
+      {heldOverlaps ? (
+        <p className="pulse-probability__held-note">
+          保持した実行との差は最大 {formatPulseProbability(maximumHeldGap)} で、2本はほぼ重なっています。
+          環境パラメタを大きく変えて実行すると差が見えます。
+        </p>
+      ) : null}
       {openSeries.length === 0 ? (
         <p className="pulse-probability__empty">確率遷移データがありません。</p>
       ) : (

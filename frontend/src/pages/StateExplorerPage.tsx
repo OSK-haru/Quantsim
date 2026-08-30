@@ -265,18 +265,6 @@ export function StateExplorerPage({
    * スナップショットを切って実行した結果を保持すると、保持側の系列が
    * 空になって線が引けないが、画面上は「比較表示ON・線なし」に見える。
    */
-  /* TEMP-DIAG: 比較線が出ない原因を切り分けるための一時ログ。確認後に消す。 */
-  if (typeof window !== 'undefined') {
-    console.log('[compare-diag]', {
-      comparing,
-      hasHeldResult: heldResult !== null,
-      heldSnapshots: heldSnapshots.length,
-      heldTimeline: heldTimeline.length,
-      currentSnapshots: snapshots.length,
-      panelProbabilities: openPanels.probabilities,
-      panelMetrics: openPanels.metrics,
-    })
-  }
   const comparisonNotice = !comparing || heldResult === null
     ? null
     : heldSnapshots.length === 0 && heldTimeline.length === 0
