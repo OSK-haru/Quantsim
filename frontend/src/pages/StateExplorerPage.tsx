@@ -36,9 +36,10 @@ type StateExplorerPageProps = {
   onOpenSimulation: () => void
 }
 
-type ExplorerPanelKey = 'physical' | 'metrics' | 'probabilities' | 'output' | 'bloch' | 'density' | 'transfer' | 'rates'
+type ExplorerPanelKey = 'playback' | 'physical' | 'metrics' | 'probabilities' | 'output' | 'bloch' | 'density' | 'transfer' | 'rates'
 const EXPLORER_PANEL_LABELS: Record<ExplorerPanelKey, string> = {
   transfer: 'Message → Receive',
+  playback: '再生バー',
   physical: '物理時間', metrics: '指標タイムライン',
   probabilities: '確率比較', output: '出力確率', bloch: 'Bloch球', density: '密度行列',
   rates: '環境レート',
@@ -175,6 +176,7 @@ export function StateExplorerPage({
    */
   const { heldResult, comparing } = comparison
   const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
+    playback: true,
     physical: false, metrics: false, probabilities: true, output: false, bloch: true, density: false, transfer: false,
     rates: false,
   })
@@ -244,6 +246,16 @@ export function StateExplorerPage({
     && Array.isArray(heldForComparison.response.timeline)
     ? heldForComparison.response.timeline
     : []
+  /*
+   * 比較を出しているのに線が引けない理由を、黙って飲み込まずに言う。
+   * スナップショットを切って実行した結果を保持すると、保持側の系列が
+   * 空になって線が引けないが、画面上は「比較表示ON・線なし」に見える。
+   */
+  const comparisonNotice = !comparing || heldResult === null
+    ? null
+    : heldSnapshots.length === 0 && heldTimeline.length === 0
+      ? '保持した実行にはスナップショットも指標もないため、比較線を引けません。'
+      : null
   const togglePanel = useCallback((panelKey: ExplorerPanelKey) => {
     setOpenPanels((current) => ({ ...current, [panelKey]: !current[panelKey] }))
   }, [])
@@ -371,6 +383,9 @@ export function StateExplorerPage({
             onRelease={releaseHeldRun}
             onComparingChange={setComparing}
           />
+          {comparisonNotice === null ? null : (
+            <p className="state-explorer-page__compare-note">{comparisonNotice}</p>
+          )}
           {hasTransfer ? (
             <CollapsiblePanel panelKey="transfer" open={visiblePanels.transfer} onToggle={() => togglePanel('transfer')}>
               <MessageReceiveStateTransferView circuit={circuitState} noisySnapshots={snapshots} idealSnapshots={idealSnapshots} stateTransfer={activeResponse.state_transfer} />
@@ -381,17 +396,17 @@ export function StateExplorerPage({
             * 折りたたみパネルの中に置くと、下のパネルだけ開いている状態で
             * 動かす手段が消えるので、再生バーはパネルの外に常に出す。
             */}
-          <PhysicalTimelinePlayback
-            circuit={circuitState}
-            gateDurationDefaults={gateDurationDefaults}
-            physicalTimeline={activeResponse.physical_timeline}
-            measurement={activeResponse.measurement}
-            simulationTimeUs={playbackSimulationTimeUs}
-            onSimulationTimeChange={handlePlaybackSimulationTimeChange}
-            noisySnapshots={snapshots}
-            idealSnapshots={idealSnapshots}
-            variant="controls"
-          />
+          {visiblePanels.playback ? (
+            <PhysicalTimelinePlayback
+              circuit={circuitState}
+              gateDurationDefaults={gateDurationDefaults}
+              physicalTimeline={activeResponse.physical_timeline}
+              measurement={activeResponse.measurement}
+              simulationTimeUs={playbackSimulationTimeUs}
+              onSimulationTimeChange={handlePlaybackSimulationTimeChange}
+              variant="controls"
+            />
+          ) : null}
           <CollapsiblePanel panelKey="physical" open={visiblePanels.physical} onToggle={() => togglePanel('physical')}>
             <PhysicalTimelinePlayback
               circuit={circuitState}
@@ -400,8 +415,6 @@ export function StateExplorerPage({
               measurement={activeResponse.measurement}
               simulationTimeUs={playbackSimulationTimeUs}
               onSimulationTimeChange={handlePlaybackSimulationTimeChange}
-              noisySnapshots={snapshots}
-              idealSnapshots={idealSnapshots}
               variant="circuit"
             />
           </CollapsiblePanel>

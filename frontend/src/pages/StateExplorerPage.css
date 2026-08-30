@@ -371,3 +371,9 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+.state-explorer-page__compare-note {
+  margin: -4px 0 12px;
+  color: var(--tt-ink-dim);
+  font-size: 0.78rem;
+}

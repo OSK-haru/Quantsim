@@ -9,9 +9,6 @@
 .physical-playback__circuit-progress-label { display: flex; justify-content: space-between; color: var(--tt-ink-mid); font-size: .72rem; margin-bottom: 5px; }
 .physical-playback__circuit-progress-track { height: 5px; overflow: hidden; background: rgb(var(--tt-ink-mid-rgb) / 0.18); }
 .physical-playback__circuit-progress-bar { height: 100%; background: var(--tt-ink-mid); transition: width 80ms linear; }
-.physical-playback__noise-readout { display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 10px; margin-top: 10px; padding: 8px 10px; border: 1px solid rgb(var(--tt-accent-rgb) / 0.25); background: rgb(var(--tt-accent-deep-rgb) / 0.12); color: var(--tt-accent-hot); font-size: .76rem; }
-.physical-playback__noise-readout strong { color: var(--tt-accent-hot); font-family: var(--tt-mono); }
-.physical-playback__noise-readout small { color: var(--tt-ink-mid); }
 .physical-playback__controls button { padding: 8px 13px; border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.3); background: var(--tt-panel); color: var(--tt-ink); cursor: pointer; }
 .physical-playback__controls label { display: flex; flex: 1; align-items: center; gap: 10px; color: var(--tt-ink-mid); font-size: .72rem; }
 .physical-playback__controls input { width: 100%; accent-color: var(--tt-ink-mid); }

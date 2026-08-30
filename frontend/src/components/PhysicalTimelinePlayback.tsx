@@ -3,8 +3,8 @@ import './PhysicalTimelinePlayback.css'
 import { CircuitPreview } from './CircuitPreview'
 import { useAnimationSettings } from '../context/useAnimationSettings'
 import type { CircuitEditorState } from '../types/circuit'
-import type { GateDurationDefaults, MeasurementResult, PhysicalTimeline, StateSnapshot } from '../types/simulation'
-import { activePhysicalTimelineEvent, clampSimulationTime, nearestSnapshotIndex } from '../utils/physicalTimeline'
+import type { GateDurationDefaults, MeasurementResult, PhysicalTimeline } from '../types/simulation'
+import { activePhysicalTimelineEvent, clampSimulationTime } from '../utils/physicalTimeline'
 
 type PhysicalTimelinePlaybackProps = {
   circuit: CircuitEditorState
@@ -13,8 +13,6 @@ type PhysicalTimelinePlaybackProps = {
   measurement?: MeasurementResult
   simulationTimeUs: number
   onSimulationTimeChange: (simulationTimeUs: number) => void
-  noisySnapshots?: StateSnapshot[]
-  idealSnapshots?: StateSnapshot[]
   /*
    * 'controls' は再生操作だけの細いバー、'circuit' は回路図だけの表示。
    * 時刻カーソルは Bloch球・密度行列など下のパネルと共有するので、操作系は
@@ -33,8 +31,6 @@ export function PhysicalTimelinePlayback({
   measurement,
   simulationTimeUs,
   onSimulationTimeChange,
-  noisySnapshots = [],
-  idealSnapshots = [],
   variant = 'full',
 }: PhysicalTimelinePlaybackProps) {
   const showCircuit = variant !== 'controls'
@@ -70,11 +66,6 @@ export function PhysicalTimelinePlayback({
   const highlightedGateSignatures = activeEvent?.operations.map((operation) => (
     `${operation.gate}:${[...(operation.controls ?? []), ...operation.targets].sort((left, right) => left - right).join(',')}`
   )) ?? []
-  const noisySnapshot = noisySnapshots[nearestSnapshotIndex(noisySnapshots, boundedSimulationTimeUs)]
-  const idealSnapshot = idealSnapshots[nearestSnapshotIndex(idealSnapshots, boundedSimulationTimeUs)]
-  const stateDifference = noisySnapshot && idealSnapshot
-    ? densityMatrixDistance(noisySnapshot, idealSnapshot)
-    : null
 
   useEffect(() => {
     if (!playing || !showControls || totalDurationUs <= 0) return
@@ -161,13 +152,6 @@ export function PhysicalTimelinePlayback({
           </div>
         </>
       ) : null}
-      {stateDifference === null ? null : (
-        <div className="physical-playback__noise-readout" aria-label="理想状態とノイズ状態の差">
-          <span>現在時刻のノイズ差分 Δρ</span>
-          <strong>{stateDifference.toFixed(5)}</strong>
-          <small>理想軌道とノイズ軌道の密度行列のFrobenius距離</small>
-        </div>
-      )}
       {showControls ? (
         <div className="physical-playback__controls">
           <button type="button" onClick={playing ? () => setPlaying(false) : handlePlay}>{playing ? '一時停止' : '再生'}</button>
@@ -211,20 +195,4 @@ export function PhysicalTimelinePlayback({
 
 function formatBranchProbability(probability: number) {
   return `${(Math.max(0, Math.min(1, probability)) * 100).toFixed(2)}%`
-}
-
-function densityMatrixDistance(left: StateSnapshot, right: StateSnapshot) {
-  const leftReal = left.density_matrix.real
-  const leftImag = left.density_matrix.imag
-  const rightReal = right.density_matrix.real
-  const rightImag = right.density_matrix.imag
-  let sum = 0
-  for (let row = 0; row < Math.min(leftReal.length, rightReal.length); row += 1) {
-    for (let column = 0; column < Math.min(leftReal[row].length, rightReal[row].length); column += 1) {
-      const real = leftReal[row][column] - rightReal[row][column]
-      const imag = leftImag[row][column] - rightImag[row][column]
-      sum += real * real + imag * imag
-    }
-  }
-  return Math.sqrt(sum)
 }
