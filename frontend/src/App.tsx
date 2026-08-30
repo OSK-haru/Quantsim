@@ -287,6 +287,7 @@ function App() {
             <PulseStateExplorerPage
               run={latestPulseRun}
               currentSignature={pulseSignature}
+              currentCircuit={pulseCircuit}
               onOpenPulseLab={() => navigate('pulse-lab')}
             />
           )}

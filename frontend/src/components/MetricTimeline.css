@@ -83,6 +83,20 @@
   stroke-linejoin: round;
 }
 
+.metric-timeline__swatch--held {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--tt-ink-dim) 0 2px,
+    transparent 2px 6px
+  );
+}
+
+.metric-timeline__line--held {
+  stroke: var(--tt-ink-dim);
+  stroke-width: 2;
+  stroke-dasharray: 2 4;
+}
+
 .metric-timeline__line--fidelity {
   stroke: url(#fidelityGradient);
 }
@@ -218,4 +232,19 @@ html[data-theme='light'] .metric-timeline {
   --metric-purity-end: #b17c2f;
   --metric-state-change: #775982;
   --metric-threshold: #77716a;
+}
+
+.metric-timeline__held-selector {
+  gap: 6px;
+  cursor: pointer;
+}
+
+.metric-timeline__held-selector select {
+  padding: 2px 4px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.32);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
 }

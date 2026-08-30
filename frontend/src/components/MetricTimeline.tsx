@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import './MetricTimeline.css'
 import { SectionHeader } from './SectionHeader'
 import type {
@@ -13,6 +14,10 @@ type MetricTimelineProps = {
   cursorSimulationTimeUs?: number | null
   fidelityThreshold?: number | null
   effectiveTimeUs?: number | null
+  /* 保持した実行の指標。比較表示が切れていれば空。 */
+  heldTimeline?: MetricPoint[]
+  /* 保持した実行のスナップショット。区間状態変化を出すのに使う。 */
+  heldSnapshots?: StateSnapshot[]
 }
 
 type StateChangePoint = {
@@ -26,6 +31,9 @@ const padding = 28
 const denseTimelineThreshold = 80
 const maxDenseMarkers = 12
 const unchangedTolerance = 1e-6
+
+/* 保持した実行から重ねられる指標。 */
+type HeldMetricKey = 'fidelity' | 'purity' | 'stateChange'
 
 function scaleX(timeUs: number, minimumTimeUs: number, maximumTimeUs: number) {
   if (maximumTimeUs <= minimumTimeUs) {
@@ -154,13 +162,18 @@ export function MetricTimeline({
   cursorSimulationTimeUs = null,
   fidelityThreshold = null,
   effectiveTimeUs = null,
+  heldTimeline = [],
+  heldSnapshots = [],
 }: MetricTimelineProps) {
+  const [selectedHeldMetric, setSelectedHeldMetric] = useState<HeldMetricKey>('fidelity')
   const hasTimeline = timeline.length > 0
   const stateChanges = stateChangeSeries(stateSnapshots)
   const combinedTimes = [
     ...timeline.map((point) => point.time_us),
     ...idealTimeline.map((point) => point.time_us),
     ...stateChanges.map((point) => point.time_us),
+    ...heldTimeline.map((point) => point.time_us),
+    ...stateChangeSeries(heldSnapshots).map((point) => point.time_us),
   ].filter(Number.isFinite)
   const minimumTimeUs = combinedTimes.length > 0 ? Math.min(...combinedTimes) : 0
   const maximumTimeUs = combinedTimes.length > 0 ? Math.max(...combinedTimes) : 1
@@ -182,6 +195,44 @@ export function MetricTimeline({
     minimumTimeUs,
     maximumTimeUs,
   )
+  /*
+   * 保持した実行から重ねる線は、常に1本だけにする。この図はすでに忠実度・純度・
+   * ノイズなし・区間状態変化が走っていて、保持側を全部足すと線が倍になって
+   * どちらの実行のものか読めなくなる。
+   * どの指標を見比べるかは利用者が選ぶ。既定はこのページの主指標である忠実度。
+   */
+  const heldStateChanges = stateChangeSeries(heldSnapshots)
+  /* 保持側で実際に選べる指標だけを出す。中身の無い選択肢は並べない。 */
+  const heldMetricOptions: { key: HeldMetricKey; label: string }[] = []
+  if (heldTimeline.length > 0) {
+    if (heldTimeline.some((point) => point.fidelity !== null)) {
+      heldMetricOptions.push({ key: 'fidelity', label: '忠実度' })
+    }
+    if (heldTimeline.some((point) => point.purity !== null)) {
+      heldMetricOptions.push({ key: 'purity', label: '純度' })
+    }
+  }
+  if (heldStateChanges.length > 0) {
+    heldMetricOptions.push({ key: 'stateChange', label: '区間状態変化' })
+  }
+  /* 選んでいた指標が消えたら先頭へ落とす。 */
+  const activeHeldMetric = heldMetricOptions.some((option) => option.key === selectedHeldMetric)
+    ? selectedHeldMetric
+    : heldMetricOptions[0]?.key ?? 'fidelity'
+  const activeHeldMetricLabel = heldMetricOptions
+    .find((option) => option.key === activeHeldMetric)?.label ?? '忠実度'
+  const heldPath = heldMetricOptions.length === 0
+    ? ''
+    : activeHeldMetric === 'stateChange'
+      ? buildStateChangePath(heldStateChanges, minimumTimeUs, maximumTimeUs)
+      : buildMetricPath(
+          heldTimeline,
+          (point) => safeMetric(
+            activeHeldMetric === 'purity' ? point.purity : point.fidelity,
+          ),
+          minimumTimeUs,
+          maximumTimeUs,
+        )
   const stateChangePath = buildStateChangePath(
     stateChanges,
     minimumTimeUs,
@@ -192,6 +243,25 @@ export function MetricTimeline({
     (maximum, point) => Math.max(maximum, point.value),
     0,
   )
+  /*
+   * 読み比べは同じ指標どうしで行う。区間状態変化は最終値ではなく最大値で
+   * 読む量なので、そちらを突き合わせる。
+   */
+  const currentFinalValue = heldMetricOptions.length === 0
+    ? null
+    : activeHeldMetric === 'stateChange'
+      ? maximumStateChange
+      : finalPoint === null
+        ? null
+        : safeMetric(activeHeldMetric === 'purity' ? finalPoint.purity : finalPoint.fidelity)
+  const heldFinalPoint = heldTimeline.length > 0 ? heldTimeline[heldTimeline.length - 1] : null
+  const heldFinalValue = heldMetricOptions.length === 0
+    ? null
+    : activeHeldMetric === 'stateChange'
+      ? heldStateChanges.reduce((maximum, point) => Math.max(maximum, point.value), 0)
+      : heldFinalPoint === null
+        ? null
+        : safeMetric(activeHeldMetric === 'purity' ? heldFinalPoint.purity : heldFinalPoint.fidelity)
   const isDense = timeline.length > denseTimelineThreshold
   const resolvedFidelityThreshold = typeof fidelityThreshold === 'number'
     && Number.isFinite(fidelityThreshold)
@@ -251,6 +321,21 @@ export function MetricTimeline({
               区間状態変化
             </span>
           ) : null}
+          {heldMetricOptions.length > 0 ? (
+            <label className="metric-timeline__legend-item metric-timeline__held-selector">
+              <span className="metric-timeline__swatch metric-timeline__swatch--held" />
+              保持した実行の
+              <select
+                value={activeHeldMetric}
+                onChange={(event) => setSelectedHeldMetric(event.target.value as HeldMetricKey)}
+                aria-label="保持した実行から重ねる指標"
+              >
+                {heldMetricOptions.map((option) => (
+                  <option key={option.key} value={option.key}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
       </div>
 
@@ -290,6 +375,9 @@ export function MetricTimeline({
               </g>
             )}
 
+            {heldPath === '' ? null : (
+              <path d={heldPath} className="metric-timeline__line metric-timeline__line--held" />
+            )}
             <path d={fidelityPath} className="metric-timeline__line metric-timeline__line--fidelity" />
             <path d={purityPath} className="metric-timeline__line metric-timeline__line--purity" />
             {idealTimeline.length > 0 ? (
@@ -377,6 +465,16 @@ export function MetricTimeline({
                 <strong className="metric-timeline__value">{maximumStateChange.toFixed(4)}</strong>
               </article>
             ) : null}
+            {heldFinalValue === null || currentFinalValue === null ? null : (
+              <article className="metric-timeline__value-card metric-timeline__value-card--held">
+                <span className="metric-timeline__label">保持した実行の{activeHeldMetricLabel}</span>
+                <strong className="metric-timeline__value">{heldFinalValue.toFixed(4)}</strong>
+                <small>
+                  現在 {currentFinalValue.toFixed(4)}
+                  （差 {Math.abs(heldFinalValue - currentFinalValue).toFixed(4)}）
+                </small>
+              </article>
+            )}
           </div>
         </>
       ) : (

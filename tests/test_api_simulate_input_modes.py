@@ -1,3 +1,4 @@
+from contextlib import ExitStack
 import unittest
 from unittest.mock import patch
 
@@ -163,6 +164,29 @@ class ApiSimulateInputModesTest(unittest.TestCase):
         self.assertIn("api_logical_qubits", response["diagnostics"])
 
     def test_simulate_returns_structured_error_detail_on_failure(self) -> None:
+        # str(exc) can carry file paths and internal state, so the raw message is
+        # opt-in via EXPOSE_INTERNAL_ERRORS. The structured envelope is always
+        # present; only the "error" field is withheld by default.
+        detail = self._failing_simulate_detail()
+
+        self.assertIsInstance(detail, dict)
+        self.assertEqual(detail["message"], "Simulation failed.")
+        self.assertEqual(detail["error_type"], "ValueError")
+
+    def test_simulate_withholds_the_raw_message_by_default(self) -> None:
+        detail = self._failing_simulate_detail(expose_internal_errors=False)
+
+        self.assertNotIn("error", detail)
+
+    def test_simulate_includes_the_raw_message_when_errors_are_exposed(self) -> None:
+        detail = self._failing_simulate_detail(expose_internal_errors=True)
+
+        self.assertIn("boom", str(detail["error"]))
+
+    def _failing_simulate_detail(
+        self,
+        expose_internal_errors: bool | None = None,
+    ) -> dict[str, object]:
         request = SimulateRequest(
             circuit_preset="bell",
             simulation_backend="python_dense",
@@ -180,15 +204,18 @@ class ApiSimulateInputModesTest(unittest.TestCase):
             },
         )
 
-        with patch("api.main.run_simulation", side_effect=ValueError("boom")):
-            with self.assertRaises(HTTPException) as context:
-                simulate(request)
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch("api.main.run_simulation", side_effect=ValueError("boom"))
+            )
+            if expose_internal_errors is not None:
+                stack.enter_context(
+                    patch("api.main.EXPOSE_INTERNAL_ERRORS", expose_internal_errors)
+                )
+            context = stack.enter_context(self.assertRaises(HTTPException))
+            simulate(request)
 
-        detail = context.exception.detail
-        self.assertIsInstance(detail, dict)
-        self.assertEqual(detail["message"], "Simulation failed.")
-        self.assertEqual(detail["error_type"], "ValueError")
-        self.assertIn("boom", str(detail["error"]))
+        return context.exception.detail
 
     def test_physical_payload_requires_physical_environment_fields(self) -> None:
         with self.assertRaises(ValidationError):

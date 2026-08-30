@@ -3,6 +3,7 @@ import json
 import math
 import unittest
 from concurrent.futures import TimeoutError as FuturesTimeoutError
+from contextlib import ExitStack
 from unittest.mock import patch
 
 from fastapi import HTTPException
@@ -257,22 +258,45 @@ class PulseBaselineAApiTests(unittest.TestCase):
                     _PULSE_EXECUTION_SLOTS.release()
 
     def test_execution_failure_returns_structured_500(self) -> None:
-        request = PulseSimulateRequest.model_validate(
-            _direct_square_payload()
-        )
-        with patch(
-            "api.main.run_pulse_request",
-            side_effect=RuntimeError("pulse boom"),
-        ):
-            with self.assertRaises(HTTPException) as context:
-                pulse_simulate(request)
+        # str(exc) can carry file paths and internal state, so the raw message is
+        # opt-in via EXPOSE_INTERNAL_ERRORS. The structured envelope is always
+        # present; only the "error" field is withheld by default.
+        status_code, detail = self._failing_pulse_detail()
 
-        self.assertEqual(context.exception.status_code, 500)
-        self.assertEqual(
-            context.exception.detail["error_type"],
-            "RuntimeError",
-        )
-        self.assertIn("pulse boom", context.exception.detail["error"])
+        self.assertEqual(status_code, 500)
+        self.assertEqual(detail["error_type"], "RuntimeError")
+
+    def test_execution_failure_withholds_the_raw_message_by_default(self) -> None:
+        _, detail = self._failing_pulse_detail(expose_internal_errors=False)
+
+        self.assertNotIn("error", detail)
+
+    def test_execution_failure_includes_the_raw_message_when_exposed(self) -> None:
+        _, detail = self._failing_pulse_detail(expose_internal_errors=True)
+
+        self.assertIn("pulse boom", detail["error"])
+
+    def _failing_pulse_detail(
+        self,
+        expose_internal_errors: bool | None = None,
+    ) -> tuple[int, dict[str, object]]:
+        request = PulseSimulateRequest.model_validate(_direct_square_payload())
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "api.main.run_pulse_request",
+                    side_effect=RuntimeError("pulse boom"),
+                )
+            )
+            if expose_internal_errors is not None:
+                stack.enter_context(
+                    patch("api.main.EXPOSE_INTERNAL_ERRORS", expose_internal_errors)
+                )
+            context = stack.enter_context(self.assertRaises(HTTPException))
+            pulse_simulate(request)
+
+        return context.exception.status_code, context.exception.detail
 
 
 class _TimeoutFuture:

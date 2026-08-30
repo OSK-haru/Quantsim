@@ -271,6 +271,55 @@ export function pulseSetupSignature(
   })
 }
 
+/*
+ * 「保持した実行と重ねてよいか」を決める指紋。
+ *
+ * 重ねて意味があるのは、駆動と観測条件が同じまま環境だけを変えた場合に限る。
+ * そのとき2本の差はそのまま環境の寄与になる。パルスの形や観測時間まで
+ * 変わってしまうと、差がどこから来たのか分けられず、重ねた図は誤読を生む。
+ *
+ * なのでここには環境・散逸まわり（environmentMode, deviceQuality, 温度,
+ * T1/Tphi, 各 gamma, 準静的ノイズ）を入れない。それ以外は全部入れる。
+ */
+export function pulseComparabilitySignature(
+  form: PulseLabForm,
+  circuit: PulseCircuitState,
+): string {
+  return JSON.stringify({
+    /* 状態空間の形。ここが変わると基底そのものが対応しない。 */
+    modelId: form.modelId,
+    localLevels: form.localLevels,
+    /* 駆動の形。差を環境のせいにするには、パルスが同じでなければならない。 */
+    shape: form.shape,
+    amplitudeMode: form.amplitudeMode,
+    targetRotationAngleRad: form.targetRotationAngleRad,
+    peakAmplitudeRadPerUs: form.peakAmplitudeRadPerUs,
+    pulseDurationUs: form.pulseDurationUs,
+    sigmaUs: form.sigmaUs,
+    truncationSigma: form.truncationSigma,
+    phaseRad: form.phaseRad,
+    detuningRadPerUs: form.detuningRadPerUs,
+    dragBetaUs: form.dragBetaUs,
+    anharmonicityMhz: form.anharmonicityMhz,
+    networkDetuningQ0RadPerUs: form.networkDetuningQ0RadPerUs,
+    networkDetuningQ1RadPerUs: form.networkDetuningQ1RadPerUs,
+    networkExchangeCouplingRadPerUs: form.networkExchangeCouplingRadPerUs,
+    /* 観測条件。時間軸が違うと同じ物理時刻で並べられない。 */
+    totalSimulationTimeUs: form.totalSimulationTimeUs,
+    snapshotCount: form.snapshotCount,
+    /* 回路。台数・操作列が変われば軌跡の意味が変わる。 */
+    transmonCount: circuit.transmons.length,
+    lanes: circuit.lanes.map((lane) => ({
+      transmonIndex: lane.transmonIndex,
+      steps: lane.steps.map((step) => (
+        step.operation === 'drive'
+          ? { operation: step.operation, primitive: step.primitive, pulse: step.pulse }
+          : { operation: step.operation, angleRad: step.angleRad }
+      )),
+    })),
+  })
+}
+
 export function formatPulseProbability(value: number): string {
   return `${(Math.max(0, Math.min(1, value)) * 100).toFixed(2)}%`
 }

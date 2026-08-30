@@ -33,6 +33,7 @@ from core.gates import (
     CachedCollapseOperator,
     Matrix,
     apply_non_selective_computational_measurement,
+    apply_readout_error,
     apply_unitary_to_density,
     clean_density_matrix,
     column_duration_us,
@@ -464,10 +465,14 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
     if representation == "statevector":
         try:
             statevector = execute_statevector_branches(config.circuit)
-            result.output_probabilities = statevector.output_probabilities
+            observed = _observed_probabilities(
+                statevector.output_probabilities,
+                config,
+            )
+            result.output_probabilities = observed
             result.purity[-1] = statevector_branch_purity(statevector)
             result.measurement_counts = _sample_measurement_counts(
-                statevector.output_probabilities,
+                observed,
                 config.measurement_shots,
                 config.measurement_seed,
             )
@@ -512,9 +517,10 @@ def run_simulation(config: SimulationConfig) -> SimulationResult:
                 evolution_method=branch_evolution_method,
                 simulation_backend=config.simulation_backend,
             )
-            result.output_probabilities = branching.output_probabilities
+            observed = _observed_probabilities(branching.output_probabilities, config)
+            result.output_probabilities = observed
             result.measurement_counts = _sample_measurement_counts(
-                branching.output_probabilities,
+                observed,
                 config.measurement_shots,
                 config.measurement_seed,
             )
@@ -598,6 +604,27 @@ def _has_measurements(config: SimulationConfig) -> bool:
     )
 
 
+def _observed_probabilities(
+    probabilities: Mapping[str, float],
+    config: SimulationConfig,
+) -> dict[str, float]:
+    """Apply the configured readout error to computational-basis probabilities.
+
+    Readout error models the measurement apparatus, not the state, so it is
+    applied to the observation stage only. Mid-circuit MEASURE projections and
+    every state-level metric are left untouched.
+    """
+
+    readout_error = config.readout_error
+    if readout_error is None or not readout_error.is_enabled:
+        return dict(probabilities)
+    return apply_readout_error(
+        probabilities,
+        config.circuit.logical_qubits,
+        readout_error.assignment_errors(config.circuit.logical_qubits),
+    )
+
+
 def _run_weak_coupling_lindblad(config: SimulationConfig) -> SimulationResult:
     if config.duration_us < _total_gate_duration_us(config):
         return _run_post_circuit_degradation(config)
@@ -676,9 +703,12 @@ def _run_gate_aware_hamiltonian_lindblad(config: SimulationConfig) -> Simulation
     )
 
     output_probabilities_started_at = perf_counter()
-    output_distribution = output_probabilities(
-        simulation.final_noisy_state,
-        config.circuit.logical_qubits,
+    output_distribution = _observed_probabilities(
+        output_probabilities(
+            simulation.final_noisy_state,
+            config.circuit.logical_qubits,
+        ),
+        config,
     )
     profile.output_probabilities_ms = (
         perf_counter() - output_probabilities_started_at
@@ -816,9 +846,12 @@ def _run_post_circuit_degradation(config: SimulationConfig) -> SimulationResult:
     )
 
     output_probabilities_started_at = perf_counter()
-    output_distribution = output_probabilities(
-        simulation.final_noisy_state,
-        config.circuit.logical_qubits,
+    output_distribution = _observed_probabilities(
+        output_probabilities(
+            simulation.final_noisy_state,
+            config.circuit.logical_qubits,
+        ),
+        config,
     )
     profile.output_probabilities_ms = (
         perf_counter() - output_probabilities_started_at

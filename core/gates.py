@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from math import pi, sqrt
 
@@ -842,6 +842,67 @@ def output_probabilities(rho: Matrix, n_qubits: int) -> dict[str, float]:
     for index, row in enumerate(rho):
         probabilities[_basis_label(index, n_qubits)] = _as_probability(row[index].real)
     return probabilities
+
+
+def apply_readout_error(
+    probabilities: Mapping[str, float],
+    n_qubits: int,
+    assignment_errors: Sequence[tuple[float, float]],
+) -> dict[str, float]:
+    """Apply per-qubit assignment errors to computational-basis probabilities.
+
+    The readout model is the affine two-point approximation used by
+    superconducting hardware calibration. For qubit ``k`` the column-stochastic
+    confusion matrix is
+
+        A_k = [[1 - p10, p01],
+               [p10, 1 - p01]]
+
+    with ``p10 = P(observe 1 | prepare 0)`` and ``p01 = P(observe 0 | prepare 1)``.
+    The observed distribution is the tensor product of the per-qubit matrices
+    applied to the true distribution. Qubits are applied sequentially so the
+    2^n x 2^n product is never materialised.
+
+    This is an *observation* stage: it never touches the density matrix, so
+    state-level metrics such as fidelity and purity remain uncontaminated.
+    """
+
+    if len(assignment_errors) != n_qubits:
+        raise ValueError(
+            f"assignment_errors must provide {n_qubits} entries, got {len(assignment_errors)}"
+        )
+
+    dimension = 1 << n_qubits
+    amplitudes = [0.0] * dimension
+    for label, value in probabilities.items():
+        amplitudes[int(label, 2)] = float(value)
+
+    # Qubit 0 is the most significant bit, matching _basis_label.
+    for qubit, (p10, p01) in enumerate(assignment_errors):
+        _require_assignment_error(p10, p01, qubit)
+        stride = 1 << (n_qubits - 1 - qubit)
+        for block in range(0, dimension, stride << 1):
+            for offset in range(block, block + stride):
+                zero = amplitudes[offset]
+                one = amplitudes[offset + stride]
+                amplitudes[offset] = (1.0 - p10) * zero + p01 * one
+                amplitudes[offset + stride] = p10 * zero + (1.0 - p01) * one
+
+    return {
+        _basis_label(index, n_qubits): _as_probability(amplitudes[index])
+        for index in range(dimension)
+    }
+
+
+def _require_assignment_error(p10: float, p01: float, qubit: int) -> None:
+    if not 0.0 <= p10 <= 1.0 or not 0.0 <= p01 <= 1.0:
+        raise ValueError(
+            f"qubit {qubit} assignment errors must lie in [0, 1], got p10={p10}, p01={p01}"
+        )
+    if p10 + p01 >= 1.0:
+        raise ValueError(
+            f"qubit {qubit} assignment span must be positive: p10 + p01 = {p10 + p01} >= 1"
+        )
 
 
 def multi_qubit_collapse_operators(

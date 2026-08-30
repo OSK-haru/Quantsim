@@ -9,6 +9,8 @@ import {
 type PulseStateProbabilityComparisonProps = {
   view: PulseExplorerView
   cursorTimeUs: number | null
+  /* 保持した実行の同じ基底の軌道。比較表示が切れていれば null。 */
+  heldView?: PulseExplorerView | null
 }
 
 const chartWidth = 760
@@ -23,6 +25,7 @@ const padding = 34
 export function PulseStateProbabilityComparison({
   view,
   cursorTimeUs,
+  heldView = null,
 }: PulseStateProbabilityComparisonProps) {
   const finalPoint = view.points.at(-1) ?? null
   const defaultLabel = finalPoint
@@ -36,7 +39,12 @@ export function PulseStateProbabilityComparison({
     : view.basisLabels[0] ?? ''
 
   const startTimeUs = view.points[0]?.timeUs ?? 0
-  const maximumTimeUs = Math.max(view.totalTimeUs, startTimeUs + 1e-12)
+  /* 保持した実行のほうが長いこともあるので、軸は両方が収まる幅にする。 */
+  const maximumTimeUs = Math.max(
+    view.totalTimeUs,
+    heldView?.totalTimeUs ?? 0,
+    startTimeUs + 1e-12,
+  )
   const openSeries = view.points.map((point) => ({
     timeUs: point.timeUs,
     value: point.populations[activeLabel] ?? 0,
@@ -48,6 +56,16 @@ export function PulseStateProbabilityComparison({
         value: point.idealPopulations?.[activeLabel] ?? 0,
       }))
     : []
+  /*
+   * ページ側が「環境だけが違う実行」しか渡してこないので、基底は必ず対応する。
+   * 対応しなくなった保持は、その時点で捨てられている。
+   */
+  const heldSeries = heldView === null
+    ? []
+    : heldView.points.map((point) => ({
+        timeUs: point.timeUs,
+        value: point.populations[activeLabel] ?? 0,
+      }))
   const boundedCursorTimeUs = cursorTimeUs === null
     ? null
     : Math.min(maximumTimeUs, Math.max(startTimeUs, cursorTimeUs))
@@ -56,6 +74,13 @@ export function PulseStateProbabilityComparison({
     : nearestPulsePointIndex(view.points, boundedCursorTimeUs)
   const cursorPoint = cursorIndex >= 0 ? view.points[cursorIndex] : null
   const openCursorValue = cursorPoint ? cursorPoint.populations[activeLabel] ?? 0 : null
+  /* 保持側は点の並びが違うので、共有インデックスではなく時刻から引き直す。 */
+  const heldCursorIndex = heldView !== null && boundedCursorTimeUs !== null
+    ? nearestPulsePointIndex(heldView.points, boundedCursorTimeUs)
+    : -1
+  const heldCursorValue = heldCursorIndex >= 0 && heldView !== null
+    ? heldView.points[heldCursorIndex]?.populations[activeLabel] ?? 0
+    : null
   const idealCursorValue = cursorPoint?.idealPopulations
     ? cursorPoint.idealPopulations[activeLabel] ?? 0
     : null
@@ -104,6 +129,12 @@ export function PulseStateProbabilityComparison({
             {view.idealLabel ?? '閉じた系'}
           </span>
         ) : null}
+        {heldSeries.length > 0 ? (
+          <span>
+            <i className="pulse-probability__swatch pulse-probability__swatch--held" />
+            保持した実行
+          </span>
+        ) : null}
         <strong>|{activeLabel}⟩</strong>
       </div>
 
@@ -144,6 +175,12 @@ export function PulseStateProbabilityComparison({
                 d={seriesPath(idealSeries, x, y)}
               />
             ) : null}
+            {heldSeries.length > 0 ? (
+              <path
+                className="pulse-probability__line pulse-probability__line--held"
+                d={seriesPath(heldSeries, x, y)}
+              />
+            ) : null}
             {cursorX === null ? null : (
               <g className="pulse-probability__cursor">
                 <line x1={cursorX} x2={cursorX} y1={padding} y2={chartHeight - padding} />
@@ -152,6 +189,9 @@ export function PulseStateProbabilityComparison({
                 )}
                 {idealCursorValue === null ? null : (
                   <circle cx={cursorX} cy={y(idealCursorValue)} r="5" data-series="ideal" />
+                )}
+                {heldCursorValue === null ? null : (
+                  <circle cx={cursorX} cy={y(heldCursorValue)} r="5" data-series="held" />
                 )}
               </g>
             )}
@@ -179,6 +219,12 @@ export function PulseStateProbabilityComparison({
         )}
         {openCursorValue !== null && idealCursorValue !== null ? (
           <span>差 {formatPulseProbability(Math.abs(idealCursorValue - openCursorValue))}</span>
+        ) : null}
+        {heldCursorValue === null ? null : (
+          <span>保持 {formatPulseProbability(heldCursorValue)}</span>
+        )}
+        {openCursorValue !== null && heldCursorValue !== null ? (
+          <span>保持との差 {formatPulseProbability(Math.abs(heldCursorValue - openCursorValue))}</span>
         ) : null}
       </div>
     </section>

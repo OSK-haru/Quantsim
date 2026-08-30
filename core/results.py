@@ -248,6 +248,87 @@ class EnvironmentConfig:
 
 
 @dataclass
+class ReadoutErrorConfig:
+    """Affine two-point readout model applied to observation probabilities.
+
+    ``p10`` is P(observe 1 | prepare 0) and ``p01`` is P(observe 0 | prepare 1).
+    Supply a single pair to share it across every qubit, or ``per_qubit`` to give
+    each qubit its own calibrated pair. This is an observation-stage effect: it
+    never touches the density matrix, so state metrics stay uncontaminated.
+    """
+
+    p10: float = 0.0
+    p01: float = 0.0
+    per_qubit: list[dict[str, float]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.p10 = _non_negative_float(self.p10, "readout_error.p10")
+        self.p01 = _non_negative_float(self.p01, "readout_error.p01")
+        normalized: list[dict[str, float]] = []
+        for index, entry in enumerate(self.per_qubit):
+            entry = _require_mapping(entry, f"readout_error.per_qubit[{index}]")
+            normalized.append(
+                {
+                    "p10": _non_negative_float(
+                        entry.get("p10", 0.0), f"readout_error.per_qubit[{index}].p10"
+                    ),
+                    "p01": _non_negative_float(
+                        entry.get("p01", 0.0), f"readout_error.per_qubit[{index}].p01"
+                    ),
+                }
+            )
+        self.per_qubit = normalized
+        for index, (p10, p01) in enumerate(self._pairs()):
+            _validate_assignment_pair(p10, p01, f"readout_error qubit {index}")
+
+    def _pairs(self) -> list[tuple[float, float]]:
+        if self.per_qubit:
+            return [(entry["p10"], entry["p01"]) for entry in self.per_qubit]
+        return [(self.p10, self.p01)]
+
+    @property
+    def is_enabled(self) -> bool:
+        return any(p10 > 0.0 or p01 > 0.0 for p10, p01 in self._pairs())
+
+    def assignment_errors(self, n_qubits: int) -> list[tuple[float, float]]:
+        """Expand the configuration to one (p10, p01) pair per qubit."""
+
+        if not self.per_qubit:
+            return [(self.p10, self.p01)] * n_qubits
+        if len(self.per_qubit) != n_qubits:
+            raise ValueError(
+                "readout_error.per_qubit must provide one entry per qubit "
+                f"({n_qubits}), got {len(self.per_qubit)}"
+            )
+        return [(entry["p10"], entry["p01"]) for entry in self.per_qubit]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "p10": self.p10,
+            "p01": self.p01,
+            "per_qubit": [dict(entry) for entry in self.per_qubit],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ReadoutErrorConfig":
+        data = _require_mapping(data, "readout_error")
+        return cls(
+            p10=data.get("p10", 0.0),
+            p01=data.get("p01", 0.0),
+            per_qubit=list(data.get("per_qubit") or []),
+        )
+
+
+def _validate_assignment_pair(p10: float, p01: float, label: str) -> None:
+    if p10 > 1.0 or p01 > 1.0:
+        raise ValueError(f"{label} assignment errors must lie in [0, 1]")
+    if p10 + p01 >= 1.0:
+        raise ValueError(
+            f"{label} assignment span must be positive: p10 + p01 = {p10 + p01} >= 1"
+        )
+
+
+@dataclass
 class SimulationConfig:
     """Complete configuration for a single simulation run."""
 
@@ -264,12 +345,18 @@ class SimulationConfig:
     snapshot_options: SnapshotOptions | None = None
     measurement_shots: int = 1024
     measurement_seed: int = 0
+    readout_error: ReadoutErrorConfig | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.circuit, CircuitConfig):
             self.circuit = CircuitConfig.from_dict(self.circuit)
         if not isinstance(self.environment, EnvironmentConfig):
             self.environment = EnvironmentConfig.from_dict(self.environment)
+        if self.readout_error is not None and not isinstance(
+            self.readout_error,
+            ReadoutErrorConfig,
+        ):
+            self.readout_error = ReadoutErrorConfig.from_dict(self.readout_error)
 
         self.duration_us = _float(self.duration_us, "duration_us")
         self.time_steps = _int(self.time_steps, "time_steps")
@@ -333,6 +420,9 @@ class SimulationConfig:
             "native_gate_durations_us": dict(self.native_gate_durations_us),
             "measurement_shots": self.measurement_shots,
             "measurement_seed": self.measurement_seed,
+            "readout_error": (
+                None if self.readout_error is None else self.readout_error.to_dict()
+            ),
             "snapshot_options": (
                 None
                 if self.snapshot_options is None
@@ -356,6 +446,11 @@ class SimulationConfig:
             native_gate_durations_us=dict(data.get("native_gate_durations_us") or {}),
             measurement_shots=data.get("measurement_shots", 1024),
             measurement_seed=data.get("measurement_seed", 0),
+            readout_error=(
+                None
+                if data.get("readout_error") is None
+                else ReadoutErrorConfig.from_dict(data["readout_error"])
+            ),
             snapshot_options=(
                 None
                 if data.get("snapshot_options") is None

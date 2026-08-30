@@ -287,6 +287,19 @@ class MeasurementOptionsRequest(BaseModel):
     seed: int = Field(default=0, ge=0, le=2 ** 32 - 1)
 
 
+class ReadoutErrorQubitRequest(BaseModel):
+    p10: float = Field(default=0.0, ge=0.0, le=1.0)
+    p01: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class ReadoutErrorRequest(BaseModel):
+    """Affine two-point readout model applied to observation probabilities only."""
+
+    p10: float = Field(default=0.0, ge=0.0, le=1.0)
+    p01: float = Field(default=0.0, ge=0.0, le=1.0)
+    per_qubit: list[ReadoutErrorQubitRequest] = Field(default_factory=list)
+
+
 class SimulationParametersRequest(BaseModel):
     normalized_temperature: float | None = Field(default=None, ge=0.0, le=1.0)
     normalized_magnetic_field: float | None = Field(default=None, ge=0.0, le=1.0)
@@ -559,6 +572,7 @@ class SimulateRequest(BaseModel):
     measurement_options: MeasurementOptionsRequest = Field(
         default_factory=MeasurementOptionsRequest
     )
+    readout_error: ReadoutErrorRequest | None = None
     parameters: SimulationParametersRequest
 
     @model_validator(mode="before")
@@ -893,6 +907,18 @@ def build_config_from_simulate_request(request: SimulateRequest) -> SimulationCo
         },
         measurement_shots=request.measurement_options.shots,
         measurement_seed=request.measurement_options.seed,
+        readout_error=(
+            None
+            if request.readout_error is None
+            else {
+                "p10": request.readout_error.p10,
+                "p01": request.readout_error.p01,
+                "per_qubit": [
+                    {"p10": entry.p10, "p01": entry.p01}
+                    for entry in request.readout_error.per_qubit
+                ],
+            }
+        ),
         snapshot_options=(
             None
             if request.snapshot_options is None

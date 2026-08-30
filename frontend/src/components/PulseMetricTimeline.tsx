@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import './PulseMetricTimeline.css'
 import { SectionHeader } from './SectionHeader'
 import {
@@ -10,6 +10,21 @@ import {
 type PulseMetricTimelineProps = {
   view: PulseExplorerView
   cursorTimeUs: number | null
+  /* 保持した実行。比較表示が切れていれば null。 */
+  heldView?: PulseExplorerView | null
+}
+
+/* 保持した実行から重ねられる指標。 */
+type HeldMetricKey = 'purity' | 'reference' | 'leakage' | 'stateChange'
+
+function heldMetricValue(point: PulseExplorerPoint, metric: HeldMetricKey): number {
+  if (metric === 'reference') {
+    return point.reference ?? 0
+  }
+  if (metric === 'leakage') {
+    return point.leakage ?? 0
+  }
+  return point.purity
 }
 
 const width = 640
@@ -23,9 +38,14 @@ const maxDenseMarkers = 12
  * 純度と参照値（忠実度または目標との重なり）を主線に、
  * Pulse固有のリーケージと、区間ごとの密度行列の動きを重ねる。
  */
-export function PulseMetricTimeline({ view, cursorTimeUs }: PulseMetricTimelineProps) {
+export function PulseMetricTimeline({
+  view,
+  cursorTimeUs,
+  heldView = null,
+}: PulseMetricTimelineProps) {
   const points = view.points
   const stateChanges = useMemo(() => pulseStateChangeSeries(points), [points])
+  const [selectedHeldMetric, setSelectedHeldMetric] = useState<HeldMetricKey>('purity')
   const minimumTimeUs = points[0]?.timeUs ?? 0
   const maximumTimeUs = Math.max(points.at(-1)?.timeUs ?? 1, minimumTimeUs + 1e-12)
   const x = (timeUs: number) => (
@@ -39,6 +59,48 @@ export function PulseMetricTimeline({ view, cursorTimeUs }: PulseMetricTimelineP
   const hasLeakage = view.leakageLabel !== null
     && points.some((point) => point.leakage !== null)
   const purityPath = metricPath(points, (point) => point.purity, x, y)
+  /*
+   * 保持した実行から重ねる線は、常に1本だけにする。この図はすでに純度・参照値・
+   * リーケージ・区間状態変化が走っていて、保持側を全部足すと線が倍になって
+   * どちらの実行のものか読めなくなる。
+   * どの指標を見比べるかは利用者が選ぶ。既定は純度（どのモデルでも必ず返り、
+   * 環境の効き方がいちばん素直に出る量）。
+   */
+  /* ?? [] を直に書くと毎描画で別の配列になり、下の useMemo が効かなくなる。 */
+  const heldPoints = useMemo(() => heldView?.points ?? [], [heldView])
+  const heldStateChanges = useMemo(() => pulseStateChangeSeries(heldPoints), [heldPoints])
+  /* 保持側で実際に選べる指標だけを出す。中身の無い選択肢は並べない。 */
+  const heldMetricOptions = useMemo(() => {
+    if (heldPoints.length === 0) {
+      return [] as { key: HeldMetricKey; label: string }[]
+    }
+    const options: { key: HeldMetricKey; label: string }[] = [
+      { key: 'purity', label: '純度' },
+    ]
+    if (hasReference && heldPoints.some((point) => point.reference !== null)) {
+      options.push({ key: 'reference', label: view.referenceLabel ?? '参照値' })
+    }
+    if (hasLeakage && heldPoints.some((point) => point.leakage !== null)) {
+      options.push({ key: 'leakage', label: view.leakageLabel ?? 'リーケージ' })
+    }
+    if (heldStateChanges.length > 0) {
+      options.push({ key: 'stateChange', label: '区間状態変化' })
+    }
+    return options
+  }, [heldPoints, hasReference, hasLeakage, view.referenceLabel, view.leakageLabel, heldStateChanges])
+  /* 選んでいた指標がモデル変更で消えたら、先頭（純度）へ落とす。 */
+  const activeHeldMetric = heldMetricOptions.some((option) => option.key === selectedHeldMetric)
+    ? selectedHeldMetric
+    : heldMetricOptions[0]?.key ?? 'purity'
+  const activeHeldMetricLabel = heldMetricOptions
+    .find((option) => option.key === activeHeldMetric)?.label ?? '純度'
+  const heldPath = heldPoints.length === 0
+    ? ''
+    : activeHeldMetric === 'stateChange'
+      ? heldStateChanges
+          .map((point, index) => `${index === 0 ? 'M' : 'L'} ${x(point.timeUs)} ${y(point.value)}`)
+          .join(' ')
+      : metricPath(heldPoints, (point) => heldMetricValue(point, activeHeldMetric), x, y)
   const referencePath = metricPath(points, (point) => point.reference, x, y)
   const leakagePath = metricPath(points, (point) => point.leakage, x, y)
   const stateChangePath = stateChanges
@@ -62,6 +124,23 @@ export function PulseMetricTimeline({ view, cursorTimeUs }: PulseMetricTimelineP
     ? null
     : x(Math.min(maximumTimeUs, Math.max(minimumTimeUs, cursorTimeUs)))
   const cursorPoint = cursorTimeUs === null ? null : nearestPoint(points, cursorTimeUs)
+  /* 保持側は点の並びが違うので、時刻から引き直す。 */
+  const heldCursorPoint = cursorTimeUs === null || heldPoints.length === 0
+    ? null
+    : nearestPoint(heldPoints, cursorTimeUs)
+  /*
+   * 読み比べは同じ指標どうしで行う。区間状態変化は点ごとの量ではなく
+   * 隣り合う密度行列の距離なので、カーソル値の比較には出さない。
+   */
+  const comparableAtCursor = activeHeldMetric !== 'stateChange'
+    && cursorPoint !== null
+    && heldCursorPoint !== null
+  const currentMetricValue = comparableAtCursor && cursorPoint !== null
+    ? heldMetricValue(cursorPoint, activeHeldMetric)
+    : null
+  const heldMetricValueAtCursor = comparableAtCursor && heldCursorPoint !== null
+    ? heldMetricValue(heldCursorPoint, activeHeldMetric)
+    : null
 
   return (
     <section className="pulse-metric-timeline" aria-label="Pulseの指標タイムライン">
@@ -89,6 +168,21 @@ export function PulseMetricTimeline({ view, cursorTimeUs }: PulseMetricTimelineP
               <span className="pulse-metric-timeline__swatch pulse-metric-timeline__swatch--state-change" />
               区間状態変化
             </span>
+          ) : null}
+          {heldMetricOptions.length > 0 ? (
+            <label className="pulse-metric-timeline__legend-item pulse-metric-timeline__held-selector">
+              <span className="pulse-metric-timeline__swatch pulse-metric-timeline__swatch--held" />
+              保持した実行の
+              <select
+                value={activeHeldMetric}
+                onChange={(event) => setSelectedHeldMetric(event.target.value as HeldMetricKey)}
+                aria-label="保持した実行から重ねる指標"
+              >
+                {heldMetricOptions.map((option) => (
+                  <option key={option.key} value={option.key}>{option.label}</option>
+                ))}
+              </select>
+            </label>
           ) : null}
         </div>
       </div>
@@ -145,6 +239,12 @@ export function PulseMetricTimeline({ view, cursorTimeUs }: PulseMetricTimelineP
               </g>
             )}
 
+            {heldPath === '' ? null : (
+              <path
+                d={heldPath}
+                className="pulse-metric-timeline__line pulse-metric-timeline__line--held"
+              />
+            )}
             <path d={purityPath} className="pulse-metric-timeline__line pulse-metric-timeline__line--purity" />
             {hasReference ? (
               <path d={referencePath} className="pulse-metric-timeline__line pulse-metric-timeline__line--reference" />
@@ -245,6 +345,13 @@ export function PulseMetricTimeline({ view, cursorTimeUs }: PulseMetricTimelineP
                 <span className="pulse-metric-timeline__label">カーソル時刻の純度</span>
                 <strong className="pulse-metric-timeline__value">{cursorPoint.purity.toFixed(6)}</strong>
                 <small>{cursorPoint.timeUs.toFixed(4)} μs</small>
+                {currentMetricValue === null || heldMetricValueAtCursor === null ? null : (
+                  <small>
+                    {activeHeldMetricLabel}：現在 {currentMetricValue.toFixed(6)} ／
+                    保持 {heldMetricValueAtCursor.toFixed(6)}
+                    （差 {Math.abs(heldMetricValueAtCursor - currentMetricValue).toFixed(6)}）
+                  </small>
+                )}
               </article>
             )}
           </div>

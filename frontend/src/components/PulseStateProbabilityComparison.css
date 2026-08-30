@@ -86,6 +86,10 @@
   background: var(--tt-accent);
 }
 
+.pulse-probability__swatch--held {
+  background: var(--tt-ink-dim);
+}
+
 .pulse-probability__chart-wrap {
   margin-top: 8px;
   overflow-x: auto;
@@ -125,6 +129,12 @@
   stroke-dasharray: 6 5;
 }
 
+.pulse-probability__line--held {
+  stroke: var(--tt-ink-dim);
+  stroke-width: 2;
+  stroke-dasharray: 2 4;
+}
+
 .pulse-probability__axis-label {
   fill: var(--tt-ink-dim);
   font-size: 11px;
@@ -146,6 +156,10 @@
 
 .pulse-probability__cursor circle[data-series='ideal'] {
   fill: var(--tt-accent);
+}
+
+.pulse-probability__cursor circle[data-series='held'] {
+  fill: var(--tt-ink-dim);
 }
 
 .pulse-probability__footer {

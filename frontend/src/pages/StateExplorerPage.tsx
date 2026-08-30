@@ -8,6 +8,7 @@ import { PhysicalTimelinePlayback } from '../components/PhysicalTimelinePlayback
 import { SnapshotPlayback } from '../components/SnapshotPlayback'
 import { OutputProbabilities } from '../components/OutputProbabilities'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
+import { RunComparisonBar } from '../components/RunComparisonBar'
 import { StateProbabilityComparison } from '../components/StateProbabilityComparison'
 import { useCircuitContext } from '../context/useCircuitContext'
 import { useTutorial } from '../context/useTutorial'
@@ -160,6 +161,64 @@ export function StateExplorerPage({
   const [playbackSimulationTimeUs, setPlaybackSimulationTimeUs] = useState(0)
   /* Bloch球・密度行列・確率比較は同じスナップショット位置を共有して動く。 */
   const [snapshotPlaying, setSnapshotPlaying] = useState(false)
+  /*
+   * 見比べるために取っておいた実行。保持は1件・ページ単位にする。
+   * パネルは全部で1つのスナップショット位置を共有しているので、パネルごとに
+   * 別の実行を保持できると、隣り合う図が別々の条件を指してしまう。
+   */
+  const [heldResult, setHeldResult] = useState<{
+    response: SimulationResponse
+    circuitConfig: CircuitConfig
+    heldAt: string
+    /* 保持した時点の「環境以外」の指紋。 */
+    comparability: string
+  } | null>(null)
+  /* 比較表示は既定で切る。線が増えるのは、見比べると決めたときだけでいい。 */
+  const [comparing, setComparing] = useState(false)
+  const holdCurrentRun = useCallback(() => {
+    if (activeResponse === null || executedCircuitConfig === null) {
+      return
+    }
+    setHeldResult({
+      response: activeResponse,
+      circuitConfig: executedCircuitConfig,
+      heldAt: new Date().toISOString(),
+      comparability: comparabilitySignature(executedCircuitConfig, activeResponse.parameters),
+    })
+    setComparing(true)
+  }, [activeResponse, executedCircuitConfig])
+  const releaseHeldRun = useCallback(() => {
+    setHeldResult(null)
+    setComparing(false)
+  }, [])
+  /*
+   * 直接比較できなくなった保持は、その場で捨てる。
+   *
+   * 重ねて意味があるのは「回路も観測窓も同じまま、環境だけ変えた」場合だけ。
+   * 回路を編集したり観測窓を変えたりすると、差が環境由来なのか回路由来なのか
+   * 分けられない。読めない比較を残すより、履歴ごと消して保持し直してもらう。
+   */
+  const currentComparability = activeResponse !== null && executedCircuitConfig !== null
+    ? comparabilitySignature(executedCircuitConfig, activeResponse.parameters)
+    : null
+  if (
+    heldResult !== null
+    && currentComparability !== null
+    && heldResult.comparability !== currentComparability
+  ) {
+    setHeldResult(null)
+    setComparing(false)
+  }
+  /* 比較を出しているあいだだけ、保持側の系列を各パネルへ流す。 */
+  const heldForComparison = comparing ? heldResult : null
+  const heldSnapshots = heldForComparison !== null
+    && Array.isArray(heldForComparison.response.state_snapshots)
+    ? heldForComparison.response.state_snapshots
+    : []
+  const heldTimeline = heldForComparison !== null
+    && Array.isArray(heldForComparison.response.timeline)
+    ? heldForComparison.response.timeline
+    : []
   const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
     physical: false, metrics: false, probabilities: true, output: false, bloch: true, density: false, transfer: false,
     rates: false,
@@ -309,6 +368,16 @@ export function StateExplorerPage({
             onShowAll={showAllPanels}
             onHideAll={hideAllPanels}
           />
+          <RunComparisonBar
+            heldLabel={heldResult === null
+              ? null
+              : `${new Date(heldResult.heldAt).toLocaleTimeString()} の実行`}
+            canHold={activeResponse !== null && heldResult?.response !== activeResponse}
+            comparing={comparing}
+            onHold={holdCurrentRun}
+            onRelease={releaseHeldRun}
+            onComparingChange={setComparing}
+          />
           {hasTransfer ? (
             <CollapsiblePanel panelKey="transfer" open={visiblePanels.transfer} onToggle={() => togglePanel('transfer')}>
               <MessageReceiveStateTransferView circuit={circuitState} noisySnapshots={snapshots} idealSnapshots={idealSnapshots} stateTransfer={activeResponse.state_transfer} />
@@ -329,6 +398,8 @@ export function StateExplorerPage({
           <CollapsiblePanel panelKey="metrics" open={visiblePanels.metrics} onToggle={() => togglePanel('metrics')}>
           <MetricTimeline
             timeline={activeResponse.timeline}
+            heldTimeline={heldTimeline}
+            heldSnapshots={heldSnapshots}
             idealTimeline={idealTimeline}
             stateSnapshots={snapshots}
             cursorSimulationTimeUs={playbackSimulationTimeUs}
@@ -350,6 +421,7 @@ export function StateExplorerPage({
               qubitCount={qubitCount}
               idealSnapshots={idealSnapshots}
               noisySnapshots={snapshots}
+              heldSnapshots={heldSnapshots}
               finalProbabilities={activeResponse.output_probabilities}
               cursorSimulationTimeUs={playbackSimulationTimeUs}
             />
@@ -485,6 +557,30 @@ export function StateExplorerPage({
       <QuantumPet phase={petPhase} message={petMessage} tips={stateExplorerTips} />
     </main>
   )
+}
+
+/*
+ * 「保持した実行と重ねてよいか」を決める指紋。
+ *
+ * 重ねて意味があるのは、回路と観測条件が同じまま環境だけを変えた場合に限る。
+ * そのとき2本の差はそのまま環境の寄与になる。回路や観測窓まで変わると、
+ * 差がどこから来たのか分けられず、重ねた図は誤読を生む。
+ *
+ * なので温度・デバイス品質・磁束ノイズ・T1/Tphi といった環境側は入れない。
+ * 回路の構造（circuitConfigSignature）と、観測窓・ゲート長だけを見る。
+ */
+function comparabilitySignature(
+  circuitConfig: CircuitConfig,
+  parameters: SimulationResponse['parameters'],
+): string {
+  return JSON.stringify({
+    circuit: circuitConfigSignature(circuitConfig),
+    /* 観測窓。時間軸が違うと同じ物理時刻で並べられない。 */
+    duration_us: parameters.duration_us,
+    time_steps: parameters.time_steps,
+    /* 入力の与え方が変わると、そもそも同じ実験ではない。 */
+    input_mode: parameters.input_mode,
+  })
 }
 
 function preferredSnapshotIndex(snapshots: SimulationResponse['state_snapshots']): number {

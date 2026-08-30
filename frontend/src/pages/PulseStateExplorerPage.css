@@ -329,3 +329,9 @@
     padding: 8px 6px;
   }
 }
+
+.pulse-explorer-page__compare-note {
+  margin: -4px 0 12px;
+  color: var(--tt-ink-dim);
+  font-size: 0.78rem;
+}

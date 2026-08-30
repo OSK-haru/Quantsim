@@ -14,11 +14,14 @@ import { PulsePopulationTimeline } from '../components/PulsePopulationTimeline'
 import { PulseStateProbabilityComparison } from '../components/PulseStateProbabilityComparison'
 import { PulseTimelinePlayback } from '../components/PulseTimelinePlayback'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
+import { RunComparisonBar } from '../components/RunComparisonBar'
 import { useInternalInfoVisible } from '../context/useAdminMode'
 import type { PulseRunRecord } from '../types/pulse'
+import type { PulseCircuitState } from '../types/pulseCircuit'
 import {
   buildPulseExplorerView,
   nearestPulsePointIndex,
+  pulseComparabilitySignature,
 } from '../utils/pulseStateExplorer'
 import { pulseStateExplorerTips } from '../utils/quantumPetTips'
 
@@ -26,6 +29,11 @@ type PulseStateExplorerPageProps = {
   run: PulseRunRecord | null
   /* いまPulseラボに入っている設定の指紋。実行時のものと違えば結果は古い。 */
   currentSignature: string
+  /*
+   * いまPulseラボに入っている回路。保持した実行と重ねてよいかを
+   * 判定するために、環境以外の指紋を作るのに使う。
+   */
+  currentCircuit: PulseCircuitState
   onOpenPulseLab: () => void
 }
 
@@ -171,6 +179,7 @@ function PanelVisibilityMenu({
 export function PulseStateExplorerPage({
   run,
   currentSignature,
+  currentCircuit,
   onOpenPulseLab,
 }: PulseStateExplorerPageProps) {
   const internalInfoVisible = useInternalInfoVisible()
@@ -181,6 +190,44 @@ export function PulseStateExplorerPage({
   )
   const [cursorTimeUs, setCursorTimeUs] = useState(0)
   const [cursorRunKey, setCursorRunKey] = useState<string | null>(null)
+  /*
+   * 見比べるために取っておいた実行。保持は1件・ページ単位にする。
+   * パネルは全部で1本の時刻カーソルを共有しているので、パネルごとに
+   * 別の実行を保持できると、隣り合う図が別々の条件を指してしまう。
+   *
+   * comparability は保持した時点の「環境以外」の指紋。これが現在と一致する
+   * あいだだけ、2本の差を環境の寄与として読める。
+   */
+  const [heldRun, setHeldRun] = useState<
+    { record: PulseRunRecord; comparability: string } | null
+  >(null)
+  /* 比較表示は既定で切る。線が増えるのは、見比べると決めたときだけでいい。 */
+  const [comparing, setComparing] = useState(false)
+  const heldView = useMemo(
+    () => (heldRun === null
+      ? null
+      : buildPulseExplorerView(heldRun.record.response, heldRun.record.formAtRun)),
+    [heldRun],
+  )
+  /*
+   * 直接比較できなくなった保持は、その場で捨てる。
+   *
+   * 重ねて意味があるのは「回路も観測時間も同じまま、環境だけ変えた」場合だけで、
+   * パルスの形や観測窓まで動かすと、差が環境由来なのか駆動由来なのか分けられない。
+   * 読めない比較を残しておくより、履歴ごと消して保持し直してもらうほうが正しい。
+   */
+  const currentComparability = run === null
+    ? null
+    : pulseComparabilitySignature(run.formAtRun, currentCircuit)
+  if (
+    heldRun !== null
+    && currentComparability !== null
+    && heldRun.comparability !== currentComparability
+  ) {
+    setHeldRun(null)
+    setComparing(false)
+  }
+  const comparisonView = comparing ? heldView : null
   const [openPanels, setOpenPanels] = useState<Record<PulseExplorerPanelKey, boolean>>({
     physical: false,
     metrics: true,
@@ -216,6 +263,20 @@ export function PulseStateExplorerPage({
   }, [])
   const showAllPanels = useCallback(() => setAllPanels(true), [setAllPanels])
   const hideAllPanels = useCallback(() => setAllPanels(false), [setAllPanels])
+  const holdCurrentRun = useCallback(() => {
+    if (run === null) {
+      return
+    }
+    setHeldRun({
+      record: run,
+      comparability: pulseComparabilitySignature(run.formAtRun, currentCircuit),
+    })
+    setComparing(true)
+  }, [run, currentCircuit])
+  const releaseHeldRun = useCallback(() => {
+    setHeldRun(null)
+    setComparing(false)
+  }, [])
 
   const availablePanelKeys = useMemo(
     () => (Object.keys(PULSE_EXPLORER_PANEL_LABELS) as PulseExplorerPanelKey[]).filter((panelKey) => {
@@ -281,6 +342,22 @@ export function PulseStateExplorerPage({
         onHideAll={hideAllPanels}
       />
 
+      <RunComparisonBar
+        heldLabel={heldRun === null ? null : heldRunLabel(heldRun.record)}
+        canHold={run !== null && heldRun?.record !== run}
+        comparing={comparing}
+        onHold={holdCurrentRun}
+        onRelease={releaseHeldRun}
+        onComparingChange={setComparing}
+      />
+
+      {comparisonView !== null && heldRun !== null && heldRun.record.signature === run.signature ? (
+        <p className="pulse-explorer-page__compare-note">
+          環境パラメタがまだ変わっていないため、2本は完全に重なります。
+          Pulseラボで環境の値を変えて再実行すると、差が現れます。
+        </p>
+      ) : null}
+
       <div className="pulse-explorer-page__panels">
         <CollapsiblePanel
           panelKey="physical"
@@ -299,7 +376,11 @@ export function PulseStateExplorerPage({
           open={openPanels.metrics}
           onToggle={() => togglePanel('metrics')}
         >
-          <PulseMetricTimeline view={view} cursorTimeUs={cursorTimeUs} />
+          <PulseMetricTimeline
+            view={view}
+            cursorTimeUs={cursorTimeUs}
+            heldView={comparisonView}
+          />
         </CollapsiblePanel>
 
         <CollapsiblePanel
@@ -319,7 +400,11 @@ export function PulseStateExplorerPage({
           open={openPanels.probabilities}
           onToggle={() => togglePanel('probabilities')}
         >
-          <PulseStateProbabilityComparison view={view} cursorTimeUs={cursorTimeUs} />
+          <PulseStateProbabilityComparison
+            view={view}
+            cursorTimeUs={cursorTimeUs}
+            heldView={comparisonView}
+          />
         </CollapsiblePanel>
 
         <CollapsiblePanel
@@ -387,6 +472,12 @@ export function PulseStateExplorerPage({
       <QuantumPet phase={petPhase} message={petMessage} tips={pulseStateExplorerTips} />
     </main>
   )
+}
+
+/* 保持した実行の見分けは、実行時刻とモデルの2つあれば足りる。 */
+function heldRunLabel(heldRun: PulseRunRecord): string {
+  const time = new Date(heldRun.completedAt).toLocaleTimeString()
+  return `${time} の実行`
 }
 
 function ExplorerHeader() {

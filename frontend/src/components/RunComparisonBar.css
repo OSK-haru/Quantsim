@@ -1,0 +1,65 @@
+.run-comparison-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 9px 14px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
+  background: var(--tt-panel);
+}
+
+.run-comparison-bar__hint,
+.run-comparison-bar__held {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  color: var(--tt-ink-mid);
+  font-size: 0.82rem;
+}
+
+.run-comparison-bar__held {
+  color: var(--tt-ink);
+  font-weight: 600;
+}
+
+.run-comparison-bar__swatch {
+  width: 18px;
+  height: 0;
+  border-top: 2px dotted var(--tt-ink-dim);
+}
+
+.run-comparison-bar__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--tt-ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.run-comparison-bar button {
+  padding: 7px 12px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.32);
+  background: transparent;
+  color: var(--tt-ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.run-comparison-bar button:hover:not(:disabled) {
+  border-color: var(--tt-ink-mid);
+}
+
+.run-comparison-bar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.run-comparison-bar__release {
+  color: var(--tt-ink-mid);
+}
