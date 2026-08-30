@@ -11,7 +11,31 @@ Yuragi-Striderでは、ユーザーが設定した量子回路と、温度・磁
 
 この方程式を **RK4による数値積分**、**明示的CPTP写像による時間発展**、または理想条件下での**状態ベクトル発展**のいずれかで計算し、密度行列、Fidelity、Purity、出力確率などを可視化します。
 
-![Yuragi-Striderの物理モデル概要](/img/yuragi-strider-physics-model.webp)
+## 計算の流れ
+
+入力から出力までは、次の5段で構成されます。
+
+```text
+[1] 入力          量子回路 (H, CNOT, Rz, 測定 …)
+                  環境パラメータ (T, S_Φ(ω), ω_q/2π, T₁, T₂ …)
+                        │
+[2] モデル構成    制御モデル  Gate-aware または Pulse-level  →  H(t)
+                  散逸モデル  緩和 T₁ / 熱励起 n_th / 位相緩和 T_φ  →  {L_k}
+                        │
+[3] 方程式        H(t) と {L_k} からGKSL方程式を構成
+                        │
+[4] 時間発展      RK4 / CPTP写像 / 状態ベクトル のいずれかで積分
+                        │
+[5] 出力          ρ(t) → Fidelity, Purity, 出力確率, Bloch球
+```
+
+第3段で構成される方程式が、このシミュレーターの中心にあります。
+
+$$
+\frac{d\rho}{dt} = -i\left[H(t), \rho\right] + \sum_k \mathcal{D}[L_k]\rho
+$$
+
+第1項が制御による可逆な発展を、第2項が環境との相互作用による不可逆な散逸を表します。散逸子 $\mathcal{D}$ の定義と各項の導出は[Lindblad方程式](./lindblad.md)を参照してください。
 
 ## モデルの構成
 

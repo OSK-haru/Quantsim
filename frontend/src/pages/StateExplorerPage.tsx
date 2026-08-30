@@ -13,6 +13,8 @@ import { useTutorial } from '../context/useTutorial'
 import type { GateDurationDefaults, SimulationResponse } from '../types/simulation'
 import { nearestSnapshotIndex } from '../utils/physicalTimeline'
 import { stateExplorerTips } from '../utils/quantumPetTips'
+import { coherenceTimeRows, decayRateRows } from '../utils/rateRows'
+import { useInternalInfoVisible } from '../context/useAdminMode'
 import {
   circuitConfigSignature,
   circuitEditorStateToConfig,
@@ -26,11 +28,12 @@ type StateExplorerPageProps = {
   onOpenSimulation: () => void
 }
 
-type ExplorerPanelKey = 'physical' | 'metrics' | 'probabilities' | 'output' | 'bloch' | 'density' | 'transfer'
+type ExplorerPanelKey = 'physical' | 'metrics' | 'probabilities' | 'output' | 'bloch' | 'density' | 'transfer' | 'rates'
 const EXPLORER_PANEL_LABELS: Record<ExplorerPanelKey, string> = {
   transfer: 'Message → Receive',
   physical: '物理時間', metrics: '指標タイムライン',
   probabilities: '確率比較', output: '出力確率', bloch: 'Bloch球', density: '密度行列',
+  rates: '環境レート',
 }
 function CollapsiblePanel({ panelKey, open, onToggle, children }: { panelKey: ExplorerPanelKey; open: boolean; onToggle: () => void; children: ReactNode }) {
   return <section className={`state-explorer-panel${open ? '' : ' state-explorer-panel--collapsed'}`}>
@@ -156,6 +159,7 @@ export function StateExplorerPage({
   const [playbackSimulationTimeUs, setPlaybackSimulationTimeUs] = useState(0)
   const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
     physical: false, metrics: false, probabilities: true, output: false, bloch: true, density: false, transfer: false,
+    rates: false,
   })
   const togglePanel = useCallback((panelKey: ExplorerPanelKey) => {
     setOpenPanels((current) => ({ ...current, [panelKey]: !current[panelKey] }))
@@ -192,7 +196,20 @@ export function StateExplorerPage({
   const qubitCount = activeResponse && activeResponse.circuit && Number.isInteger(activeResponse.circuit.qubit_count)
     ? activeResponse.circuit.qubit_count
     : null
-  const matrixDimension = qubitCount === null ? null : 2 ** qubitCount
+  /*
+   * 緩和時間は通常モードでも見せ、γ 系の生レートは詳細モードでだけ添える。
+   * 診断カードは詳細モード専用になったので、通常モードで T1・T2 を確認できる
+   * 場所はここだけになる。
+   */
+  const internalInfoVisible = useInternalInfoVisible()
+  const coherenceRows = useMemo(
+    () => (activeResponse ? coherenceTimeRows(activeResponse.rates) : []),
+    [activeResponse],
+  )
+  const decayRows = useMemo(
+    () => (activeResponse && internalInfoVisible ? decayRateRows(activeResponse.rates) : []),
+    [activeResponse, internalInfoVisible],
+  )
   const hasTransfer = circuitState.columns.some((column) => column.gates.some((gate) => gate.type === 'MESSAGE'))
     && circuitState.columns.some((column) => column.gates.some((gate) => gate.type === 'RECEIVED'))
   const availablePanelKeys = useMemo(
@@ -200,16 +217,25 @@ export function StateExplorerPage({
       if (panelKey === 'transfer') return hasTransfer
       if (panelKey === 'probabilities') return qubitCount !== null
       if (panelKey === 'bloch' || panelKey === 'density') return snapshots.length > 0
+      if (panelKey === 'rates') return coherenceRows.length > 0 || decayRows.length > 0
       return true
     }),
-    [hasTransfer, qubitCount, snapshots.length],
+    [hasTransfer, qubitCount, snapshots.length, coherenceRows.length, decayRows.length],
   )
   const handlePlaybackSimulationTimeChange = useCallback((simulationTimeUs: number) => {
     setPlaybackSimulationTimeUs(simulationTimeUs)
     const nextSnapshotIndex = nearestSnapshotIndex(snapshots, simulationTimeUs)
     if (nextSnapshotIndex >= 0) setSnapshotIndex(nextSnapshotIndex)
   }, [snapshots])
-  const handleSnapshotIndexChange = useCallback((nextSnapshotIndex: number) => {
+  /*
+   * 共有インデックスの範囲を決めるのはここ。各パネルは自分の配列長で丸めずに
+   * 要求値をそのまま上げてくるので、正となる noisy 側の長さで一度だけ丸める。
+   */
+  const handleSnapshotIndexChange = useCallback((requestedIndex: number) => {
+    const nextSnapshotIndex = Math.min(
+      Math.max(requestedIndex, 0),
+      Math.max(snapshots.length - 1, 0),
+    )
     setSnapshotIndex(nextSnapshotIndex)
     const snapshotTimeUs = snapshots[nextSnapshotIndex]?.time_us
     if (typeof snapshotTimeUs === 'number' && Number.isFinite(snapshotTimeUs)) {
@@ -315,80 +341,105 @@ export function StateExplorerPage({
               defaultOpen
             />
           </CollapsiblePanel>
-          <section className="state-explorer-page__summary" aria-label="シミュレーション結果の概要">
-            <span>{qubitCount === null ? '量子ビット数不明' : `量子ビット ${qubitCount}`}</span>
-            {matrixDimension === null ? null : <span>{matrixDimension} x {matrixDimension}</span>}
-            <span>スナップショット {snapshots.length} 個</span>
-          </section>
-          <section className="state-explorer-page__workspace" aria-label="密度行列ワークスペース">
-            {snapshots.length === 0 ? (
-              <div className="state-explorer-page__unavailable">
-                この結果には密度行列スナップショットがありません。
-              </div>
-            ) : (
-              <div className="state-explorer-page__explorers">
-                <CollapsiblePanel panelKey="bloch" open={visiblePanels.bloch} onToggle={() => togglePanel('bloch')}>
-                <div className="state-explorer-page__comparison-grid">
-                  <section className="state-explorer-page__comparison-panel">
-                    <h2>Gate-aware 状態</h2>
+          {snapshots.length === 0 ? (
+            <div className="state-explorer-page__unavailable">
+              この結果には密度行列スナップショットがありません。
+            </div>
+          ) : (
+            <>
+              <CollapsiblePanel panelKey="bloch" open={visiblePanels.bloch} onToggle={() => togglePanel('bloch')}>
+              <div className="state-explorer-page__comparison-grid">
+                <section className="state-explorer-page__comparison-panel">
+                  <h2>Gate-aware 状態</h2>
+                  <BlochSphereExplorer
+                    snapshots={snapshots}
+                    snapshotIndex={activeSnapshotIndex}
+                    onSnapshotIndexChange={handleSnapshotIndexChange}
+                  />
+                </section>
+                {idealSnapshots.length > 0 ? (
+                  <section className="state-explorer-page__comparison-panel state-explorer-page__comparison-panel--ideal">
+                    <h2>理想状態（ノイズなし）</h2>
                     <BlochSphereExplorer
-                      snapshots={snapshots}
+                      snapshots={idealSnapshots}
                       snapshotIndex={activeSnapshotIndex}
                       onSnapshotIndexChange={handleSnapshotIndexChange}
                     />
                   </section>
+                ) : null}
+              </div>
+              </CollapsiblePanel>
+            <CollapsiblePanel panelKey="density" open={visiblePanels.density} onToggle={() => togglePanel('density')}>
+                <div className="state-explorer-page__section-heading">
+                  <div>
+                    <span className="state-explorer-page__eyebrow">Full quantum state</span>
+                    <h2 id="density-matrix-title">密度行列</h2>
+                  </div>
+                  <p>
+                    Bloch球と同じスナップショットの完全な多量子ビット状態を表示します。
+                    RZによる位相変化は絶対値に出ない場合があるため、実部・虚部・位相を切り替えて確認してください。
+                  </p>
+                </div>
+                <div className="state-explorer-page__comparison-grid">
+                  <section className="state-explorer-page__comparison-panel">
+                    <h3>Gate-aware 密度行列</h3>
+                    <DensityMatrixViewer
+                      snapshots={snapshots}
+                      snapshotIndex={activeSnapshotIndex}
+                      onSnapshotIndexChange={handleSnapshotIndexChange}
+                      snapshotCount={snapshots.length}
+                    />
+                  </section>
                   {idealSnapshots.length > 0 ? (
                     <section className="state-explorer-page__comparison-panel state-explorer-page__comparison-panel--ideal">
-                      <h2>理想状態（ノイズなし）</h2>
-                      <BlochSphereExplorer
+                      <h3>理想状態の密度行列</h3>
+                      <DensityMatrixViewer
                         snapshots={idealSnapshots}
                         snapshotIndex={activeSnapshotIndex}
                         onSnapshotIndexChange={handleSnapshotIndexChange}
+                        snapshotCount={snapshots.length}
                       />
                     </section>
                   ) : null}
                 </div>
-                </CollapsiblePanel>
-                <section
-                  className="state-explorer-page__density-section"
-                  aria-labelledby="density-matrix-title"
-                >
-                <CollapsiblePanel panelKey="density" open={visiblePanels.density} onToggle={() => togglePanel('density')}>
-                  <div className="state-explorer-page__section-heading">
-                    <div>
-                      <span className="state-explorer-page__eyebrow">Full quantum state</span>
-                      <h2 id="density-matrix-title">密度行列</h2>
-                    </div>
-                    <p>
-                      Bloch球と同じスナップショットの完全な多量子ビット状態を表示します。
-                      RZによる位相変化は絶対値に出ない場合があるため、実部・虚部・位相を切り替えて確認してください。
-                    </p>
-                  </div>
-                  <div className="state-explorer-page__comparison-grid">
-                    <section className="state-explorer-page__comparison-panel">
-                      <h3>Gate-aware 密度行列</h3>
-                      <DensityMatrixViewer
-                        snapshots={snapshots}
-                        snapshotIndex={activeSnapshotIndex}
-                        onSnapshotIndexChange={handleSnapshotIndexChange}
-                      />
-                    </section>
-                    {idealSnapshots.length > 0 ? (
-                      <section className="state-explorer-page__comparison-panel state-explorer-page__comparison-panel--ideal">
-                        <h3>理想状態の密度行列</h3>
-                        <DensityMatrixViewer
-                          snapshots={idealSnapshots}
-                          snapshotIndex={activeSnapshotIndex}
-                          onSnapshotIndexChange={handleSnapshotIndexChange}
-                        />
-                      </section>
-                    ) : null}
-                  </div>
-                </CollapsiblePanel>
-                </section>
+            </CollapsiblePanel>
+            </>
+          )}
+          {coherenceRows.length > 0 || decayRows.length > 0 ? (
+            <CollapsiblePanel panelKey="rates" open={visiblePanels.rates} onToggle={() => togglePanel('rates')}>
+              <div className="state-explorer-page__section-heading">
+                <div>
+                  <span className="state-explorer-page__eyebrow">Environment</span>
+                  <h2>環境レート</h2>
+                </div>
+                <p>
+                  この実行で使われた緩和時間です。T1 は占有数の緩和、T2 は位相の緩和にかかる
+                  時間の目安で、回路の長さがこれらに近づくほど忠実度が落ちていきます。
+                </p>
               </div>
-            )}
-          </section>
+              <div className="state-explorer-page__rates-grid">
+                {coherenceRows.map((row) => (
+                  <div className="state-explorer-page__rate-item" key={row.label}>
+                    <span className="state-explorer-page__rate-label">{row.label}</span>
+                    <strong className="state-explorer-page__rate-value">{row.value}</strong>
+                  </div>
+                ))}
+              </div>
+              {decayRows.length > 0 ? (
+                <>
+                  <h3 className="state-explorer-page__rate-subtitle">緩和レート（生値）</h3>
+                  <div className="state-explorer-page__rates-grid">
+                    {decayRows.map((row) => (
+                      <div className="state-explorer-page__rate-item" key={row.label}>
+                        <span className="state-explorer-page__rate-label">{row.label}</span>
+                        <strong className="state-explorer-page__rate-value">{row.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </>
+            ) : null}
+            </CollapsiblePanel>
+          ) : null}
         </>
       )}
       <QuantumPet phase={petPhase} message={petMessage} tips={stateExplorerTips} />

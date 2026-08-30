@@ -11,9 +11,9 @@
 }
 
 .state-explorer-page__header,
-.state-explorer-page__summary,
-.state-explorer-page__workspace,
 .state-explorer-page__empty,
+.state-explorer-page__unavailable,
+.state-explorer-page > .state-explorer-panel,
 .state-explorer-page > .metric-timeline {
   width: min(1180px, 100%);
   margin: 0 auto;
@@ -62,37 +62,9 @@
   border-color: var(--tt-ink-mid);
 }
 
-.state-explorer-page__summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.state-explorer-page__summary span {
-  padding: 7px 10px;
-  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.2);
-  background: var(--tt-panel);
-  color: var(--tt-ink);
-  font-size: 0.84rem;
-}
-
-.state-explorer-page__workspace {
-  min-width: 0;
-  padding: 22px;
-  border: 1px solid rgb(var(--tt-rule-strong-rgb) / 0.2);
-  background: var(--tt-void);
-}
-
 .state-explorer-page .density-matrix-viewer__matrix-scroll {
   min-height: min(58vh, 620px);
   max-height: min(66vh, 720px);
-}
-
-.state-explorer-page__explorers,
-.state-explorer-page__density-section {
-  display: grid;
-  gap: 24px;
-  min-width: 0;
 }
 
 .state-explorer-page__panel-menu {
@@ -194,6 +166,7 @@
 
 .state-explorer-panel {
   margin: 12px 0;
+  min-width: 0;
   border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.24);
   overflow: hidden;
   background: rgb(var(--tt-void-rgb) / 0.5);
@@ -312,10 +285,6 @@
     flex-direction: column;
   }
 
-  .state-explorer-page__workspace {
-    padding: 14px;
-  }
-
   .state-explorer-page__section-heading {
     flex-direction: column;
   }
@@ -365,4 +334,40 @@
   line-height: 0.88;
   letter-spacing: -0.045em;
   text-transform: uppercase;
+}
+
+/* 環境レートのパネル。診断カードのレート表示と見た目を揃える。 */
+.state-explorer-page__rates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.state-explorer-page__rate-item {
+  padding: 12px 13px;
+  background: rgb(var(--tt-void-rgb) / 0.44);
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.12);
+}
+
+.state-explorer-page__rate-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--tt-ink-mid);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.state-explorer-page__rate-value {
+  color: var(--tt-ink-max);
+  font-size: 0.96rem;
+  word-break: break-word;
+}
+
+.state-explorer-page__rate-subtitle {
+  margin: 18px 0 10px;
+  color: var(--tt-ink-mid);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }

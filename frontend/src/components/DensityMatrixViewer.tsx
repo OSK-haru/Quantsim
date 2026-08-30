@@ -20,6 +20,11 @@ type DensityMatrixViewerProps = {
   snapshots?: StateSnapshot[] | null
   snapshotIndex?: number
   onSnapshotIndexChange?: (snapshotIndex: number) => void
+  /*
+   * 複数パネルでインデックスを共有するときの、共有側の総数。
+   * 省略時はこのパネル自身のスナップショット数を使う。
+   */
+  snapshotCount?: number
 }
 
 const MODE_OPTIONS: Array<{ label: string; value: DensityMatrixMode }> = [
@@ -50,6 +55,7 @@ export function DensityMatrixViewer({
   snapshots,
   snapshotIndex: controlledSnapshotIndex,
   onSnapshotIndexChange,
+  snapshotCount,
 }: DensityMatrixViewerProps) {
   const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
   const [internalSnapshotIndex, setInternalSnapshotIndex] = useState(0)
@@ -61,6 +67,9 @@ export function DensityMatrixViewer({
   const [searchedCoordinate, setSearchedCoordinate] = useState<MatrixCoordinate | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
   const requestedSnapshotIndex = controlledSnapshotIndex ?? internalSnapshotIndex
+  // 操作の範囲は共有側の総数で決め、実際に描画する行列だけ自分の配列に丸める。
+  const navigationCount = Math.max(snapshotCount ?? safeSnapshots.length, 0)
+  const lastNavigationIndex = Math.max(navigationCount - 1, 0)
   const snapshotIndex = clamp(requestedSnapshotIndex, 0, Math.max(safeSnapshots.length - 1, 0))
   const activeCellKey = `${snapshotIndex}:${mode}`
 
@@ -89,21 +98,30 @@ export function DensityMatrixViewer({
     )
   }
 
+  /*
+   * 制御されている場合、インデックスは Bloch球など他のパネルと共有している。
+   * ここで自分の配列長に丸めてから通知すると、スナップショット数が少ない側
+   * （理想状態など）が共有インデックスを黙って切り詰め、他のパネルまで
+   * 意図しない時点に飛ぶ。丸めるのは非制御時と描画時だけにする。
+   */
   function selectSnapshot(nextSnapshotIndex: number) {
-    const clampedIndex = clamp(nextSnapshotIndex, 0, safeSnapshots.length - 1)
     if (onSnapshotIndexChange) {
-      onSnapshotIndexChange(clampedIndex)
+      onSnapshotIndexChange(Math.max(0, nextSnapshotIndex))
       return
     }
-    setInternalSnapshotIndex(clampedIndex)
+    setInternalSnapshotIndex(clamp(nextSnapshotIndex, 0, safeSnapshots.length - 1))
   }
 
+  /*
+   * 移動の起点は「丸めた後」ではなく要求値。スナップショットが少ない側の
+   * パネルから操作しても、共有インデックスが縮まないようにする。
+   */
   function goToPreviousSnapshot() {
-    selectSnapshot(snapshotIndex - 1)
+    selectSnapshot(requestedSnapshotIndex - 1)
   }
 
   function goToNextSnapshot() {
-    selectSnapshot(snapshotIndex + 1)
+    selectSnapshot(requestedSnapshotIndex + 1)
   }
 
   function searchMatrixElement() {
@@ -143,18 +161,18 @@ export function DensityMatrixViewer({
             className="density-matrix-viewer__button"
             type="button"
             onClick={goToPreviousSnapshot}
-            disabled={snapshotIndex === 0}
+            disabled={requestedSnapshotIndex <= 0}
           >
             前のスナップショット
           </button>
           <span className="density-matrix-viewer__position" aria-live="polite">
-            {snapshotIndex + 1} / {safeSnapshots.length}
+            {Math.min(requestedSnapshotIndex, lastNavigationIndex) + 1} / {navigationCount}
           </span>
           <button
             className="density-matrix-viewer__button"
             type="button"
             onClick={goToNextSnapshot}
-            disabled={snapshotIndex === safeSnapshots.length - 1}
+            disabled={requestedSnapshotIndex >= lastNavigationIndex}
           >
             次のスナップショット
           </button>
@@ -166,9 +184,9 @@ export function DensityMatrixViewer({
             className="density-matrix-viewer__slider"
             type="range"
             min="0"
-            max={Math.max(safeSnapshots.length - 1, 0)}
+            max={lastNavigationIndex}
             step="1"
-            value={snapshotIndex}
+            value={Math.min(requestedSnapshotIndex, lastNavigationIndex)}
             onChange={(event) => selectSnapshot(Number(event.currentTarget.value))}
           />
         </label>

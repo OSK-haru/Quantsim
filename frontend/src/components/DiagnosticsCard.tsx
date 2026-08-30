@@ -3,6 +3,7 @@ import { ResultDrawer } from './ResultDrawer'
 import { useInternalInfoVisible } from '../context/useAdminMode'
 import { getModelLabel } from '../utils/modelLabels'
 import type { SimulationDiagnostics, SimulationRates } from '../types/simulation'
+import { coherenceTimeRows, decayRateRows, formatMicroseconds } from '../utils/rateRows'
 
 export type { SimulationDiagnostics } from '../types/simulation'
 
@@ -108,18 +109,15 @@ const INTERNAL_PROFILING_FIELDS: PerformanceField[] = [
 export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
   const internalInfoVisible = useInternalInfoVisible()
 
-  const rateRows = [
-    { label: '下降レート', value: rates.gamma_down_per_us, format: formatRate },
-    { label: '上昇レート', value: rates.gamma_up_per_us, format: formatRate },
-    {
-      label: '占有数緩和レート',
-      value: rates.gamma_population_relaxation_per_us,
-      format: formatRate,
-    },
-    { label: '純位相緩和レート', value: rates.gamma_phi_per_us, format: formatRate },
-    { label: '基準 T1', value: rates.t1_base_us, format: formatMicroseconds },
-    { label: '実効 T1', value: rates.t1_effective_us, format: formatMicroseconds },
-  ].filter((row) => row.value !== null)
+  /*
+   * このカードは内部モデル ID と環境レートの生値だけで構成されているので、
+   * カードごと詳細モード専用にする。通常モードでは何も描かない。
+   */
+  if (!internalInfoVisible) {
+    return null
+  }
+
+  const rateRows = [...decayRateRows(rates), ...coherenceTimeRows(rates)]
 
   const performanceRows = PERFORMANCE_FIELDS
     .map((field) => {
@@ -149,8 +147,7 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
     })
     .filter((entry): entry is { label: string; value: string } => entry !== null)
 
-  const internalProfilingRows = internalInfoVisible
-    && diagnostics.core_internal_profiling_enabled === true
+  const internalProfilingRows = diagnostics.core_internal_profiling_enabled === true
     ? INTERNAL_PROFILING_FIELDS
         .map((field) => {
           const value = diagnostics[field.key]
@@ -169,92 +166,81 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
   return (
     <ResultDrawer
       eyebrow="診断情報"
-      title={internalInfoVisible ? '実行時スナップショット' : '計算条件の詳細'}
+      title="実行時スナップショット"
       icon="wrench"
-      description={
-        internalInfoVisible
-          ? '最新の応答に関するバックエンドと実行時の詳細です。'
-          : '直近の計算に使われた物理モデルと環境レートです。'
-      }
+      description="最新の応答に関するバックエンドと実行時の詳細です。"
       defaultOpen={false}
     >
       <div className="diagnostics-grid">
         <div className="diagnostics-item">
           <span className="diagnostics-label">シミュレーションモデル</span>
-          <ModelValue id={diagnostics.simulation_model} showId={internalInfoVisible} />
+          <ModelValue id={diagnostics.simulation_model} showId />
         </div>
         <div className="diagnostics-item">
           <span className="diagnostics-label">発展モード</span>
-          <ModelValue id={diagnostics.evolution_mode} showId={internalInfoVisible} />
+          <ModelValue id={diagnostics.evolution_mode} showId />
         </div>
-        {/* ここから下は実行基盤の内部情報なので、詳細モードのみ。 */}
-        {internalInfoVisible ? (
-          <>
-            {/* ゲートを考慮した発展の内訳。実コードと突き合わせたい人向け。 */}
-            {diagnostics.hamiltonian_mode ? (
-              <div className="diagnostics-item">
-                <span className="diagnostics-label">ハミルトニアン構成</span>
-                <ModelValue id={String(diagnostics.hamiltonian_mode)} showId />
-              </div>
-            ) : null}
-            {diagnostics.simulation_mode ? (
-              <div className="diagnostics-item">
-                <span className="diagnostics-label">実行時モード</span>
-                <ModelValue id={String(diagnostics.simulation_mode)} showId />
-              </div>
-            ) : null}
-            {diagnostics.compilation_mode ? (
-              <div className="diagnostics-item">
-                <span className="diagnostics-label">コンパイル方式</span>
-                <strong className="diagnostics-value">
-                  {String(diagnostics.compilation_mode)}
-                </strong>
-              </div>
-            ) : null}
-            {diagnostics.gate_duration_model ? (
-              <div className="diagnostics-item">
-                <span className="diagnostics-label">ゲート時間モデル</span>
-                <strong className="diagnostics-value">
-                  {String(diagnostics.gate_duration_model)}
-                </strong>
-              </div>
-            ) : null}
-            <div className="diagnostics-item">
-              <span className="diagnostics-label">シミュレーションバックエンド</span>
-              <ModelValue id={diagnostics.simulation_backend} showId />
-            </div>
-            <div className="diagnostics-item">
-              <span className="diagnostics-label">バックエンド名</span>
-              <ModelValue id={diagnostics.backend_name} showId />
-            </div>
-            <div className="diagnostics-item">
-              <span className="diagnostics-label">Rust カーネルモード</span>
-              <strong className="diagnostics-value">{diagnostics.rust_kernel_mode}</strong>
-            </div>
-            <div className="diagnostics-item">
-              <span className="diagnostics-label">Rust 呼び出し回数</span>
-              <strong className="diagnostics-value">{diagnostics.rust_kernel_call_count}</strong>
-            </div>
-            <div className="diagnostics-item">
-              <span className="diagnostics-label">サンプルバッチ数</span>
-              <strong className="diagnostics-value">
-                {diagnostics.rust_kernel_sampled_batch_count}
-              </strong>
-            </div>
-          </>
+        {/* ゲートを考慮した発展の内訳。実コードと突き合わせたい人向け。 */}
+        {diagnostics.hamiltonian_mode ? (
+          <div className="diagnostics-item">
+            <span className="diagnostics-label">ハミルトニアン構成</span>
+            <ModelValue id={String(diagnostics.hamiltonian_mode)} showId />
+          </div>
         ) : null}
+        {diagnostics.simulation_mode ? (
+          <div className="diagnostics-item">
+            <span className="diagnostics-label">実行時モード</span>
+            <ModelValue id={String(diagnostics.simulation_mode)} showId />
+          </div>
+        ) : null}
+        {diagnostics.compilation_mode ? (
+          <div className="diagnostics-item">
+            <span className="diagnostics-label">コンパイル方式</span>
+            <strong className="diagnostics-value">
+              {String(diagnostics.compilation_mode)}
+            </strong>
+          </div>
+        ) : null}
+        {diagnostics.gate_duration_model ? (
+          <div className="diagnostics-item">
+            <span className="diagnostics-label">ゲート時間モデル</span>
+            <strong className="diagnostics-value">
+              {String(diagnostics.gate_duration_model)}
+            </strong>
+          </div>
+        ) : null}
+        <div className="diagnostics-item">
+          <span className="diagnostics-label">シミュレーションバックエンド</span>
+          <ModelValue id={diagnostics.simulation_backend} showId />
+        </div>
+        <div className="diagnostics-item">
+          <span className="diagnostics-label">バックエンド名</span>
+          <ModelValue id={diagnostics.backend_name} showId />
+        </div>
+        <div className="diagnostics-item">
+          <span className="diagnostics-label">Rust カーネルモード</span>
+          <strong className="diagnostics-value">{diagnostics.rust_kernel_mode}</strong>
+        </div>
+        <div className="diagnostics-item">
+          <span className="diagnostics-label">Rust 呼び出し回数</span>
+          <strong className="diagnostics-value">{diagnostics.rust_kernel_call_count}</strong>
+        </div>
+        <div className="diagnostics-item">
+          <span className="diagnostics-label">サンプルバッチ数</span>
+          <strong className="diagnostics-value">
+            {diagnostics.rust_kernel_sampled_batch_count}
+          </strong>
+        </div>
       </div>
 
-      {internalInfoVisible ? (
-        <div className="diagnostics-badges">
-          <span className={`diagnostics-badge ${diagnostics.backend_fallback_used ? 'is-warn' : 'is-ok'}`}>
-            {diagnostics.backend_fallback_used ? 'バックエンドフォールバック' : 'フォールバックなし'}
-          </span>
-          <span className={`diagnostics-badge ${diagnostics.rust_kernel_fallback_used ? 'is-warn' : 'is-ok'}`}>
-            {diagnostics.rust_kernel_fallback_used ? 'Rust フォールバック' : 'Rust 有効'}
-          </span>
-        </div>
-      ) : null}
+      <div className="diagnostics-badges">
+        <span className={`diagnostics-badge ${diagnostics.backend_fallback_used ? 'is-warn' : 'is-ok'}`}>
+          {diagnostics.backend_fallback_used ? 'バックエンドフォールバック' : 'フォールバックなし'}
+        </span>
+        <span className={`diagnostics-badge ${diagnostics.rust_kernel_fallback_used ? 'is-warn' : 'is-ok'}`}>
+          {diagnostics.rust_kernel_fallback_used ? 'Rust フォールバック' : 'Rust 有効'}
+        </span>
+      </div>
 
       {rateRows.length > 0 ? (
         <div className="diagnostics-performance" aria-label="環境レート">
@@ -263,14 +249,14 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
             {rateRows.map((row) => (
               <div className="diagnostics-performance__item" key={row.label}>
                 <span className="diagnostics-performance__label">{row.label}</span>
-                <strong className="diagnostics-performance__value">{row.format(row.value)}</strong>
+                <strong className="diagnostics-performance__value">{row.value}</strong>
               </div>
             ))}
           </div>
         </div>
       ) : null}
 
-      {internalInfoVisible && performanceRows.length > 0 ? (
+      {performanceRows.length > 0 ? (
         <div className="diagnostics-performance" aria-label="性能と時間">
           <h4 className="diagnostics-performance__title">性能 / 時間</h4>
           <div className="diagnostics-performance__grid">
@@ -284,7 +270,7 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
         </div>
       ) : null}
 
-      {internalInfoVisible && coreProfilingRows.length > 0 ? (
+      {coreProfilingRows.length > 0 ? (
         <div className="diagnostics-performance" aria-label="Core プロファイリング">
           <h4 className="diagnostics-performance__title">Core プロファイリング</h4>
           <div className="diagnostics-performance__grid">
@@ -336,20 +322,4 @@ function formatBoolean(value: unknown) {
     return value ? 'true' : 'false'
   }
   return String(value)
-}
-
-function formatMicroseconds(value: unknown) {
-  const number = typeof value === 'number' ? value : Number(value)
-  if (!Number.isFinite(number)) {
-    return '利用できません'
-  }
-  return `${number.toFixed(3)} us`
-}
-
-function formatRate(value: unknown) {
-  const number = typeof value === 'number' ? value : Number(value)
-  if (!Number.isFinite(number)) {
-    return '利用できません'
-  }
-  return `${number.toExponential(3)} 1/us`
 }
