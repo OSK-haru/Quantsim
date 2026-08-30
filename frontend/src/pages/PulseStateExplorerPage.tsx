@@ -72,18 +72,22 @@ function CollapsiblePanel({
   onToggle: () => void
   children: ReactNode
 }) {
+  /* 非表示の項目は畳んだ見出しも残さず消す。管理は「表示項目」メニューに寄せる。 */
+  if (!open) return null
   return (
-    <section className={`pulse-explorer-panel${open ? '' : ' pulse-explorer-panel--collapsed'}`}>
-      <button
-        type="button"
-        className="pulse-explorer-panel__toggle"
-        aria-expanded={open}
-        onClick={onToggle}
-      >
+    <section className="pulse-explorer-panel">
+      <div className="pulse-explorer-panel__toggle">
         <span>{PULSE_EXPLORER_PANEL_LABELS[panelKey]}</span>
-        <span aria-hidden="true">{open ? '−' : '+'}</span>
-      </button>
-      {open ? <div className="pulse-explorer-panel__body">{children}</div> : null}
+        <button
+          type="button"
+          className="pulse-explorer-panel__hide"
+          onClick={onToggle}
+          aria-label={`${PULSE_EXPLORER_PANEL_LABELS[panelKey]}を非表示`}
+        >
+          ×
+        </button>
+      </div>
+      <div className="pulse-explorer-panel__body">{children}</div>
     </section>
   )
 }

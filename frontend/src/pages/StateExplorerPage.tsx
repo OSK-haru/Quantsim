@@ -44,12 +44,26 @@ const EXPLORER_PANEL_LABELS: Record<ExplorerPanelKey, string> = {
   probabilities: '確率比較', output: '出力確率', bloch: 'Bloch球', density: '密度行列',
   rates: '環境レート',
 }
+/*
+ * 非表示にした項目は畳んだ見出しも残さず、まるごと消す。並んだ空バーは
+ * 中身がないぶん読み飛ばす対象にしかならないので、出す・出さないの管理は
+ * 「表示項目」メニュー一箇所に寄せる。見出しの × はそこへの近道。
+ */
 function CollapsiblePanel({ panelKey, open, onToggle, children }: { panelKey: ExplorerPanelKey; open: boolean; onToggle: () => void; children: ReactNode }) {
-  return <section className={`state-explorer-panel${open ? '' : ' state-explorer-panel--collapsed'}`}>
-    <button type="button" className="state-explorer-panel__toggle" aria-expanded={open} onClick={onToggle}>
-      <span>{EXPLORER_PANEL_LABELS[panelKey]}</span><span aria-hidden="true">{open ? '−' : '+'}</span>
-    </button>
-    {open ? <div className="state-explorer-panel__body">{children}</div> : null}
+  if (!open) return null
+  return <section className="state-explorer-panel">
+    <div className="state-explorer-panel__toggle">
+      <span>{EXPLORER_PANEL_LABELS[panelKey]}</span>
+      <button
+        type="button"
+        className="state-explorer-panel__hide"
+        onClick={onToggle}
+        aria-label={`${EXPLORER_PANEL_LABELS[panelKey]}を非表示`}
+      >
+        ×
+      </button>
+    </div>
+    <div className="state-explorer-panel__body">{children}</div>
   </section>
 }
 
@@ -251,6 +265,18 @@ export function StateExplorerPage({
    * スナップショットを切って実行した結果を保持すると、保持側の系列が
    * 空になって線が引けないが、画面上は「比較表示ON・線なし」に見える。
    */
+  /* TEMP-DIAG: 比較線が出ない原因を切り分けるための一時ログ。確認後に消す。 */
+  if (typeof window !== 'undefined') {
+    console.log('[compare-diag]', {
+      comparing,
+      hasHeldResult: heldResult !== null,
+      heldSnapshots: heldSnapshots.length,
+      heldTimeline: heldTimeline.length,
+      currentSnapshots: snapshots.length,
+      panelProbabilities: openPanels.probabilities,
+      panelMetrics: openPanels.metrics,
+    })
+  }
   const comparisonNotice = !comparing || heldResult === null
     ? null
     : heldSnapshots.length === 0 && heldTimeline.length === 0

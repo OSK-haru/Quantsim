@@ -224,26 +224,29 @@
   justify-content: space-between;
   align-items: center;
   padding: 11px 15px;
-  border: 0;
   color: var(--tt-ink);
   background: var(--tt-panel-2);
-  font: inherit;
   font-weight: 700;
   text-align: left;
+}
+
+.pulse-explorer-panel__hide {
+  padding: 0 4px;
+  border: 0;
+  color: var(--tt-ink-mid);
+  background: none;
+  font: inherit;
+  line-height: 1;
   cursor: pointer;
 }
 
-.pulse-explorer-panel__toggle:hover {
-  background: var(--tt-rule);
+.pulse-explorer-panel__hide:hover {
+  color: var(--tt-ink-max);
 }
 
 .pulse-explorer-panel__body {
   padding: 10px;
   min-width: 0;
-}
-
-.pulse-explorer-panel--collapsed {
-  background: rgb(var(--tt-void-rgb) / 0.3);
 }
 
 .pulse-explorer-page__section-heading {

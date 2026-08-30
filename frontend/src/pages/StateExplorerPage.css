@@ -178,25 +178,28 @@
   justify-content: space-between;
   align-items: center;
   padding: 11px 15px;
-  border: 0;
   color: var(--tt-ink);
   background: var(--tt-panel-2);
-  font: inherit;
   font-weight: 700;
   text-align: left;
+}
+
+.state-explorer-panel__hide {
+  padding: 0 4px;
+  border: 0;
+  color: var(--tt-ink-mid);
+  background: none;
+  font: inherit;
+  line-height: 1;
   cursor: pointer;
 }
 
-.state-explorer-panel__toggle:hover {
-  background: var(--tt-rule);
+.state-explorer-panel__hide:hover {
+  color: var(--tt-ink-max);
 }
 
 .state-explorer-panel__body {
   padding: 4px 10px 12px;
-}
-
-.state-explorer-panel--collapsed {
-  background: rgb(var(--tt-void-rgb) / 0.3);
 }
 
 .state-explorer-page__comparison-grid {
