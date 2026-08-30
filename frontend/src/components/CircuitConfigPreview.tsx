@@ -103,7 +103,7 @@ export function CircuitConfigPreview({
             >
               回路を書き出す
             </button>
-            {/* 生データのコピーは内部表現の持ち出しなので管理者モードのみ。 */}
+            {/* 生データのコピーは内部表現の持ち出しなので詳細モードのみ。 */}
             {internalInfoVisible ? (
               <button
                 className="circuit-config-preview__copy"
@@ -146,7 +146,7 @@ export function CircuitConfigPreview({
           />
         ) : null}
 
-        {/* 内部フィールド名がそのまま並ぶため、生の JSON は管理者モードのみ。 */}
+        {/* 内部フィールド名がそのまま並ぶため、生の JSON は詳細モードのみ。 */}
         {internalInfoVisible ? (
           <pre className="circuit-config-preview__json" aria-label="回路設定 JSON">
             {previewJson}

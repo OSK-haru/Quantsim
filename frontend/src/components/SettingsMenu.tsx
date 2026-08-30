@@ -67,14 +67,14 @@ export function SettingsMenu() {
 
       <div className="settings-menu__row settings-menu__row--admin">
         <div className="settings-menu__row-label">
-          <span>管理者モード</span>
+          <span>詳細モード</span>
           <small>内部情報（API・実行基盤・生データ・内部識別子）を表示</small>
         </div>
         <button
           type="button"
           role="switch"
           aria-checked={adminModeEnabled}
-          aria-label="管理者モードの有効/無効を切り替え"
+          aria-label="詳細モードの有効/無効を切り替え"
           className={`settings-menu__switch${adminModeEnabled ? ' settings-menu__switch--on' : ''}`}
           onClick={() => setAdminModeEnabled(!adminModeEnabled)}
         >
@@ -83,7 +83,7 @@ export function SettingsMenu() {
       </div>
       {adminModeEnabled ? (
         <p className="settings-menu__admin-note">
-          内部情報を表示中です。一般公開時はオフに戻してください。
+          内部情報を表示中です。実際のコードと見合わせて計算の中身を確認したい方向けの表示です。
         </p>
       ) : null}
     </div>

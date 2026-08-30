@@ -133,7 +133,7 @@ export function PulseEnvironmentPanel({
           </select>
         </label>
         {/*
-          実行基盤の選択は実装名がそのまま並ぶため管理者モード専用。
+          実行基盤の選択は実装名がそのまま並ぶため詳細モード専用。
           通常は自動選択（既定値）のまま走る。
         */}
         {internalInfoVisible ? (

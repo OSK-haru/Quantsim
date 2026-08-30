@@ -28,7 +28,7 @@ type RunPanelProps = {
   dataSourceLabel: string
   loadStatus: SimulationLoadStatus
   errorMessage: string | null
-  /** 例外本文や HTTP ステータスなど、管理者モードでのみ出す技術的な詳細。 */
+  /** 例外本文や HTTP ステータスなど、詳細モードでのみ出す技術的な詳細。 */
   errorDetail: string | null
   lastFetchResult: string
   lastFetchUrl: string
@@ -144,7 +144,7 @@ export function RunPanel({
       <div className="run-panel__header">
         <SectionHeader icon="terminal" eyebrow="実行" title="シミュレーションを実行" />
         <div className="run-panel__meta">
-          {/* 生の内部状態値なので管理者モードのみ。 */}
+          {/* 生の内部状態値なので詳細モードのみ。 */}
           {internalInfoVisible ? (
             <p className="run-panel__status">読み込み状態: {loadStatus}</p>
           ) : null}
@@ -294,7 +294,7 @@ export function RunPanel({
 
       <RunCostNotice estimate={costEstimate} />
 
-      {/* 取得 URL・タイムスタンプ等の低レベル情報は管理者モード専用。 */}
+      {/* 取得 URL・タイムスタンプ等の低レベル情報は詳細モード専用。 */}
       {internalInfoVisible ? (
       <div className="run-panel__debug">
         <ResultDrawer

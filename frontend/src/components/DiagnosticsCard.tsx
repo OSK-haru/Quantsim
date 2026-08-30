@@ -11,7 +11,7 @@ type DiagnosticsCardProps = {
   rates: SimulationRates
 }
 
-/* 内部 ID は管理者モードでのみ添える。 */
+/* 内部 ID は詳細モードでのみ添える。 */
 function ModelValue({ id, showId }: { id: string; showId: boolean }) {
   const info = getModelLabel(id)
 
@@ -187,9 +187,38 @@ export function DiagnosticsCard({ diagnostics, rates }: DiagnosticsCardProps) {
           <span className="diagnostics-label">発展モード</span>
           <ModelValue id={diagnostics.evolution_mode} showId={internalInfoVisible} />
         </div>
-        {/* ここから下は実行基盤の内部情報なので、管理者モードのみ。 */}
+        {/* ここから下は実行基盤の内部情報なので、詳細モードのみ。 */}
         {internalInfoVisible ? (
           <>
+            {/* ゲートを考慮した発展の内訳。実コードと突き合わせたい人向け。 */}
+            {diagnostics.hamiltonian_mode ? (
+              <div className="diagnostics-item">
+                <span className="diagnostics-label">ハミルトニアン構成</span>
+                <ModelValue id={String(diagnostics.hamiltonian_mode)} showId />
+              </div>
+            ) : null}
+            {diagnostics.simulation_mode ? (
+              <div className="diagnostics-item">
+                <span className="diagnostics-label">実行時モード</span>
+                <ModelValue id={String(diagnostics.simulation_mode)} showId />
+              </div>
+            ) : null}
+            {diagnostics.compilation_mode ? (
+              <div className="diagnostics-item">
+                <span className="diagnostics-label">コンパイル方式</span>
+                <strong className="diagnostics-value">
+                  {String(diagnostics.compilation_mode)}
+                </strong>
+              </div>
+            ) : null}
+            {diagnostics.gate_duration_model ? (
+              <div className="diagnostics-item">
+                <span className="diagnostics-label">ゲート時間モデル</span>
+                <strong className="diagnostics-value">
+                  {String(diagnostics.gate_duration_model)}
+                </strong>
+              </div>
+            ) : null}
             <div className="diagnostics-item">
               <span className="diagnostics-label">シミュレーションバックエンド</span>
               <ModelValue id={diagnostics.simulation_backend} showId />

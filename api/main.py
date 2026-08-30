@@ -178,7 +178,7 @@ else:
 # str(exc) can carry file paths and internal state. The hosted web demo is the
 # deployment that sets ALLOWED_ORIGINS (frontend and API on separate origins),
 # so the same signal defaults public deploys to type-only errors, while local
-# dev and the desktop launcher keep the full message their admin-mode
+# dev and the desktop launcher keep the full message their detail-mode
 # diagnostics panel displays.  Error details are opt-in only; a missing or
 # misconfigured CORS variable must never make a public deployment leak them.
 _EXPOSE_INTERNAL_ERRORS_ENV = os.environ.get("EXPOSE_INTERNAL_ERRORS", "").strip()

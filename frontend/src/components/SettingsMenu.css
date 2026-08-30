@@ -14,7 +14,7 @@
   letter-spacing: 0.12em;
 }
 
-/* 管理者向けの行は、通常設定と一目で区別できるよう縁に帯を入れる。 */
+/* 詳細モードの行は、通常設定と一目で区別できるよう縁に帯を入れる。 */
 .settings-menu__row--admin {
   border-color: rgb(var(--tt-ink-mid-rgb) / 0.28);
   border-left: 2px solid var(--tt-accent);

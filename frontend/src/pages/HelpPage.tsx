@@ -3,7 +3,7 @@ import { MODEL_IDS, getModelLabel } from '../utils/modelLabels'
 import { documentationLinks } from '../utils/documentationLinks'
 
 const currentEvolutionLabel = getModelLabel(MODEL_IDS.evolutionMode).label
-const plannedModeLabel = getModelLabel(MODEL_IDS.plannedMode).label
+const cptpModeLabel = getModelLabel(MODEL_IDS.cptpEvolution).label
 
 const helpItems = [
   {
@@ -39,7 +39,7 @@ const helpItems = [
   {
     question: 'Yuragi-Strider はどのモデルを使用していますか？',
     answer:
-      `Yuragi-Strider は現在、学習用の弱結合開放系シミュレーションである「${currentEvolutionLabel}」を使用しています。環境設定を単純化した T1・T2 緩和時間に変換し、選択したモデルでの傾向を確認できるようにしています。特定のハードウェアを正確に予測するものではありません。「${plannedModeLabel}」は将来対応予定で、現在のシミュレーション経路には未実装です。`,
+      `Yuragi-Strider は現在、学習用の弱結合開放系シミュレーションである「${currentEvolutionLabel}」を使用しています。環境設定を単純化した T1・T2 緩和時間に変換し、選択したモデルでの傾向を確認できるようにしています。特定のハードウェアを正確に予測するものではありません。より厳密な CPTP 発展が必要な場合は、「${cptpModeLabel}」を実験的な発展方式として選択できます。`,
   },
   {
     question: 'ハードウェアを正確に再現するシミュレーターですか？',

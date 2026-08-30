@@ -59,7 +59,7 @@ type SimulateRequestPayload = {
 }
 
 type RequestErrorKind = 'none' | 'api' | 'validation'
-/** summary は誰にでも見せる説明、detail は管理者モード専用の技術情報。 */
+/** summary は誰にでも見せる説明、detail は詳細モード専用の技術情報。 */
 type RequestFailure = {
   summary: string
   detail: string | null
@@ -314,7 +314,7 @@ const SOURCE_LABEL_FIXTURE_FALLBACK = '内蔵サンプル（代替表示）'
 const SOURCE_LABEL_SERVER_RUN = 'サーバーでの実行結果'
 
 /*
- * 利用者に見せる文と、管理者モードでのみ添える技術詳細を分ける。
+ * 利用者に見せる文と、詳細モードでのみ添える技術詳細を分ける。
  * HTTP ステータスやサーバ側の生の detail は summary へ混ぜない。
  */
 function formatApiFailureMessage(status: number, detail: string | null): RequestFailure {

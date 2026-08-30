@@ -340,7 +340,7 @@ export function PulseLabPage({
       }
       setStatus('error')
       setPetCelebrating(false)
-      /* 例外本文にはサーバ側の内部情報が載りうるので、詳細は管理者モードだけに出す。 */
+      /* 例外本文にはサーバ側の内部情報が載りうるので、詳細は詳細モードだけに出す。 */
       const timedOut = error instanceof Error && error.name === 'AbortError'
       setErrorMessage(
         timedOut

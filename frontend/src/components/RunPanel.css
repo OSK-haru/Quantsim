@@ -156,7 +156,7 @@
   margin-top: 18px;
 }
 
-/* 管理者モードでのみ出る技術詳細。本文より一段落とす。 */
+/* 詳細モードでのみ出る技術詳細。本文より一段落とす。 */
 .run-panel__error-detail {
   display: block;
   margin-top: 4px;

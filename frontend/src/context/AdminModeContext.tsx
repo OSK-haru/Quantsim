@@ -4,7 +4,7 @@ import { AdminModeContext } from './AdminModeContextCore'
 const STORAGE_KEY = 'yuragi_strider:admin-mode'
 
 /*
- * 管理者モードは設定メニューのスイッチで切り替える。
+ * 詳細モードは設定メニューのスイッチで切り替える。
  * デモ中に手早く出し入れできるよう、URL の ?admin=1 と
  * Ctrl+Alt+Shift+A も同じスイッチを叩く近道として残してある。
  */
