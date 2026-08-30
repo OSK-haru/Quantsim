@@ -468,13 +468,21 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     handleDeleteGate(selectedGateId)
   }
 
-  /* ゲート脇の × から呼ぶ。選択中かどうかに関わらず、そのIDのゲートを消す。 */
+  /*
+   * ゲート脇の ×、右クリックメニュー、そして「回路ブロックの外へドラッグして離す」から呼ぶ。
+   * 選択中かどうかに関わらず、そのIDのゲートを消す。
+   * ドラッグ経由のときは進行中セッションを畳んでおき、直後の onDragEnd が
+   * 「移動を取りやめました」で上書きしないようにする。
+   */
   function handleDeleteGate(gateId: string) {
     const location = findGateLocationById(circuitState, gateId)
     if (!location) {
       return
     }
 
+    if (activeDragRef.current?.gateId === gateId) {
+      activeDragRef.current = null
+    }
     finalizeCircuitEdit(removeGateById(circuitState, gateId))
     setEditorHint(`${location.gate.type} を削除しました。元に戻すで復元できます。`)
   }
@@ -754,18 +762,19 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     setSelectedGateType(null)
     setSelectedGateId(gateId)
     setPendingCnotControl(null)
-    setEditorHint(`${gateType} を移動中です。回路スロットにドロップしてください。`)
+    setEditorHint(`${gateType} を移動中です。回路スロットにドロップ、回路の外へ出して離すと削除。`)
   }
 
   /*
-   * 回路の外で放したドラッグは「取りやめ」。以前はここで削除していたが、
-   * 埋まったスロットへ落としただけでもゲートが消えてしまい事故が多かった。
-   * 削除は Delete / Backspace、ゲート脇の ×、ツールバーの「選択項目を削除」に集約する。
+   * ドロップも削除もされずに終わったドラッグ（Esc・pointercancel・回路のすぐ内側で指を離した等）は
+   * 「取りやめ」。回路ブロックの外で離した場合は handleUp が onDeleteGate を呼び、そこで
+   * activeDragRef が畳まれるので、ここには来ない。
+   * 以前は列内へのドロップでも消えて事故が多かったため、削除は「明確に枠外」に限定している。
    */
   function handleGateDragEnd() {
     const dragSession = activeDragRef.current
     if (dragSession?.source === 'circuit' && dragSession.committed === false) {
-      setEditorHint(`${dragSession.gateType} の移動を取りやめました。Deleteキーで削除できます。`)
+      setEditorHint(`${dragSession.gateType} の移動を取りやめました。Deleteキーでも削除できます。`)
     }
 
     activeDragRef.current = null

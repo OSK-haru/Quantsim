@@ -485,6 +485,16 @@
   user-select: none;
 }
 
+/* 回路ブロックの外にいる＝離せば削除。赤で警告する。 */
+.circuit-preview__drag-ghost[data-will-delete='true'] .circuit-preview__drag-ghost-box {
+  fill: rgb(220 38 38 / 0.16);
+  stroke: #dc2626;
+}
+
+.circuit-preview__drag-ghost[data-will-delete='true'] .circuit-preview__drag-ghost-label {
+  fill: #dc2626;
+}
+
 /*
  * 列と列のあいだのドロップマーカー。Pulseタイムラインの
  * .pulse-circuit-studio__drop-marker と同じ読み方（普段は細い線、

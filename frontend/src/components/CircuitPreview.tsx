@@ -181,7 +181,7 @@ export function CircuitPreview({
   const [hoveredQubitSlot, setHoveredQubitSlot] = useState<{ columnIndex: number; qubitIndex: number } | null>(null)
   /* ポインタで移動中のゲートの見た目（カーソルに付いてくる分身）。 */
   const [pointerDragVisual, setPointerDragVisual] = useState<
-    { x: number; y: number; label: string } | null
+    { x: number; y: number; label: string; willDelete: boolean } | null
   >(null)
   const svgRef = useRef<SVGSVGElement | null>(null)
   /*
@@ -189,7 +189,7 @@ export function CircuitPreview({
    * そこではまだ dragPayload が null なので、離した瞬間に何も起きない。
    * 常に最新の render のものを呼べるようにしておく。
    */
-  const dropHandlersRef = useRef({ onSlotDrop, onColumnInsertDrop, onDragEnd })
+  const dropHandlersRef = useRef({ onSlotDrop, onColumnInsertDrop, onDragEnd, onDeleteGate })
   const pointerDragTeardownRef = useRef<(() => void) | null>(null)
   const suppressClickRef = useRef(false)
   const internalViewportRef = useRef<HTMLDivElement | null>(null)
@@ -372,7 +372,7 @@ export function CircuitPreview({
   }, [circuit])
 
   useEffect(() => {
-    dropHandlersRef.current = { onSlotDrop, onColumnInsertDrop, onDragEnd }
+    dropHandlersRef.current = { onSlotDrop, onColumnInsertDrop, onDragEnd, onDeleteGate }
   })
 
   useEffect(() => () => pointerDragTeardownRef.current?.(), [])
@@ -475,6 +475,20 @@ export function CircuitPreview({
    * ドロップ先は座標から直接求める。列の境目から ±COLUMN_INSERT_HIT_WIDTH/2 は
    * 「あいだに割り込む」、それ以外は最寄りの列のスロット。DOMの当たり判定と同じ分け方。
    */
+  /*
+   * ドラッグ中のゲートが回路ブロックの外へ出たか。qubit 数・列数で枠は伸縮するので
+   * その時点の SVG 座標系の実寸から判定する。少し外側までは「まだ枠内」の猶予を持たせ、
+   * はっきり外に出たときだけ true（＝離せば削除）にする。
+   */
+  function isOutsideCircuitBlock(x: number, y: number): boolean {
+    const margin = CIRCUIT_CELL_HEIGHT / 2
+    const left = CIRCUIT_LABEL_RAIL_WIDTH - margin
+    const right = wireWidth + margin
+    const top = CIRCUIT_TOP_PADDING - CIRCUIT_CELL_HEIGHT / 2 - margin
+    const bottom = yForQubit(Math.max(0, circuit.logical_qubits - 1)) + CIRCUIT_CELL_HEIGHT / 2 + margin
+    return x < left || x > right || y < top || y > bottom
+  }
+
   function resolvePointerDropTarget(x: number, y: number): PointerDropTarget | null {
     /* 量子ビット名のレールの下は見えないので、そこで放したら「行き先なし」にする。 */
     if (x < CIRCUIT_LABEL_RAIL_WIDTH) {
@@ -587,8 +601,10 @@ export function CircuitPreview({
       }
 
       moveEvent.preventDefault()
-      setPointerDragVisual({ x: point.x, y: point.y, label: getGateLabel(gate) })
-      applyTarget(resolvePointerDropTarget(point.x, point.y))
+      const nextTarget = resolvePointerDropTarget(point.x, point.y)
+      const willDelete = !nextTarget && isOutsideCircuitBlock(point.x, point.y)
+      setPointerDragVisual({ x: point.x, y: point.y, label: getGateLabel(gate), willDelete })
+      applyTarget(nextTarget)
     }
 
     function handleUp(upEvent: PointerEvent) {
@@ -598,6 +614,10 @@ export function CircuitPreview({
 
       const dropTarget = target
       const wasDragging = started
+      const releasePoint = toSvgPoint(upEvent.clientX, upEvent.clientY)
+      const releasedOutside = releasePoint
+        ? isOutsideCircuitBlock(releasePoint.x, releasePoint.y)
+        : false
       teardown()
 
       if (!wasDragging) {
@@ -607,7 +627,10 @@ export function CircuitPreview({
       markClickSuppressed()
 
       const handlers = dropHandlersRef.current
-      if (dropTarget?.kind === 'insert') {
+      if (releasedOutside && !dropTarget) {
+        /* 回路ブロックの外で放したら削除。埋まったスロット上（dropTarget あり）では消さない。 */
+        handlers.onDeleteGate?.(gate.id)
+      } else if (dropTarget?.kind === 'insert') {
         /* 割り込みドロップでは、その位置に新しい列ができてゲートはそこへ入る。 */
         armPlacementEffect(dropTarget.insertIndex, dropTarget.qubitIndex)
         handlers.onColumnInsertDrop?.(dropTarget.insertIndex, dropTarget.qubitIndex)
@@ -1490,7 +1513,11 @@ export function CircuitPreview({
 
           {/* 掴んでいるゲートの分身。カーソルに付いてくるので、どこへ落ちるか迷わない。 */}
           {pointerDragVisual ? (
-            <g className="circuit-preview__drag-ghost" style={{ pointerEvents: 'none' }}>
+            <g
+              className="circuit-preview__drag-ghost"
+              data-will-delete={pointerDragVisual.willDelete}
+              style={{ pointerEvents: 'none' }}
+            >
               <rect
                 x={pointerDragVisual.x - 21}
                 y={pointerDragVisual.y - 17}
@@ -1505,7 +1532,7 @@ export function CircuitPreview({
                 textAnchor="middle"
                 className="circuit-preview__drag-ghost-label"
               >
-                {pointerDragVisual.label}
+                {pointerDragVisual.willDelete ? '✕' : pointerDragVisual.label}
               </text>
             </g>
           ) : null}
