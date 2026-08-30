@@ -1,0 +1,401 @@
+.simulation-completion-popup {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 1100;
+
+  width: min(460px, calc(100vw - 32px));
+
+  /*
+   * 輪郭のうねりを外側へ表示するため、
+   * ポップアップ本体は visible にする。
+   */
+  overflow: visible;
+
+  transform: translate(-50%, calc(100% + 32px)) scale(0.96);
+
+  border: 0;
+
+  color: var(--tt-ink-max);
+  opacity: 0;
+
+  animation: simulation-completion-popup-in
+    4.2s
+    ease
+    forwards;
+
+  isolation: isolate;
+}
+
+/*
+ * 背景や内部エフェクトだけを枠内に収める。
+ */
+.simulation-completion-popup__inner {
+  position: relative;
+  z-index: 1;
+
+  width: 100%;
+  overflow: hidden;
+
+  background: rgb(var(--tt-rule-strong-rgb) / 0.25);
+}
+
+/*
+ * 液体状の輪郭。
+ *
+ * SVGのfeDisplacementMapにより、角だけではなく
+ * 上下左右の辺も波打つ。
+ */
+.simulation-completion-popup::before {
+  position: absolute;
+
+  /*
+   * うねった輪郭が本体より少し外へ出るようにする。
+   */
+  inset: -5px;
+  z-index: 2;
+  padding: 5px;
+
+  background: var(--tt-ink-mid);
+
+  content: '';
+  pointer-events: none;
+
+  /*
+   * 中央を透明にし、縁だけを残す。
+   */
+  -webkit-mask: linear-gradient(var(--tt-void) 0 0) content-box,
+    linear-gradient(var(--tt-void) 0 0);
+
+  -webkit-mask-composite: xor;
+
+  mask: linear-gradient(var(--tt-void) 0 0) content-box,
+    linear-gradient(var(--tt-void) 0 0);
+
+  mask-composite: exclude;
+
+  /*
+   * 輪郭の細かな凹凸はSVGフィルター、
+   * 大きな形状変化はborder-radiusで作る。
+   */
+  filter: url('#simulation-completion-wobble');
+
+  transform-origin: center;
+
+  animation: simulation-completion-frame
+    5.3s
+    cubic-bezier(0.45, 0.05, 0.25, 0.96)
+    infinite
+    alternate;
+
+  will-change: transform,
+    border-radius,
+    filter;
+}
+
+/* パルスシミュレーション版 */
+.simulation-completion-popup--pulse
+.simulation-completion-popup__inner {
+  background: rgb(var(--tt-ink-rgb) / 0.26);
+}
+
+.simulation-completion-popup--pulse::before {
+  background: var(--tt-ink);
+
+  filter: url('#simulation-completion-wobble');
+}
+
+.simulation-completion-popup__glow {
+  position: absolute;
+  top: -45px;
+  left: 18%;
+
+  width: 180px;
+  height: 130px;
+
+  background: rgb(var(--tt-rule-strong-rgb) / 0.22);
+
+  pointer-events: none;
+
+  animation: simulation-completion-liquid
+    4.2s
+    ease-in-out
+    infinite
+    alternate;
+}
+
+.simulation-completion-popup--pulse
+.simulation-completion-popup__glow {
+  background: rgb(var(--tt-ink-rgb) / 0.24);
+}
+
+.simulation-completion-popup__fluctuation {
+  position: absolute;
+  inset: -55%;
+  z-index: -1;
+
+  background: repeating-radial-gradient(
+      ellipse at 50% 50%,
+      transparent 0 28px,
+      rgb(var(--tt-ink-mid-rgb) / 0.08) 29px 30px,
+      transparent 31px 58px
+    ), rgb(var(--tt-ink-mid-rgb) / 0.24);
+
+  background-size: 170px 130px,
+    230px 180px,
+    190px 150px,
+    100% 100%;
+
+  opacity: 0.7;
+
+  animation: simulation-completion-fluctuation
+    7s
+    linear
+    infinite;
+
+  pointer-events: none;
+}
+
+.simulation-completion-popup--pulse
+.simulation-completion-popup__fluctuation {
+  background: repeating-radial-gradient(
+      ellipse at 50% 50%,
+      transparent 0 28px,
+      rgb(var(--tt-ink-rgb) / 0.08) 29px 30px,
+      transparent 31px 58px
+    ), rgb(var(--tt-ink-rgb) / 0.24);
+
+  background-size: 170px 130px,
+    230px 180px,
+    190px 150px,
+    100% 100%;
+}
+
+.simulation-completion-popup__content {
+  position: relative;
+  z-index: 3;
+
+  display: grid;
+  gap: 4px;
+
+  padding: 16px 44px 16px 20px;
+}
+
+.simulation-completion-popup__eyebrow {
+  color: var(--tt-ink-mid);
+
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.simulation-completion-popup--pulse
+.simulation-completion-popup__eyebrow {
+  color: var(--tt-ink);
+}
+
+.simulation-completion-popup__content strong {
+  font-size: 1rem;
+}
+
+.simulation-completion-popup__content > span:last-child {
+  color: var(--tt-ink);
+
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.simulation-completion-popup__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 4;
+
+  display: grid;
+  place-items: center;
+
+  width: 28px;
+  height: 28px;
+  padding: 0;
+
+  border: 0;
+
+  background: rgb(var(--tt-ink-mid-rgb) / 0.14);
+  color: var(--tt-ink);
+
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition: background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.simulation-completion-popup__close:hover {
+  background: rgb(var(--tt-ink-mid-rgb) / 0.26);
+  color: var(--tt-ink-max);
+
+  transform: scale(1.08);
+}
+
+.simulation-completion-popup__close:focus-visible {
+  outline: 2px solid var(--tt-ink-mid);
+  outline-offset: 2px;
+}
+
+.simulation-completion-popup--pulse
+.simulation-completion-popup__close:focus-visible {
+  outline-color: var(--tt-ink);
+}
+
+@keyframes simulation-completion-popup-in {
+  0% {
+    opacity: 0;
+
+    transform: translate(-50%, calc(100% + 32px))
+      scale(0.96);
+  }
+
+  14%,
+  82% {
+    opacity: 1;
+
+    transform: translate(-50%, 0)
+      scale(1);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform: translate(-50%, calc(100% + 32px))
+      scale(0.98);
+  }
+}
+
+@keyframes simulation-completion-liquid {
+  0% {
+    transform: translate3d(-16px, 8px, 0)
+      scale(0.92)
+      rotate(-5deg);
+  }
+
+  100% {
+    transform: translate3d(40px, -18px, 0)
+      scale(1.18)
+      rotate(8deg);
+  }
+}
+
+/*
+ * 大きな輪郭形状を不規則に変える。
+ */
+@keyframes simulation-completion-frame {
+  0% {
+
+    transform: translate3d(-1px, 1px, 0)
+      rotate(-0.35deg)
+      scaleX(1.006)
+      scaleY(0.994);
+  }
+
+  23% {
+
+    transform: translate3d(2px, -1px, 0)
+      rotate(0.28deg)
+      scaleX(0.996)
+      scaleY(1.008);
+  }
+
+  49% {
+
+    transform: translate3d(-2px, 0, 0)
+      rotate(-0.18deg)
+      scaleX(1.008)
+      scaleY(0.998);
+  }
+
+  72% {
+
+    transform: translate3d(1px, 1px, 0)
+      rotate(0.34deg)
+      scaleX(0.998)
+      scaleY(1.006);
+  }
+
+  100% {
+
+    transform: translate3d(0, -1px, 0)
+      rotate(-0.25deg)
+      scaleX(1.005)
+      scaleY(0.996);
+  }
+}
+
+@keyframes simulation-completion-fluctuation {
+  0% {
+    transform: translate3d(-3%, -2%, 0)
+      rotate(0deg)
+      scale(1);
+  }
+
+  50% {
+    transform: translate3d(3%, 2%, 0)
+      rotate(8deg)
+      scale(1.06);
+  }
+
+  100% {
+    transform: translate3d(-2%, 4%, 0)
+      rotate(16deg)
+      scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .simulation-completion-popup {
+    animation: simulation-completion-popup-reduced
+      4.2s
+      ease
+      forwards;
+  }
+
+  .simulation-completion-popup::before,
+  .simulation-completion-popup__glow,
+  .simulation-completion-popup__fluctuation {
+    animation: none;
+  }
+
+}
+
+/*
+ * 設定メニューの「アニメーション」トグルをOFFにした場合も、
+ * OSのprefers-reduced-motionと同じ抑制を適用する。
+ */
+html[data-animations='off'] .simulation-completion-popup {
+  animation: simulation-completion-popup-reduced
+    4.2s
+    ease
+    forwards;
+}
+
+html[data-animations='off'] .simulation-completion-popup::before,
+html[data-animations='off'] .simulation-completion-popup__glow,
+html[data-animations='off'] .simulation-completion-popup__fluctuation {
+  animation: none;
+}
+
+@keyframes simulation-completion-popup-reduced {
+  0%,
+  82% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+}

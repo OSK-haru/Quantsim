@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PulseEnvironmentPanel } from '../components/PulseEnvironmentPanel'
 import { PulseWaveform } from '../components/PulseWaveform'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
+import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
 import { apiUrl } from '../utils/apiBase'
 import { pulseLabTips, pulseRunningStages } from '../utils/quantumPetTips'
 import { useInternalInfoVisible } from '../context/useAdminMode'
@@ -97,6 +98,7 @@ export function PulseLabPage({
   const [status, setStatus] = useState<RequestStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [errorDetail, setErrorDetail] = useState<string | null>(null)
+  const [showCompletionPopup, setShowCompletionPopup] = useState(false)
   const [petCelebrating, setPetCelebrating] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const mountedRef = useRef(true)
@@ -116,6 +118,13 @@ export function PulseLabPage({
     .filter((operation): operation is SequenceDriveOperation => operation.kind === 'drive')
     .map((operation) => operation.form)
   const sequenceMode = modelId === QUTRIT_PULSE_MODEL
+  /*
+   * シーケンス実行（ブロックを順に流して密度行列を引き継ぐ経路）は、
+   * 引き継ぎ・集約とも qutrit の応答形にだけ対応している。2準位×1台で
+   * レーンにブロックが積んであっても実行されるのは単一Pulse設定なので、
+   * 黙って無視せずその旨を出す。
+   */
+  const ignoresSequence = !networkMode && !sequenceMode && sequence.length > 0
   const sequenceDurationUs = networkMode
     ? transmonNetworkDurationUs(circuit)
     : sequenceMode
@@ -330,6 +339,7 @@ export function PulseLabPage({
       setStatus('success')
       setErrorMessage(null)
       setErrorDetail(null)
+      setShowCompletionPopup(true)
       setPetCelebrating(true)
     } catch (error) {
       if (!mountedRef.current || abortRef.current !== controller) {
@@ -373,12 +383,14 @@ export function PulseLabPage({
       </header>
 
       <aside className="pulse-lab__scope-note" aria-label="Pulseラボの適用範囲">
-        <strong>{networkMode ? '複数レーン同時実行。' : sequenceMode ? `q${activeTransmonIndex} シーケンス実行。` : '単一Pulse実験。'}</strong>
+        <strong>{networkMode ? '複数レーン同時実行。' : sequenceMode ? `q${activeTransmonIndex} シーケンス実行。` : ignoresSequence ? '単一Pulse実験（シーケンスは実行されません）。' : '単一Pulse実験。'}</strong>
         <span>
           {networkMode
             ? `${circuit.transmons.length}台の${form.localLevels}準位トランズモンと全レーンのPulseを、${form.localLevels ** circuit.transmons.length}次元の密度行列で同時に発展させます。`
             : sequenceMode
             ? `${sequence.length}個のPulseを、密度行列と共通環境を引き継いで順番に実行します。`
+            : ignoresSequence
+            ? `レーンに ${sequence.length} 個のブロックがありますが、シーケンス実行は3準位でのみ対応しています。現在の単一Pulse設定を実行します。ブロックを流したい場合は「準位数」を「3準位 qutrit（漏れ準位あり）」にしてください。`
             : 'Pulse回路にブロックがないため、現在の単一Pulse設定を実行します。'}
         </span>
       </aside>
@@ -572,6 +584,18 @@ export function PulseLabPage({
           </section>
         )}
       </div>
+      {showCompletionPopup ? (
+        <SimulationCompletionPopup
+          mode="pulse"
+          title="Pulse シミュレーションが完了しました"
+          detail={
+            internalInfoVisible
+              ? `発展方式: ${result?.diagnostics.evolution.resolved ?? '完了'}`
+              : '波形どおりに時間発展を計算しました'
+          }
+          onDismiss={() => setShowCompletionPopup(false)}
+        />
+      ) : null}
       <QuantumPet
         phase={petPhase}
         message={petMessage}
@@ -886,6 +910,12 @@ function aggregateQutritSequence(
   }
 }
 
+/*
+ * VZ が先頭に来たときの初期状態。3x3 固定でよいのは、virtual_z を含む
+ * 実行計画を返すのが qutrit 経路（sequenceExecutionPlan の
+ * QUTRIT_PULSE_MODEL 分岐）だけだからで、2準位では単一driveしか返らない。
+ * ネットワークは VZ を後続Pulseの位相へ畳むので、ここを通らない。
+ */
 function groundQutritDensityMatrix(): PulseComplexValue[][] {
   return [
     [{ real: 1, imag: 0 }, { real: 0, imag: 0 }, { real: 0, imag: 0 }],

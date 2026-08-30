@@ -24,7 +24,7 @@ type NavigationItem = { route: NavigationRoute; label: string; detail: string }
 const homeItem: NavigationItem = { route: 'home', label: 'ホーム', detail: 'Yuragi-Strider' }
 
 const gateAwareItems: NavigationItem[] = [
-  { route: 'simulate', label: 'シミュレーションラボ', detail: 'Gate-aware' },
+  { route: 'simulate', label: 'シミュレーションワークスペース', detail: 'Gate-aware' },
   { route: 'algorithm-library', label: 'アルゴリズム一覧', detail: 'Algorithm Library' },
   { route: 'circuit-studio', label: '回路スタジオ', detail: 'Circuit Studio' },
   { route: 'state-explorer', label: '状態エクスプローラー', detail: 'State Explorer' },

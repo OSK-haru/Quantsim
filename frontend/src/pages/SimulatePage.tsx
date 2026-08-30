@@ -8,6 +8,7 @@ import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
 import { RunPanel } from '../components/RunPanel'
 import { ResultDrawer } from '../components/ResultDrawer'
 import { SectionHeader } from '../components/SectionHeader'
+import { SimulationCompletionPopup } from '../components/SimulationCompletionPopup'
 import { uiResponseExample } from '../mock/uiResponseExample'
 import { apiUrl } from '../utils/apiBase'
 import type { SimulateSettings } from '../utils/simulateSettings'
@@ -65,6 +66,10 @@ type RequestErrorKind = 'none' | 'api' | 'validation'
 type RequestFailure = {
   summary: string
   detail: string | null
+}
+type CompletionNotice = {
+  title: string
+  detail: string
 }
 const PET_CELEBRATION_MS = 7000
 const RUN_REQUEST_MIN_TIMEOUT_MS = 15000
@@ -272,6 +277,11 @@ function validateSnapshotOptions(
 }
 
 /* 完了通知・問題一覧で内部識別子の代わりに出す日本語の呼称。 */
+const evolutionMethodNoticeLabels: Record<GateAwareEvolutionMethod, string> = {
+  fixed_step_rk4: '固定ステップ RK4',
+  explicit_cptp: '明示的 CPTP 写像',
+}
+
 const issueLevelLabels: Record<string, string> = {
   info: '情報',
   warning: '警告',
@@ -477,6 +487,7 @@ export function SimulatePage({
   )
   const [snapshotOptionsError, setSnapshotOptionsError] = useState<string | null>(null)
   const [requestErrorKind, setRequestErrorKind] = useState<RequestErrorKind>('none')
+  const [completionNotice, setCompletionNotice] = useState<CompletionNotice | null>(null)
   const [petCelebrating, setPetCelebrating] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const requestIdRef = useRef(0)
@@ -743,6 +754,13 @@ export function SimulatePage({
       setRequestErrorKind('none')
       setFrontendRunFinishedAt(new Date().toISOString())
       setFrontendRunElapsedMs(Number((performance.now() - frontendStartedAtMs).toFixed(1)))
+      setCompletionNotice({
+        title: 'シミュレーションが完了しました',
+        /* 完了通知は誰の目にも入るので、内部の実行基盤名は出さない。 */
+        detail: internalInfoVisible
+          ? `${parsed.run.selected_backend} / ${evolutionMethod}`
+          : `${evolutionMethodNoticeLabels[evolutionMethod]}で計算しました`,
+      })
       setPetCelebrating(true)
 
       /*
@@ -1076,6 +1094,14 @@ export function SimulatePage({
         />
         <DiagnosticsCard diagnostics={response.diagnostics} rates={response.rates} />
       </div>
+      {completionNotice ? (
+        <SimulationCompletionPopup
+          mode="gate-aware"
+          title={completionNotice.title}
+          detail={completionNotice.detail}
+          onDismiss={() => setCompletionNotice(null)}
+        />
+      ) : null}
       <QuantumPet phase={petPhase} message={petMessage} tips={simulateTips} />
     </main>
   )

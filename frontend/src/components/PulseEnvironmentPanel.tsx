@@ -37,9 +37,14 @@ export function PulseEnvironmentPanel({
 }: PulseEnvironmentPanelProps) {
   const internalInfoVisible = useInternalInfoVisible()
   const isQutrit = form.localLevels === 3
-  // すべてのモデルがトランズモン。非調和性は2準位でも（ステップ方針決定用に）必須。
-  const isTransmon = true
   const isNetwork = transmonCount >= 2
+  /*
+   * 直接レート入力の項目数はモデルの準位数で決まる。2準位×1台だけが
+   * down / up / φ の3レート、それ以外（qutrit・ネットワーク）は遷移ごとの
+   * 5レート。ここを取り違えると、画面で編集した値と送信するペイロードが
+   * 食い違ったまま気付けない。deriveModelId と同じ条件で分ける。
+   */
+  const usesTwoLevelRates = form.localLevels === 2 && transmonCount === 1
   const cptpAvailable = form.localLevels ** transmonCount <= 9
   const activeDeviceProfile = matchingPulseDeviceProfile(executionConstraints)
   const setNumber = (field: keyof PulseLabForm, value: number) => {
@@ -158,9 +163,8 @@ export function PulseEnvironmentPanel({
       <div className="pulse-parameters__grid">
         <NumberField field="totalSimulationTimeUs" label="観測時間 [us]" value={form.totalSimulationTimeUs} error={errors.totalSimulationTimeUs} step={0.001} min={0} disabled={disabled} onChange={setNumber} />
         <NumberField field="snapshotCount" label="スナップショット数" value={form.snapshotCount} error={errors.snapshotCount} step={1} min={2} max={1001} disabled={disabled} onChange={setNumber} />
-        {isTransmon ? (
-          <NumberField field="anharmonicityMhz" label="非調和性 [MHz]" value={form.anharmonicityMhz} error={errors.anharmonicityMhz} step={10} max={0} disabled={disabled} onChange={setNumber} />
-        ) : null}
+        {/* 非調和性は2準位でも（ステップ方針決定用に）必須なので、常に出す。 */}
+        <NumberField field="anharmonicityMhz" label="非調和性 [MHz]" value={form.anharmonicityMhz} error={errors.anharmonicityMhz} step={10} max={0} disabled={disabled} onChange={setNumber} />
       </div>
 
       {isNetwork ? (
@@ -307,19 +311,19 @@ export function PulseEnvironmentPanel({
           </div>
         ) : (
           <div className="pulse-parameters__grid">
-            {isTransmon ? (
+            {usesTwoLevelRates ? (
+              <>
+                <NumberField field="gammaDownPerUs" label="gamma down [1/us]" value={form.gammaDownPerUs} error={errors.gammaDownPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
+                <NumberField field="gammaUpPerUs" label="gamma up [1/us]" value={form.gammaUpPerUs} error={errors.gammaUpPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
+                <NumberField field="gammaPhiPerUs" label="gamma phi [1/us]" value={form.gammaPhiPerUs} error={errors.gammaPhiPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
+              </>
+            ) : (
               <>
                 <NumberField field="gamma10DownPerUs" label="gamma 10 down [1/us]" value={form.gamma10DownPerUs} error={errors.gamma10DownPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
                 <NumberField field="gamma01UpPerUs" label="gamma 01 up [1/us]" value={form.gamma01UpPerUs} error={errors.gamma01UpPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
                 <NumberField field="gamma21DownPerUs" label="gamma 21 down [1/us]" value={form.gamma21DownPerUs} error={errors.gamma21DownPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
                 <NumberField field="gamma12UpPerUs" label="gamma 12 up [1/us]" value={form.gamma12UpPerUs} error={errors.gamma12UpPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
                 <NumberField field="gammaPhiAdjacentPerUs" label="隣接準位の位相緩和 [1/us]" value={form.gammaPhiAdjacentPerUs} error={errors.gammaPhiAdjacentPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
-              </>
-            ) : (
-              <>
-                <NumberField field="gammaDownPerUs" label="gamma down [1/us]" value={form.gammaDownPerUs} error={errors.gammaDownPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
-                <NumberField field="gammaUpPerUs" label="gamma up [1/us]" value={form.gammaUpPerUs} error={errors.gammaUpPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
-                <NumberField field="gammaPhiPerUs" label="gamma phi [1/us]" value={form.gammaPhiPerUs} error={errors.gammaPhiPerUs} step={0.01} min={0} disabled={disabled} onChange={setNumber} />
               </>
             )}
           </div>

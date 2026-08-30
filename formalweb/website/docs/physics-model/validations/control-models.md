@@ -817,13 +817,14 @@ $$
 
 #### 検査方法
 
-8項目を、それぞれ事前に定めた基準で判定します。
+8項目を、それぞれ事前に定めた基準で判定していました。当時のコマンドは次のとおりです。
 
 ```powershell
+# 削除済み — 現行のリポジトリには存在しません
 .\.venv\Scripts\python.exe scripts\validate_pulse_transmon_pair.py
 ```
 
-アーティファクト: `validation_results/pulse_transmon_pair_numerical_audit.json`
+アーティファクト(当時): `validation_results/pulse_transmon_pair_numerical_audit.json`
 
 #### 検査結果
 
@@ -899,10 +900,11 @@ $$
 本番側のバックエンドはRustです。
 
 ```powershell
+# 削除済み — 現行のリポジトリには存在しません
 .\.venv\Scripts\python.exe scripts\validate_pulse_transmon_pair_qutip.py
 ```
 
-アーティファクト: `validation_results/pulse_transmon_pair_qutip_audit.json` / `.csv`
+アーティファクト(当時): `validation_results/pulse_transmon_pair_qutip_audit.json` / `.csv`
 
 #### 検査結果
 

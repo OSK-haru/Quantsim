@@ -294,7 +294,7 @@ $|2\rangle$ に漏れた population は、$\gamma_{21} = 2\gamma_{10}$ という
 
 5. $\gamma_{10}^{(0)} = 0.01\ \mu\mathrm{s}^{-1}$ のとき、$\lvert2\rangle$ の実効的な寿命($T = 0$)はいくらか。$\lvert1\rangle$ の何倍か。
 
-6. 🔬 **Pulse 回路スタジオ**でリーケージが見える短いGaussian $\pi$ Pulseを保存する。**Pulseラボ**で「Qutrit(漏れ準位あり)」と「Lindblad率を直接指定」を選び、「gamma 10 down [1/us]」を固定したまま「gamma 21 down [1/us]」を既定値とgamma 10 downと同じ値にした場合で実行せよ。「観測時間 [us]」をPulse幅より長く取り、「P2 / リーケージ」のPulse後の減衰を比較せよ。
+6. 🔬 **Pulse 回路スタジオ**でリーケージが見える短いGaussian $\pi$ Pulseを保存する。**Pulseラボ**で「準位数」を「3準位 qutrit(漏れ準位あり)」、「環境入力」を「Lindblad率を直接指定」にし、「gamma 10 down [1/us]」を固定したまま「gamma 21 down [1/us]」を既定値とgamma 10 downと同じ値にした場合で実行せよ。「観測時間 [us]」をPulse幅より長く取り、「P2 / リーケージ」のPulse後の減衰を比較せよ。
 
 7. 🔬 同じqutrit Pulseと「Lindblad率を直接指定」を使い、「隣接準位の位相緩和 [1/us]」を`0`と正の値にして実行せよ。下降・上昇レートは0に固定する。「最終密度行列」の各セルに表示される $|\rho|$ を比較し、対角のP0・P1・P2はほぼ変わらず、非対角成分だけが小さくなることを確認せよ。$\rho_{02}$が十分生成されない条件では、まずPulse幅を短くしてリーケージを増やしてから比較すること。
 

@@ -95,11 +95,13 @@ const require = createRequire(import.meta.url)
 const {
   buildPulsePayload,
   buildTransmonNetworkPayload,
+  deriveModelId,
   estimatePulseCost,
   initialPulseLabForm,
   pulseWaveform,
   sequentialPulseWaveform,
   circuitLaneWaveform,
+  validatePulseLabForm,
 } = require(path.join(temporarySource, 'utils', 'pulseLab.js'))
 const {
   createDefaultPulseCircuit,
@@ -127,6 +129,118 @@ assert(twoLevelPayload.pulse.drag_beta_us === 0, 'two-level DRAG must be zero')
 assert(!('sigma_us' in twoLevelPayload.pulse), 'inactive Gaussian field leaked')
 assert('gamma_down_per_us' in twoLevelPayload.environment, 'two-level direct rates missing')
 assert(!('gamma_10_down_per_us' in twoLevelPayload.environment), 'qutrit rate leaked')
+
+/*
+ * 直接レート指定のとき、環境パネルが出す入力欄とペイロードが送るキーは
+ * 「準位数 x 台数」から同じ結論を出さなければならない。かつて環境パネル側が
+ * isTransmon = true でハードコードされていたため、2準位x1台では画面に
+ * qutrit の5レートが出るのにペイロードは down/up/phi を送っており、
+ * 編集した値がどこにも届かないまま初期値が飛んでいた。
+ *
+ * 画面の分岐条件（PulseEnvironmentPanel の usesTwoLevelRates）と
+ * ペイロードの分岐（buildPulsePayload の modelId 判定）を、
+ * deriveModelId 経由で突き合わせて固定する。
+ */
+const environmentPanelSource = readSource('src/components/PulseEnvironmentPanel.tsx')
+assert(
+  environmentPanelSource.includes(
+    "const usesTwoLevelRates = form.localLevels === 2 && transmonCount === 1",
+  ),
+  'the environment panel must pick its rate fields from levels x transmon count',
+)
+assert(
+  !/const isTransmon = true/.test(environmentPanelSource),
+  'the environment panel must not hardcode the rate-field branch',
+)
+
+const TWO_LEVEL_RATE_KEYS = ['gamma_down_per_us', 'gamma_up_per_us', 'gamma_phi_per_us']
+const QUTRIT_RATE_KEYS = [
+  'gamma_10_down_per_us',
+  'gamma_01_up_per_us',
+  'gamma_21_down_per_us',
+  'gamma_12_up_per_us',
+  'gamma_phi_adjacent_per_us',
+]
+
+for (const localLevels of [2, 3]) {
+  for (const transmonCount of [1, 2, 3, 4]) {
+    /* 画面が3レート欄を出す条件。PulseEnvironmentPanel と同じ式を書き下す。 */
+    const panelShowsTwoLevelRates = localLevels === 2 && transmonCount === 1
+    const modelId = deriveModelId(localLevels, transmonCount)
+    const form = {
+      ...initialPulseLabForm,
+      modelId,
+      localLevels,
+      environmentMode: 'direct_rates',
+      /* 2準位に漏れ先はないので、画面側と同じく DRAG を落としておく。 */
+      dragBetaUs: localLevels === 2 ? 0 : initialPulseLabForm.dragBetaUs,
+    }
+    const environment =
+      transmonCount >= 2
+        ? buildTransmonNetworkPayload(
+            form,
+            resizePulseCircuit(createDefaultPulseCircuit(form), transmonCount),
+          ).environment
+        : buildPulsePayload(form).environment
+
+    const expected = panelShowsTwoLevelRates ? TWO_LEVEL_RATE_KEYS : QUTRIT_RATE_KEYS
+    const forbidden = panelShowsTwoLevelRates ? QUTRIT_RATE_KEYS : TWO_LEVEL_RATE_KEYS
+    const where = `L=${localLevels}, N=${transmonCount}`
+
+    for (const key of expected) {
+      assert(
+        key in environment,
+        `${where}: the panel shows ${key} but the payload does not send it`,
+      )
+    }
+    for (const key of forbidden) {
+      assert(
+        !(key in environment),
+        `${where}: the payload sends ${key} but the panel never shows it`,
+      )
+    }
+
+    /*
+     * 送られるキーは、画面で編集した値をそのまま運ばなければならない。
+     * 初期値と違う値を入れて、素通りしていないことを確かめる。
+     */
+    const probe = { ...form }
+    const fieldForKey = {
+      gamma_down_per_us: 'gammaDownPerUs',
+      gamma_up_per_us: 'gammaUpPerUs',
+      gamma_phi_per_us: 'gammaPhiPerUs',
+      gamma_10_down_per_us: 'gamma10DownPerUs',
+      gamma_01_up_per_us: 'gamma01UpPerUs',
+      gamma_21_down_per_us: 'gamma21DownPerUs',
+      gamma_12_up_per_us: 'gamma12UpPerUs',
+      gamma_phi_adjacent_per_us: 'gammaPhiAdjacentPerUs',
+    }
+    expected.forEach((key, index) => {
+      probe[fieldForKey[key]] = 0.5 + index
+    })
+    const probed =
+      transmonCount >= 2
+        ? buildTransmonNetworkPayload(
+            probe,
+            resizePulseCircuit(createDefaultPulseCircuit(probe), transmonCount),
+          ).environment
+        : buildPulsePayload(probe).environment
+    expected.forEach((key, index) => {
+      assert(
+        probed[key] === 0.5 + index,
+        `${where}: edited ${key} did not reach the payload`,
+      )
+    })
+
+    /* 編集した欄が検証されずに素通りしないこと（負値は弾かれる）。 */
+    const invalid = { ...form }
+    invalid[fieldForKey[expected[0]]] = -1
+    assert(
+      Object.keys(validatePulseLabForm(invalid)).length > 0,
+      `${where}: a negative ${expected[0]} was not rejected`,
+    )
+  }
+}
 
 const networkForm = {
   ...initialPulseLabForm,
