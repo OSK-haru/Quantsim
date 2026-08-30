@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import './OutputProbabilities.css'
 import { ResultDrawer } from './ResultDrawer'
 import type { OutputProbabilities as OutputProbabilityMap, StateSnapshot } from '../types/simulation'
@@ -19,7 +18,6 @@ type OutputProbabilitiesProps = {
   defaultOpen?: boolean
   snapshots?: StateSnapshot[]
   snapshotIndex?: number
-  onSnapshotIndexChange?: (snapshotIndex: number) => void
 }
 
 function formatProbability(value: number) {
@@ -32,9 +30,7 @@ export function OutputProbabilities({
   defaultOpen = false,
   snapshots = [],
   snapshotIndex = 0,
-  onSnapshotIndexChange,
 }: OutputProbabilitiesProps) {
-  const [isPlaying, setIsPlaying] = useState(false)
   const activeSnapshotIndex = clamp(snapshotIndex, 0, Math.max(snapshots.length - 1, 0))
   const activeSnapshot = snapshots[activeSnapshotIndex]
   const snapshotProbabilities = qubitCount === null || qubitCount === undefined
@@ -46,40 +42,7 @@ export function OutputProbabilities({
     qubitCount,
   )
   const basisStateCount = basisLabels(resolvedQubitCount).length
-  const canNavigateSnapshots = snapshots.length > 0 && onSnapshotIndexChange !== undefined
-
-  useEffect(() => {
-    if (!isPlaying || !canNavigateSnapshots || activeSnapshotIndex >= snapshots.length - 1) {
-      return
-    }
-
-    const timer = window.setTimeout(() => {
-      const nextIndex = activeSnapshotIndex + 1
-      onSnapshotIndexChange(nextIndex)
-      if (nextIndex >= snapshots.length - 1) {
-        setIsPlaying(false)
-      }
-    }, 700)
-    return () => window.clearTimeout(timer)
-  }, [activeSnapshotIndex, canNavigateSnapshots, isPlaying, onSnapshotIndexChange, snapshots.length])
-
-  function selectSnapshot(nextIndex: number) {
-    if (!onSnapshotIndexChange) return
-    setIsPlaying(false)
-    onSnapshotIndexChange(clamp(nextIndex, 0, snapshots.length - 1))
-  }
-
-  function togglePlayback() {
-    if (!onSnapshotIndexChange || snapshots.length < 2) return
-    if (isPlaying) {
-      setIsPlaying(false)
-      return
-    }
-    if (activeSnapshotIndex >= snapshots.length - 1) {
-      onSnapshotIndexChange(0)
-    }
-    setIsPlaying(true)
-  }
+  const canNavigateSnapshots = snapshots.length > 0
 
   return (
     <ResultDrawer
@@ -95,45 +58,6 @@ export function OutputProbabilities({
         <>
           {canNavigateSnapshots ? (
             <div className="output-probabilities__snapshot-explorer">
-              <div className="output-probabilities__snapshot-controls" aria-label="出力確率のスナップショット操作">
-                <button
-                  type="button"
-                  onClick={() => selectSnapshot(activeSnapshotIndex - 1)}
-                  disabled={activeSnapshotIndex === 0}
-                >
-                  前へ
-                </button>
-                <button
-                  type="button"
-                  className="output-probabilities__play-button"
-                  aria-pressed={isPlaying}
-                  onClick={togglePlayback}
-                  disabled={snapshots.length < 2}
-                >
-                  {isPlaying ? '停止' : activeSnapshotIndex === snapshots.length - 1 ? '最初から再生' : '再生'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => selectSnapshot(activeSnapshotIndex + 1)}
-                  disabled={activeSnapshotIndex === snapshots.length - 1}
-                >
-                  次へ
-                </button>
-                <span aria-live="polite">
-                  {activeSnapshotIndex + 1} / {snapshots.length}
-                </span>
-              </div>
-              <label className="output-probabilities__snapshot-slider">
-                <span>スナップショット</span>
-                <input
-                  type="range"
-                  min="0"
-                  max={Math.max(snapshots.length - 1, 0)}
-                  step="1"
-                  value={activeSnapshotIndex}
-                  onChange={(event) => selectSnapshot(Number(event.currentTarget.value))}
-                />
-              </label>
               <div className="output-probabilities__snapshot-meta" aria-label="表示中のスナップショット">
                 <strong>{snapshotKindLabel(activeSnapshot)}</strong>
                 <span>{formatSnapshotTimeUs(activeSnapshot?.time_us)}</span>

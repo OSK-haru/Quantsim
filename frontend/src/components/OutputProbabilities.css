@@ -30,60 +30,6 @@
   background: rgb(var(--tt-void-rgb) / 0.48);
 }
 
-.output-probabilities__snapshot-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.output-probabilities__snapshot-controls button {
-  padding: 7px 12px;
-  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.34);
-  background: rgb(var(--tt-rule-rgb) / 0.22);
-  color: var(--tt-ink);
-  font: inherit;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-.output-probabilities__snapshot-controls button:hover:not(:disabled) {
-  border-color: var(--tt-ink-dim);
-}
-
-.output-probabilities__snapshot-controls button:disabled {
-  opacity: 0.42;
-  cursor: not-allowed;
-}
-
-.output-probabilities__snapshot-controls .output-probabilities__play-button {
-  min-width: 88px;
-  border-color: rgb(var(--tt-rule-strong-rgb) / 0.45);
-  background: rgb(var(--tt-panel-2-rgb) / 0.2);
-}
-
-.output-probabilities__snapshot-controls > span {
-  margin-left: auto;
-  color: var(--tt-ink);
-  font-size: 0.84rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.output-probabilities__snapshot-slider {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  color: var(--tt-ink-mid);
-  font-size: 0.8rem;
-}
-
-.output-probabilities__snapshot-slider input {
-  width: 100%;
-  accent-color: var(--tt-ink-dim);
-  cursor: pointer;
-}
-
 .output-probabilities__snapshot-meta {
   display: flex;
   flex-wrap: wrap;
@@ -133,11 +79,6 @@
 }
 
 @media (max-width: 640px) {
-  .output-probabilities__snapshot-controls > span {
-    width: 100%;
-    margin-left: 0;
-  }
-
   .output-probabilities__row {
     grid-template-columns: 48px minmax(0, 1fr);
   }

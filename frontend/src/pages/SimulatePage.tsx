@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './SimulatePage.css'
 import { CircuitSummaryCard } from '../components/CircuitSummaryCard'
 import { DensityMatrixSummaryCard } from '../components/DensityMatrixSummaryCard'
@@ -10,6 +10,7 @@ import { ResultDrawer } from '../components/ResultDrawer'
 import { SectionHeader } from '../components/SectionHeader'
 import { uiResponseExample } from '../mock/uiResponseExample'
 import { apiUrl } from '../utils/apiBase'
+import type { SimulateSettings } from '../utils/simulateSettings'
 import { circuitEditorStateToConfig, type CircuitConfig } from '../utils/circuitConfig'
 import { validateCircuitConfigForRun } from '../utils/circuitValidation'
 import { simulateTips } from '../utils/quantumPetTips'
@@ -43,6 +44,8 @@ type SimulatePageProps = {
   onOpenStateExplorer: () => void
   previousResponse: SimulationResponse | null
   onSuccessfulResponse: (response: SimulationResponse, circuitConfig: CircuitConfig) => void
+  settings: SimulateSettings
+  onSettingsChange: (settings: SimulateSettings) => void
 }
 
 type SimulateRequestPayload = {
@@ -69,28 +72,6 @@ const RUN_REQUEST_TIMEOUT_PER_STEP_MS = 25
 /* ドラッグ中の1操作ごとにリクエストが飛ばない程度の、体感では気づかない待ち。 */
 const COMPILE_PREVIEW_DEBOUNCE_MS = 250
 const COMPILE_PREVIEW_TIMEOUT_MS = 8000
-
-const initialSimulationParameters: SimulateRequestParameters = {
-  device_quality: 0.8,
-  temperature_mk: 15.0,
-  flux_noise_phi0: 0.000001,
-  qubit_frequency_ghz: 5.0,
-  t1_max_us: 100.0,
-  tphi_max_us: 100.0,
-  duration_us: 2.0,
-  time_steps: 101,
-  fidelity_threshold: 0.9,
-}
-
-const initialSnapshotOptions: SnapshotOptions = {
-  enabled: true,
-  uniform_count: 10,
-  custom_times_us: [],
-  include_initial: true,
-  include_final: true,
-  include_column_boundaries: true,
-  include_after_circuit: true,
-}
 
 const defaultMeasurementOptions: MeasurementOptions = {
   shots: 1024,
@@ -402,6 +383,8 @@ export function SimulatePage({
   onOpenStateExplorer,
   previousResponse,
   onSuccessfulResponse,
+  settings,
+  onSettingsChange,
 }: SimulatePageProps) {
   const { circuitState } = useCircuitContext()
   const internalInfoVisible = useInternalInfoVisible()
@@ -431,14 +414,45 @@ export function SimulatePage({
     previousResponse === null ? SOURCE_LABEL_FIXTURE : '前回のシミュレーション',
   )
   const [activeRequestLabel, setActiveRequestLabel] = useState<string>('')
-  const [simulationParameters, setSimulationParameters] =
-    useState<SimulateRequestParameters>(initialSimulationParameters)
-  const [evolutionMethod, setEvolutionMethod] =
-    useState<GateAwareEvolutionMethod>('fixed_step_rk4')
-  const [compilationMode, setCompilationMode] =
-    useState<GateCompilationMode>('logical_direct')
-  const [simulationBackend, setSimulationBackend] =
-    useState<SimulationBackend>('python_dense')
+  /*
+   * 設定は App が持っている。ここでは読み出しと、1項目だけ差し替える
+   * 書き込みを用意する。useState を戻すとページ遷移で初期値へ戻る。
+   */
+  const {
+    parameters: simulationParameters,
+    evolutionMethod,
+    compilationMode,
+    simulationBackend,
+    snapshotOptions,
+    customSnapshotTimesInput,
+  } = settings
+  const updateSettings = useCallback(
+    <Key extends keyof SimulateSettings>(key: Key, value: SimulateSettings[Key]) => {
+      onSettingsChange({ ...settings, [key]: value })
+    },
+    [settings, onSettingsChange],
+  )
+  const setSimulationParameters = useCallback(
+    (update: SimulateRequestParameters | ((current: SimulateRequestParameters) => SimulateRequestParameters)) => {
+      onSettingsChange({
+        ...settings,
+        parameters: typeof update === 'function' ? update(settings.parameters) : update,
+      })
+    },
+    [settings, onSettingsChange],
+  )
+  const setEvolutionMethod = useCallback(
+    (value: GateAwareEvolutionMethod) => updateSettings('evolutionMethod', value),
+    [updateSettings],
+  )
+  const setCompilationMode = useCallback(
+    (value: GateCompilationMode) => updateSettings('compilationMode', value),
+    [updateSettings],
+  )
+  const setSimulationBackend = useCallback(
+    (value: SimulationBackend) => updateSettings('simulationBackend', value),
+    [updateSettings],
+  )
   /* 直近に取得できたプレビューと、その取得元の回路。null は取得失敗を表す。 */
   const [compilationPreviewResult, setCompilationPreviewResult] = useState<{
     body: string
@@ -448,8 +462,19 @@ export function SimulatePage({
     useState<SimulateRequestParameterErrors>({})
   const [gateDurationErrors, setGateDurationErrors] =
     useState<GateDurationDefaultErrors>({})
-  const [snapshotOptions, setSnapshotOptions] = useState<SnapshotOptions>(initialSnapshotOptions)
-  const [customSnapshotTimesInput, setCustomSnapshotTimesInput] = useState('')
+  const setSnapshotOptions = useCallback(
+    (update: SnapshotOptions | ((current: SnapshotOptions) => SnapshotOptions)) => {
+      onSettingsChange({
+        ...settings,
+        snapshotOptions: typeof update === 'function' ? update(settings.snapshotOptions) : update,
+      })
+    },
+    [settings, onSettingsChange],
+  )
+  const setCustomSnapshotTimesInput = useCallback(
+    (value: string) => updateSettings('customSnapshotTimesInput', value),
+    [updateSettings],
+  )
   const [snapshotOptionsError, setSnapshotOptionsError] = useState<string | null>(null)
   const [requestErrorKind, setRequestErrorKind] = useState<RequestErrorKind>('none')
   const [petCelebrating, setPetCelebrating] = useState(false)

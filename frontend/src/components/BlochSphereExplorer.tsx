@@ -15,7 +15,6 @@ import {
 type BlochSphereExplorerProps = {
   snapshots: StateSnapshot[]
   snapshotIndex: number
-  onSnapshotIndexChange: (snapshotIndex: number) => void
 }
 
 type ProjectedPoint = {
@@ -29,7 +28,6 @@ const SPHERE_RADIUS = 54
 export function BlochSphereExplorer({
   snapshots,
   snapshotIndex,
-  onSnapshotIndexChange,
 }: BlochSphereExplorerProps) {
   const [selectedQubitIndex, setSelectedQubitIndex] = useState(0)
   const activeSnapshotIndex = clamp(snapshotIndex, 0, Math.max(0, snapshots.length - 1))
@@ -47,12 +45,6 @@ export function BlochSphereExplorer({
   const activeQubitIndex = clamp(selectedQubitIndex, 0, result.states.length - 1)
   const activeState = result.states[activeQubitIndex]
 
-  function moveSnapshot(offset: number) {
-    onSnapshotIndexChange(
-      clamp(activeSnapshotIndex + offset, 0, Math.max(0, snapshots.length - 1)),
-    )
-  }
-
   return (
     <section className="bloch-sphere-explorer" aria-labelledby="bloch-sphere-title">
       <div className="bloch-sphere-explorer__heading">
@@ -63,39 +55,6 @@ export function BlochSphereExplorer({
         <p>
           完全な密度行列を量子ビットごとに縮約した局所状態です。矢印が短いほど、局所状態は混合しています。
         </p>
-      </div>
-
-      <div className="bloch-sphere-explorer__snapshot-controls">
-        <div className="bloch-sphere-explorer__snapshot-buttons" aria-label="スナップショットの移動">
-          <button
-            type="button"
-            onClick={() => moveSnapshot(-1)}
-            disabled={activeSnapshotIndex === 0}
-          >
-            前へ
-          </button>
-          <span aria-live="polite">
-            {activeSnapshotIndex + 1} / {snapshots.length}
-          </span>
-          <button
-            type="button"
-            onClick={() => moveSnapshot(1)}
-            disabled={activeSnapshotIndex === snapshots.length - 1}
-          >
-            次へ
-          </button>
-        </div>
-        <label>
-          <span>時点</span>
-          <input
-            type="range"
-            min="0"
-            max={Math.max(snapshots.length - 1, 0)}
-            step="1"
-            value={activeSnapshotIndex}
-            onChange={(event) => onSnapshotIndexChange(Number(event.currentTarget.value))}
-          />
-        </label>
       </div>
 
       <div className="bloch-sphere-explorer__snapshot-meta" aria-label="表示中の時点">

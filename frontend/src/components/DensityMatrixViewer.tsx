@@ -19,12 +19,6 @@ type DensityView = 'grid' | 'raster'
 type DensityMatrixViewerProps = {
   snapshots?: StateSnapshot[] | null
   snapshotIndex?: number
-  onSnapshotIndexChange?: (snapshotIndex: number) => void
-  /*
-   * 複数パネルでインデックスを共有するときの、共有側の総数。
-   * 省略時はこのパネル自身のスナップショット数を使う。
-   */
-  snapshotCount?: number
 }
 
 const MODE_OPTIONS: Array<{ label: string; value: DensityMatrixMode }> = [
@@ -53,12 +47,9 @@ const NEIGHBORHOOD_SIZE = 5
 
 export function DensityMatrixViewer({
   snapshots,
-  snapshotIndex: controlledSnapshotIndex,
-  onSnapshotIndexChange,
-  snapshotCount,
+  snapshotIndex: requestedSnapshotIndex = 0,
 }: DensityMatrixViewerProps) {
   const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
-  const [internalSnapshotIndex, setInternalSnapshotIndex] = useState(0)
   const [mode, setMode] = useState<DensityMatrixMode>('magnitude')
   const [preferredView, setPreferredView] = useState<DensityView | null>(null)
   const [activeCellSelection, setActiveCellSelection] = useState<ActiveCellSelection | null>(null)
@@ -66,10 +57,7 @@ export function DensityMatrixViewer({
   const [columnQuery, setColumnQuery] = useState('')
   const [searchedCoordinate, setSearchedCoordinate] = useState<MatrixCoordinate | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
-  const requestedSnapshotIndex = controlledSnapshotIndex ?? internalSnapshotIndex
-  // 操作の範囲は共有側の総数で決め、実際に描画する行列だけ自分の配列に丸める。
-  const navigationCount = Math.max(snapshotCount ?? safeSnapshots.length, 0)
-  const lastNavigationIndex = Math.max(navigationCount - 1, 0)
+  // 共有インデックスは、実際に描画する行列だけ自分の配列に丸める。
   const snapshotIndex = clamp(requestedSnapshotIndex, 0, Math.max(safeSnapshots.length - 1, 0))
   const activeCellKey = `${snapshotIndex}:${mode}`
 
@@ -96,32 +84,6 @@ export function DensityMatrixViewer({
         この実行には密度行列スナップショットがありません。
       </p>
     )
-  }
-
-  /*
-   * 制御されている場合、インデックスは Bloch球など他のパネルと共有している。
-   * ここで自分の配列長に丸めてから通知すると、スナップショット数が少ない側
-   * （理想状態など）が共有インデックスを黙って切り詰め、他のパネルまで
-   * 意図しない時点に飛ぶ。丸めるのは非制御時と描画時だけにする。
-   */
-  function selectSnapshot(nextSnapshotIndex: number) {
-    if (onSnapshotIndexChange) {
-      onSnapshotIndexChange(Math.max(0, nextSnapshotIndex))
-      return
-    }
-    setInternalSnapshotIndex(clamp(nextSnapshotIndex, 0, safeSnapshots.length - 1))
-  }
-
-  /*
-   * 移動の起点は「丸めた後」ではなく要求値。スナップショットが少ない側の
-   * パネルから操作しても、共有インデックスが縮まないようにする。
-   */
-  function goToPreviousSnapshot() {
-    selectSnapshot(requestedSnapshotIndex - 1)
-  }
-
-  function goToNextSnapshot() {
-    selectSnapshot(requestedSnapshotIndex + 1)
   }
 
   function searchMatrixElement() {
@@ -156,41 +118,6 @@ export function DensityMatrixViewer({
   return (
     <div className="density-matrix-viewer">
       <div className="density-matrix-viewer__toolbar">
-        <div className="density-matrix-viewer__navigation" aria-label="スナップショットのナビゲーション">
-          <button
-            className="density-matrix-viewer__button"
-            type="button"
-            onClick={goToPreviousSnapshot}
-            disabled={requestedSnapshotIndex <= 0}
-          >
-            前のスナップショット
-          </button>
-          <span className="density-matrix-viewer__position" aria-live="polite">
-            {Math.min(requestedSnapshotIndex, lastNavigationIndex) + 1} / {navigationCount}
-          </span>
-          <button
-            className="density-matrix-viewer__button"
-            type="button"
-            onClick={goToNextSnapshot}
-            disabled={requestedSnapshotIndex >= lastNavigationIndex}
-          >
-            次のスナップショット
-          </button>
-        </div>
-
-        <label className="density-matrix-viewer__slider-label">
-          <span>スナップショット</span>
-          <input
-            className="density-matrix-viewer__slider"
-            type="range"
-            min="0"
-            max={lastNavigationIndex}
-            step="1"
-            value={Math.min(requestedSnapshotIndex, lastNavigationIndex)}
-            onChange={(event) => selectSnapshot(Number(event.currentTarget.value))}
-          />
-        </label>
-
         <div className="density-matrix-viewer__modes" aria-label="密度行列の表示モード">
           {MODE_OPTIONS.map((option) => (
             <button

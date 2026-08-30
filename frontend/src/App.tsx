@@ -25,6 +25,7 @@ import {
 import type { SimulationResponse } from './types/simulation'
 import type { CircuitConfig } from './utils/circuitConfig'
 import { initialPulseLabForm } from './utils/pulseLab'
+import { initialSimulateSettings, type SimulateSettings } from './utils/simulateSettings'
 import {
   applyPulseStepToForm,
   createDefaultPulseCircuit,
@@ -186,6 +187,13 @@ function App() {
     response: SimulationResponse
     circuitConfig: CircuitConfig
   } | null>(null)
+  /*
+   * Gate-awareラボの設定。Pulse側と同じ理由でここに置く。ページ側で持つと
+   * 状態エクスプローラーへ寄り道して戻っただけで初期値に戻ってしまう。
+   */
+  const [simulateSettings, setSimulateSettings] = useState<SimulateSettings>(
+    () => ({ ...initialSimulateSettings }),
+  )
   const [pulseLabForm, setPulseLabForm] = useState(() => ({ ...initialPulseLabForm }))
   const [pulseCircuit, setPulseCircuit] = useState<PulseCircuitState>(() =>
     createDefaultPulseCircuit(initialPulseLabForm),
@@ -334,6 +342,8 @@ function App() {
             onSuccessfulResponse={(response, circuitConfig) => {
               setLatestGateAwareResult({ response, circuitConfig })
             }}
+            settings={simulateSettings}
+            onSettingsChange={setSimulateSettings}
           />
         ) : null}
         </CircuitProvider>

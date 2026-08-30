@@ -412,11 +412,7 @@ export function PulseStateExplorerPage({
           open={openPanels.output}
           onToggle={() => togglePanel('output')}
         >
-          <PulseOutputProbabilities
-            view={view}
-            cursorTimeUs={cursorTimeUs}
-            onCursorTimeChange={setCursorTimeUs}
-          />
+          <PulseOutputProbabilities view={view} cursorTimeUs={cursorTimeUs} />
         </CollapsiblePanel>
 
         {view.finalDensityMatrix === null ? null : (

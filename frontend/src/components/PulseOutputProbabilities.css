@@ -15,51 +15,6 @@
   background: rgb(var(--tt-void-rgb) / 0.48);
 }
 
-.pulse-output__sample-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.pulse-output__sample-controls button {
-  padding: 7px 12px;
-  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.34);
-  background: rgb(var(--tt-rule-rgb) / 0.22);
-  color: var(--tt-ink);
-  font: inherit;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-
-.pulse-output__sample-controls button:hover:not(:disabled) {
-  border-color: var(--tt-ink-dim);
-}
-
-.pulse-output__sample-controls button:disabled {
-  opacity: 0.42;
-  cursor: not-allowed;
-}
-
-.pulse-output__sample-controls span {
-  color: var(--tt-ink-mid);
-  font-family: var(--tt-mono);
-  font-size: 0.8rem;
-}
-
-.pulse-output__sample-slider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--tt-ink-mid);
-  font-size: 0.78rem;
-}
-
-.pulse-output__sample-slider input {
-  flex: 1;
-  accent-color: var(--tt-accent);
-}
-
 .pulse-output__sample-meta {
   display: flex;
   flex-wrap: wrap;

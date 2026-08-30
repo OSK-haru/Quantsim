@@ -10,7 +10,6 @@ import {
 type PulseOutputProbabilitiesProps = {
   view: PulseExplorerView
   cursorTimeUs: number | null
-  onCursorTimeChange: (timeUs: number) => void
 }
 
 /* 基底が多いモデルでは、確率の小さい基底まで並べても読めない。 */
@@ -24,7 +23,6 @@ const compactBasisThreshold = 12
 export function PulseOutputProbabilities({
   view,
   cursorTimeUs,
-  onCursorTimeChange,
 }: PulseOutputProbabilitiesProps) {
   const [showAllBasis, setShowAllBasis] = useState(view.basisLabels.length <= compactBasisThreshold)
   const activeIndex = cursorTimeUs === null
@@ -58,14 +56,6 @@ export function PulseOutputProbabilities({
         0,
       )
 
-  function selectIndex(nextIndex: number) {
-    const bounded = Math.min(view.points.length - 1, Math.max(0, nextIndex))
-    const point = view.points[bounded]
-    if (point) {
-      onCursorTimeChange(point.timeUs)
-    }
-  }
-
   return (
     <section className="pulse-output" aria-label="Pulseの占有確率分布">
       <SectionHeader
@@ -80,30 +70,6 @@ export function PulseOutputProbabilities({
       ) : (
         <>
           <div className="pulse-output__sample-explorer">
-            <div className="pulse-output__sample-controls" aria-label="サンプルの操作">
-              <button type="button" onClick={() => selectIndex(activeIndex - 1)} disabled={activeIndex === 0}>
-                前へ
-              </button>
-              <button
-                type="button"
-                onClick={() => selectIndex(activeIndex + 1)}
-                disabled={activeIndex >= view.points.length - 1}
-              >
-                次へ
-              </button>
-              <span aria-live="polite">{activeIndex + 1} / {view.points.length}</span>
-            </div>
-            <label className="pulse-output__sample-slider">
-              <span>サンプル</span>
-              <input
-                type="range"
-                min="0"
-                max={Math.max(view.points.length - 1, 0)}
-                step="1"
-                value={activeIndex}
-                onChange={(event) => selectIndex(Number(event.currentTarget.value))}
-              />
-            </label>
             <div className="pulse-output__sample-meta">
               <strong>{activePoint.timeUs.toFixed(4)} μs</strong>
               <span>
