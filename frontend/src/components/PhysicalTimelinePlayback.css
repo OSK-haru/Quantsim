@@ -20,3 +20,13 @@
 .physical-playback__branches-label { width: 100%; color: var(--tt-accent-hot); font-size: .72rem; }
 .physical-playback__branch { padding: 5px 8px; border: 1px solid rgb(var(--tt-accent-rgb) / 0.25); background: rgb(var(--tt-accent-deep-rgb) / 0.16); color: var(--tt-accent-hot); font-size: .72rem; }
 @media (max-width:640px) { .physical-playback__heading,.physical-playback__controls { align-items: stretch; flex-direction: column; } }
+
+/*
+ * 操作バー単体（variant="controls"）。下のパネル群が共有する時刻カーソルを
+ * 動かす唯一の場所なので、パネルより一段強い枠で常に上に置く。
+ */
+.physical-playback--compact { position: sticky; top: 0; z-index: 5; padding: 14px 16px; border-color: rgb(var(--tt-accent-rgb) / 0.34); background: var(--tt-panel); }
+.physical-playback--compact .physical-playback__heading { margin-bottom: 8px; }
+.physical-playback--compact .physical-playback__heading h2 { font-size: .96rem; }
+.physical-playback--compact .physical-playback__controls { margin-top: 0; }
+.physical-playback--compact .physical-playback__status { margin-top: 8px; font-size: .74rem; }

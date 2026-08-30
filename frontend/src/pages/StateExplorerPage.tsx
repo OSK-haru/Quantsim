@@ -174,11 +174,30 @@ export function StateExplorerPage({
    * 別の実行を保持できると、隣り合う図が別々の条件を指してしまう。
    */
   const { heldResult, comparing } = comparison
+  const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
+    physical: false, metrics: false, probabilities: true, output: false, bloch: true, density: false, transfer: false,
+    rates: false,
+  })
+  /*
+   * 比較線を描くのは指標タイムラインと確率比較の2枚だけ。指標タイムラインは
+   * 既定で閉じているので、比較を入れたのに線がどこにも見えない、という状態に
+   * なりうる。比較を入れたときは、線が出るパネルを開いておく。
+   */
+  const openComparisonPanels = useCallback(() => {
+    setOpenPanels((current) => (
+      current.metrics && current.probabilities
+        ? current
+        : { ...current, metrics: true, probabilities: true }
+    ))
+  }, [])
   const setComparing = useCallback(
     (nextComparing: boolean) => {
+      if (nextComparing) {
+        openComparisonPanels()
+      }
       onComparisonChange({ ...comparison, comparing: nextComparing })
     },
-    [comparison, onComparisonChange],
+    [comparison, onComparisonChange, openComparisonPanels],
   )
   const holdCurrentRun = useCallback(() => {
     if (activeResponse === null || executedCircuitConfig === null) {
@@ -193,7 +212,8 @@ export function StateExplorerPage({
       },
       comparing: true,
     })
-  }, [activeResponse, executedCircuitConfig, onComparisonChange])
+    openComparisonPanels()
+  }, [activeResponse, executedCircuitConfig, onComparisonChange, openComparisonPanels])
   const releaseHeldRun = useCallback(() => {
     onComparisonChange({ heldResult: null, comparing: false })
   }, [onComparisonChange])
@@ -224,10 +244,6 @@ export function StateExplorerPage({
     && Array.isArray(heldForComparison.response.timeline)
     ? heldForComparison.response.timeline
     : []
-  const [openPanels, setOpenPanels] = useState<Record<ExplorerPanelKey, boolean>>({
-    physical: false, metrics: false, probabilities: true, output: false, bloch: true, density: false, transfer: false,
-    rates: false,
-  })
   const togglePanel = useCallback((panelKey: ExplorerPanelKey) => {
     setOpenPanels((current) => ({ ...current, [panelKey]: !current[panelKey] }))
   }, [])
@@ -360,16 +376,33 @@ export function StateExplorerPage({
               <MessageReceiveStateTransferView circuit={circuitState} noisySnapshots={snapshots} idealSnapshots={idealSnapshots} stateTransfer={activeResponse.state_transfer} />
             </CollapsiblePanel>
           ) : null}
-          <CollapsiblePanel panelKey="physical" open={visiblePanels.physical} onToggle={() => togglePanel('physical')}>
+          {/*
+            * 時刻カーソルは Bloch球・確率比較・密度行列が共有している。操作系を
+            * 折りたたみパネルの中に置くと、下のパネルだけ開いている状態で
+            * 動かす手段が消えるので、再生バーはパネルの外に常に出す。
+            */}
           <PhysicalTimelinePlayback
             circuit={circuitState}
             gateDurationDefaults={gateDurationDefaults}
             physicalTimeline={activeResponse.physical_timeline}
             measurement={activeResponse.measurement}
+            simulationTimeUs={playbackSimulationTimeUs}
+            onSimulationTimeChange={handlePlaybackSimulationTimeChange}
+            noisySnapshots={snapshots}
+            idealSnapshots={idealSnapshots}
+            variant="controls"
+          />
+          <CollapsiblePanel panelKey="physical" open={visiblePanels.physical} onToggle={() => togglePanel('physical')}>
+            <PhysicalTimelinePlayback
+              circuit={circuitState}
+              gateDurationDefaults={gateDurationDefaults}
+              physicalTimeline={activeResponse.physical_timeline}
+              measurement={activeResponse.measurement}
               simulationTimeUs={playbackSimulationTimeUs}
               onSimulationTimeChange={handlePlaybackSimulationTimeChange}
               noisySnapshots={snapshots}
               idealSnapshots={idealSnapshots}
+              variant="circuit"
             />
           </CollapsiblePanel>
           <CollapsiblePanel panelKey="metrics" open={visiblePanels.metrics} onToggle={() => togglePanel('metrics')}>

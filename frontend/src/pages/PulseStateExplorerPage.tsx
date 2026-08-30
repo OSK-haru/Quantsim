@@ -208,11 +208,34 @@ export function PulseStateExplorerPage({
    * あいだだけ、2本の差を環境の寄与として読める。
    */
   const { heldRun, comparing } = comparison
+  const [openPanels, setOpenPanels] = useState<Record<PulseExplorerPanelKey, boolean>>({
+    physical: false,
+    metrics: true,
+    populations: false,
+    probabilities: true,
+    output: false,
+    density: false,
+  })
+  /*
+   * 比較線を描くのは指標タイムラインと確率比較の2枚だけ。どちらも既定では
+   * 開いているが、利用者が閉じたまま比較を入れると線がどこにも見えない。
+   * 比較を入れたときは、線が出るパネルを開いておく。
+   */
+  const openComparisonPanels = useCallback(() => {
+    setOpenPanels((current) => (
+      current.metrics && current.probabilities
+        ? current
+        : { ...current, metrics: true, probabilities: true }
+    ))
+  }, [])
   const setComparing = useCallback(
     (nextComparing: boolean) => {
+      if (nextComparing) {
+        openComparisonPanels()
+      }
       onComparisonChange({ ...comparison, comparing: nextComparing })
     },
-    [comparison, onComparisonChange],
+    [comparison, onComparisonChange, openComparisonPanels],
   )
   const heldView = useMemo(
     () => (heldRun === null
@@ -238,14 +261,6 @@ export function PulseStateExplorerPage({
     onComparisonChange({ heldRun: null, comparing: false })
   }
   const comparisonView = comparing ? heldView : null
-  const [openPanels, setOpenPanels] = useState<Record<PulseExplorerPanelKey, boolean>>({
-    physical: false,
-    metrics: true,
-    populations: false,
-    probabilities: true,
-    output: false,
-    density: false,
-  })
 
   /*
    * 新しい実行が入ったら、まずPulse終了時刻へカーソルを置く。
@@ -284,7 +299,8 @@ export function PulseStateExplorerPage({
       },
       comparing: true,
     })
-  }, [run, currentCircuit, onComparisonChange])
+    openComparisonPanels()
+  }, [run, currentCircuit, onComparisonChange, openComparisonPanels])
   const releaseHeldRun = useCallback(() => {
     onComparisonChange({ heldRun: null, comparing: false })
   }, [onComparisonChange])

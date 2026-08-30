@@ -15,6 +15,13 @@ type PhysicalTimelinePlaybackProps = {
   onSimulationTimeChange: (simulationTimeUs: number) => void
   noisySnapshots?: StateSnapshot[]
   idealSnapshots?: StateSnapshot[]
+  /*
+   * 'controls' は再生操作だけの細いバー、'circuit' は回路図だけの表示。
+   * 時刻カーソルは Bloch球・密度行列など下のパネルと共有するので、操作系は
+   * どのパネルを開いていても届くようページ上部に常に出し、回路図だけを
+   * 折りたたみパネルに残す。再生ループを持つのは 'controls' の側だけ。
+   */
+  variant?: 'full' | 'controls' | 'circuit'
 }
 
 const playbackWallDurationMs = 8000
@@ -28,9 +35,13 @@ export function PhysicalTimelinePlayback({
   onSimulationTimeChange,
   noisySnapshots = [],
   idealSnapshots = [],
+  variant = 'full',
 }: PhysicalTimelinePlaybackProps) {
+  const showCircuit = variant !== 'controls'
+  const showControls = variant !== 'circuit'
   const { animationsEnabled } = useAnimationSettings()
-  const [playing, setPlaying] = useState(animationsEnabled)
+  /* 再生ループは操作バー側だけが持つ。両方が回すと同じカーソルを取り合う。 */
+  const [playing, setPlaying] = useState(animationsEnabled && showControls)
   const animationFrameRef = useRef<number | null>(null)
   const playbackStartWallTimeRef = useRef(window.performance.now())
   const playbackStartSimulationTimeRef = useRef(simulationTimeUs)
@@ -46,7 +57,8 @@ export function PhysicalTimelinePlayback({
   const firstMeasurementTimeUs = physicalTimeline?.events.find((event) => (
     event.operations.some((operation) => operation.gate === 'MEASURE')
   ))?.start_us ?? null
-  const showMeasurementBranches = firstMeasurementTimeUs !== null
+  const showMeasurementBranches = variant === 'full'
+    && firstMeasurementTimeUs !== null
     && boundedSimulationTimeUs >= firstMeasurementTimeUs
     && (measurement?.classical_branches.length ?? 0) > 0
   const eventProgress = activeEvent && activeEvent.duration_us > 0
@@ -65,7 +77,7 @@ export function PhysicalTimelinePlayback({
     : null
 
   useEffect(() => {
-    if (!playing || totalDurationUs <= 0) return
+    if (!playing || !showControls || totalDurationUs <= 0) return
 
     const advancePlaybackTime = (wallTimeMs: number) => {
       const elapsedWallTimeMs = wallTimeMs - playbackStartWallTimeRef.current
@@ -90,9 +102,11 @@ export function PhysicalTimelinePlayback({
         animationFrameRef.current = null
       }
     }
-  }, [onSimulationTimeChange, playing, totalDurationUs])
+  }, [onSimulationTimeChange, playing, showControls, totalDurationUs])
 
   if (!physicalTimeline) {
+    /* 同じ注意書きを操作バーと回路パネルで二重に出さない。 */
+    if (variant === 'circuit') return null
     return (
       <section className="physical-playback physical-playback--unavailable">
         この結果には物理タイムラインがありません。再実行すると再生できます。
@@ -115,26 +129,38 @@ export function PhysicalTimelinePlayback({
   }
 
   return (
-    <section className="physical-playback" aria-labelledby="physical-playback-title">
+    <section
+      className={`physical-playback${showCircuit ? '' : ' physical-playback--compact'}`}
+      aria-labelledby="physical-playback-title"
+    >
       <div className="physical-playback__heading">
-        <div><span>PHYSICAL TIMELINE</span><h2 id="physical-playback-title">回路と物理時間の同期再生</h2></div>
+        <div>
+          <span>PHYSICAL TIMELINE</span>
+          <h2 id="physical-playback-title">
+            {variant === 'controls' ? '物理時間の再生' : variant === 'circuit' ? '回路アニメーション' : '回路と物理時間の同期再生'}
+          </h2>
+        </div>
         <strong>{boundedSimulationTimeUs.toFixed(4)} / {totalDurationUs.toFixed(4)} μs</strong>
       </div>
-      <CircuitPreview
-        circuit={circuit}
-        gateDurationDefaults={gateDurationDefaults}
-        highlightedColumnIndex={highlightedColumnIndex}
-        highlightedGateSignatures={highlightedGateSignatures}
-      />
-      <div className="physical-playback__circuit-progress" aria-label="回路アニメーション進行">
-        <div className="physical-playback__circuit-progress-label">
-          <span>回路アニメーション</span>
-          <span>{eventNumber >= 0 ? `${eventNumber + 1} / ${physicalTimeline.events.length}` : '待機'}</span>
-        </div>
-        <div className="physical-playback__circuit-progress-track">
-          <div className="physical-playback__circuit-progress-bar" style={{ width: `${eventProgress * 100}%` }} />
-        </div>
-      </div>
+      {showCircuit ? (
+        <>
+          <CircuitPreview
+            circuit={circuit}
+            gateDurationDefaults={gateDurationDefaults}
+            highlightedColumnIndex={highlightedColumnIndex}
+            highlightedGateSignatures={highlightedGateSignatures}
+          />
+          <div className="physical-playback__circuit-progress" aria-label="回路アニメーション進行">
+            <div className="physical-playback__circuit-progress-label">
+              <span>回路アニメーション</span>
+              <span>{eventNumber >= 0 ? `${eventNumber + 1} / ${physicalTimeline.events.length}` : '待機'}</span>
+            </div>
+            <div className="physical-playback__circuit-progress-track">
+              <div className="physical-playback__circuit-progress-bar" style={{ width: `${eventProgress * 100}%` }} />
+            </div>
+          </div>
+        </>
+      ) : null}
       {stateDifference === null ? null : (
         <div className="physical-playback__noise-readout" aria-label="理想状態とノイズ状態の差">
           <span>現在時刻のノイズ差分 Δρ</span>
@@ -142,24 +168,26 @@ export function PhysicalTimelinePlayback({
           <small>理想軌道とノイズ軌道の密度行列のFrobenius距離</small>
         </div>
       )}
-      <div className="physical-playback__controls">
-        <button type="button" onClick={playing ? () => setPlaying(false) : handlePlay}>{playing ? '一時停止' : '再生'}</button>
-        <button type="button" onClick={handleRestart}>先頭へ</button>
-        <label>
-          <span>simulation time</span>
-          <input
-            type="range"
-            min={0}
-            max={totalDurationUs}
-            step={Math.max(totalDurationUs / 1000, 1e-9)}
-            value={boundedSimulationTimeUs}
-            onChange={(event) => {
-              setPlaying(false)
-              onSimulationTimeChange(Number(event.currentTarget.value))
-            }}
-          />
-        </label>
-      </div>
+      {showControls ? (
+        <div className="physical-playback__controls">
+          <button type="button" onClick={playing ? () => setPlaying(false) : handlePlay}>{playing ? '一時停止' : '再生'}</button>
+          <button type="button" onClick={handleRestart}>先頭へ</button>
+          <label>
+            <span>simulation time</span>
+            <input
+              type="range"
+              min={0}
+              max={totalDurationUs}
+              step={Math.max(totalDurationUs / 1000, 1e-9)}
+              value={boundedSimulationTimeUs}
+              onChange={(event) => {
+                setPlaying(false)
+                onSimulationTimeChange(Number(event.currentTarget.value))
+              }}
+            />
+          </label>
+        </div>
+      ) : null}
       <p className="physical-playback__status">
         {activeEvent?.kind === 'idle'
           ? '回路完了後のアイドル時間：環境ノイズによる時間発展'
