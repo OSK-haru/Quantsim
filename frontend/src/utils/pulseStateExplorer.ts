@@ -12,11 +12,32 @@ import {
   type PulseComplexValue,
   type PulseLabForm,
   type PulseResponse,
+  type PulseRunRecord,
 } from '../types/pulse'
 import type { PulseCircuitState } from '../types/pulseCircuit'
 import { qutritTargetOverlap } from './pulseLab'
 
 export type PulseExplorerSegment = 'pulse' | 'idle' | 'virtual_z'
+
+/*
+ * 見比べるために取っておいた実行と、比較表示の on/off。
+ *
+ * 状態エクスプローラーのページではなく App が持つ。ページ側で useState すると、
+ * Pulseラボへ戻って再実行しようとしただけで保持が捨てられ、
+ * 「保存したのに比べられない」ことになる。
+ *
+ * comparability は保持した時点の「環境以外」の指紋。
+ * pulseComparabilitySignature を参照。
+ */
+export type PulseComparisonState = {
+  heldRun: { record: PulseRunRecord; comparability: string } | null
+  comparing: boolean
+}
+
+export const initialPulseComparisonState: PulseComparisonState = {
+  heldRun: null,
+  comparing: false,
+}
 
 export type PulseExplorerPoint = {
   timeUs: number

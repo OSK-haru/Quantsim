@@ -22,6 +22,7 @@ import {
   buildPulseExplorerView,
   nearestPulsePointIndex,
   pulseComparabilitySignature,
+  type PulseComparisonState,
 } from '../utils/pulseStateExplorer'
 import { pulseStateExplorerTips } from '../utils/quantumPetTips'
 
@@ -34,6 +35,12 @@ type PulseStateExplorerPageProps = {
    * 判定するために、環境以外の指紋を作るのに使う。
    */
   currentCircuit: PulseCircuitState
+  /*
+   * 保持した実行と比較表示の状態。ページを移っても消えないよう App が持つ。
+   * ここで useState すると、Pulseラボへ戻っただけで保持が捨てられてしまう。
+   */
+  comparison: PulseComparisonState
+  onComparisonChange: (comparison: PulseComparisonState) => void
   onOpenPulseLab: () => void
 }
 
@@ -180,6 +187,8 @@ export function PulseStateExplorerPage({
   run,
   currentSignature,
   currentCircuit,
+  comparison,
+  onComparisonChange,
   onOpenPulseLab,
 }: PulseStateExplorerPageProps) {
   const internalInfoVisible = useInternalInfoVisible()
@@ -198,11 +207,13 @@ export function PulseStateExplorerPage({
    * comparability は保持した時点の「環境以外」の指紋。これが現在と一致する
    * あいだだけ、2本の差を環境の寄与として読める。
    */
-  const [heldRun, setHeldRun] = useState<
-    { record: PulseRunRecord; comparability: string } | null
-  >(null)
-  /* 比較表示は既定で切る。線が増えるのは、見比べると決めたときだけでいい。 */
-  const [comparing, setComparing] = useState(false)
+  const { heldRun, comparing } = comparison
+  const setComparing = useCallback(
+    (nextComparing: boolean) => {
+      onComparisonChange({ ...comparison, comparing: nextComparing })
+    },
+    [comparison, onComparisonChange],
+  )
   const heldView = useMemo(
     () => (heldRun === null
       ? null
@@ -224,8 +235,7 @@ export function PulseStateExplorerPage({
     && currentComparability !== null
     && heldRun.comparability !== currentComparability
   ) {
-    setHeldRun(null)
-    setComparing(false)
+    onComparisonChange({ heldRun: null, comparing: false })
   }
   const comparisonView = comparing ? heldView : null
   const [openPanels, setOpenPanels] = useState<Record<PulseExplorerPanelKey, boolean>>({
@@ -267,16 +277,17 @@ export function PulseStateExplorerPage({
     if (run === null) {
       return
     }
-    setHeldRun({
-      record: run,
-      comparability: pulseComparabilitySignature(run.formAtRun, currentCircuit),
+    onComparisonChange({
+      heldRun: {
+        record: run,
+        comparability: pulseComparabilitySignature(run.formAtRun, currentCircuit),
+      },
+      comparing: true,
     })
-    setComparing(true)
-  }, [run, currentCircuit])
+  }, [run, currentCircuit, onComparisonChange])
   const releaseHeldRun = useCallback(() => {
-    setHeldRun(null)
-    setComparing(false)
-  }, [])
+    onComparisonChange({ heldRun: null, comparing: false })
+  }, [onComparisonChange])
 
   const availablePanelKeys = useMemo(
     () => (Object.keys(PULSE_EXPLORER_PANEL_LABELS) as PulseExplorerPanelKey[]).filter((panelKey) => {

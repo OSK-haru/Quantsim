@@ -21,11 +21,18 @@ import {
   circuitEditorStateToConfig,
   type CircuitConfig,
 } from '../utils/circuitConfig'
+import type { GateAwareComparisonState } from '../utils/simulateSettings'
 
 type StateExplorerPageProps = {
   response: SimulationResponse | null
   executedCircuitConfig: CircuitConfig | null
   gateDurationDefaults: GateDurationDefaults
+  /*
+   * 保持した実行と比較表示の状態。ページを移っても消えないよう App が持つ。
+   * ここで useState すると、シミュレーションへ戻っただけで保持が捨てられる。
+   */
+  comparison: GateAwareComparisonState
+  onComparisonChange: (comparison: GateAwareComparisonState) => void
   onOpenSimulation: () => void
 }
 
@@ -141,6 +148,8 @@ export function StateExplorerPage({
   response,
   executedCircuitConfig,
   gateDurationDefaults,
+  comparison,
+  onComparisonChange,
   onOpenSimulation,
 }: StateExplorerPageProps) {
   const { circuitState } = useCircuitContext()
@@ -164,31 +173,30 @@ export function StateExplorerPage({
    * パネルは全部で1つのスナップショット位置を共有しているので、パネルごとに
    * 別の実行を保持できると、隣り合う図が別々の条件を指してしまう。
    */
-  const [heldResult, setHeldResult] = useState<{
-    response: SimulationResponse
-    circuitConfig: CircuitConfig
-    heldAt: string
-    /* 保持した時点の「環境以外」の指紋。 */
-    comparability: string
-  } | null>(null)
-  /* 比較表示は既定で切る。線が増えるのは、見比べると決めたときだけでいい。 */
-  const [comparing, setComparing] = useState(false)
+  const { heldResult, comparing } = comparison
+  const setComparing = useCallback(
+    (nextComparing: boolean) => {
+      onComparisonChange({ ...comparison, comparing: nextComparing })
+    },
+    [comparison, onComparisonChange],
+  )
   const holdCurrentRun = useCallback(() => {
     if (activeResponse === null || executedCircuitConfig === null) {
       return
     }
-    setHeldResult({
-      response: activeResponse,
-      circuitConfig: executedCircuitConfig,
-      heldAt: new Date().toISOString(),
-      comparability: comparabilitySignature(executedCircuitConfig, activeResponse.parameters),
+    onComparisonChange({
+      heldResult: {
+        response: activeResponse,
+        circuitConfig: executedCircuitConfig,
+        heldAt: new Date().toISOString(),
+        comparability: comparabilitySignature(executedCircuitConfig, activeResponse.parameters),
+      },
+      comparing: true,
     })
-    setComparing(true)
-  }, [activeResponse, executedCircuitConfig])
+  }, [activeResponse, executedCircuitConfig, onComparisonChange])
   const releaseHeldRun = useCallback(() => {
-    setHeldResult(null)
-    setComparing(false)
-  }, [])
+    onComparisonChange({ heldResult: null, comparing: false })
+  }, [onComparisonChange])
   /*
    * 直接比較できなくなった保持は、その場で捨てる。
    *
@@ -204,8 +212,7 @@ export function StateExplorerPage({
     && currentComparability !== null
     && heldResult.comparability !== currentComparability
   ) {
-    setHeldResult(null)
-    setComparing(false)
+    onComparisonChange({ heldResult: null, comparing: false })
   }
   /* 比較を出しているあいだだけ、保持側の系列を各パネルへ流す。 */
   const heldForComparison = comparing ? heldResult : null

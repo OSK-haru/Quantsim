@@ -25,7 +25,16 @@ import {
 import type { SimulationResponse } from './types/simulation'
 import type { CircuitConfig } from './utils/circuitConfig'
 import { initialPulseLabForm } from './utils/pulseLab'
-import { initialSimulateSettings, type SimulateSettings } from './utils/simulateSettings'
+import {
+  initialGateAwareComparisonState,
+  initialSimulateSettings,
+  type GateAwareComparisonState,
+  type SimulateSettings,
+} from './utils/simulateSettings'
+import {
+  initialPulseComparisonState,
+  type PulseComparisonState,
+} from './utils/pulseStateExplorer'
 import {
   applyPulseStepToForm,
   createDefaultPulseCircuit,
@@ -194,6 +203,12 @@ function App() {
   const [simulateSettings, setSimulateSettings] = useState<SimulateSettings>(
     () => ({ ...initialSimulateSettings }),
   )
+  /*
+   * 状態エクスプローラーで保持した実行と比較表示の状態。設定と同じ理由でここに置く。
+   */
+  const [gateAwareComparison, setGateAwareComparison] = useState<GateAwareComparisonState>(
+    initialGateAwareComparisonState,
+  )
   const [pulseLabForm, setPulseLabForm] = useState(() => ({ ...initialPulseLabForm }))
   const [pulseCircuit, setPulseCircuit] = useState<PulseCircuitState>(() =>
     createDefaultPulseCircuit(initialPulseLabForm),
@@ -204,6 +219,14 @@ function App() {
    * ページを移っても消えないここで保持する。
    */
   const [latestPulseRun, setLatestPulseRun] = useState<PulseRunRecord | null>(null)
+  /*
+   * 状態エクスプローラーで保持した実行と比較表示の状態。ページ側で持つと、
+   * Pulseラボへ戻って再実行しようとしただけで保持が消えてしまうので、
+   * 結果そのものと同じくここで持つ。
+   */
+  const [pulseComparison, setPulseComparison] = useState<PulseComparisonState>(
+    initialPulseComparisonState,
+  )
   /*
    * ホームのドラムの回転数。ここで持っているのは、背景のゆらぎが
    * 全画面で1枚きりだから。ホームを離れても値が残るので、戻ってきたときに
@@ -296,6 +319,8 @@ function App() {
               run={latestPulseRun}
               currentSignature={pulseSignature}
               currentCircuit={pulseCircuit}
+              comparison={pulseComparison}
+              onComparisonChange={setPulseComparison}
               onOpenPulseLab={() => navigate('pulse-lab')}
             />
           )}
@@ -326,6 +351,8 @@ function App() {
             response={latestGateAwareResult?.response ?? null}
             executedCircuitConfig={latestGateAwareResult?.circuitConfig ?? null}
             gateDurationDefaults={gateDurationDefaults}
+            comparison={gateAwareComparison}
+            onComparisonChange={setGateAwareComparison}
             onOpenSimulation={() => navigate('simulate')}
           />
         ) : null}

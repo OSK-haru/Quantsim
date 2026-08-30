@@ -11,8 +11,33 @@ import type {
   GateCompilationMode,
   SimulateRequestParameters,
   SimulationBackend,
+  SimulationResponse,
   SnapshotOptions,
 } from '../types/simulation'
+import type { CircuitConfig } from './circuitConfig'
+
+/*
+ * 状態エクスプローラーで見比べるために取っておいた実行と、比較表示の on/off。
+ *
+ * ページではなく App が持つ。ページ側で useState すると、シミュレーションへ
+ * 戻って環境を変えようとしただけで保持が捨てられ、
+ * 「保存したのに比べられない」ことになる。
+ */
+export type GateAwareComparisonState = {
+  heldResult: {
+    response: SimulationResponse
+    circuitConfig: CircuitConfig
+    heldAt: string
+    /* 保持した時点の「環境以外」の指紋。 */
+    comparability: string
+  } | null
+  comparing: boolean
+}
+
+export const initialGateAwareComparisonState: GateAwareComparisonState = {
+  heldResult: null,
+  comparing: false,
+}
 
 export type SimulateSettings = {
   parameters: SimulateRequestParameters
