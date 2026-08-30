@@ -300,6 +300,7 @@ export function PulseStateExplorerPage({
       heldRun: {
         record: run,
         comparability: pulseComparabilitySignature(run.formAtRun, currentCircuit),
+        heldAt: new Date().toISOString(),
       },
       comparing: true,
     })
@@ -374,7 +375,9 @@ export function PulseStateExplorerPage({
       />
 
       <RunComparisonBar
-        heldLabel={heldRun === null ? null : heldRunLabel(heldRun.record)}
+        heldLabel={heldRun === null
+          ? null
+          : `${new Date(heldRun.heldAt).toLocaleTimeString()} に保存`}
         canHold={run !== null && heldRun?.record !== run}
         comparing={comparing}
         onHold={holdCurrentRun}
@@ -459,7 +462,7 @@ export function PulseStateExplorerPage({
               </div>
               <p>
                 {view.hasPerPointDensityMatrix
-                  ? 'カーソル時刻の完全な密度行列です。占有確率は対角成分、コヒーレンスは非対角成分に現れます。仮想Zのような位相操作は対角成分を動かさないため、非対角成分で確認してください。'
+                  ? 'カーソル時刻の完全な密度行列です。占有確率は対角成分、コヒーレンスは非対角成分に現れます。'
                   : '2準位モデルの軌跡は占有確率だけを返すため、密度行列はPulse終了時と最終時刻の2点でのみ利用できます。ここでは最終時刻の密度行列を表示します。'}
               </p>
             </div>
@@ -499,12 +502,6 @@ export function PulseStateExplorerPage({
       <QuantumPet phase={petPhase} message={petMessage} tips={pulseStateExplorerTips} />
     </main>
   )
-}
-
-/* 保持した実行の見分けは、実行時刻とモデルの2つあれば足りる。 */
-function heldRunLabel(heldRun: PulseRunRecord): string {
-  const time = new Date(heldRun.completedAt).toLocaleTimeString()
-  return `${time} の実行`
 }
 
 function ExplorerHeader() {

@@ -298,9 +298,6 @@ export function StateExplorerPage({
   const idealSnapshots = activeResponse && Array.isArray(activeResponse.run.comparison?.ideal_state_snapshots)
     ? activeResponse.run.comparison.ideal_state_snapshots
     : []
-  const idealTimeline = activeResponse && Array.isArray(activeResponse.run.comparison?.ideal_timeline)
-    ? activeResponse.run.comparison.ideal_timeline
-    : []
   const activeSnapshotIndex = Math.min(snapshotIndex, Math.max(snapshots.length - 1, 0))
   const qubitCount = activeResponse && activeResponse.circuit && Number.isInteger(activeResponse.circuit.qubit_count)
     ? activeResponse.circuit.qubit_count
@@ -390,7 +387,7 @@ export function StateExplorerPage({
           <RunComparisonBar
             heldLabel={heldResult === null
               ? null
-              : `${new Date(heldResult.heldAt).toLocaleTimeString()} の実行`}
+              : `${new Date(heldResult.heldAt).toLocaleTimeString()} に保存`}
             canHold={activeResponse !== null && heldResult?.response !== activeResponse}
             comparing={comparing}
             onHold={holdCurrentRun}
@@ -437,7 +434,6 @@ export function StateExplorerPage({
             timeline={activeResponse.timeline}
             heldTimeline={heldTimeline}
             heldSnapshots={heldSnapshots}
-            idealTimeline={idealTimeline}
             stateSnapshots={snapshots}
             cursorSimulationTimeUs={playbackSimulationTimeUs}
             fidelityThreshold={activeResponse.parameters.fidelity_threshold}
@@ -493,7 +489,6 @@ export function StateExplorerPage({
                   </div>
                   <p>
                     Bloch球と同じスナップショットの完全な多量子ビット状態を表示します。
-                    RZによる位相変化は絶対値に出ない場合があるため、実部・虚部・位相を切り替えて確認してください。
                   </p>
                 </div>
                 <div className="state-explorer-page__comparison-grid">

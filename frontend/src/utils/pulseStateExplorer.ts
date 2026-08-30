@@ -30,7 +30,8 @@ export type PulseExplorerSegment = 'pulse' | 'idle' | 'virtual_z'
  * pulseComparabilitySignature を参照。
  */
 export type PulseComparisonState = {
-  heldRun: { record: PulseRunRecord; comparability: string } | null
+  /* heldAt は「実行した時刻」ではなく「保存した時刻」。帯の表示に使う。 */
+  heldRun: { record: PulseRunRecord; comparability: string; heldAt: string } | null
   comparing: boolean
 }
 

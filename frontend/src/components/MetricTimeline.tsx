@@ -9,7 +9,6 @@ import type {
 
 type MetricTimelineProps = {
   timeline: MetricPoint[]
-  idealTimeline?: MetricPoint[]
   stateSnapshots?: StateSnapshot[]
   cursorSimulationTimeUs?: number | null
   fidelityThreshold?: number | null
@@ -30,8 +29,6 @@ const height = 240
 const padding = 28
 const denseTimelineThreshold = 80
 const maxDenseMarkers = 12
-const unchangedTolerance = 1e-6
-
 /* 保持した実行から重ねられる指標。 */
 type HeldMetricKey = 'fidelity' | 'purity' | 'stateChange'
 
@@ -157,7 +154,6 @@ function densityMatrixHilbertSchmidtDistance(
 
 export function MetricTimeline({
   timeline,
-  idealTimeline = [],
   stateSnapshots = [],
   cursorSimulationTimeUs = null,
   fidelityThreshold = null,
@@ -170,7 +166,6 @@ export function MetricTimeline({
   const stateChanges = stateChangeSeries(stateSnapshots)
   const combinedTimes = [
     ...timeline.map((point) => point.time_us),
-    ...idealTimeline.map((point) => point.time_us),
     ...stateChanges.map((point) => point.time_us),
     ...heldTimeline.map((point) => point.time_us),
     ...stateChangeSeries(heldSnapshots).map((point) => point.time_us),
@@ -189,15 +184,9 @@ export function MetricTimeline({
     minimumTimeUs,
     maximumTimeUs,
   )
-  const idealPath = buildMetricPath(
-    idealTimeline,
-    (point) => safeMetric(point.fidelity),
-    minimumTimeUs,
-    maximumTimeUs,
-  )
   /*
    * 保持した実行から重ねる線は、常に1本だけにする。この図はすでに忠実度・純度・
-   * ノイズなし・区間状態変化が走っていて、保持側を全部足すと線が倍になって
+   * 区間状態変化が走っていて、保持側を全部足すと線が倍になって
    * どちらの実行のものか読めなくなる。
    * どの指標を見比べるかは利用者が選ぶ。既定はこのページの主指標である忠実度。
    */
@@ -305,12 +294,6 @@ export function MetricTimeline({
             <span className="metric-timeline__swatch metric-timeline__swatch--fidelity" />
             理想状態への忠実度
           </span>
-          {idealTimeline.length > 0 ? (
-            <span className="metric-timeline__legend-item metric-timeline__legend-item--ideal">
-              <span className="metric-timeline__swatch metric-timeline__swatch--ideal" />
-              ノイズなし
-            </span>
-          ) : null}
           <span className="metric-timeline__legend-item">
             <span className="metric-timeline__swatch metric-timeline__swatch--purity" />
             純度
@@ -380,9 +363,6 @@ export function MetricTimeline({
             )}
             <path d={fidelityPath} className="metric-timeline__line metric-timeline__line--fidelity" />
             <path d={purityPath} className="metric-timeline__line metric-timeline__line--purity" />
-            {idealTimeline.length > 0 ? (
-              <path d={idealPath} className="metric-timeline__ideal-line" />
-            ) : null}
             {stateChanges.length > 0 ? (
               <path d={stateChangePath} className="metric-timeline__line metric-timeline__line--state-change" />
             ) : null}
@@ -424,16 +404,6 @@ export function MetricTimeline({
               />
             ))}
           </svg>
-
-          {stateChanges.length > 0 ? (
-            <p className="metric-timeline__interpretation">
-              忠実度と純度はノイズによる劣化を見る指標なので、ゲートが状態を正しく変えても1付近を保ちます。
-              オレンジ線は隣り合う保存スナップショットの密度行列差です。
-              {maximumStateChange <= unchangedTolerance
-                ? ' 今回は観測可能な状態変化がありません。RZは|0⟩/|1⟩だけには確率変化を起こさず、CCXは両方の制御が|1⟩の成分だけを反転します。'
-                : ''}
-            </p>
-          ) : null}
 
           <div className="metric-timeline__summary">
             <article className="metric-timeline__value-card">
