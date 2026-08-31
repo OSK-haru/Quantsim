@@ -42,7 +42,8 @@ api/
   pulse_models.py             strict pulse request/response schemas
   pulse_service.py            bounded Pulse Baseline A orchestration
   pulse_qutrit_service.py     bounded Extension B qutrit orchestration
-  pulse_transmon_pair_service.py  coupled transmon-pair orchestration
+  pulse_transmon_network_service.py  bounded 1-4 transmon network orchestration
+  pulse_backend_logging.py    pulse backend resolution diagnostics
 
 core/
   simulator.py                gate-aware simulation entry point
@@ -64,9 +65,15 @@ core/
   pulse_qutrit.py             B-1 closed qutrit evolution and leakage
   pulse_qutrit_open_system.py B-2 qutrit dissipation and thermal rates
   pulse_qutrit_contract.py    B-0 qutrit operators and Hamiltonian contract
+  pulse_transmon_network.py   coupled 1-4 transmon register and GKSL evolution
   pulse_step_policy.py        Baseline A and B-3/B-4 qutrit step policies
+  quasi_static_noise.py       quasi-static detuning quadrature and correlation
   state_snapshots.py          bounded snapshot policy
-  io/                         config/result/report export
+  io/                         .qscope.json config/result/report export.
+                              Streamlit-era; no shipping surface imports it,
+                              and only tests exercise it. The React client
+                              exports through frontend/src/utils/resultExport.ts
+                              instead. See "Divergent export formats" below.
 
 validation_pulse/             reusable pulse validation helpers
 scripts/                      validation, profiling, and diagnostics
@@ -98,6 +105,24 @@ new runtime instructions.
 - Pulse Extension B (qutrit) is frozen as `pulse-extension-b-v1` with
   capability status `available`; qutrit HTTP execution is enabled with a
   25,000-step preflight work ceiling.
-- A coupled transmon-pair pulse model (`pulse-coupled-pair-v1`) is served
-  from the same `POST /api/pulse/simulate` endpoint with capability status
-  `experimental`.
+- A coupled transmon-network pulse model (`pulse-transmon-network-v1`) is
+  served from the same `POST /api/pulse/simulate` endpoint with capability
+  status `experimental`. It covers 1-4 transmons at 2 or 3 local levels; the
+  earlier `pulse-coupled-pair-v1` model was retired into it.
+
+## Divergent export formats
+
+Two independent export paths exist, and they do not agree on the `kind`
+discriminator written into the JSON:
+
+| Path | Reached by | `kind` values |
+|---|---|---|
+| `core/io/` | tests only | `yuragi_strider.config`, `yuragi_strider.result`, `yuragi_strider.comparison_result` |
+| `frontend/src/utils/` | the shipping React client | `quantscope_circuit_config`, `quantscope_gate_aware_result`, `quantscope_pulse_result` |
+
+`quantscope` is a misspelling of an abandoned working title; the product is
+Yuragi-Strider, and `resultExport.ts` already writes `generator:
+"Yuragi-Strider"` next to that `kind`. The strings are load-bearing on the
+frontend -- `circuitConfigTransfer.ts` rejects an import whose `kind` does not
+match -- so renaming them is a file-format change that needs a compatibility
+read of the old value, not a search-and-replace.

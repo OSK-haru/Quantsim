@@ -1,5 +1,6 @@
 import { createContext } from 'react'
 import type { CircuitEditorState, DragGatePayload, GateType } from '../types/circuit'
+import type { CircuitConfig } from '../utils/circuitConfigTransfer'
 
 export type PendingCnotControl = {
   columnIndex: number
@@ -55,6 +56,14 @@ export type CircuitContextValue = {
   handleDuplicateGate: (gateId: string) => void
   handleShiftGateColumn: (gateId: string, offset: -1 | 1) => void
   handleImportCircuitConfig: (file: File) => Promise<string>
+  /**
+   * 解析済みの CircuitConfig をそのままエディターへ載せる。
+   *
+   * 結果ファイルの読み込みで使う。結果に同梱された回路をエディターへ
+   * 書き戻さないと、「画面の回路 = 図の条件」が成り立たず、復元した結果が
+   * 古い結果として隠されてしまう。
+   */
+  handleReplaceCircuitConfig: (config: CircuitConfig) => void
 }
 
 export const CircuitContext = createContext<CircuitContextValue | null>(null)

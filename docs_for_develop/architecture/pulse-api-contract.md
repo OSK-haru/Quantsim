@@ -4,11 +4,10 @@
 
 ```text
 endpoint: POST /api/pulse/simulate
-contract_versions: pulse-baseline-a-v1 | pulse-extension-b-v1 | pulse-coupled-pair-v1 | pulse-transmon-network-v1
+contract_versions: pulse-baseline-a-v1 | pulse-extension-b-v1 | pulse-transmon-network-v1
 model_ids:
   driven_two_level_rwa_experimental_v1
   driven_transmon_qutrit_rwa_experimental_v1
-  driven_coupled_transmon_pair_rwa_experimental_v1
   driven_coupled_transmon_network_rwa_experimental_v1
 status: experimental
 ```
@@ -23,7 +22,7 @@ The top-level request contains:
 
 | Field | Meaning |
 |---|---|
-| `model_id` | One of the four `model_ids` above. It selects the contract version, and the accepted pulse/network/environment fields follow from it. |
+| `model_id` | One of the three `model_ids` above. It selects the contract version, and the accepted pulse/network/environment fields follow from it. |
 | `initial_state` | `"0"` or `"1"` |
 | `pulse` | Envelope, amplitude, phase, and detuning |
 | `total_simulation_time_us` | Pulse plus optional observation/idle time |
@@ -192,18 +191,13 @@ The qutrit HTTP work ceiling is 25,000 internal RK4 steps, shared with the
 core validation ceiling. Requests over the HTTP ceiling receive an actionable
 `422` before numerical execution.
 
-## Pulse Coupled Transmon Pair Contract
+## Retired: Pulse Coupled Transmon Pair Contract
 
-```text
-model_id: driven_coupled_transmon_pair_rwa_experimental_v1
-contract_version: pulse-coupled-pair-v1
-capability status: experimental
-```
-
-The same `POST /api/pulse/simulate` endpoint serves this model via the
-`model_id` discriminator. It simulates two coupled two-level transmons with
-exchange coupling in the rotating frame under RWA. An independent QuTiP
-comparison and a numerical audit both report PASS.
+`driven_coupled_transmon_pair_rwa_experimental_v1` (`pulse-coupled-pair-v1`)
+was removed. The endpoint no longer accepts it. The same physical
+configuration is expressed by the network contract below with
+`local_levels = 3, transmon_count = 2`; the explicit-CPTP path and the
+correlated quasi-static-noise ensemble were carried over with it.
 
 ## Pulse Coupled Transmon Network Contract
 
@@ -211,14 +205,24 @@ comparison and a numerical audit both report PASS.
 model_id: driven_coupled_transmon_network_rwa_experimental_v1
 contract_version: pulse-transmon-network-v1
 capability status: experimental
-transmon_count: 2..4
+transmon_count: 1..4
+local_levels: 2 | 3
 ```
 
 The network request supplies per-transmon frequencies, anharmonicities and
 base detunings; unique exchange-coupling edges; and scheduled local drives
 with targets and start times. Drives may overlap. Pulse detuning is represented
-as a phase ramp in the target's local rotating frame. The implementation uses
-three local levels and q0-most-significant tensor-basis order.
+as a phase ramp in the target's local rotating frame. The basis is
+q0-most-significant tensor order.
+
+`transmon_count` and `local_levels` are the two axes the Pulse Lab exposes.
+A single transmon is the degenerate network with no exchange edges and shares
+this contract, so one model covers what used to be three separate paths;
+`couplings` must be empty when `transmon_count` is 1. `local_levels = 2`
+truncates each transmon to the qubit subspace, while `local_levels = 3` keeps
+the leakage level. `frequencies_ghz`, `anharmonicities_mhz`,
+`detunings_rad_per_us`, and the `initial_state` string must each have exactly
+`transmon_count` entries.
 
 The network path is fixed-step RK4 only, and it always integrates with the
 NumPy dense kernel: the request still accepts `backend`, but that field selects

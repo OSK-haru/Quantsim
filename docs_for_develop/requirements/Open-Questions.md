@@ -2,9 +2,9 @@
 
 ## Status
 
-Last reviewed 2026-08-14, after the multi-qubit scale-up, the explicit CPTP
-path, and the Pulse Extension B / coupled transmon-pair work. It contains only
-current decisions and genuinely open questions.
+Last reviewed 2026-08-31, after the multi-qubit scale-up, the explicit CPTP
+path, and the Pulse Extension B / coupled transmon-network work. It contains
+only current decisions and genuinely open questions.
 
 ## Decided
 
@@ -58,8 +58,10 @@ current decisions and genuinely open questions.
 - The frozen qutrit contract is `pulse-extension-b-v1` with model
   `driven_transmon_qutrit_rwa_experimental_v1` and capability status
   `available`.
-- A coupled transmon-pair model (`pulse-coupled-pair-v1`) is served from the
-  same endpoint with capability status `experimental`.
+- A coupled transmon-network model (`pulse-transmon-network-v1`) is served from
+  the same endpoint with capability status `experimental`. It covers 1-4
+  transmons at 2 or 3 local levels and replaced the retired
+  `pulse-coupled-pair-v1`.
 
 ### Q2 Strict CPTP Path (resolved)
 
@@ -83,6 +85,6 @@ relevant implementation freeze. No private laboratory connection is assumed.
 ### Q4 Performance Boundary
 
 Re-profile before increasing beyond the current 8-qubit noisy gate-aware
-ceiling or before adding pulse control beyond the coupled transmon pair. Dense
+ceiling or before adding pulse control beyond the four-transmon network. Dense
 cost remains exponential in qubit count, and 6-8 qubit runs already depend on
 the sparse-Hamiltonian optimizations in the Rust preview kernel.

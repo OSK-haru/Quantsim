@@ -1,4 +1,14 @@
-# 2トランズモン結合Pulseモデル
+# 2トランズモン結合Pulseモデル（廃止・記録用）
+
+> **このモデルは廃止された。** `driven_coupled_transmon_pair_rwa_experimental_v1`
+> （contract `pulse-coupled-pair-v1`）はAPIから削除されており、リクエストは受理
+> されない。同じ物理構成はネットワークモデル
+> `driven_coupled_transmon_network_rwa_experimental_v1` の
+> `local_levels = 3, transmon_count = 2` で表現する。CPTP経路と相関準静的ノイズ
+> もネットワーク側へ移植済み。現行の契約は
+> [`../architecture/pulse-api-contract.md`](../architecture/pulse-api-contract.md)
+> を参照する。以下は当時の定式化の記録であり、下部構造の説明としては今も有効
+> だが、実装の所在としては古い。
 
 ## 目的と境界
 

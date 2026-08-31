@@ -15,7 +15,9 @@ import type { GateDurationDefaults } from '../types/simulation'
 import { createDefaultCircuit } from '../utils/circuitDefaults'
 import {
   MAX_CIRCUIT_IMPORT_BYTES,
+  circuitConfigToEditorState,
   parseCircuitConfigJson,
+  type CircuitConfig,
 } from '../utils/circuitConfigTransfer'
 import {
   appendEmptyColumn,
@@ -1121,6 +1123,22 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     return '回路をインポートしました。'
   }
 
+  /*
+   * 解析済みの回路をそのまま載せる。結果ファイルの読み込みから呼ばれる。
+   *
+   * ファイルの検証は呼び出し側（resultExport）が済ませているが、回路そのものの
+   * 妥当性——ゲートの重なりや範囲外の量子ビット——はここで通す必要がある。
+   * そのため circuitConfigToEditorState を経由させ、不正なら例外を出す。
+   */
+  function handleReplaceCircuitConfig(config: CircuitConfig) {
+    const nextCircuit = circuitConfigToEditorState(config)
+    finalizeCircuitEdit(nextCircuit)
+    setSelectedGateType(null)
+    setSelectedGateId(null)
+    setPendingCnotControl(null)
+    setEditorHint('読み込んだ結果の回路を復元しました。')
+  }
+
   useEffect(() => {
     function handleWindowKeyDown(event: KeyboardEvent) {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
@@ -1205,6 +1223,7 @@ export function CircuitProvider({ gateDurationDefaults, children }: CircuitProvi
     handleDuplicateGate,
     handleShiftGateColumn,
     handleImportCircuitConfig,
+    handleReplaceCircuitConfig,
   }
 
   return <CircuitContext.Provider value={value}>{children}</CircuitContext.Provider>

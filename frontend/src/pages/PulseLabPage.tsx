@@ -335,6 +335,8 @@ export function PulseLabPage({
         formAtRun: { ...formForRun },
         completedAt: new Date().toISOString(),
         signature: runSignature,
+        /* 実行し直したら、読み込み由来という印は外れる。 */
+        origin: 'computed',
       })
       setStatus('success')
       setErrorMessage(null)

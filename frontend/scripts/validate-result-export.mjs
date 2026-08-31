@@ -1,9 +1,15 @@
 /*
- * 実行結果の書き出しの検証。
+ * 実行結果の書き出しと読み込みの検証。
  *
- * 見ているのは主に「入力が結果に必ず同梱されること」。書き出したファイルは
- * 後から条件を再現するために配るものなので、結果だけが入っていて設定が
- * 欠けているファイルは、出せてしまうこと自体が不具合になる。
+ * 見ているのは主に3つ。
+ *
+ * 1. 入力が結果に必ず同梱されること。書き出したファイルは後から条件を
+ *    再現するために配るものなので、結果だけが入っていて設定が欠けている
+ *    ファイルは、出せてしまうこと自体が不具合になる。
+ * 2. 書き出したものがそのまま読み戻せること（往復）。ここが通らないと、
+ *    配ったファイルが相手の画面で開けない。
+ * 3. 読み込んだ結果に「計算し直したものではない」印が付くこと。これが無いと、
+ *    ファイル由来の数字がいまの設定で得たものだと誤解される。
  */
 
 import { createRequire } from 'node:module'
@@ -56,6 +62,8 @@ try {
   const {
     buildGateAwareResultBundle,
     buildPulseResultBundle,
+    parseGateAwareResultJson,
+    parsePulseResultJson,
     resultFileName,
     GATE_AWARE_RESULT_KIND,
     PULSE_RESULT_KIND,
@@ -241,18 +249,188 @@ try {
     assert(source.includes('onExport={exportCurrentRun}'), `${page} must wire the export action`)
   }
 
+  /* ---- 読み込み（往復） ---- */
+
   /*
-   * 結果の取り込みは用意していない。取り込めるようにすると、画面の図が
-   * いまの設定の計算結果なのかファイル由来なのか区別できなくなる。
-   * 片方向であることを、ここで固定しておく。
+   * いちばん大事な性質。書き出したファイルをそのまま読み戻せること。
+   * ここが通らないと、配ったファイルが相手の画面で開けない。
    */
-  const exportSource = readSource('src/utils/resultExport.ts')
+  const gateReloaded = parseGateAwareResultJson(JSON.stringify(gateBundle))
   assert(
-    !exportSource.includes('parseResult') && !exportSource.includes('importResult'),
-    'result files must stay export-only; importing them would make on-screen figures ambiguous',
+    gateReloaded.circuitConfig.logical_qubits === 2,
+    'a gate-aware export must reload with its circuit intact',
+  )
+  assert(
+    gateReloaded.response.output_probabilities['11'] === 0.5,
+    'a gate-aware export must reload with its result intact',
+  )
+  assert(
+    gateReloaded.gateDurationDefaults.single_qubit_ns === 40,
+    'a gate-aware export must reload with its gate durations intact',
+  )
+  assert(
+    gateReloaded.exportedAt === '2026-08-31T12:34:56.000Z',
+    'the export time must survive the round trip',
   )
 
-  console.log('Result export bundles and file names: PASS')
+  const pulseReloaded = parsePulseResultJson(JSON.stringify(pulseBundle))
+  assert(
+    pulseReloaded.record.signature === 'sig-abc',
+    'a pulse export must reload with the run signature it was made with',
+  )
+  assert(
+    pulseReloaded.record.completedAt === '2026-08-31T01:02:03.000Z',
+    'a pulse export must reload with its run time',
+  )
+  assert(
+    pulseReloaded.record.formAtRun.dragBetaUs === 0.002,
+    'a pulse export must reload with the settings used at run time',
+  )
+  assert(
+    pulseReloaded.circuit.transmonCount === 1,
+    'a pulse export must reload with its circuit',
+  )
+
+  /*
+   * 読み込みは signature を作り直さず、ファイルのものをそのまま使う。
+   * 作り直すと、書き出した実行と同条件かの照合ができなくなる。
+   */
+  assert(
+    pulseReloaded.record.signature === pulseRecord.signature,
+    'import must preserve the original signature rather than recomputing it',
+  )
+
+  /* ---- 読み込みが弾くべきもの ---- */
+
+  function expectRejection(run, expectation) {
+    let threw = false
+    try {
+      run()
+    } catch {
+      threw = true
+    }
+    assert(threw, expectation)
+  }
+
+  expectRejection(
+    () => parseGateAwareResultJson('not json at all'),
+    'malformed JSON must be rejected',
+  )
+  expectRejection(
+    () => parseGateAwareResultJson('[]'),
+    'a top-level array is not a result bundle and must be rejected',
+  )
+  expectRejection(
+    () => parseGateAwareResultJson(JSON.stringify({ kind: 'something_else', version: 1 })),
+    'a foreign file must be rejected',
+  )
+  expectRejection(
+    () => parseGateAwareResultJson(JSON.stringify({ ...gateBundle, version: 2 })),
+    'a future version must be rejected rather than silently misread',
+  )
+
+  /*
+   * モードの取り違えは必ず弾く。Gate-awareの画面へPulseの結果を載せると、
+   * 描画側が想定しない形の応答を読むことになる。
+   */
+  expectRejection(
+    () => parseGateAwareResultJson(JSON.stringify(pulseBundle)),
+    'a pulse result must not load into the gate-aware explorer',
+  )
+  expectRejection(
+    () => parsePulseResultJson(JSON.stringify(gateBundle)),
+    'a gate-aware result must not load into the pulse explorer',
+  )
+  /* 取り違えのときは、そうと分かる文言を出す。 */
+  try {
+    parseGateAwareResultJson(JSON.stringify(pulseBundle))
+  } catch (error) {
+    assert(
+      /Pulse/.test(error.message),
+      'loading a pulse file into gate-aware must say so, not just "invalid"',
+    )
+  }
+
+  /*
+   * 回路の無い結果は読み込めない。エディターへ書き戻せず、
+   * 「画面の設定 = 図の条件」を保てないため。
+   */
+  expectRejection(
+    () => parseGateAwareResultJson(JSON.stringify(noCircuitBundle)),
+    'a result without a circuit must be rejected, since it cannot be restored onto the editor',
+  )
+
+  /* 画面が必ず触る配列が壊れているものも、描画前に弾く。 */
+  expectRejection(
+    () => parseGateAwareResultJson(JSON.stringify({
+      ...gateBundle,
+      result: { ...gateAwareResponse, timeline: 'nope' },
+    })),
+    'a non-array timeline must be rejected before it reaches the charts',
+  )
+  expectRejection(
+    () => parsePulseResultJson(JSON.stringify({
+      ...pulseBundle,
+      result: { ...pulseRecord.response, trajectory: null },
+    })),
+    'a non-array trajectory must be rejected before it reaches the charts',
+  )
+  expectRejection(
+    () => parsePulseResultJson(JSON.stringify({
+      ...pulseBundle,
+      run: { completed_at: '2026-08-31T01:02:03.000Z' },
+    })),
+    'a pulse result without a signature must be rejected',
+  )
+
+  /* ---- 読み込んだ結果に印が付くこと ---- */
+
+  /*
+   * 読み込んだ結果は、計算し直したものと見分けが付かなければならない。
+   * 画面側が origin: 'imported' を立て、それを地の文で表示していること。
+   */
+  for (const [page, note] of [
+    ['src/pages/StateExplorerPage.tsx', 'state-explorer-page__imported-note'],
+    ['src/pages/PulseStateExplorerPage.tsx', 'pulse-explorer-page__imported-note'],
+  ]) {
+    const source = readSource(page)
+    assert(
+      source.includes("=== 'imported'"),
+      `${page} must branch on the imported origin`,
+    )
+    assert(source.includes(note), `${page} must render a visible imported-result notice`)
+  }
+
+  const appSource = readSource('src/App.tsx')
+  assert(
+    appSource.includes("origin: 'imported'"),
+    'App must mark imported gate-aware results as imported',
+  )
+  assert(
+    appSource.includes("origin: 'computed'"),
+    'App must clear the imported mark when a run is recomputed',
+  )
+  assert(
+    readSource('src/pages/PulseLabPage.tsx').includes("origin: 'computed'"),
+    'a fresh pulse run must be marked as computed, clearing any imported mark',
+  )
+
+  /*
+   * 読み込みは回路・設定もファイルのものへ戻す。戻さないと復元した結果が
+   * 「古い結果」として隠れてしまう。
+   */
+  assert(
+    appSource.includes('setPulseCircuit(circuit)')
+      && appSource.includes('setPulseLabForm(record.formAtRun)'),
+    'importing a pulse result must restore the circuit and the lab settings it was run with',
+  )
+  assert(
+    readSource('src/pages/StateExplorerPage.tsx').includes('handleReplaceCircuitConfig(imported.circuitConfig)'),
+    'importing a gate-aware result must restore its circuit onto the editor',
+  )
+
+
+  console.log('Result export/import bundles, round trip and file names: PASS')
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true })
 }

@@ -14,7 +14,7 @@ it does not change simulation physics.
 | `rust_dense_preview` | Rust dense preview | Preview backend |
 | `driven_two_level_rwa_experimental_v1` | Two-level pulse RWA experimental model | Implemented through the dedicated pulse API |
 | `driven_transmon_qutrit_rwa_experimental_v1` | Three-level transmon pulse RWA experimental model | Implemented through the bounded pulse API |
-| `driven_coupled_transmon_pair_rwa_experimental_v1` | Coupled two-transmon pulse RWA experimental model | RK4 / Explicit CPTP, Python / Rust |
+| `driven_coupled_transmon_network_rwa_experimental_v1` | Coupled transmon network pulse RWA experimental model | 1-4 transmons, 2 or 3 local levels; RK4 / Explicit CPTP, NumPy dense kernel only |
 | `gate_aware_cptp_kraus` | CPTP Kraus evolution | Planned execution mode, not selectable |
 | `explicit_cptp` | Explicit CPTP evolution | Public request value, selectable in both the gate-aware API/Run panel and the Pulse API/Pulse Lab |
 | `gate_aware_constant_gksl_exponential_v1` | Gate-aware constant GKSL exponential v1 | Frozen gate-aware evolution method that `explicit_cptp` resolves to |
@@ -88,8 +88,7 @@ engine uses `numpy_dense_v1`.
 
 ## Pulse Model
 
-Pulse Baseline A and Extension B are implemented separately from the
-gate-aware path:
+The pulse models are implemented separately from the gate-aware path:
 
 ```text
 POST /api/pulse/simulate
@@ -99,24 +98,31 @@ contract_version: pulse-baseline-a-v1
 model_id: driven_transmon_qutrit_rwa_experimental_v1
 contract_version: pulse-extension-b-v1
 
-model_id: driven_coupled_transmon_pair_rwa_experimental_v1
-contract_version: pulse-coupled-pair-v1
+model_id: driven_coupled_transmon_network_rwa_experimental_v1
+contract_version: pulse-transmon-network-v1
 ```
 
 The first two contracts are single-subsystem rotating-frame RWA models. The
-coupled-pair contract uses two three-level transmons, a nine-dimensional
-density matrix, and exchange coupling. None is a calibrated hardware pulse
-simulator. See `docs_for_develop/physics/pulse-baseline-a-model.md`,
-`docs_for_develop/physics/pulse-extension-b-qutrit-contract.md`, and
-`docs_for_develop/physics/pulse-coupled-transmon-pair-model.md`.
+network contract covers 1 to 4 Duffing transmons with `local_levels` of 2 or 3,
+scheduled local drives, and arbitrary exchange-coupling edges; a single
+transmon is the degenerate case with no edges. None is a calibrated hardware
+pulse simulator. See `docs_for_develop/physics/pulse-baseline-a-model.md` and
+`docs_for_develop/physics/pulse-extension-b-qutrit-contract.md`.
+
+The earlier `driven_coupled_transmon_pair_rwa_experimental_v1` model
+(`pulse-coupled-pair-v1`) was retired. The same physical configuration is now
+expressed as the network model with `local_levels = 3, transmon_count = 2`.
 
 The two single-subsystem Pulse request contracts accept `evolution_method` with
 `fixed_step_rk4` as the backward-compatible default and `explicit_cptp` as an
 explicit alternative. The latter uses audited midpoint-frozen GKSL
 exponential maps and does not apply density-matrix cleanup.
 
-The coupled-pair contract accepts `fixed_step_rk4` and audited `explicit_cptp`
-with Python, Rust, or automatic backend resolution.
+The network contract accepts `fixed_step_rk4` and audited `explicit_cptp`, the
+latter capped at a nine-dimensional Hilbert space. It always integrates with
+the NumPy dense kernel: `backend` is still accepted, but it selects the Python
+or Rust kernel for the other pulse models only, and the network response
+reports `numpy_dense` as the resolved backend.
 
 The C10 freeze ID is `yuragi_strider_explicit_cptp_v1`. On the Pulse endpoint
 the public API value `explicit_cptp` resolves to

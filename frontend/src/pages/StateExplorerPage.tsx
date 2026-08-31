@@ -7,6 +7,7 @@ import { MetricTimeline } from '../components/MetricTimeline'
 import { PhysicalTimelinePlayback } from '../components/PhysicalTimelinePlayback'
 import { OutputProbabilities } from '../components/OutputProbabilities'
 import { QuantumPet, type QuantumPetPhase } from '../components/QuantumPet'
+import { ResultImportButton } from '../components/ResultImportButton'
 import { RunComparisonBar } from '../components/RunComparisonBar'
 import { StateProbabilityComparison } from '../components/StateProbabilityComparison'
 import { useCircuitContext } from '../context/useCircuitContext'
@@ -25,6 +26,8 @@ import type { GateAwareComparisonState } from '../utils/simulateSettings'
 import {
   buildGateAwareResultBundle,
   downloadJson,
+  parseGateAwareResultJson,
+  readResultFile,
   resultFileName,
 } from '../utils/resultExport'
 
@@ -32,6 +35,8 @@ type StateExplorerPageProps = {
   response: SimulationResponse | null
   executedCircuitConfig: CircuitConfig | null
   gateDurationDefaults: GateDurationDefaults
+  /* 表示中の結果がこのアプリで計算したものか、ファイルから復元したものか。 */
+  resultOrigin: 'computed' | 'imported'
   /*
    * 保持した実行と比較表示の状態。ページを移っても消えないよう App が持つ。
    * ここで useState すると、シミュレーションへ戻っただけで保持が捨てられる。
@@ -39,6 +44,15 @@ type StateExplorerPageProps = {
   comparison: GateAwareComparisonState
   onComparisonChange: (comparison: GateAwareComparisonState) => void
   onOpenSimulation: () => void
+  /*
+   * 読み込んだ結果を受け取る。回路はこのページが CircuitContext へ書き戻すが、
+   * 結果そのものは App が持っているのでここから渡す。
+   */
+  onImportedResult: (
+    response: SimulationResponse,
+    circuitConfig: CircuitConfig,
+    gateDurationDefaults: GateDurationDefaults | null,
+  ) => void
 }
 
 type ExplorerPanelKey = 'playback' | 'physical' | 'metrics' | 'probabilities' | 'output' | 'bloch' | 'density' | 'transfer' | 'rates'
@@ -167,12 +181,15 @@ function PanelVisibilityMenu({
 export function StateExplorerPage({
   response,
   executedCircuitConfig,
+  resultOrigin,
   gateDurationDefaults,
   comparison,
   onComparisonChange,
   onOpenSimulation,
+  onImportedResult,
 }: StateExplorerPageProps) {
-  const { circuitState } = useCircuitContext()
+  const { circuitState, handleReplaceCircuitConfig } = useCircuitContext()
+  const internalInfoVisible = useInternalInfoVisible()
   const currentCircuitConfig = circuitEditorStateToConfig(circuitState)
   const resultMatchesCurrentCircuit = response !== null
     && executedCircuitConfig !== null
@@ -253,9 +270,17 @@ export function StateExplorerPage({
    * 結果と違った時点で自動的に「書き出していない」扱いになる。
    */
   const [exportedResponse, setExportedResponse] = useState<SimulationResponse | null>(null)
+  /*
+   * 読み込みの結果表示だけは、対象と紐づけずそのまま持つ。読み込みは
+   * 「いま表示している結果」ではなく「これから表示する結果」に対する操作で、
+   * 成功すれば表示中の結果ごと入れ替わるためである。失敗したときの理由も
+   * ここに出る。
+   */
+  const [importMessage, setImportMessage] = useState('')
   const exportStatus = exportedResponse !== null && exportedResponse === activeResponse
     ? '結果を書き出しました'
     : ''
+  const transferStatus = importMessage || exportStatus
   const exportCurrentRun = useCallback(() => {
     if (activeResponse === null) {
       return
@@ -272,7 +297,48 @@ export function StateExplorerPage({
       resultFileName('gate-aware結果', now.toISOString()),
     )
     setExportedResponse(activeResponse)
+    setImportMessage('')
   }, [activeResponse, executedCircuitConfig, gateDurationDefaults])
+  /*
+   * 結果ファイルを読み込む。
+   *
+   * 順序が重要で、**回路を先にエディターへ戻してから結果を載せる**。
+   * 逆にすると、結果を載せた瞬間はまだエディターに古い回路が入っており、
+   * 「表示中の回路に対応する結果がありません」が一瞬出てしまう。
+   *
+   * 保持していた比較も捨てる。読み込んだ結果は別の条件のものなので、
+   * いま保持している実行と重ねて読める保証がない。
+   */
+  const importResultFile = useCallback((file: File) => {
+    void (async () => {
+      try {
+        const text = await readResultFile(file)
+        const imported = parseGateAwareResultJson(text)
+        handleReplaceCircuitConfig(imported.circuitConfig)
+        onComparisonChange({ heldResult: null, comparing: false })
+        onImportedResult(
+          imported.response,
+          imported.circuitConfig,
+          imported.gateDurationDefaults,
+        )
+        setImportMessage(
+          imported.exportedAt === null
+            ? '結果を読み込みました'
+            : `結果を読み込みました（${new Date(imported.exportedAt).toLocaleString()} に書き出し）`,
+        )
+      } catch (error) {
+        /*
+         * 失敗の本文には内部のフィールド名が並ぶので、通常は伏せる。
+         * 回路データの読み込みと同じ扱い。
+         */
+        setImportMessage(
+          internalInfoVisible && error instanceof Error
+            ? error.message
+            : '結果ファイルを読み込めませんでした。ファイルの形式を確認してください。',
+        )
+      }
+    })()
+  }, [handleReplaceCircuitConfig, internalInfoVisible, onComparisonChange, onImportedResult])
   /*
    * 直接比較できなくなった保持は、その場で捨てる。
    *
@@ -347,7 +413,6 @@ export function StateExplorerPage({
    * 診断カードは詳細モード専用になったので、通常モードで T1・T2 を確認できる
    * 場所はここだけになる。
    */
-  const internalInfoVisible = useInternalInfoVisible()
   const coherenceRows = useMemo(
     () => (activeResponse ? coherenceTimeRows(activeResponse.rates) : []),
     [activeResponse],
@@ -414,9 +479,25 @@ export function StateExplorerPage({
               : '先にGate-awareシミュレーションを実行してください。'}
           </p>
           <button type="button" onClick={onOpenSimulation}>Gate-aware シミュレーションを開く</button>
+          {/*
+            * 結果が無い状態でも読み込みは要る。人から受け取ったファイルを
+            * 開くのは、たいてい自分ではまだ何も実行していないときだから。
+            */}
+          <ResultImportButton onImport={importResultFile} status={transferStatus} />
         </section>
       ) : (
         <>
+          {/*
+            * 読み込んだ結果であることを、図より先に出す。計算し直した結果と
+            * 見分けが付かないと、いまの設定で得た数字だと誤解される。
+            * 印が消えるのは、実際に再実行したときだけ。
+            */}
+          {resultOrigin === 'imported' ? (
+            <p className="state-explorer-page__imported-note">
+              読み込んだ結果を表示しています。回路と設定もこのファイルのものへ復元済みです。
+              この場で計算し直した値ではありません。
+            </p>
+          ) : null}
           <PanelVisibilityMenu
             panels={availablePanelKeys}
             openPanels={visiblePanels}
@@ -434,7 +515,9 @@ export function StateExplorerPage({
             onRelease={releaseHeldRun}
             onComparingChange={setComparing}
             onExport={exportCurrentRun}
-            exportStatus={exportStatus}
+            canExport={activeResponse !== null}
+            onImport={importResultFile}
+            transferStatus={transferStatus}
           />
           {comparisonNotice === null ? null : (
             <p className="state-explorer-page__compare-note">{comparisonNotice}</p>

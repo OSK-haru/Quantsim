@@ -1,8 +1,14 @@
-# 2トランズモンPulseモデル数値監査 v1
+# 2トランズモンPulseモデル数値監査 v1（廃止モデルの記録）
 
-監査スクリプト: `scripts/validate_pulse_transmon_pair.py`
+> **記録用。** 対象の `driven_coupled_transmon_pair_rwa_experimental_v1` は
+> 廃止され、ネットワークモデルへ統合された。下記の監査スクリプトと成果物は
+> モデルと一緒に削除済みで、いま実行することはできない。現行モデルの監査は
+> [`../../formalweb/website/docs/physics-model/validations/control-models.md`](../../formalweb/website/docs/physics-model/validations/control-models.md)
+> の結合ネットワークの節を参照する。
 
-機械可読結果: `validation_results/pulse_transmon_pair_numerical_audit.json`
+監査スクリプト: `scripts/validate_pulse_transmon_pair.py`（削除済み）
+
+機械可読結果: `validation_results/pulse_transmon_pair_numerical_audit.json`（削除済み）
 
 ## 監査範囲
 

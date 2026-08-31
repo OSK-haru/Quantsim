@@ -20,15 +20,28 @@ class LegacyCleanupTest(unittest.TestCase):
         self.assertNotIn("map_environment_to_t1_t2", source)
         self.assertNotIn("t1_t2_to_gammas", source)
 
-    def test_ui_does_not_expose_legacy_environment_model_ids(self) -> None:
+    def test_shipping_surfaces_do_not_expose_legacy_environment_model_ids(self) -> None:
+        """The retired Streamlit UI is gone; guard the surfaces that replaced it.
+
+        This test used to glob ``app/ui/*.py``. That package was deleted with
+        the Streamlit retirement, so the glob returned nothing, the joined
+        source was the empty string, and every assertion below held no matter
+        what the code did -- the guard could not fail. Point it at the React
+        client and the FastAPI layer that actually reach users now.
+        """
+
+        sources = [
+            *(ROOT / "api").glob("*.py"),
+            *(ROOT / "frontend" / "src").rglob("*.ts"),
+            *(ROOT / "frontend" / "src").rglob("*.tsx"),
+        ]
+        self.assertTrue(sources, "no shipping source files were found to check")
         ui_source = "\n".join(
-            path.read_text(encoding="utf-8")
-            for path in (ROOT / "app" / "ui").glob("*.py")
+            path.read_text(encoding="utf-8") for path in sources
         )
 
         self.assertNotIn("normalized_phenomenological_v1", ui_source)
         self.assertNotIn("superconducting_qubit_profile_v1", ui_source)
-        self.assertNotIn("Environment model", ui_source)
 
 
 if __name__ == "__main__":

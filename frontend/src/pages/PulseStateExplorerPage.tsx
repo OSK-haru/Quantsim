@@ -28,8 +28,11 @@ import { pulseStateExplorerTips } from '../utils/quantumPetTips'
 import {
   buildPulseResultBundle,
   downloadJson,
+  parsePulseResultJson,
+  readResultFile,
   resultFileName,
 } from '../utils/resultExport'
+import { ResultImportButton } from '../components/ResultImportButton'
 
 type PulseStateExplorerPageProps = {
   run: PulseRunRecord | null
@@ -47,6 +50,11 @@ type PulseStateExplorerPageProps = {
   comparison: PulseComparisonState
   onComparisonChange: (comparison: PulseComparisonState) => void
   onOpenPulseLab: () => void
+  /*
+   * 読み込んだ結果を受け取る。回路と設定もファイルのものへ戻す必要があるので、
+   * 記録だけでなく回路も一緒に渡す。
+   */
+  onImportedRun: (record: PulseRunRecord, circuit: PulseCircuitState) => void
 }
 
 type PulseExplorerPanelKey =
@@ -199,6 +207,7 @@ export function PulseStateExplorerPage({
   comparison,
   onComparisonChange,
   onOpenPulseLab,
+  onImportedRun,
 }: PulseStateExplorerPageProps) {
   const internalInfoVisible = useInternalInfoVisible()
   const staleResult = run !== null && run.signature !== currentSignature
@@ -326,9 +335,15 @@ export function PulseStateExplorerPage({
    * 切り替われば、表示中のものと一致しなくなって自動的に消える。
    */
   const [exportedRun, setExportedRun] = useState<PulseRunRecord | null>(null)
+  /*
+   * 読み込みの結果表示は対象と紐づけずそのまま持つ。読み込みは「これから
+   * 表示する結果」に対する操作で、成功すれば表示中の結果ごと入れ替わる。
+   */
+  const [importMessage, setImportMessage] = useState('')
   const exportStatus = exportedRun !== null && exportedRun === run
     ? '結果を書き出しました'
     : ''
+  const transferStatus = importMessage || exportStatus
   const exportCurrentRun = useCallback(() => {
     if (run === null) {
       return
@@ -339,7 +354,36 @@ export function PulseStateExplorerPage({
       resultFileName('pulse結果', run.completedAt),
     )
     setExportedRun(run)
+    setImportMessage('')
   }, [run, currentCircuit])
+  /*
+   * 結果ファイルを読み込む。回路とラボ設定もファイルのものへ戻すので、
+   * 読み込み後も「画面の設定 = 図の条件」が成り立つ。
+   *
+   * 保持していた比較は捨てる。読み込んだ結果は別条件のものなので、
+   * いま保持している実行と重ねて読める保証がない。
+   */
+  const importResultFile = useCallback((file: File) => {
+    void (async () => {
+      try {
+        const text = await readResultFile(file)
+        const imported = parsePulseResultJson(text)
+        onComparisonChange({ heldRun: null, comparing: false })
+        onImportedRun({ ...imported.record, origin: 'imported' }, imported.circuit)
+        setImportMessage(
+          imported.exportedAt === null
+            ? '結果を読み込みました'
+            : `結果を読み込みました（${new Date(imported.exportedAt).toLocaleString()} に書き出し）`,
+        )
+      } catch (error) {
+        setImportMessage(
+          internalInfoVisible && error instanceof Error
+            ? error.message
+            : '結果ファイルを読み込めませんでした。ファイルの形式を確認してください。',
+        )
+      }
+    })()
+  }, [internalInfoVisible, onComparisonChange, onImportedRun])
 
   const availablePanelKeys = useMemo(
     () => (Object.keys(PULSE_EXPLORER_PANEL_LABELS) as PulseExplorerPanelKey[]).filter((panelKey) => {
@@ -370,6 +414,11 @@ export function PulseStateExplorerPage({
           <h2 id="pulse-explorer-empty-title">Pulseシミュレーション結果がありません。</h2>
           <p>先にPulseラボでPulseシミュレーションを実行してください。</p>
           <button type="button" onClick={onOpenPulseLab}>Pulseラボを開く</button>
+          {/*
+            * 結果が無い状態でも読み込みは要る。人から受け取ったファイルを
+            * 開くのは、たいてい自分ではまだ何も実行していないときだから。
+            */}
+          <ResultImportButton onImport={importResultFile} status={transferStatus} />
         </section>
         <QuantumPet phase={petPhase} message={petMessage} tips={pulseStateExplorerTips} />
       </main>
@@ -397,6 +446,17 @@ export function PulseStateExplorerPage({
         </aside>
       ) : null}
 
+      {/*
+        * 読み込んだ結果であることを、図より先に出す。計算し直した結果と
+        * 見分けが付かないと、いまの設定で得た数字だと誤解される。
+        */}
+      {run.origin === 'imported' ? (
+        <p className="pulse-explorer-page__imported-note">
+          読み込んだ結果を表示しています。回路と設定もこのファイルのものへ復元済みです。
+          この場で計算し直した値ではありません。
+        </p>
+      ) : null}
+
       <PanelVisibilityMenu
         panels={availablePanelKeys}
         openPanels={openPanels}
@@ -415,7 +475,9 @@ export function PulseStateExplorerPage({
         onRelease={releaseHeldRun}
         onComparingChange={setComparing}
         onExport={exportCurrentRun}
-        exportStatus={exportStatus}
+        canExport={run !== null}
+        onImport={importResultFile}
+        transferStatus={transferStatus}
       />
 
       {comparisonView !== null && heldRun !== null && heldRun.record.signature === run.signature ? (

@@ -1,4 +1,5 @@
 import './RunComparisonBar.css'
+import { ResultImportButton } from './ResultImportButton'
 
 type RunComparisonBarProps = {
   /* 保持中の実行の見出し。保持していなければ null。 */
@@ -11,8 +12,12 @@ type RunComparisonBarProps = {
   onComparingChange: (comparing: boolean) => void
   /* 表示中の結果をファイルへ書き出す。結果が無い画面では呼ばれない。 */
   onExport: () => void
-  /* 書き出しの結果表示。押していないあいだは空文字。 */
-  exportStatus: string
+  /* 書き出せる結果が手元にあるか。無ければ書き出しボタンを押せない。 */
+  canExport: boolean
+  /* 結果ファイルを読み込む。回路・設定ごと復元される。 */
+  onImport: (file: File) => void
+  /* 書き出し・読み込みの結果表示。何もしていないあいだは空文字。 */
+  transferStatus: string
 }
 
 /*
@@ -40,8 +45,11 @@ export function RunComparisonBar({
   onRelease,
   onComparingChange,
   onExport,
-  exportStatus,
+  canExport,
+  onImport,
+  transferStatus,
 }: RunComparisonBarProps) {
+
   return (
     <div className="run-comparison-bar">
       {heldLabel === null ? (
@@ -76,15 +84,18 @@ export function RunComparisonBar({
         </>
       )}
       {/*
-        * 書き出しは保持の有無に関係なく押せる。いま表示している結果を
-        * そのまま出すだけで、保持側とは無関係だからである。
+        * 書き出し・読み込みは保持の有無に関係なく使える。いま表示している
+        * 結果を出す／別の結果を載せるだけで、保持側とは無関係だからである。
         */}
-      <button type="button" className="run-comparison-bar__export" onClick={onExport}>
+      <button
+        type="button"
+        className="run-comparison-bar__export"
+        onClick={onExport}
+        disabled={!canExport}
+      >
         結果を書き出す
       </button>
-      <span className="run-comparison-bar__export-status" aria-live="polite">
-        {exportStatus}
-      </span>
+      <ResultImportButton onImport={onImport} status={transferStatus} />
     </div>
   )
 }

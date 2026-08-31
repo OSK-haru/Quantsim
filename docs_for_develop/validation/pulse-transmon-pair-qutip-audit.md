@@ -1,4 +1,13 @@
-# 2トランズモン Pulseモデル：QuTiP独立比較監査 v2
+# 2トランズモン Pulseモデル：QuTiP独立比較監査 v2（廃止モデルの記録）
+
+> **記録用。** 対象モデルは廃止され、ネットワークモデルへ統合された。本文が
+> 挙げる `scripts/validate_pulse_transmon_pair_qutip.py`、
+> `validation_pulse/transmon_pair_qutip.py`、および
+> `validation_results/pulse_transmon_pair_qutip_audit.{json,csv}` はモデルと
+> 一緒に削除済みで、再実行はできない。現行の結合ネットワークに対する同種の
+> 独立比較は `validation_pulse/transmon_network_qutip.py` と
+> `tests/test_pulse_transmon_network_qutip.py` にあり、RK4・明示的CPTPとも
+> PASS している。
 
 ## 結論
 

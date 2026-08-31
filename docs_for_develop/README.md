@@ -82,31 +82,36 @@ gate_aware_hamiltonian_lindblad_v1
   the core validation ceiling.
 - Frozen qutrit contract: `pulse-extension-b-v1`.
 
-### Pulse Coupled Transmon Pair
-
-- `POST /api/pulse/simulate` with `model_id: "driven_coupled_transmon_pair_rwa_experimental_v1"`.
-- Contract version `pulse-coupled-pair-v1`.
-- Two coupled two-level transmons, exchange coupling, rotating frame, RWA.
-- Independent QuTiP comparison and numerical audit both report PASS.
-- Capability status: `experimental`.
-
 ### Pulse Coupled Transmon Network
 
 - `POST /api/pulse/simulate` with `model_id: "driven_coupled_transmon_network_rwa_experimental_v1"`.
 - Contract version `pulse-transmon-network-v1`.
-- Two to four Duffing qutrit transmons, scheduled simultaneous local drives,
-  arbitrary exchange-coupling edges, rotating frames, and RWA.
+- One to four Duffing transmons with `local_levels` of 2 or 3, scheduled
+  simultaneous local drives, arbitrary exchange-coupling edges, rotating
+  frames, and RWA. A single transmon is the degenerate network with no edges.
+- Pulse Lab exposes this as two axes -- a 2/3 level toggle and a 1-4 transmon
+  count -- rather than as separately named models.
+- Supersedes the retired `driven_coupled_transmon_pair_rwa_experimental_v1`
+  (`pulse-coupled-pair-v1`), which the endpoint no longer accepts; that
+  configuration is now `local_levels = 3, transmon_count = 2`.
 - Pulse Circuit Studio sends all 2-4 lanes as one scheduled request; Virtual Z
   updates the following local-drive phase without consuming time.
-- Fixed-step RK4 only.  Dense work and returned density-matrix elements have
+- `fixed_step_rk4` and `explicit_cptp`; the latter is capped at a
+  nine-dimensional Hilbert space, so it reaches two three-level or three
+  two-level transmons. Dense work and returned density-matrix elements have
   dimension-aware preflight ceilings.
-- Capability status: `experimental`; independent QuTiP comparison is not yet
-  complete.
+- Correlated quasi-static detuning ensembles are supported, with a per-transmon
+  sigma and an adjacent-pair correlation coefficient.
+- Always integrates with the NumPy dense kernel; `backend` selects the Python
+  or Rust kernel for the other pulse models only.
+- Capability status: `experimental`. The independent QuTiP comparison, which
+  rebuilds the matrices from the public request spec, reports PASS for both
+  RK4 and explicit CPTP.
 
 ### Explicitly Not Implemented
 
-- Pulse networks above four transmons, network explicit-CPTP evolution, and
-  network quasi-static-noise ensembles.
+- Pulse networks above four transmons. Network explicit CPTP above a
+  nine-dimensional Hilbert space.
 - Explicit CPTP above 5 noisy qubits; 6-8 noisy qubits are RK4 only.
 - Calibrated real-hardware prediction.
 - Pulse execution through Rust. The Rust preview kernel covers only the

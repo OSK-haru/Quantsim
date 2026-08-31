@@ -195,6 +195,12 @@ function App() {
   const [latestGateAwareResult, setLatestGateAwareResult] = useState<{
     response: SimulationResponse
     circuitConfig: CircuitConfig
+    /*
+     * この結果がどこから来たか。結果ファイルから復元したものは 'imported'。
+     * 画面はこれを見て「読み込んだ結果」であることを明示する。計算し直した
+     * ものと区別が付かないと、いまの設定で得た数字だと誤解されるため。
+     */
+    origin?: 'computed' | 'imported'
   } | null>(null)
   /*
    * Gate-awareラボの設定。Pulse側と同じ理由でここに置く。ページ側で持つと
@@ -322,6 +328,17 @@ function App() {
               comparison={pulseComparison}
               onComparisonChange={setPulseComparison}
               onOpenPulseLab={() => navigate('pulse-lab')}
+              onImportedRun={(record, circuit) => {
+                /*
+                 * 回路とラボ設定を、その結果を生んだものへ戻してから記録を
+                 * 載せる。戻さないと signature が現在の設定と食い違い、
+                 * 復元した結果が「再実行が必要」として隠れてしまう。
+                 */
+                setPulseCircuit(circuit)
+                setPulseLabForm(record.formAtRun)
+                setActivePulseTransmonIndex(0)
+                setLatestPulseRun(record)
+              }}
             />
           )}
         </>
@@ -350,10 +367,21 @@ function App() {
           <StateExplorerPage
             response={latestGateAwareResult?.response ?? null}
             executedCircuitConfig={latestGateAwareResult?.circuitConfig ?? null}
+            resultOrigin={latestGateAwareResult?.origin ?? 'computed'}
             gateDurationDefaults={gateDurationDefaults}
             comparison={gateAwareComparison}
             onComparisonChange={setGateAwareComparison}
             onOpenSimulation={() => navigate('simulate')}
+            onImportedResult={(response, circuitConfig, importedGateDurations) => {
+              /*
+               * ゲート所要時間も戻す。これが実行時と違うと、物理時間の軸が
+               * 結果と合わなくなる。古い形式で入っていなければ現状を保つ。
+               */
+              if (importedGateDurations !== null) {
+                setGateDurationDefaults(importedGateDurations)
+              }
+              setLatestGateAwareResult({ response, circuitConfig, origin: 'imported' })
+            }}
           />
         ) : null}
 
@@ -367,7 +395,8 @@ function App() {
             onOpenStateExplorer={() => navigate('state-explorer')}
             previousResponse={latestGateAwareResult?.response ?? null}
             onSuccessfulResponse={(response, circuitConfig) => {
-              setLatestGateAwareResult({ response, circuitConfig })
+              /* 実行し直したら、読み込み由来という印は外れる。 */
+              setLatestGateAwareResult({ response, circuitConfig, origin: 'computed' })
             }}
             settings={simulateSettings}
             onSettingsChange={setSimulateSettings}

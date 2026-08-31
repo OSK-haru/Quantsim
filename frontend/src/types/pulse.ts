@@ -276,6 +276,16 @@ export type PulseRunRecord = {
   formAtRun: PulseLabForm
   completedAt: string
   signature: string
+  /*
+   * この結果がどこから来たか。'computed' はこのアプリで実行したもの、
+   * 'imported' は結果ファイルから復元したもの。
+   *
+   * 省略時は 'computed' として扱う（既存の実行経路を変えないため）。
+   * 画面はこの値を見て「読み込んだ結果」であることを明示する。計算し直した
+   * ものと見分けが付かないまま図が出ていると、その数字がいまの設定で
+   * 得られたものだと誤解されるため。
+   */
+  origin?: 'computed' | 'imported'
 }
 
 export type PulseWaveformPoint = {

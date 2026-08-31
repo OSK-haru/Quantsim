@@ -76,3 +76,7 @@
 .run-comparison-bar__export {
   color: var(--tt-ink-mid);
 }
+
+.run-comparison-bar__file-input {
+  display: none;
+}

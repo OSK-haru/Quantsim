@@ -338,3 +338,16 @@
   color: var(--tt-ink-dim);
   font-size: 0.78rem;
 }
+
+/*
+ * 読み込んだ結果である旨の表示。読み飛ばされると「いまの設定で計算した値」と
+ * 誤解されるため、地の文と同じ濃さにはしない。
+ */
+.pulse-explorer-page__imported-note {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--tt-ink-mid);
+  background: rgb(var(--tt-ink-mid-rgb) / 0.08);
+  color: var(--tt-ink);
+  font-size: 0.8rem;
+}
