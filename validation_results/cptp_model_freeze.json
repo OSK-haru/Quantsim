@@ -1,7 +1,7 @@
 {
   "validation": "CPTP-MODEL-FREEZE-C10",
   "freeze_schema_version": 1,
-  "generated_at_utc": "2026-08-30T13:54:55.995976+00:00",
+  "generated_at_utc": "2026-08-31T12:42:37.709776+00:00",
   "decision": "PASS WITH RESTRICTIONS",
   "overall_pass": true,
   "frozen_contract": {
@@ -143,8 +143,8 @@
     }
   },
   "source_revision": {
-    "git_commit": "976c80c4a1894317b118e0f7089e5bed15178e05",
-    "critical_source_tree_sha256": "9a53970ff01fa1695940f201c9a6b0e396072158333be4d308fcd75aa2413536",
+    "git_commit": "4f0e71d76bc2c4ebdea033461e7d40fe85d04603",
+    "critical_source_tree_sha256": "9adce2c2fd2b747ff74a5cd2ec003c3b0acb169dff961fbd6d05ab255e58840f",
     "files": [
       {
         "file": "core/cptp.py",
@@ -214,7 +214,7 @@
       {
         "file": "frontend/src/types/pulse.ts",
         "exists": true,
-        "sha256": "ab4a5946f373957cb409538859b7d9601ab31bb642dce0303542a619b9fa31e7"
+        "sha256": "3d15e1b3aa32a4468eb259125e76d8b22a1d910d320b3e80e8db1617e4a1bbb9"
       },
       {
         "file": "frontend/src/utils/pulseLab.ts",
@@ -224,12 +224,12 @@
       {
         "file": "frontend/src/components/PulseEnvironmentPanel.tsx",
         "exists": true,
-        "sha256": "8630695c8e2150f05a25b382756ed6fd40c3541a0338e8d85f17c44a04509134"
+        "sha256": "ba220d1dd05329ef8fe9aa72f8fd78497a72571ee369e44e160ba3d8dbd35db1"
       },
       {
         "file": "frontend/src/pages/PulseLabPage.tsx",
         "exists": true,
-        "sha256": "0177a4bb47da6da9caddbdce6440434f14ae7186f371a2719409312b238327ff"
+        "sha256": "5d288c90f4ce47d5f56242cf04e34f1b5bb28bf178b90a2e0cc61c19956fb3da"
       },
       {
         "file": "tests/test_cptp_qubit_channels.py",
@@ -312,7 +312,7 @@
     {
       "file": "docs_for_develop/physics/model_identity.md",
       "exists": true,
-      "sha256": "233c5dd695fecb6b35ba7b1e3d143e8b0e8c765529a915720e019d5d8d1ad901"
+      "sha256": "be2fc12d2f013ae64a3b8d5f86c3a3a65dc41fbce4740a9f37c3c50edfa954d0"
     },
     {
       "file": "docs_for_develop/validation/cptp-model-freeze.md",

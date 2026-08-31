@@ -19,6 +19,14 @@ disagrees with this page.
 - Click placement, drag-and-drop placement and movement, drag-out deletion,
   Delete-key deletion, Clear, Undo, and Redo.
 - Circuit JSON import/export.
+- Result JSON export and import, from the gate-aware and pulse state
+  explorers. This is a separate format from the circuit JSON: a result bundle
+  carries the inputs that produced it alongside the result, and importing one
+  restores both, so the editor state and the displayed figures cannot drift
+  apart. An imported result is marked as imported on screen until it is re-run
+  (`resultOrigin` in the gate-aware explorer, `origin` on the pulse run
+  record). See "Divergent export formats" in `architecture/module_structure.md`
+  for the `kind` discriminators this format uses.
 - Physical-unit environment inputs in the React simulation flow.
 - Result summary, metric timeline, output probabilities, diagnostics, model
   details, warnings, API debug details, and state snapshots.

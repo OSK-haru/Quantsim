@@ -122,7 +122,13 @@ discriminator written into the JSON:
 
 `quantscope` is a misspelling of an abandoned working title; the product is
 Yuragi-Strider, and `resultExport.ts` already writes `generator:
-"Yuragi-Strider"` next to that `kind`. The strings are load-bearing on the
-frontend -- `circuitConfigTransfer.ts` rejects an import whose `kind` does not
-match -- so renaming them is a file-format change that needs a compatibility
-read of the old value, not a search-and-replace.
+"Yuragi-Strider"` next to that `kind`.
+
+These strings are load-bearing on the frontend, and increasingly so. Both
+`circuitConfigTransfer.ts` and `resultExport.ts` (`openEnvelope`) reject a file
+whose `kind` does not match, and `openEnvelope` additionally compares against
+the *other* result kind so it can tell the user they opened a pulse file on the
+gate-aware screen. Renaming is therefore a file-format migration -- the readers
+must keep accepting the old `quantscope_*` value, or every file exported before
+the rename stops loading in the app that wrote it -- and not a
+search-and-replace.
