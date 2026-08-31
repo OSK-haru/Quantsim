@@ -46,25 +46,6 @@ export function HomePage({
               回路を組んでノイズの強さを変えるだけで、その&ldquo;ズレ&rdquo;がどれだけ・なぜ起きるのかをその場で確認できます。
             </p>
           </div>
-
-          <dl className="home-page__spec">
-            <div>
-              <dt>ENGINE</dt>
-              <dd>PYTHON / STD</dd>
-            </div>
-            <div>
-              <dt>KERNEL</dt>
-              <dd>RUST / PREVIEW</dd>
-            </div>
-            <div>
-              <dt>MODEL</dt>
-              <dd>GATE&ndash;AWARE OPEN SYS</dd>
-            </div>
-            <div>
-              <dt>SOLVER</dt>
-              <dd>LINDBLAD / RK4</dd>
-            </div>
-          </dl>
         </div>
       </section>
 

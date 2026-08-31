@@ -547,7 +547,7 @@ export const tutorialCourses: Record<TutorialCourseId, TutorialCourse> = {
     title: 'はじめての量子回路',
     summary:
       '量子ビットとゲートの話から、ベル回路を自分で組んで動かし、結果の読み方まで。予備知識はいりません。',
-    duration: '約8分',
+    duration: '約4分',
     beats: firstCircuitBeats,
   },
   'noise-parameters': {
@@ -555,7 +555,7 @@ export const tutorialCourses: Record<TutorialCourseId, TutorialCourse> = {
     title: 'ゆらぎ実験',
     summary:
       '回路はそのままで条件だけを変え、答えがどれだけ濁るかを3回の実行で比べます。1本目のあとにどうぞ。',
-    duration: '約7分',
+    duration: '約3分',
     beats: noiseParameterBeats,
   },
 }

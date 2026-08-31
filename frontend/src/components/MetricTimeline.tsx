@@ -452,37 +452,6 @@ export function MetricTimeline({
             {stateChanges.length > 0 ? (
               <path d={stateChangePath} className="metric-timeline__line metric-timeline__line--state-change" />
             ) : null}
-            {cursorX === null ? null : (
-              <g
-                className="metric-timeline__cursor"
-                aria-label={cursorValue === null
-                  ? `現在 ${cursorSimulationTimeUs?.toFixed(4)} マイクロ秒`
-                  : `現在 ${cursorSimulationTimeUs?.toFixed(4)} マイクロ秒、`
-                    + `${cursorMetricLabels[activeCursorMetric]} ${cursorValue.toFixed(4)}`}
-              >
-                <line x1={cursorX} y1={padding} x2={cursorX} y2={height - padding} />
-                <circle cx={cursorX} cy={padding} r="4" />
-                {cursorValueY === null || cursorValue === null ? null : (
-                  <>
-                    <circle
-                      cx={cursorX}
-                      cy={cursorValueY}
-                      r="5"
-                      className="metric-timeline__cursor-marker"
-                    />
-                    <text
-                      x={cursorX + (cursorX > width / 2 ? -8 : 8)}
-                      y={Math.max(padding + 12, Math.min(height - padding - 6, cursorValueY - 9))}
-                      textAnchor={cursorX > width / 2 ? 'end' : 'start'}
-                      className="metric-timeline__cursor-readout"
-                    >
-                      {`${cursorMetricLabels[activeCursorMetric]} ${cursorValue.toFixed(4)}`}
-                    </text>
-                  </>
-                )}
-              </g>
-            )}
-
             {timeline.map((point, index) => {
               if (isDense && !shouldShowSample(index, timeline.length)) {
                 return null
@@ -513,6 +482,38 @@ export function MetricTimeline({
                 className="metric-timeline__dot metric-timeline__dot--state-change"
               />
             ))}
+
+            {/* カーソルは最後に描いて、赤線と数字を必ず点や線より手前に置く。 */}
+            {cursorX === null ? null : (
+              <g
+                className="metric-timeline__cursor"
+                aria-label={cursorValue === null
+                  ? `現在 ${cursorSimulationTimeUs?.toFixed(4)} マイクロ秒`
+                  : `現在 ${cursorSimulationTimeUs?.toFixed(4)} マイクロ秒、`
+                    + `${cursorMetricLabels[activeCursorMetric]} ${cursorValue.toFixed(4)}`}
+              >
+                <line x1={cursorX} y1={padding} x2={cursorX} y2={height - padding} />
+                <circle cx={cursorX} cy={padding} r="4" />
+                {cursorValueY === null || cursorValue === null ? null : (
+                  <>
+                    <circle
+                      cx={cursorX}
+                      cy={cursorValueY}
+                      r="5"
+                      className="metric-timeline__cursor-marker"
+                    />
+                    <text
+                      x={cursorX + (cursorX > width / 2 ? -8 : 8)}
+                      y={Math.max(padding + 12, Math.min(height - padding - 6, cursorValueY - 9))}
+                      textAnchor={cursorX > width / 2 ? 'end' : 'start'}
+                      className="metric-timeline__cursor-readout"
+                    >
+                      {`${cursorMetricLabels[activeCursorMetric]} ${cursorValue.toFixed(4)}`}
+                    </text>
+                  </>
+                )}
+              </g>
+            )}
           </svg>
 
           <div className="metric-timeline__summary">

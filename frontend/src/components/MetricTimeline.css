@@ -276,8 +276,9 @@ html[data-theme='light'] .metric-timeline {
 
 .metric-timeline__cursor-readout {
   fill: var(--tt-ink);
+  /* 線や点の上に重なっても読めるよう、下地を厚めに縁取る。 */
   stroke: var(--tt-void);
-  stroke-width: 4px;
+  stroke-width: 6px;
   paint-order: stroke fill;
   font-size: 11px;
   letter-spacing: 0.02em;
