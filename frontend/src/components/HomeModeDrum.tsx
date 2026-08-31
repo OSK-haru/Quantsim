@@ -220,24 +220,46 @@ export function HomeModeDrum({
           </div>
         </div>
 
-        {/* ロータリースイッチの目盛り。今どの面にいるかと、直接の行き先を兼ねる。 */}
-        <ol className="mode-drum__rail">
-          {MODE_ENTRIES.map((entry, index) => (
-            <li key={entry.id}>
-              <button
-                className={`mode-drum__detent${
-                  index === activeIndex ? ' mode-drum__detent--active' : ''
-                }`}
-                type="button"
-                aria-current={index === activeIndex}
-                aria-label={`${entry.title}へ`}
-                onClick={() => goTo(index)}
-              >
-                <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-              </button>
-            </li>
-          ))}
-        </ol>
+        {/*
+          切り替えレバー。今どの面にいるかと、直接の行き先を兼ねる。
+          溝（スロット）の上をノブが滑って止まる形にして、
+          「掴んで動かせるもの」だと一目で分かるようにしている。
+          位置は active な段の番号から算出するので、段数が変わっても追従する。
+        */}
+        <div
+          className="mode-drum__rail"
+          style={{
+            '--rail-stops': HOME_MODE_COUNT,
+            '--rail-index': activeIndex,
+          } as CSSProperties}
+        >
+          <span className="mode-drum__rail-slot" aria-hidden="true">
+            <span className="mode-drum__rail-knob">
+              <span className="mode-drum__rail-knob-grip" />
+            </span>
+          </span>
+
+          <ol className="mode-drum__rail-stops">
+            {MODE_ENTRIES.map((entry, index) => (
+              <li key={entry.id}>
+                <button
+                  className={`mode-drum__detent${
+                    index === activeIndex ? ' mode-drum__detent--active' : ''
+                  }`}
+                  type="button"
+                  aria-current={index === activeIndex}
+                  aria-label={`${entry.title}へ`}
+                  onClick={() => goTo(index)}
+                >
+                  <span className="mode-drum__detent-tick" aria-hidden="true" />
+                  <span className="mode-drum__detent-index" aria-hidden="true">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
 
       <div className="mode-drum__transport">

@@ -316,53 +316,157 @@
   }
 }
 
-/* --- Detent rail ---------------------------------------------------------- */
+/* --- Mode lever ----------------------------------------------------------- */
+
+/*
+ * 面の切り替えは、溝の上をノブが滑るレバーとして見せる。
+ * 以前は番号だけの小さな的が縦に並んでいて、押せるものだと分かりにくく、
+ * 今どこにいるかも塗り色の差でしか読めなかった。
+ * ノブの位置 = 段の位置なので、目で追うだけで現在地と行き先が分かる。
+ */
 
 .mode-drum__rail {
+  /* 1段の高さ。ノブの移動量もヒット領域もこの1つから決まる。 */
+  --rail-step: 40px;
+  --rail-gutter: 13px;
+
+  position: relative;
+
   display: grid;
   align-content: center;
-  gap: 4px;
 
-  margin: 0;
-  padding: 12px 10px;
+  padding: 14px var(--rail-gutter);
 
   border-left: var(--tt-hair) solid var(--tt-rule);
+}
+
+/* 掘られた溝。ノブが走る道筋を先に見せる。 */
+.mode-drum__rail-slot {
+  position: absolute;
+  top: 14px;
+  left: var(--rail-gutter);
+
+  width: 14px;
+  height: calc(var(--rail-step) * var(--rail-stops));
+
+  border: var(--tt-hair) solid var(--tt-rule-strong);
+  background:
+    linear-gradient(
+      to right,
+      rgb(var(--tt-void-rgb) / 0.85),
+      rgb(var(--tt-void-rgb) / 0.45) 55%,
+      rgb(var(--tt-void-rgb) / 0.8)
+    );
+  pointer-events: none;
+}
+
+/* 溝を滑るノブ。1段ぶんの高さを持ち、段の中心へ寄せて止まる。 */
+.mode-drum__rail-knob {
+  position: absolute;
+  top: 0;
+  left: 50%;
+
+  display: grid;
+  place-items: center;
+
+  width: 26px;
+  height: calc(var(--rail-step) - 12px);
+
+  border: var(--tt-hair) solid var(--tt-accent);
+  background: linear-gradient(
+    to bottom,
+    var(--tt-accent),
+    var(--tt-accent-deep)
+  );
+  box-shadow:
+    0 0 0 1px rgb(var(--tt-void-rgb) / 0.55),
+    0 3px 6px rgb(var(--tt-void-rgb) / 0.5);
+
+  /* 段の中心 = step の半分。そこから自分の高さの半分だけ戻す。 */
+  transform: translate(
+    -50%,
+    calc(var(--rail-step) * (var(--rail-index) + 0.5) - 50%)
+  );
+
+  transition: transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+/* ノブの滑り止め。掴めるものだという手がかり。 */
+.mode-drum__rail-knob-grip {
+  width: 12px;
+  height: 7px;
+
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0.8) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+.mode-drum__rail-stops {
+  position: relative;
+  z-index: 1;
+
+  display: grid;
+
+  margin: 0;
+  padding: 0;
+
   list-style: none;
 }
 
 .mode-drum__detent {
-  display: grid;
-  place-items: center;
+  display: flex;
+  gap: 7px;
+  align-items: center;
 
-  width: 30px;
-  height: 30px;
+  /* 溝のぶんだけ空けて、番号がノブと重ならないようにする。 */
+  width: 100%;
+  height: var(--rail-step);
+  padding: 0 0 0 20px;
 
-  border: var(--tt-hair) solid transparent;
+  border: 0;
   background: transparent;
 
   color: var(--tt-ink-faint);
   font-family: var(--tt-mono);
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.06em;
 
   cursor: pointer;
 
+  transition: color 160ms linear;
+}
+
+/* 段の刻み。ノブがどこに止まるかを示す。 */
+.mode-drum__detent-tick {
+  width: 9px;
+  height: var(--tt-hair);
+
+  background: var(--tt-rule-strong);
+
   transition:
-    color 160ms linear,
-    border-color 160ms linear,
+    width 160ms linear,
     background 160ms linear;
 }
 
 .mode-drum__detent:hover {
   color: var(--tt-ink);
-  border-color: var(--tt-rule-strong);
+}
+
+.mode-drum__detent:hover .mode-drum__detent-tick {
+  width: 13px;
+  background: var(--tt-ink-mid);
 }
 
 .mode-drum__detent--active {
-  border-color: var(--tt-accent);
+  color: var(--tt-ink);
+}
+
+.mode-drum__detent--active .mode-drum__detent-tick {
+  width: 13px;
   background: var(--tt-accent);
-  color: var(--tt-on-accent);
 }
 
 /* --- Transport ------------------------------------------------------------ */
@@ -456,6 +560,16 @@ html[data-theme='light'] .mode-drum__frame {
   box-shadow: 6px 6px 0 rgb(var(--tt-rule-rgb) / 0.7);
 }
 
+html[data-theme='light'] .mode-drum__rail-slot {
+  border-color: var(--tt-rule-strong);
+  background: rgb(var(--tt-rule-rgb) / 0.5);
+}
+
+html[data-theme='light'] .mode-drum__rail-knob {
+  border-color: var(--tt-accent-deep);
+  box-shadow: 0 2px 0 var(--tt-accent-deep);
+}
+
 html[data-theme='light'] .mode-drum__cta {
   border-width: 2px;
   border-color: var(--tt-accent-deep);
@@ -512,6 +626,13 @@ html[data-theme='light'] .mode-drum__face--docs .mode-drum__cta {
  * 3D の遷移が消えても、面の入れ替わり自体は opacity で読み取れる。
  */
 html[data-animations='off'] .mode-drum__barrel,
-html[data-animations='off'] .mode-drum__face {
+html[data-animations='off'] .mode-drum__face,
+html[data-animations='off'] .mode-drum__rail-knob {
   transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-drum__rail-knob {
+    transition: none;
+  }
 }
