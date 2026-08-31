@@ -340,7 +340,11 @@
   border-left: var(--tt-hair) solid var(--tt-rule);
 }
 
-/* 掘られた溝。ノブが走る道筋を先に見せる。 */
+/*
+ * 掘られた溝。ノブが走る道筋を先に見せる。
+ * これ自体が掴む対象なので pointer-events は殺さない。溝の幅だけだと
+ * 指で掴むには細すぎるので、実際の当たり判定は左右へ広げてある。
+ */
 .mode-drum__rail-slot {
   position: absolute;
   top: 14px;
@@ -357,7 +361,38 @@
       rgb(var(--tt-void-rgb) / 0.45) 55%,
       rgb(var(--tt-void-rgb) / 0.8)
     );
-  pointer-events: none;
+
+  cursor: grab;
+  /* 縦に掴んで動かす部品なので、縦スクロールへ持っていかれないようにする。 */
+  touch-action: none;
+
+  transition: border-color 160ms linear;
+}
+
+/* 細い溝のままだと掴みにくい。見た目は変えずに当たり判定だけ広げる。 */
+.mode-drum__rail-slot::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -9px;
+  right: -9px;
+
+  content: '';
+}
+
+.mode-drum__rail-slot:hover,
+.mode-drum__rail-slot:focus-visible {
+  border-color: var(--tt-accent);
+}
+
+.mode-drum__rail-slot:focus-visible {
+  outline: var(--tt-hair) solid var(--tt-accent);
+  outline-offset: 3px;
+}
+
+.mode-drum__rail-slot--held {
+  cursor: grabbing;
+  border-color: var(--tt-accent);
 }
 
 /* 溝を滑るノブ。1段ぶんの高さを持ち、段の中心へ寄せて止まる。 */
@@ -388,7 +423,25 @@
     calc(var(--rail-step) * (var(--rail-index) + 0.5) - 50%)
   );
 
-  transition: transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  /* 掴んでいる指の下で動くものなので、当たり判定は溝側へ預ける。 */
+  pointer-events: none;
+
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    width 160ms linear;
+}
+
+/* 掴んでいる間は少し張り出させて、指が乗っていることを返す。 */
+.mode-drum__rail-slot--held .mode-drum__rail-knob {
+  width: 30px;
+  /* 指に追従している間は、詰めても遅れて見えるだけなので短くする。 */
+  transition:
+    transform 90ms linear,
+    width 160ms linear;
+}
+
+.mode-drum__rail-slot:hover .mode-drum__rail-knob {
+  width: 30px;
 }
 
 /* ノブの滑り止め。掴めるものだという手がかり。 */
