@@ -31,6 +31,50 @@ const denseTimelineThreshold = 80
 const maxDenseMarkers = 12
 /* 保持した実行から重ねられる指標。 */
 type HeldMetricKey = 'fidelity' | 'purity' | 'stateChange'
+/*
+ * 赤いカーソル線の上で読む指標。再生アニメーションと同じ時刻の値を1つだけ
+ * 数字で出す。既定はこのページの主指標である忠実度。
+ */
+type CursorMetricKey = 'fidelity' | 'purity' | 'stateChange'
+
+const cursorMetricLabels: Record<CursorMetricKey, string> = {
+  fidelity: '忠実度',
+  purity: '純度',
+  stateChange: '区間状態変化',
+}
+
+/*
+ * カーソル時刻の値は、前後のサンプルを線形に結んで読む。点に丸めると
+ * 再生中の数字が飛び飛びに見えて、線の上の点と合わなくなる。
+ */
+function interpolateSeries(
+  series: { time_us: number; value: number }[],
+  timeUs: number,
+): number | null {
+  if (series.length === 0) {
+    return null
+  }
+  if (series.length === 1 || timeUs <= series[0].time_us) {
+    return series[0].value
+  }
+  const last = series[series.length - 1]
+  if (timeUs >= last.time_us) {
+    return last.value
+  }
+  for (let index = 1; index < series.length; index += 1) {
+    const previous = series[index - 1]
+    const current = series[index]
+    if (timeUs <= current.time_us) {
+      const span = current.time_us - previous.time_us
+      if (span <= 0) {
+        return current.value
+      }
+      const ratio = (timeUs - previous.time_us) / span
+      return previous.value + (current.value - previous.value) * ratio
+    }
+  }
+  return last.value
+}
 
 function scaleX(timeUs: number, minimumTimeUs: number, maximumTimeUs: number) {
   if (maximumTimeUs <= minimumTimeUs) {
@@ -162,6 +206,7 @@ export function MetricTimeline({
   heldSnapshots = [],
 }: MetricTimelineProps) {
   const [selectedHeldMetric, setSelectedHeldMetric] = useState<HeldMetricKey>('fidelity')
+  const [selectedCursorMetric, setSelectedCursorMetric] = useState<CursorMetricKey>('fidelity')
   const hasTimeline = timeline.length > 0
   const stateChanges = stateChangeSeries(stateSnapshots)
   const combinedTimes = [
@@ -273,13 +318,37 @@ export function MetricTimeline({
   const displayedEffectiveTimeUs = firstThresholdCrossing
     ? reportedEffectiveTimeUs ?? firstThresholdCrossing.time_us
     : null
-  const cursorX = cursorSimulationTimeUs === null
+  const clampedCursorTimeUs = cursorSimulationTimeUs === null
     ? null
-    : scaleX(
-        Math.min(maximumTimeUs, Math.max(minimumTimeUs, cursorSimulationTimeUs)),
-        minimumTimeUs,
-        maximumTimeUs,
-      )
+    : Math.min(maximumTimeUs, Math.max(minimumTimeUs, cursorSimulationTimeUs))
+  const cursorX = clampedCursorTimeUs === null
+    ? null
+    : scaleX(clampedCursorTimeUs, minimumTimeUs, maximumTimeUs)
+  /* カーソルで読める指標だけを並べる。中身の無い選択肢は出さない。 */
+  const cursorMetricOptions: CursorMetricKey[] = []
+  if (timeline.some((point) => point.fidelity !== null)) {
+    cursorMetricOptions.push('fidelity')
+  }
+  if (timeline.some((point) => point.purity !== null)) {
+    cursorMetricOptions.push('purity')
+  }
+  if (stateChanges.length > 0) {
+    cursorMetricOptions.push('stateChange')
+  }
+  /* 選んでいた指標が消えたら、忠実度（既定）か先頭へ落とす。 */
+  const activeCursorMetric = cursorMetricOptions.includes(selectedCursorMetric)
+    ? selectedCursorMetric
+    : cursorMetricOptions[0] ?? 'fidelity'
+  const cursorSeries = activeCursorMetric === 'stateChange'
+    ? stateChanges
+    : timeline.map((point) => ({
+        time_us: point.time_us,
+        value: safeMetric(activeCursorMetric === 'purity' ? point.purity : point.fidelity),
+      }))
+  const cursorValue = clampedCursorTimeUs === null
+    ? null
+    : interpolateSeries(cursorSeries, clampedCursorTimeUs)
+  const cursorValueY = cursorValue === null ? null : scaleY(cursorValue)
 
   return (
     <section
@@ -303,6 +372,23 @@ export function MetricTimeline({
               <span className="metric-timeline__swatch metric-timeline__swatch--state-change" />
               区間状態変化
             </span>
+          ) : null}
+          {cursorMetricOptions.length > 0 ? (
+            <label className="metric-timeline__legend-item metric-timeline__cursor-selector">
+              <span className="metric-timeline__swatch metric-timeline__swatch--cursor" />
+              赤線で読む
+              <select
+                value={activeCursorMetric}
+                onChange={(event) => (
+                  setSelectedCursorMetric(event.target.value as CursorMetricKey)
+                )}
+                aria-label="赤いカーソル線で読む指標"
+              >
+                {cursorMetricOptions.map((key) => (
+                  <option key={key} value={key}>{cursorMetricLabels[key]}</option>
+                ))}
+              </select>
+            </label>
           ) : null}
           {heldMetricOptions.length > 0 ? (
             <label className="metric-timeline__legend-item metric-timeline__held-selector">
@@ -367,9 +453,33 @@ export function MetricTimeline({
               <path d={stateChangePath} className="metric-timeline__line metric-timeline__line--state-change" />
             ) : null}
             {cursorX === null ? null : (
-              <g className="metric-timeline__cursor" aria-label={`現在 ${cursorSimulationTimeUs?.toFixed(4)} マイクロ秒`}>
+              <g
+                className="metric-timeline__cursor"
+                aria-label={cursorValue === null
+                  ? `現在 ${cursorSimulationTimeUs?.toFixed(4)} マイクロ秒`
+                  : `現在 ${cursorSimulationTimeUs?.toFixed(4)} マイクロ秒、`
+                    + `${cursorMetricLabels[activeCursorMetric]} ${cursorValue.toFixed(4)}`}
+              >
                 <line x1={cursorX} y1={padding} x2={cursorX} y2={height - padding} />
                 <circle cx={cursorX} cy={padding} r="4" />
+                {cursorValueY === null || cursorValue === null ? null : (
+                  <>
+                    <circle
+                      cx={cursorX}
+                      cy={cursorValueY}
+                      r="5"
+                      className="metric-timeline__cursor-marker"
+                    />
+                    <text
+                      x={cursorX + (cursorX > width / 2 ? -8 : 8)}
+                      y={Math.max(padding + 12, Math.min(height - padding - 6, cursorValueY - 9))}
+                      textAnchor={cursorX > width / 2 ? 'end' : 'start'}
+                      className="metric-timeline__cursor-readout"
+                    >
+                      {`${cursorMetricLabels[activeCursorMetric]} ${cursorValue.toFixed(4)}`}
+                    </text>
+                  </>
+                )}
               </g>
             )}
 
@@ -435,6 +545,15 @@ export function MetricTimeline({
                 <strong className="metric-timeline__value">{maximumStateChange.toFixed(4)}</strong>
               </article>
             ) : null}
+            {cursorValue === null || clampedCursorTimeUs === null ? null : (
+              <article className="metric-timeline__value-card metric-timeline__value-card--cursor">
+                <span className="metric-timeline__label">
+                  カーソル時刻の{cursorMetricLabels[activeCursorMetric]}
+                </span>
+                <strong className="metric-timeline__value">{cursorValue.toFixed(4)}</strong>
+                <small>{clampedCursorTimeUs.toFixed(4)} μs</small>
+              </article>
+            )}
             {heldFinalValue === null || currentFinalValue === null ? null : (
               <article className="metric-timeline__value-card metric-timeline__value-card--held">
                 <span className="metric-timeline__label">保持した実行の{activeHeldMetricLabel}</span>

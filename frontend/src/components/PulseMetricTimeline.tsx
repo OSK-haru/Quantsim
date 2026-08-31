@@ -17,6 +17,45 @@ type PulseMetricTimelineProps = {
 /* 保持した実行から重ねられる指標。 */
 type HeldMetricKey = 'purity' | 'reference' | 'leakage' | 'stateChange'
 
+/*
+ * 赤いカーソル線の上で読む指標。再生アニメーションと同じ時刻の値を1つだけ
+ * 数字で出す。既定は忠実度にあたる参照値（無ければ純度）。
+ */
+type CursorMetricKey = 'reference' | 'purity' | 'leakage' | 'stateChange'
+
+/*
+ * カーソル時刻の値は、前後のサンプルを線形に結んで読む。最近傍に丸めると
+ * 再生中の数字が飛び飛びに見えて、線の上の点と合わなくなる。
+ */
+function interpolateSeries(
+  series: { timeUs: number; value: number }[],
+  timeUs: number,
+): number | null {
+  if (series.length === 0) {
+    return null
+  }
+  if (series.length === 1 || timeUs <= series[0].timeUs) {
+    return series[0].value
+  }
+  const last = series[series.length - 1]
+  if (timeUs >= last.timeUs) {
+    return last.value
+  }
+  for (let index = 1; index < series.length; index += 1) {
+    const previous = series[index - 1]
+    const current = series[index]
+    if (timeUs <= current.timeUs) {
+      const span = current.timeUs - previous.timeUs
+      if (span <= 0) {
+        return current.value
+      }
+      const ratio = (timeUs - previous.timeUs) / span
+      return previous.value + (current.value - previous.value) * ratio
+    }
+  }
+  return last.value
+}
+
 function heldMetricValue(point: PulseExplorerPoint, metric: HeldMetricKey): number {
   if (metric === 'reference') {
     return point.reference ?? 0
@@ -46,6 +85,7 @@ export function PulseMetricTimeline({
   const points = view.points
   const stateChanges = useMemo(() => pulseStateChangeSeries(points), [points])
   const [selectedHeldMetric, setSelectedHeldMetric] = useState<HeldMetricKey>('purity')
+  const [selectedCursorMetric, setSelectedCursorMetric] = useState<CursorMetricKey>('reference')
   const minimumTimeUs = points[0]?.timeUs ?? 0
   const maximumTimeUs = Math.max(points.at(-1)?.timeUs ?? 1, minimumTimeUs + 1e-12)
   const x = (timeUs: number) => (
@@ -120,10 +160,49 @@ export function PulseMetricTimeline({
   const pulseEndX = view.pulseEndTimeUs > minimumTimeUs && view.pulseEndTimeUs < maximumTimeUs
     ? x(view.pulseEndTimeUs)
     : null
-  const cursorX = cursorTimeUs === null
+  const clampedCursorTimeUs = cursorTimeUs === null
     ? null
-    : x(Math.min(maximumTimeUs, Math.max(minimumTimeUs, cursorTimeUs)))
+    : Math.min(maximumTimeUs, Math.max(minimumTimeUs, cursorTimeUs))
+  const cursorX = clampedCursorTimeUs === null ? null : x(clampedCursorTimeUs)
   const cursorPoint = cursorTimeUs === null ? null : nearestPoint(points, cursorTimeUs)
+  /* カーソルで読める指標だけを並べる。中身の無い選択肢は出さない。 */
+  const cursorMetricOptions: { key: CursorMetricKey; label: string }[] = []
+  if (hasReference) {
+    cursorMetricOptions.push({ key: 'reference', label: view.referenceLabel ?? '参照値' })
+  }
+  cursorMetricOptions.push({ key: 'purity', label: '純度' })
+  if (hasLeakage) {
+    cursorMetricOptions.push({ key: 'leakage', label: view.leakageLabel ?? 'リーケージ' })
+  }
+  if (stateChanges.length > 0) {
+    cursorMetricOptions.push({ key: 'stateChange', label: '区間状態変化' })
+  }
+  /* 選んでいた指標がモデル変更で消えたら、先頭（参照値、無ければ純度）へ落とす。 */
+  const activeCursorMetric = cursorMetricOptions.some((option) => (
+    option.key === selectedCursorMetric
+  ))
+    ? selectedCursorMetric
+    : cursorMetricOptions[0]?.key ?? 'purity'
+  const activeCursorMetricLabel = cursorMetricOptions
+    .find((option) => option.key === activeCursorMetric)?.label ?? '純度'
+  const cursorSeries = activeCursorMetric === 'stateChange'
+    ? stateChanges.map((point) => ({ timeUs: point.timeUs, value: point.value }))
+    : points
+        .map((point) => ({
+          timeUs: point.timeUs,
+          value: activeCursorMetric === 'reference'
+            ? point.reference
+            : activeCursorMetric === 'leakage'
+              ? point.leakage
+              : point.purity,
+        }))
+        .filter((entry): entry is { timeUs: number; value: number } => (
+          entry.value !== null && Number.isFinite(entry.value)
+        ))
+  const cursorValue = clampedCursorTimeUs === null
+    ? null
+    : interpolateSeries(cursorSeries, clampedCursorTimeUs)
+  const cursorValueY = cursorValue === null ? null : y(cursorValue)
   /* 保持側は点の並びが違うので、時刻から引き直す。 */
   const heldCursorPoint = cursorTimeUs === null || heldPoints.length === 0
     ? null
@@ -169,6 +248,19 @@ export function PulseMetricTimeline({
               区間状態変化
             </span>
           ) : null}
+          <label className="pulse-metric-timeline__legend-item pulse-metric-timeline__cursor-selector">
+            <span className="pulse-metric-timeline__swatch pulse-metric-timeline__swatch--cursor" />
+            赤線で読む
+            <select
+              value={activeCursorMetric}
+              onChange={(event) => setSelectedCursorMetric(event.target.value as CursorMetricKey)}
+              aria-label="赤いカーソル線で読む指標"
+            >
+              {cursorMetricOptions.map((option) => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+          </label>
           {heldMetricOptions.length > 0 ? (
             <label className="pulse-metric-timeline__legend-item pulse-metric-timeline__held-selector">
               <span className="pulse-metric-timeline__swatch pulse-metric-timeline__swatch--held" />
@@ -274,10 +366,31 @@ export function PulseMetricTimeline({
             {cursorX === null ? null : (
               <g
                 className="pulse-metric-timeline__cursor"
-                aria-label={`現在 ${cursorTimeUs?.toFixed(4)} マイクロ秒`}
+                aria-label={cursorValue === null
+                  ? `現在 ${cursorTimeUs?.toFixed(4)} マイクロ秒`
+                  : `現在 ${cursorTimeUs?.toFixed(4)} マイクロ秒、`
+                    + `${activeCursorMetricLabel} ${cursorValue.toFixed(4)}`}
               >
                 <line x1={cursorX} y1={padding} x2={cursorX} y2={height - padding} />
                 <circle cx={cursorX} cy={padding} r="4" />
+                {cursorValueY === null || cursorValue === null ? null : (
+                  <>
+                    <circle
+                      cx={cursorX}
+                      cy={cursorValueY}
+                      r="5"
+                      className="pulse-metric-timeline__cursor-marker"
+                    />
+                    <text
+                      x={cursorX + (cursorX > width / 2 ? -8 : 8)}
+                      y={Math.max(padding + 12, Math.min(height - padding - 6, cursorValueY - 9))}
+                      textAnchor={cursorX > width / 2 ? 'end' : 'start'}
+                      className="pulse-metric-timeline__cursor-readout"
+                    >
+                      {`${activeCursorMetricLabel} ${cursorValue.toFixed(4)}`}
+                    </text>
+                  </>
+                )}
               </g>
             )}
 
@@ -340,11 +453,15 @@ export function PulseMetricTimeline({
                 <strong className="pulse-metric-timeline__value">{maximumStateChange.toFixed(6)}</strong>
               </article>
             ) : null}
-            {cursorPoint === null ? null : (
+            {cursorPoint === null || clampedCursorTimeUs === null ? null : (
               <article className="pulse-metric-timeline__value-card pulse-metric-timeline__value-card--cursor">
-                <span className="pulse-metric-timeline__label">カーソル時刻の純度</span>
-                <strong className="pulse-metric-timeline__value">{cursorPoint.purity.toFixed(6)}</strong>
-                <small>{cursorPoint.timeUs.toFixed(4)} μs</small>
+                <span className="pulse-metric-timeline__label">
+                  カーソル時刻の{activeCursorMetricLabel}
+                </span>
+                <strong className="pulse-metric-timeline__value">
+                  {cursorValue === null ? '利用できません' : cursorValue.toFixed(6)}
+                </strong>
+                <small>{clampedCursorTimeUs.toFixed(4)} μs</small>
                 {currentMetricValue === null || heldMetricValueAtCursor === null ? null : (
                   <small>
                     {activeHeldMetricLabel}：現在 {currentMetricValue.toFixed(6)} ／

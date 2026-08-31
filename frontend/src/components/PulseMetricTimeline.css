@@ -251,3 +251,38 @@ html[data-theme='light'] .pulse-metric-timeline {
   font-size: 0.78rem;
   cursor: pointer;
 }
+
+.pulse-metric-timeline__cursor-selector {
+  gap: 6px;
+  cursor: pointer;
+}
+
+.pulse-metric-timeline__cursor-selector select {
+  padding: 2px 4px;
+  border: 1px solid rgb(var(--tt-ink-mid-rgb) / 0.32);
+  background: var(--tt-panel);
+  color: var(--tt-ink);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.pulse-metric-timeline__swatch--cursor {
+  background: var(--tt-accent);
+}
+
+.pulse-metric-timeline__cursor-marker {
+  fill: var(--tt-void);
+  stroke: var(--tt-accent);
+  stroke-width: 2.5;
+}
+
+.pulse-metric-timeline__cursor-readout {
+  fill: var(--tt-ink);
+  stroke: var(--tt-void);
+  stroke-width: 4px;
+  paint-order: stroke fill;
+  font-family: var(--tt-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
