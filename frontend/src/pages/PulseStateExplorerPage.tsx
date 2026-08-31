@@ -25,6 +25,11 @@ import {
   type PulseComparisonState,
 } from '../utils/pulseStateExplorer'
 import { pulseStateExplorerTips } from '../utils/quantumPetTips'
+import {
+  buildPulseResultBundle,
+  downloadJson,
+  resultFileName,
+} from '../utils/resultExport'
 
 type PulseStateExplorerPageProps = {
   run: PulseRunRecord | null
@@ -309,6 +314,32 @@ export function PulseStateExplorerPage({
   const releaseHeldRun = useCallback(() => {
     onComparisonChange({ heldRun: null, comparing: false })
   }, [onComparisonChange])
+  /*
+   * 表示中の実行を、そのとき使った回路と設定ごと書き出す。
+   *
+   * Pulse側は実行記録が completedAt を持っているので、ファイル名の時刻には
+   * 書き出した時刻ではなく実行時刻を使う。あとから並べたときに、いつ計算した
+   * 結果なのかが名前で分かるようにするため。
+   */
+  /*
+   * 書き出し済みの表示は「どの実行を書き出したか」とセットで持つ。実行が
+   * 切り替われば、表示中のものと一致しなくなって自動的に消える。
+   */
+  const [exportedRun, setExportedRun] = useState<PulseRunRecord | null>(null)
+  const exportStatus = exportedRun !== null && exportedRun === run
+    ? '結果を書き出しました'
+    : ''
+  const exportCurrentRun = useCallback(() => {
+    if (run === null) {
+      return
+    }
+    const bundle = buildPulseResultBundle(run, currentCircuit)
+    downloadJson(
+      JSON.stringify(bundle, null, 2),
+      resultFileName('pulse結果', run.completedAt),
+    )
+    setExportedRun(run)
+  }, [run, currentCircuit])
 
   const availablePanelKeys = useMemo(
     () => (Object.keys(PULSE_EXPLORER_PANEL_LABELS) as PulseExplorerPanelKey[]).filter((panelKey) => {
@@ -383,6 +414,8 @@ export function PulseStateExplorerPage({
         onHold={holdCurrentRun}
         onRelease={releaseHeldRun}
         onComparingChange={setComparing}
+        onExport={exportCurrentRun}
+        exportStatus={exportStatus}
       />
 
       {comparisonView !== null && heldRun !== null && heldRun.record.signature === run.signature ? (

@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "validate:pulse-lab": "node scripts/validate-pulse-lab.mjs"
+    "validate:pulse-lab": "node scripts/validate-pulse-lab.mjs",
+    "validate:result-export": "node scripts/validate-result-export.mjs"
   },
   "dependencies": {
     "react": "^19.2.7",

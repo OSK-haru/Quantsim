@@ -9,6 +9,10 @@ type RunComparisonBarProps = {
   onHold: () => void
   onRelease: () => void
   onComparingChange: (comparing: boolean) => void
+  /* 表示中の結果をファイルへ書き出す。結果が無い画面では呼ばれない。 */
+  onExport: () => void
+  /* 書き出しの結果表示。押していないあいだは空文字。 */
+  exportStatus: string
 }
 
 /*
@@ -23,6 +27,10 @@ type RunComparisonBarProps = {
  *
  * 保持を続けるのは、回路と観測窓が変わらないあいだだけ。環境以外が動いたら
  * ページ側が保持を捨てるので、この帯からは「保持中」の表示ごと消える。
+ *
+ * 書き出しも同じ帯に置く。保持が「この画面の中で見比べる」手段なのに対し、
+ * 書き出しは「画面の外へ持ち出す」手段で、どちらも表示中の結果に対する
+ * 同じ種類の操作だからである。
  */
 export function RunComparisonBar({
   heldLabel,
@@ -31,6 +39,8 @@ export function RunComparisonBar({
   onHold,
   onRelease,
   onComparingChange,
+  onExport,
+  exportStatus,
 }: RunComparisonBarProps) {
   return (
     <div className="run-comparison-bar">
@@ -65,6 +75,16 @@ export function RunComparisonBar({
           </button>
         </>
       )}
+      {/*
+        * 書き出しは保持の有無に関係なく押せる。いま表示している結果を
+        * そのまま出すだけで、保持側とは無関係だからである。
+        */}
+      <button type="button" className="run-comparison-bar__export" onClick={onExport}>
+        結果を書き出す
+      </button>
+      <span className="run-comparison-bar__export-status" aria-live="polite">
+        {exportStatus}
+      </span>
     </div>
   )
 }

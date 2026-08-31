@@ -63,3 +63,16 @@
 .run-comparison-bar__release {
   color: var(--tt-ink-mid);
 }
+
+.run-comparison-bar__export-status {
+  color: var(--tt-ink-mid);
+  font-size: 0.78rem;
+}
+
+/*
+ * 書き出しは保持系のボタンより一段控えめにする。この帯の主目的は
+ * 見比べることで、持ち出しはそのついでに置いてあるため。
+ */
+.run-comparison-bar__export {
+  color: var(--tt-ink-mid);
+}

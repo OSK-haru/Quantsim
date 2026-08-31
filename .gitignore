@@ -11,8 +11,8 @@ __pycache__/
 secrets/
 .DS_Store
 videomaking/
-docs_for_develop/
-docs/
+/docs_for_develop/
+/docs/
 release/
 # Build outputs
 build/

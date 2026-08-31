@@ -22,6 +22,11 @@ import {
   type CircuitConfig,
 } from '../utils/circuitConfig'
 import type { GateAwareComparisonState } from '../utils/simulateSettings'
+import {
+  buildGateAwareResultBundle,
+  downloadJson,
+  resultFileName,
+} from '../utils/resultExport'
 
 type StateExplorerPageProps = {
   response: SimulationResponse | null
@@ -234,6 +239,41 @@ export function StateExplorerPage({
     onComparisonChange({ heldResult: null, comparing: false })
   }, [onComparisonChange])
   /*
+   * 表示中の結果を、それを生んだ入力ごと書き出す。
+   *
+   * Gate-awareの応答は実行時刻をISO形式で持っていない（run.last_run_label は
+   * 表示用の文字列）ため、ファイル名の時刻は書き出した時刻を使う。
+   */
+  /*
+   * 書き出し済みの表示は「どの実行を書き出したか」とセットで持つ。
+   *
+   * 実行が切り替わったときに effect で消す手もあるが、それは表示の更新を
+   * 1描画ぶん遅らせるだけで、消す理由（表示中の実行と一致しない）を状態が
+   * 持っていない。書き出した対象そのものを覚えておけば、いま表示している
+   * 結果と違った時点で自動的に「書き出していない」扱いになる。
+   */
+  const [exportedResponse, setExportedResponse] = useState<SimulationResponse | null>(null)
+  const exportStatus = exportedResponse !== null && exportedResponse === activeResponse
+    ? '結果を書き出しました'
+    : ''
+  const exportCurrentRun = useCallback(() => {
+    if (activeResponse === null) {
+      return
+    }
+    const now = new Date()
+    const bundle = buildGateAwareResultBundle(
+      activeResponse,
+      executedCircuitConfig,
+      gateDurationDefaults,
+      now,
+    )
+    downloadJson(
+      JSON.stringify(bundle, null, 2),
+      resultFileName('gate-aware結果', now.toISOString()),
+    )
+    setExportedResponse(activeResponse)
+  }, [activeResponse, executedCircuitConfig, gateDurationDefaults])
+  /*
    * 直接比較できなくなった保持は、その場で捨てる。
    *
    * 重ねて意味があるのは「回路も観測窓も同じまま、環境だけ変えた」場合だけ。
@@ -393,6 +433,8 @@ export function StateExplorerPage({
             onHold={holdCurrentRun}
             onRelease={releaseHeldRun}
             onComparingChange={setComparing}
+            onExport={exportCurrentRun}
+            exportStatus={exportStatus}
           />
           {comparisonNotice === null ? null : (
             <p className="state-explorer-page__compare-note">{comparisonNotice}</p>

@@ -114,6 +114,7 @@ const sidebars: SidebarsConfig = {
             'physics-model/validations/input',
             'physics-model/validations/propagation',
             'physics-model/validations/control-models',
+            'physics-model/validations/readout-error',
             'physics-model/validations/hardware-comparison',
           ],
         },
@@ -123,7 +124,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: '制限事項',
-      items: ['limitations/current-limitations'],
+      items: ['limitations/current-limitations', 'limitations/roadmap'],
     },
   ],
 };
