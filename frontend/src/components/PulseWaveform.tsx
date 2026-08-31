@@ -41,6 +41,14 @@ export function PulseWaveform({
       .join(' ')
   const pulseBoundary = x(pulseDurationUs)
   /*
+    パルス列が観測時間以上のとき、境界線はチャート右端に重なり、
+    「Pulse終了」ラベルが右端の時刻ラベルと同じ位置で潰れる（初期表示で発生）。
+    その場合は境界線だけ残し、重複するテキストは出さない。
+    右端から十分内側にあるときだけラベルを描く。
+  */
+  const boundaryNearRightEdge = pulseBoundary >= WIDTH - PAD_X - 48
+  const showBoundaryLabel = pulseDurationUs < chartDurationUs && !boundaryNearRightEdge
+  /*
     Ωy が全時刻ゼロなのは「描画が抜けている」ようにも読めてしまう。
     2準位で DRAG が定義されない場合と、単に β=0 や位相0で今回たまたま
     ゼロな場合を区別して、平坦な理由を凡例のすぐ横に書く。
@@ -70,7 +78,9 @@ export function PulseWaveform({
         <path className="pulse-waveform__line pulse-waveform__line--x" d={path('omegaX')} />
         <path className="pulse-waveform__line pulse-waveform__line--y" d={path('omegaY')} />
         <text x={PAD_X} y={HEIGHT - 7}>0</text>
-        <text x={pulseBoundary} y={HEIGHT - 7} textAnchor="middle">Pulse終了</text>
+        {showBoundaryLabel ? (
+          <text x={pulseBoundary} y={HEIGHT - 7} textAnchor="middle">Pulse終了</text>
+        ) : null}
         <text x={WIDTH - PAD_X} y={HEIGHT - 7} textAnchor="end">{chartDurationUs.toPrecision(3)} us</text>
         <text x={8} y={18}>rad/us</text>
       </svg>
